@@ -1,7 +1,21 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { SYSTEM_EVENT } from "@yaagi/contracts/boot";
+import {
+  SYSTEM_EVENT,
+  type BootCompletedPayload,
+  type SystemEvent,
+} from "@yaagi/contracts/boot";
 import { createBootHarness } from "../../testing/boot-harness.js";
+
+const isBootEvent = (
+  event: SystemEvent<BootCompletedPayload> | SystemEvent<unknown>,
+): event is SystemEvent<BootCompletedPayload> => event.type === SYSTEM_EVENT.BOOT_COMPLETED;
+
+const getErrorCode = (error: unknown): string | undefined => {
+  if (typeof error !== "object" || error === null) return undefined;
+  if (!("code" in error)) return undefined;
+  return typeof error.code === "string" ? error.code : undefined;
+};
 
 test('AC-F0001-01 blocks runtime activation until constitution, schema and volume checks pass', async () => {
   const harness = await createBootHarness({
@@ -12,7 +26,7 @@ test('AC-F0001-01 blocks runtime activation until constitution, schema and volum
     const result = await harness.service.boot();
 
     assert.equal(result.ok, false);
-    assert.equal(result.error.code, "REQUIRED_VOLUME_MISSING");
+    assert.equal(getErrorCode(result.error), "REQUIRED_VOLUME_MISSING");
     assert.equal(harness.lifecycle.state, "inactive");
     assert.equal(harness.sensorAdapter.startCalls, 0);
     assert.equal(harness.scheduler.startCalls, 0);
@@ -34,7 +48,7 @@ test('AC-F0001-02 emits boot event with selected startup mode and dependency res
     assert.equal(harness.scheduler.startCalls, 1);
     assert.equal(harness.tickEngine.startCalls, 1);
 
-    const bootEvent = harness.events.find((event) => event.type === SYSTEM_EVENT.BOOT_COMPLETED);
+    const bootEvent = harness.events.find(isBootEvent);
     assert.ok(bootEvent);
     assert.equal(bootEvent.payload.mode, "normal");
     assert.equal(bootEvent.payload.snapshotId, null);
@@ -59,7 +73,7 @@ test('AC-F0001-05 allows degraded boot only for policy-approved dependency loss'
     assert.equal(harness.lifecycle.state, "degraded");
     assert.equal(harness.agentState.mode, "degraded");
 
-    const bootEvent = harness.events.find((event) => event.type === SYSTEM_EVENT.BOOT_COMPLETED);
+    const bootEvent = harness.events.find(isBootEvent);
     assert.ok(bootEvent);
     assert.equal(bootEvent.payload.mode, "degraded");
     assert.deepEqual(bootEvent.payload.degradedDependencies, ["model-fast"]);

@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "declaration": true,
+    "tsBuildInfoFile": "../../node_modules/.cache/ts/contracts.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"]
+}

@@ -4,53 +4,171 @@ import {
   LIFECYCLE_STATE,
   STARTUP_MODE,
   SYSTEM_EVENT,
+  type BootCompletedPayload,
+  type BootPreflightResult,
+  type DependencyCheckResult,
+  type LifecycleState,
+  type RecoveryCompletedPayload,
+  type RecoveryResult,
+  type StableSnapshotRecord,
+  type SystemEvent,
 } from "@yaagi/contracts/boot";
 import { loadConstitution } from "./constitution-loader.js";
 import { BootInvariantError } from "./errors.js";
-import { runDependencyProbes, selectStartupMode } from "./startup-policy.js";
+import {
+  runDependencyProbes,
+  selectStartupMode,
+  type DependencyProbeMap,
+} from "./startup-policy.js";
 
-const noopAsync = async () => {};
+type AsyncVoid = () => Promise<void>;
+type Startable = {
+  start(): Promise<void>;
+};
+type FileSystemPort = {
+  stat(targetPath: string): Promise<unknown>;
+};
+type TimelinePort = {
+  publish(event: SystemEvent<BootCompletedPayload | RecoveryCompletedPayload>): Promise<void>;
+};
+type DevelopmentLedgerPort = {
+  record(entry: {
+    entry_kind: string;
+    subject_ref: string;
+    summary: string;
+    evidence_json: Record<string, unknown>;
+  }): Promise<void>;
+};
+type LifecycleController = {
+  setState(nextState: LifecycleState): Promise<void>;
+};
+type AgentStateStore = {
+  getLastStableSnapshotId(): Promise<string | null>;
+  setBootState(nextValue: BootCompletedPayload): Promise<void>;
+  setDevelopmentFreeze(nextValue: boolean): Promise<void>;
+  setLastStableSnapshotId(nextValue: string): Promise<void>;
+  setSchemaVersion(nextValue: string): Promise<void>;
+};
+type SnapshotStore = {
+  getLatestValidSnapshotId(preferredSnapshotId: string | null): Promise<string | null>;
+  getSnapshotById(snapshotId: string): Promise<StableSnapshotRecord | null>;
+};
+type BodyGateway = {
+  restoreGitTag(gitTag: string): Promise<void>;
+};
+type ModelRegistry = {
+  restoreProfileMap(modelProfileMapJson: Record<string, string>): Promise<void>;
+};
 
-const createNoopPort = (methods) =>
-  Object.fromEntries(methods.map((method) => [method, noopAsync]));
+export type BootOptions = {
+  expectedSchemaVersion: string;
+  repoRoot?: string;
+  constitutionPath?: string;
+  fileSystem?: FileSystemPort;
+  dependencyProbes?: DependencyProbeMap;
+  timeline?: TimelinePort;
+  developmentLedger?: DevelopmentLedgerPort;
+  lifecycleController?: LifecycleController;
+  agentStateStore?: AgentStateStore;
+  snapshotStore?: SnapshotStore;
+  bodyGateway?: BodyGateway;
+  modelRegistry?: ModelRegistry;
+  scheduler?: Startable;
+  tickEngine?: Startable;
+  sensorAdapters?: Startable[];
+};
 
-const DEFAULT_TIMELINE = createNoopPort(["publish"]);
-const DEFAULT_LEDGER = createNoopPort(["record"]);
-const DEFAULT_LIFECYCLE = createNoopPort(["setState"]);
-const DEFAULT_AGENT_STATE = {
-  ...createNoopPort([
+type BootSuccess = {
+  ok: true;
+  preflight: BootPreflightResult;
+  recovery: RecoveryResult;
+};
+
+type BootFailure = {
+  ok: false;
+  error: unknown;
+};
+
+type VolumeCheckResult = {
+  ok: boolean;
+  missingVolumes: string[];
+};
+
+const noopAsync: AsyncVoid = async () => {};
+
+const createNoopPort = <TMethod extends string>(
+  methods: readonly TMethod[],
+): Record<TMethod, AsyncVoid> =>
+  Object.fromEntries(methods.map((method) => [method, noopAsync])) as Record<
+    TMethod,
+    AsyncVoid
+  >;
+
+const DEFAULT_TIMELINE: TimelinePort = createNoopPort(["publish"]) as unknown as TimelinePort;
+const DEFAULT_LEDGER: DevelopmentLedgerPort = createNoopPort(["record"]) as unknown as DevelopmentLedgerPort;
+const DEFAULT_LIFECYCLE: LifecycleController = createNoopPort(["setState"]) as unknown as LifecycleController;
+const DEFAULT_AGENT_STATE: AgentStateStore = {
+  ...(createNoopPort([
     "setBootState",
     "setDevelopmentFreeze",
     "setLastStableSnapshotId",
     "setSchemaVersion",
-  ]),
+  ]) as unknown as Omit<
+    AgentStateStore,
+    "getLastStableSnapshotId"
+  >),
   getLastStableSnapshotId: async () => null,
 };
-const DEFAULT_SNAPSHOT_STORE = {
+const DEFAULT_SNAPSHOT_STORE: SnapshotStore = {
   getLatestValidSnapshotId: async () => null,
   getSnapshotById: async () => null,
 };
-const DEFAULT_BODY_GATEWAY = createNoopPort(["restoreGitTag"]);
-const DEFAULT_MODEL_REGISTRY = createNoopPort(["restoreProfileMap"]);
-const DEFAULT_STARTABLE = createNoopPort(["start"]);
+const DEFAULT_BODY_GATEWAY: BodyGateway = createNoopPort([
+  "restoreGitTag",
+]) as unknown as BodyGateway;
+const DEFAULT_MODEL_REGISTRY: ModelRegistry = createNoopPort([
+  "restoreProfileMap",
+]) as unknown as ModelRegistry;
+const DEFAULT_STARTABLE: Startable = createNoopPort(["start"]) as unknown as Startable;
 
-const makeEvent = (type, payload) => ({
+const makeEvent = <TPayload>(
+  type: SystemEvent<TPayload>["type"],
+  payload: TPayload,
+): SystemEvent<TPayload> => ({
   type,
   payload,
   recordedAt: new Date().toISOString(),
 });
 
-const summarizeDependencyResults = (dependencyResults) =>
+const summarizeDependencyResults = (
+  dependencyResults: DependencyCheckResult[],
+): DependencyCheckResult[] =>
   dependencyResults.map((result) => ({
     dependency: result.dependency,
     ok: result.ok,
     requiredForNormal: result.requiredForNormal,
-    detail: result.detail,
+    ...(result.detail ? { detail: result.detail } : {}),
   }));
 
 export class ConstitutionalBootService {
-  constructor(options) {
-    if (!options?.expectedSchemaVersion) {
+  readonly expectedSchemaVersion: string;
+  readonly repoRoot: string;
+  readonly constitutionPath: string;
+  readonly fileSystem: FileSystemPort;
+  readonly dependencyProbes: DependencyProbeMap;
+  readonly timeline: TimelinePort;
+  readonly developmentLedger: DevelopmentLedgerPort;
+  readonly lifecycle: LifecycleController;
+  readonly agentState: AgentStateStore;
+  readonly snapshotStore: SnapshotStore;
+  readonly bodyGateway: BodyGateway;
+  readonly modelRegistry: ModelRegistry;
+  readonly scheduler: Startable;
+  readonly tickEngine: Startable;
+  readonly sensorAdapters: Startable[];
+
+  constructor(options: BootOptions) {
+    if (!options.expectedSchemaVersion) {
       throw new Error("expectedSchemaVersion is required");
     }
 
@@ -73,7 +191,7 @@ export class ConstitutionalBootService {
     this.sensorAdapters = options.sensorAdapters ?? [];
   }
 
-  async boot() {
+  async boot(): Promise<BootSuccess | BootFailure> {
     await this.lifecycle.setState(LIFECYCLE_STATE.BOOTING);
 
     try {
@@ -81,8 +199,15 @@ export class ConstitutionalBootService {
       const recovery = await this.recover(preflight);
       const activated = await this.activate(preflight, recovery);
 
+      if (!activated) {
+        return {
+          ok: false,
+          error: new Error("runtime activation was blocked"),
+        };
+      }
+
       return {
-        ok: activated,
+        ok: true,
         preflight,
         recovery,
       };
@@ -95,7 +220,7 @@ export class ConstitutionalBootService {
     }
   }
 
-  async preflight() {
+  async preflight(): Promise<BootPreflightResult> {
     const constitution = await loadConstitution(this.constitutionPath);
 
     if (constitution.schemaVersion !== this.expectedSchemaVersion) {
@@ -143,7 +268,7 @@ export class ConstitutionalBootService {
     };
   }
 
-  async recover(preflight) {
+  async recover(preflight: BootPreflightResult): Promise<RecoveryResult> {
     if (preflight.selectedMode !== STARTUP_MODE.RECOVERY) {
       return {
         attempted: false,
@@ -155,16 +280,16 @@ export class ConstitutionalBootService {
     await this.agentState.setDevelopmentFreeze(true);
 
     if (!preflight.rollbackSnapshotId) {
-      return this.failRecovery(
-        "no valid stable snapshot available for recovery",
-        null,
-      );
+      return this.failRecovery("no valid stable snapshot available for recovery", null);
     }
 
     const snapshot = await this.snapshotStore.getSnapshotById(preflight.rollbackSnapshotId);
     const manifestError = this.validateSnapshotManifest(snapshot);
-    if (manifestError) {
-      return this.failRecovery(manifestError, preflight.rollbackSnapshotId);
+    if (!snapshot || manifestError) {
+      return this.failRecovery(
+        manifestError ?? "stable snapshot was not found",
+        preflight.rollbackSnapshotId,
+      );
     }
 
     try {
@@ -173,7 +298,7 @@ export class ConstitutionalBootService {
       await this.agentState.setLastStableSnapshotId(snapshot.snapshotId);
       await this.agentState.setSchemaVersion(snapshot.schemaVersion);
 
-      const recoveryResult = {
+      const recoveryResult: RecoveryResult = {
         attempted: true,
         snapshotId: snapshot.snapshotId,
         outcome: "recovered",
@@ -187,16 +312,22 @@ export class ConstitutionalBootService {
         entry_kind: "code_rollback",
         subject_ref: snapshot.snapshotId,
         summary: `Recovered boot from stable snapshot ${snapshot.snapshotId}`,
-        evidence_json: recoveryResult,
+        evidence_json: recoveryResult as unknown as Record<string, unknown>,
       });
 
       return recoveryResult;
     } catch (error) {
-      return this.failRecovery(error instanceof Error ? error.message : String(error), snapshot.snapshotId);
+      return this.failRecovery(
+        error instanceof Error ? error.message : String(error),
+        snapshot.snapshotId,
+      );
     }
   }
 
-  async activate(preflight, recovery) {
+  async activate(
+    preflight: BootPreflightResult,
+    recovery: RecoveryResult,
+  ): Promise<boolean> {
     if (
       preflight.selectedMode === STARTUP_MODE.RECOVERY &&
       recovery.outcome !== "recovered"
@@ -205,7 +336,7 @@ export class ConstitutionalBootService {
       return false;
     }
 
-    const bootPayload = {
+    const bootPayload: BootCompletedPayload = {
       mode: preflight.selectedMode,
       schemaVersion: preflight.schemaVersion,
       dependencyResults: summarizeDependencyResults(preflight.dependencyResults),
@@ -233,8 +364,8 @@ export class ConstitutionalBootService {
     return true;
   }
 
-  async checkRequiredVolumes(requiredVolumes) {
-    const missingVolumes = [];
+  async checkRequiredVolumes(requiredVolumes: string[]): Promise<VolumeCheckResult> {
+    const missingVolumes: string[] = [];
 
     for (const requiredVolume of requiredVolumes) {
       const absolutePath = path.isAbsolute(requiredVolume)
@@ -253,7 +384,7 @@ export class ConstitutionalBootService {
     };
   }
 
-  validateSnapshotManifest(snapshot) {
+  validateSnapshotManifest(snapshot: StableSnapshotRecord | null): string | null {
     if (!snapshot) return "stable snapshot was not found";
     if (!snapshot.gitTag) return "stable snapshot is missing gitTag";
     if (!snapshot.modelProfileMapJson) {
@@ -266,8 +397,8 @@ export class ConstitutionalBootService {
     return null;
   }
 
-  async failRecovery(detail, snapshotId) {
-    const recoveryResult = {
+  async failRecovery(detail: string, snapshotId: string | null): Promise<RecoveryResult> {
+    const recoveryResult: RecoveryResult = {
       attempted: true,
       snapshotId,
       outcome: "failed",
@@ -281,7 +412,7 @@ export class ConstitutionalBootService {
       entry_kind: "code_rollback",
       subject_ref: snapshotId ?? "missing-snapshot",
       summary: "Recovery failed during boot",
-      evidence_json: recoveryResult,
+      evidence_json: recoveryResult as unknown as Record<string, unknown>,
     });
 
     return recoveryResult;

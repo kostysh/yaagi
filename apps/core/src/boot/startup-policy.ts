@@ -1,50 +1,92 @@
-import { DEPENDENCY, DEFAULT_DEPENDENCY_ORDER, STARTUP_MODE } from "@yaagi/contracts/boot";
+import {
+  DEPENDENCY,
+  DEFAULT_DEPENDENCY_ORDER,
+  STARTUP_MODE,
+  type DependencyCheckResult,
+  type DependencyId,
+  type DependencyProbeResult,
+  type StartupMode,
+} from "@yaagi/contracts/boot";
 
-const toDetail = (value) => {
+export type DependencyProbe = () => Promise<DependencyProbeResult>;
+export type DependencyProbeMap = Partial<Record<DependencyId, DependencyProbe>>;
+
+const toDetail = (value: unknown): string | undefined => {
   if (value instanceof Error) return value.message;
   return typeof value === "string" ? value : undefined;
 };
 
+const createDependencyResult = ({
+  dependency,
+  ok,
+  requiredForNormal,
+  detail,
+}: {
+  dependency: DependencyId;
+  ok: boolean;
+  requiredForNormal: boolean;
+  detail?: string;
+}): DependencyCheckResult => ({
+  dependency,
+  ok,
+  requiredForNormal,
+  ...(detail ? { detail } : {}),
+});
+
 export async function runDependencyProbes({
   dependencyProbes,
   dependencyOrder = DEFAULT_DEPENDENCY_ORDER,
-}) {
-  const results = [];
+}: {
+  dependencyProbes: DependencyProbeMap;
+  dependencyOrder?: readonly DependencyId[];
+}): Promise<DependencyCheckResult[]> {
+  const results: DependencyCheckResult[] = [];
 
   for (const dependency of dependencyOrder) {
     const probe = dependencyProbes[dependency];
     if (typeof probe !== "function") {
-      results.push({
+      results.push(createDependencyResult({
         dependency,
         ok: false,
         requiredForNormal: true,
         detail: "missing dependency probe",
-      });
+      }));
       continue;
     }
 
     try {
       const result = await probe();
-      results.push({
+      const detail = toDetail(result.detail);
+      results.push(createDependencyResult({
         dependency,
-        ok: result?.ok === true,
+        ok: result.ok === true,
         requiredForNormal: true,
-        detail: toDetail(result?.detail),
-      });
+        ...(detail ? { detail } : {}),
+      }));
     } catch (error) {
-      results.push({
+      const detail = toDetail(error);
+      results.push(createDependencyResult({
         dependency,
         ok: false,
         requiredForNormal: true,
-        detail: toDetail(error),
-      });
+        ...(detail ? { detail } : {}),
+      }));
     }
   }
 
   return results;
 }
 
-export function selectStartupMode({ dependencyResults, allowedDegradedDependencies = [] }) {
+export function selectStartupMode({
+  dependencyResults,
+  allowedDegradedDependencies = [],
+}: {
+  dependencyResults: DependencyCheckResult[];
+  allowedDegradedDependencies?: readonly string[];
+}): {
+  selectedMode: StartupMode;
+  degradedDependencies: DependencyId[];
+} {
   const failedDependencies = dependencyResults.filter((dependency) => !dependency.ok);
   if (failedDependencies.length === 0) {
     return {

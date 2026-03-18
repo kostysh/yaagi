@@ -3,7 +3,10 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./boot": "./src/boot/index.js"
+    "./boot": {
+      "types": "./src/boot/index.ts",
+      "default": "./src/boot/index.ts"
+    }
   },
   "dependencies": {
     "@yaagi/contracts": "workspace:*"

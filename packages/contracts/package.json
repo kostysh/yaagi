@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./boot": "./src/boot.js"
+    "./boot": {
+      "types": "./src/boot.ts",
+      "default": "./src/boot.ts"
+    }
   }
 }
