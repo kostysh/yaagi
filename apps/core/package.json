@@ -1,0 +1,11 @@
+{
+  "name": "@yaagi/core",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./boot": "./src/boot/index.js"
+  },
+  "dependencies": {
+    "@yaagi/contracts": "workspace:*"
+  }
+}

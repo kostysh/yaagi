@@ -1,7 +1,7 @@
 ---
 id: F-0001
 title: Конституционный контур запуска и восстановления
-status: planned
+status: done
 owners: ["@codex"]
 area: runtime
 depends_on: []
@@ -215,11 +215,11 @@ Tasks:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0001-01 | `test/runtime/boot.integration.test.js` → `it("AC-F0001-01 blocks runtime activation until constitution, schema and volume checks pass")` | planned |
-| AC-F0001-02 | `test/runtime/boot.integration.test.js` → `it("AC-F0001-02 emits boot event with selected startup mode and dependency results")` | planned |
-| AC-F0001-03 | `test/runtime/recovery.integration.test.js` → `it("AC-F0001-03 restores git and model pointers from the last valid stable snapshot before activation")` | planned |
-| AC-F0001-04 | `test/runtime/recovery.integration.test.js` → `it("AC-F0001-04 leaves runtime inactive when recovery target is missing or invalid")` | planned |
-| AC-F0001-05 | `test/runtime/boot.integration.test.js` → `it("AC-F0001-05 allows degraded boot only for policy-approved dependency loss")` | planned |
+| AC-F0001-01 | `apps/core/test/runtime/boot.integration.test.js` → `test("AC-F0001-01 blocks runtime activation until constitution, schema and volume checks pass")` | done |
+| AC-F0001-02 | `apps/core/test/runtime/boot.integration.test.js` → `test("AC-F0001-02 emits boot event with selected startup mode and dependency results")` | done |
+| AC-F0001-03 | `apps/core/test/runtime/recovery.integration.test.js` → `test("AC-F0001-03 restores git and model pointers from the last valid stable snapshot before activation")` | done |
+| AC-F0001-04 | `apps/core/test/runtime/recovery.integration.test.js` → `test("AC-F0001-04 leaves runtime inactive when recovery target is missing or invalid")` | done |
+| AC-F0001-05 | `apps/core/test/runtime/boot.integration.test.js` → `test("AC-F0001-05 allows degraded boot only for policy-approved dependency loss")` | done |
 
 План тестов:
 
@@ -238,13 +238,18 @@ Tasks:
 
 ## 11. Progress & links
 
-- Status: `planned`
+- Status: `done`
 - Issue: -
 - PRs:
   - -
+- Code:
+  - `apps/core/src/boot/constitutional-boot-service.js`
+  - `apps/core/test/runtime/boot.integration.test.js`
+  - `apps/core/test/runtime/recovery.integration.test.js`
 
 ## 12. Change log
 
 - **v1.0 (2026-03-19):** Initial dossier created from candidate `CF-001` via feature intake.
 - **v1.1 (2026-03-19):** Expanded dossier into compact spec with testable AC, internal boot/recovery contracts, DoD, coverage plan and startup-mode ADR.
 - **v1.2 (2026-03-19):** Added execution-ready slice plan with per-slice tasks, exit criteria and suggested issue titles; status advanced to `planned`.
+- **v1.3 (2026-03-19):** Implemented pnpm monorepo scaffold, constitutional boot service and AC-linked integration tests; status advanced to `done`.

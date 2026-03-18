@@ -1,0 +1,8 @@
+{
+  "name": "@yaagi/contracts",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./boot": "./src/boot.js"
+  }
+}
