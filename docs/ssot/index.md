@@ -3,14 +3,14 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-03-18T18:50:46.767Z_
+_Last sync: 2026-03-18T23:22:22.121Z_
 
 ## Features
 
 <!-- BEGIN GENERATED FEATURES -->
 | ID | Title | Status | Area | Depends on | Impacts | Dossier |
 |---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — |
+| F-0001 | Конституционный контур запуска и восстановления | planned | runtime | — | runtime,db,models,storage | `../features/F-0001-constitutional-boot-recovery.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -18,6 +18,7 @@ _Last sync: 2026-03-18T18:50:46.767Z_
 <!-- BEGIN GENERATED DEP_GRAPH -->
 ```mermaid
 graph TD
+  F0001["F-0001 Конституционный контур запуска и восстановления"]
 ```
 <!-- END GENERATED DEP_GRAPH -->
 
