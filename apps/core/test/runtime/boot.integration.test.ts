@@ -5,7 +5,7 @@ import {
   type BootCompletedPayload,
   type SystemEvent,
 } from "@yaagi/contracts/boot";
-import { createBootHarness } from "../../testing/boot-harness.js";
+import { createBootHarness } from "../../testing/boot-harness.ts";
 
 const isBootEvent = (
   event: SystemEvent<BootCompletedPayload> | SystemEvent<unknown>,

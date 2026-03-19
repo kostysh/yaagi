@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-03-18T23:48:17.517Z_
+_Last sync: 2026-03-19T00:08:24.299Z_
 
 ## Features
 

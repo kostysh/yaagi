@@ -1,2 +1,2 @@
-export { ConstitutionalBootService } from "./constitutional-boot-service.js";
-export { BootInvariantError } from "./errors.js";
+export { ConstitutionalBootService } from "./constitutional-boot-service.ts";
+export { BootInvariantError } from "./errors.ts";

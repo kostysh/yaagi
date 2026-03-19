@@ -254,3 +254,4 @@ Tasks:
 - **v1.2 (2026-03-19):** Added execution-ready slice plan with per-slice tasks, exit criteria and suggested issue titles; status advanced to `planned`.
 - **v1.3 (2026-03-19):** Implemented pnpm monorepo scaffold, constitutional boot service and AC-linked integration tests; status advanced to `done`.
 - **v1.4 (2026-03-19):** Aligned runtime scaffold with the canonical TypeScript stack by converting `apps/core` and shared contracts to strict TypeScript and adding monorepo tsconfig/typecheck tooling.
+- **v1.5 (2026-03-19):** Removed `tsx` from test execution and switched the repo to native `node --experimental-strip-types` with `.ts` import specifiers.

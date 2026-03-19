@@ -1,7 +1,7 @@
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
-import { ConstitutionalBootService } from "../src/boot/index.js";
+import { ConstitutionalBootService } from "../src/boot/index.ts";
 import {
   DEPENDENCY,
   type BootCompletedPayload,

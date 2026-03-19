@@ -13,13 +13,13 @@ import {
   type StableSnapshotRecord,
   type SystemEvent,
 } from "@yaagi/contracts/boot";
-import { loadConstitution } from "./constitution-loader.js";
-import { BootInvariantError } from "./errors.js";
+import { loadConstitution } from "./constitution-loader.ts";
+import { BootInvariantError } from "./errors.ts";
 import {
   runDependencyProbes,
   selectStartupMode,
   type DependencyProbeMap,
-} from "./startup-policy.js";
+} from "./startup-policy.ts";
 
 type AsyncVoid = () => Promise<void>;
 type Startable = {
