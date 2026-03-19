@@ -2010,7 +2010,8 @@ Homeostat должен иметь не только метрики, но и де
 - канонический toolchain: [ADR-2026-03-19 Canonical Runtime Toolchain](../adr/ADR-2026-03-19-canonical-runtime-toolchain.md);
 - phase-0 runtime boundary (`TypeScript + Mastra + Hono`, но health-only public surface): [ADR-2026-03-19 Phase-0 Runtime Boundary](../adr/ADR-2026-03-19-phase0-runtime-boundary.md);
 - обязательная phase-0 deployment cell и baseline container posture: [ADR-2026-03-19 Phase-0 Deployment Cell](../adr/ADR-2026-03-19-phase0-deployment-cell.md);
-- constitution-driven boot dependency set и связь boot с delivered substrate: [ADR-2026-03-19 Boot Dependency Contract](../adr/ADR-2026-03-19-boot-dependency-contract.md).
+- constitution-driven boot dependency set и связь boot с delivered substrate: [ADR-2026-03-19 Boot Dependency Contract](../adr/ADR-2026-03-19-boot-dependency-contract.md);
+- canonical quality/style gate ordering и единый formatter/linter contract для source и tests: [ADR-2026-03-19 Quality Gate Sequence](../adr/ADR-2026-03-19-quality-gate-sequence.md).
 
 Эти ADR не заменяют feature dossiers, а фиксируют cross-cutting engineering contract для следующих feature seams.
 
