@@ -5,6 +5,7 @@
     "rootDir": ".",
     "outDir": "./dist",
     "declaration": true,
+    "emitDeclarationOnly": true,
     "tsBuildInfoFile": "../../node_modules/.cache/ts/core.tsbuildinfo"
   },
   "include": ["src/**/*.ts", "testing/**/*.ts", "test/**/*.ts"],
