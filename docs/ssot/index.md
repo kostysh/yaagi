@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-03-19T00:13:16.485Z_
+_Last sync: 2026-03-19T00:26:11.941Z_
 
 ## Features
 
@@ -11,6 +11,7 @@ _Last sync: 2026-03-19T00:13:16.485Z_
 | ID | Title | Status | Area | Depends on | Impacts | Dossier |
 |---|---|---|---|---|---|---|
 | F-0001 | Конституционный контур запуска и восстановления | done | runtime | — | runtime,db,models,storage | `../features/F-0001-constitutional-boot-recovery.md` |
+| F-0002 | Канонический scaffold монорепы и deployment cell | planned | platform | — | runtime,infra,db,models,workspace | `../features/F-0002-canonical-monorepo-deployment-cell.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -19,6 +20,7 @@ _Last sync: 2026-03-19T00:13:16.485Z_
 ```mermaid
 graph TD
   F0001["F-0001 Конституционный контур запуска и восстановления"]
+  F0002["F-0002 Канонический scaffold монорепы и deployment cell"]
 ```
 <!-- END GENERATED DEP_GRAPH -->
 
