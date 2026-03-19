@@ -1,0 +1,106 @@
+name: yaagi-phase0
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: yaagi
+      POSTGRES_USER: yaagi
+      POSTGRES_PASSWORD: yaagi
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yaagi -d yaagi"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../infra/migrations:/docker-entrypoint-initdb.d:ro
+    tmpfs:
+      - /tmp
+    networks:
+      - db_net
+
+  vllm-fast:
+    build:
+      context: ../..
+      dockerfile: infra/docker/vllm-fast/Dockerfile
+    environment:
+      VLLM_FAST_PORT: "8000"
+      VLLM_FAST_MODEL_ID: "phase-0-fast"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)\""]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 3s
+    networks:
+      - models_net
+
+  core:
+    build:
+      context: ../..
+      dockerfile: infra/docker/core/Dockerfile
+    user: "${YAAGI_UID:-1000}:${YAAGI_GID:-1000}"
+    environment:
+      YAAGI_HOST: 0.0.0.0
+      YAAGI_PORT: "8080"
+      YAAGI_POSTGRES_URL: postgres://yaagi:yaagi@postgres:5432/yaagi
+      YAAGI_FAST_MODEL_BASE_URL: http://vllm-fast:8000/v1
+      YAAGI_CONSTITUTION_PATH: /workspace/constitution/constitution.yaml
+      YAAGI_WORKSPACE_BODY_PATH: /workspace/body
+      YAAGI_WORKSPACE_SKILLS_PATH: /workspace/skills
+      YAAGI_MODELS_PATH: /models
+      YAAGI_DATA_PATH: /data
+      YAAGI_MIGRATIONS_DIR: /app/infra/migrations
+      YAAGI_PGBOSS_SCHEMA: pgboss
+      YAAGI_BOOT_TIMEOUT_MS: "60000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      vllm-fast:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD-SHELL", "node --input-type=module -e \"const response = await fetch('http://127.0.0.1:8080/health'); if (!response.ok) process.exit(1);\""]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    ports:
+      - "18080:8080"
+    volumes:
+      - ../../workspace/body:/workspace/body
+      - ../../workspace/skills:/workspace/skills
+      - ../../workspace/constitution:/workspace/constitution:ro
+      - ../../models:/models
+      - ../../data:/data
+    networks:
+      - core_net
+      - db_net
+      - models_net
+
+volumes:
+  postgres_data:
+
+networks:
+  core_net:
+    driver: bridge
+  models_net:
+    driver: bridge
+  db_net:
+    driver: bridge
+    internal: true

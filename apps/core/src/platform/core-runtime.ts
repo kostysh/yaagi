@@ -1,0 +1,326 @@
+import { createServer, type Server } from "node:http";
+import { access } from "node:fs/promises";
+import { setTimeout as sleep } from "node:timers/promises";
+import net from "node:net";
+import type { Mastra } from "@mastra/core";
+import { Hono } from "hono";
+import {
+  checkPostgresConnectivity,
+  ensureDatabaseReady,
+} from "@yaagi/db/bootstrap";
+import { type CoreRuntimeConfig, loadCoreRuntimeConfig } from "./core-config.ts";
+import { createPhase0Mastra } from "./phase0-mastra.ts";
+
+const BOOT_POLL_INTERVAL_MS = 1_000;
+
+export type CoreRuntimeHealth = {
+  ok: boolean;
+  postgres: boolean;
+  fastModel: boolean;
+  configuration: boolean;
+  agents: string[];
+  checks: Array<{
+    name: "configuration" | "postgres" | "fastModel";
+    ok: boolean;
+    detail?: string;
+  }>;
+};
+
+export type CoreRuntimeDependencies = {
+  bootstrapDatabase?: () => Promise<void>;
+  probeConfiguration?: () => Promise<boolean>;
+  probePostgres?: () => Promise<boolean>;
+  probeFastModel?: () => Promise<boolean>;
+};
+
+export type CoreRuntime = {
+  readonly config: CoreRuntimeConfig;
+  readonly app: Hono;
+  readonly mastra: Mastra;
+  health(): Promise<CoreRuntimeHealth>;
+  start(): Promise<{ url: string }>;
+  stop(): Promise<void>;
+  fetch(request: Request): Promise<Response>;
+};
+
+const withTrailingSlash = (value: string): string =>
+  value.endsWith("/") ? value : `${value}/`;
+
+const createFileSystemProbe =
+  (config: CoreRuntimeConfig) =>
+  async (): Promise<boolean> => {
+    const paths = [
+      config.constitutionPath,
+      config.workspaceBodyPath,
+      config.workspaceSkillsPath,
+      config.modelsPath,
+      config.dataPath,
+    ];
+
+    for (const targetPath of paths) {
+      try {
+        await access(targetPath);
+      } catch {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+const createDatabaseBootstrap =
+  (config: CoreRuntimeConfig) =>
+  async (): Promise<void> => {
+    await ensureDatabaseReady({
+      connectionString: config.postgresUrl,
+      migrationsDir: config.migrationsDir,
+      bossSchema: config.pgBossSchema,
+    });
+  };
+
+const createPostgresProbe =
+  (config: CoreRuntimeConfig) =>
+  async (): Promise<boolean> => {
+    try {
+      await checkPostgresConnectivity(config.postgresUrl);
+      return true;
+    } catch {
+      // Fall back to a low-level socket probe while Postgres is still booting.
+    }
+
+    const postgresUrl = new URL(config.postgresUrl);
+    const port = postgresUrl.port ? Number(postgresUrl.port) : 5432;
+    const host = postgresUrl.hostname || "127.0.0.1";
+
+    return await new Promise<boolean>((resolve) => {
+      const socket = net.createConnection({ host, port });
+      const timeout = setTimeout(() => {
+        socket.destroy();
+        resolve(false);
+      }, 1_500);
+
+      socket.once("connect", () => {
+        clearTimeout(timeout);
+        socket.end();
+        resolve(true);
+      });
+
+      socket.once("error", () => {
+        clearTimeout(timeout);
+        resolve(false);
+      });
+    });
+  };
+
+const createFastModelProbe =
+  (config: CoreRuntimeConfig) =>
+  async (): Promise<boolean> => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1_500);
+
+    try {
+      const response = await fetch(
+        new URL("models", withTrailingSlash(config.fastModelBaseUrl)),
+        {
+          method: "GET",
+          signal: controller.signal,
+        },
+      );
+      return response.ok;
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
+const toNodeResponse = async (response: Response) => {
+  const headers = Object.fromEntries(response.headers.entries());
+  const body = response.body
+    ? Buffer.from(await response.arrayBuffer())
+    : undefined;
+  return { headers, body, status: response.status };
+};
+
+export function createCoreRuntime(
+  config: CoreRuntimeConfig = loadCoreRuntimeConfig(),
+  dependencies: CoreRuntimeDependencies = {},
+): CoreRuntime {
+  const mastra = createPhase0Mastra(config);
+  const app = new Hono();
+  let server: Server | null = null;
+  let listeningUrl: string | null = null;
+
+  const bootstrapDatabase =
+    dependencies.bootstrapDatabase ?? createDatabaseBootstrap(config);
+  const probeConfiguration =
+    dependencies.probeConfiguration ?? createFileSystemProbe(config);
+  const probePostgres =
+    dependencies.probePostgres ?? createPostgresProbe(config);
+  const probeFastModel =
+    dependencies.probeFastModel ?? createFastModelProbe(config);
+
+  const health = async (): Promise<CoreRuntimeHealth> => {
+    const [configuration, postgres, fastModel] = await Promise.all([
+      probeConfiguration(),
+      probePostgres(),
+      probeFastModel(),
+    ]);
+
+    return {
+      ok: configuration && postgres && fastModel,
+      configuration,
+      postgres,
+      fastModel,
+      agents: Object.keys(mastra.listAgents()),
+      checks: [
+        { name: "configuration", ok: configuration },
+        { name: "postgres", ok: postgres },
+        { name: "fastModel", ok: fastModel },
+      ],
+    };
+  };
+
+  app.get("/health", async (context) => {
+    const snapshot = await health();
+    return context.json(snapshot, snapshot.ok ? 200 : 503);
+  });
+
+  const waitForDependencies = async (): Promise<void> => {
+    const deadline = Date.now() + config.bootTimeoutMs;
+    let lastSnapshot: Pick<
+      CoreRuntimeHealth,
+      "configuration" | "postgres" | "fastModel"
+    > | null = null;
+
+    while (Date.now() <= deadline) {
+      const configuration = await probeConfiguration();
+      let postgres = false;
+
+      if (configuration) {
+        try {
+          await bootstrapDatabase();
+          postgres = true;
+        } catch {
+          postgres = false;
+        }
+      }
+
+      const fastModel = configuration ? await probeFastModel() : false;
+      lastSnapshot = { configuration, postgres, fastModel };
+
+      if (configuration && postgres && fastModel) {
+        return;
+      }
+
+      await sleep(BOOT_POLL_INTERVAL_MS);
+    }
+
+    throw new Error(
+      `phase-0 runtime preflight timed out after ${config.bootTimeoutMs}ms: ${JSON.stringify(
+        lastSnapshot,
+      )}`,
+    );
+  };
+
+  const start = async (): Promise<{ url: string }> => {
+    if (server) {
+      return { url: listeningUrl ?? `http://${config.host}:${config.port}` };
+    }
+
+    await waitForDependencies();
+
+    const nextServer = createServer(async (request, response) => {
+      const requestUrl = new URL(
+        request.url ?? "/",
+        `http://${request.headers.host ?? `${config.host}:${config.port}`}`,
+      );
+      const requestHeaders = new Headers();
+      for (const [headerName, headerValue] of Object.entries(request.headers)) {
+        if (typeof headerValue === "string") {
+          requestHeaders.set(headerName, headerValue);
+          continue;
+        }
+
+        if (Array.isArray(headerValue)) {
+          for (const value of headerValue) {
+            requestHeaders.append(headerName, value);
+          }
+        }
+      }
+
+      const requestInit: RequestInit = {
+        method: request.method ?? "GET",
+        headers: requestHeaders,
+      };
+
+      const fetchRequest = new Request(requestUrl, requestInit);
+      const fetchResponse = await app.fetch(fetchRequest);
+      const nodeResponse = await toNodeResponse(fetchResponse);
+
+      response.writeHead(nodeResponse.status, nodeResponse.headers);
+      response.end(nodeResponse.body);
+    });
+    server = nextServer;
+
+    await new Promise<void>((resolve, reject) => {
+      const onError = (error: Error) => {
+        nextServer.off("listening", onListening);
+        reject(error);
+      };
+      const onListening = () => {
+        nextServer.off("error", onError);
+        resolve();
+      };
+
+      nextServer.once("error", onError);
+      nextServer.once("listening", onListening);
+      nextServer.listen(config.port, config.host);
+    });
+
+    const address = nextServer.address();
+    const port =
+      typeof address === "object" && address ? address.port : config.port;
+    const host = config.host === "0.0.0.0" ? "127.0.0.1" : config.host;
+    listeningUrl = `http://${host}:${port}`;
+
+    return { url: listeningUrl };
+  };
+
+  const stop = async (): Promise<void> => {
+    if (!server) return;
+
+    const activeServer = server;
+    server = null;
+    listeningUrl = null;
+
+    await new Promise<void>((resolve, reject) => {
+      activeServer.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve();
+      });
+    });
+  };
+
+  return {
+    config,
+    app,
+    mastra,
+    health,
+    start,
+    stop,
+    fetch: async (request: Request) => app.fetch(request),
+  };
+}
+
+export async function waitForCoreRuntime(
+  runtime: CoreRuntime,
+): Promise<{ url: string }> {
+  const started = await runtime.start();
+  await sleep(0);
+  return started;
+}

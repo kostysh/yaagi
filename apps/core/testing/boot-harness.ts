@@ -37,6 +37,7 @@ type HarnessOptions = {
   constitutionVersion?: string;
   constitutionSchemaVersion?: string;
   expectedSchemaVersion?: string;
+  requiredDependencies?: DependencyId[];
   allowedDegradedDependencies?: string[];
   dependencyResults?: Partial<Record<DependencyId, DependencyProbeResult | Error>>;
   snapshots?: StableSnapshotRecord[];
@@ -109,6 +110,13 @@ export async function createBootHarness(options: HarnessOptions = {}): Promise<H
     version: options.constitutionVersion ?? "1.0.0",
     schemaVersion: options.constitutionSchemaVersion ?? DEFAULT_SCHEMA_VERSION,
     requiredVolumes,
+    requiredDependencies:
+      options.requiredDependencies ?? [
+        DEPENDENCY.POSTGRES,
+        DEPENDENCY.MODEL_FAST,
+        DEPENDENCY.MODEL_DEEP,
+        DEPENDENCY.MODEL_POOL,
+      ],
     allowedDegradedDependencies:
       options.allowedDegradedDependencies ?? [
         DEPENDENCY.MODEL_FAST,
@@ -124,6 +132,8 @@ export async function createBootHarness(options: HarnessOptions = {}): Promise<H
       `schemaVersion: "${constitution.schemaVersion}"`,
       "requiredVolumes:",
       toYamlList(constitution.requiredVolumes),
+      "requiredDependencies:",
+      toYamlList(constitution.requiredDependencies),
       "allowedDegradedDependencies:",
       toYamlList(constitution.allowedDegradedDependencies),
       "",

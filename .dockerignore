@@ -1,0 +1,15 @@
+.git
+.gitignore
+node_modules
+**/node_modules
+dist
+**/dist
+data/datasets
+data/reports
+data/snapshots
+models/adapters
+models/base
+models/specialists
+workspace/body
+workspace/journals
+workspace/skills

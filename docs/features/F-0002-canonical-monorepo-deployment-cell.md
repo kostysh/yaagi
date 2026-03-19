@@ -1,7 +1,7 @@
 ---
 id: F-0002
 title: Канонический scaffold монорепы и deployment cell
-status: planned
+status: done
 owners: ["@codex"]
 area: platform
 depends_on: []
@@ -206,12 +206,12 @@ Tasks:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0002-01 | `test/platform/monorepo-scaffold.test.ts` → `test("AC-F0002-01 exposes the canonical pnpm monorepo scaffold and workspace layout")` | planned |
-| AC-F0002-02 | `apps/core/test/platform/core-entrypoint.integration.test.ts` → `test("AC-F0002-02 starts the explicit core entrypoint with minimal health boundary")` | planned |
-| AC-F0002-03 | `infra/docker/test/deployment-cell.smoke.test.ts` → `test("AC-F0002-03 boots the compose deployment cell with canonical service wiring")` | planned |
-| AC-F0002-04 | `infra/docker/test/container-posture.test.ts` → `test("AC-F0002-04 enforces baseline container posture and declared mounts")` | planned |
-| AC-F0002-05 | `infra/docker/test/deployment-cell.smoke.test.ts` → `test("AC-F0002-05 initializes postgres and pg-boss readiness before core reports ready")` | planned |
-| AC-F0002-06 | `docs/features/F-0001-constitutional-boot-recovery.md` + `apps/core/test/platform/containerized-boot.integration.test.ts` → `test("AC-F0002-06 aligns F-0001 boot assumptions with the delivered deployment cell")` | planned |
+| AC-F0002-01 | `test/platform/monorepo-scaffold.test.ts` → `test("AC-F0002-01 exposes the canonical pnpm monorepo scaffold and workspace layout")`; `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-01 loads the phase-0 runtime config from env and repo defaults")` | done |
+| AC-F0002-02 | `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-02 serves a minimal GET /health boundary with readiness state")`; `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-02 keeps the phase-0 boundary health-only and surfaces dependency loss after startup")` | done |
+| AC-F0002-03 | `infra/docker/test/compose-config.test.ts` → `test("AC-F0002-03 renders the canonical compose cell with phase-0 service wiring")` | done |
+| AC-F0002-04 | `infra/docker/test/container-posture.test.ts` → `test("AC-F0002-04 enforces baseline container posture and declared mounts")` | done |
+| AC-F0002-05 | `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0002-05 initializes postgres and pgboss readiness before core reports ready")` | done |
+| AC-F0002-06 | `docs/features/F-0001-constitutional-boot-recovery.md`; `apps/core/test/platform/containerized-boot.integration.test.ts` → `test("AC-F0002-06 aligns F-0001 boot assumptions with the delivered deployment cell")` | done |
 
 План тестов:
 
@@ -236,21 +236,52 @@ Tasks:
 - Alternatives: Сразу поднимать всю canonical cell; делать `core` без какого-либо model service и откладывать first organ ещё дальше.
 - Consequences: Phase-0 remains implementable; early cell stays faithful to architecture without prematurely absorbing later-phase components.
 
+### ADR-F0002-03: Phase-0 ingress остаётся health-only, хотя runtime уже построен на Mastra
+- Status: Accepted
+- Context: Архитектура в зрелом виде использует Mastra Server как HTTP ingress с richer custom routes, но ранний platform substrate не должен преждевременно открывать operator/control API до `CF-009`.
+- Decision: `core` поставляется как `TypeScript + Mastra + Hono` runtime с зарегистрированным phase-0 Mastra agent, но публичная HTTP surface на этом шаге намеренно ограничена `GET /health`; richer MastraServer-managed routes будут введены отдельной API feature.
+- Alternatives: Сразу публиковать MastraServer default routes; полностью отказаться от Mastra до более поздней фазы.
+- Consequences: Стек и runtime substrate уже канонические, но HTTP perimeter остаётся минимальным и не конфликтует с backlog seam для operator API.
+
+### ADR-F0002-04: `vllm-fast` в phase 0 поставляется как OpenAI-compatible stub service
+- Status: Accepted
+- Context: Полноценный production `vLLM` runtime тяжелее и требует отдельного model-serving seam, но platform substrate уже сейчас должен иметь реальный service name, network contract и OpenAI-compatible endpoint для `core`.
+- Decision: В `F-0002` `vllm-fast` реализован как lightweight Python 3.12 OpenAI-compatible stub container, сохраняющий канонические service name и `/v1/*` contract; полная `vLLM` поставка остаётся за следующим model ecology seam.
+- Alternatives: Тянуть полноценный `vLLM` уже в `CF-020`; исключить model service из phase-0 cell совсем.
+- Consequences: Deployment cell и router/agent wiring поставлены без ложной смены API-контракта, но inference quality/performance intentionally remain out of scope for this platform feature.
+
 ## 11. Progress & links
 
-- Status: `proposed` → `shaped` → `planned`
+- Status: `proposed` → `shaped` → `planned` → `done`
 - Issue: -
 - PRs:
   - -
 - Code:
   - `package.json`
   - `pnpm-workspace.yaml`
-  - `apps/core/`
-  - `infra/docker/`
-  - `infra/migrations/`
+  - `.dockerignore`
+  - `apps/core/src/main.ts`
+  - `apps/core/src/platform/core-config.ts`
+  - `apps/core/src/platform/core-runtime.ts`
+  - `apps/core/src/platform/phase0-mastra.ts`
+  - `apps/core/test/platform/core-runtime.test.ts`
+  - `apps/core/test/platform/containerized-boot.integration.test.ts`
+  - `packages/db/src/bootstrap.ts`
+  - `packages/db/src/cli/bootstrap.ts`
+  - `infra/docker/compose.yaml`
+  - `infra/docker/core/Dockerfile`
+  - `infra/docker/vllm-fast/Dockerfile`
+  - `infra/docker/vllm-fast/server.py`
+  - `infra/docker/test/compose-config.test.ts`
+  - `infra/docker/test/container-posture.test.ts`
+  - `infra/docker/deployment-cell.smoke.ts`
+  - `infra/migrations/001_platform_bootstrap.sql`
+  - `docs/features/F-0001-constitutional-boot-recovery.md`
 
 ## 12. Change log
 
 - **v1.0 (2026-03-19):** Initial dossier created from candidate `CF-020` via feature intake.
 - **v1.1 (2026-03-19):** Expanded dossier into compact platform spec with testable AC, deployment cell design, DoD and two platform-scope ADR decisions.
 - **v1.2 (2026-03-19):** Added execution-ready slice plan, task map and planned coverage references; status advanced to `planned`.
+- **v1.3 (2026-03-19):** Implemented the canonical `pnpm` monorepo scaffold, `TypeScript + Mastra + Hono` phase-0 core entrypoint, PostgreSQL/`pg-boss` bootstrap path, buildable Docker Compose deployment cell and AC-linked scaffold/container tests; status advanced to `done`.
+- **v1.4 (2026-03-19):** Added two implementation ADRs documenting the deliberate phase-0 boundary: health-only ingress despite Mastra runtime substrate, and an OpenAI-compatible `vllm-fast` stub that preserves service wiring until the dedicated model-serving seam lands.

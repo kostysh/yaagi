@@ -1,4 +1,8 @@
 import { readFile } from "node:fs/promises";
+import {
+  DEFAULT_DEPENDENCY_ORDER,
+  type DependencyId,
+} from "@yaagi/contracts/boot";
 
 type ParsedYamlValue = string | string[];
 type ParsedYaml = Record<string, ParsedYamlValue>;
@@ -63,6 +67,7 @@ export type ConstitutionConfig = {
   version: string;
   schemaVersion: string;
   requiredVolumes: string[];
+  requiredDependencies: DependencyId[];
   allowedDegradedDependencies: string[];
 };
 
@@ -87,6 +92,9 @@ export async function loadConstitution(
     version: parsed["version"],
     schemaVersion: parsed["schemaVersion"],
     requiredVolumes: Array.isArray(parsed["requiredVolumes"]) ? parsed["requiredVolumes"] : [],
+    requiredDependencies: Array.isArray(parsed["requiredDependencies"])
+      ? parsed["requiredDependencies"] as DependencyId[]
+      : [...DEFAULT_DEPENDENCY_ORDER],
     allowedDegradedDependencies: Array.isArray(parsed["allowedDegradedDependencies"])
       ? parsed["allowedDegradedDependencies"]
       : [],

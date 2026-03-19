@@ -245,6 +245,7 @@ export class ConstitutionalBootService {
 
     const dependencyResults = await runDependencyProbes({
       dependencyProbes: this.dependencyProbes,
+      dependencyOrder: constitution.requiredDependencies,
     });
     const { selectedMode, degradedDependencies } = selectStartupMode({
       dependencyResults,

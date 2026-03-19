@@ -3,12 +3,28 @@
   "private": true,
   "type": "module",
   "exports": {
+    ".": {
+      "types": "./src/main.ts",
+      "default": "./src/main.ts"
+    },
     "./boot": {
       "types": "./src/boot/index.ts",
       "default": "./src/boot/index.ts"
+    },
+    "./platform": {
+      "types": "./src/platform/index.ts",
+      "default": "./src/platform/index.ts"
     }
   },
+  "scripts": {
+    "start": "node --experimental-strip-types src/main.ts",
+    "smoke": "node --experimental-strip-types src/main.ts"
+  },
   "dependencies": {
-    "@yaagi/contracts": "workspace:*"
+    "@mastra/core": "^1.14.0",
+    "@yaagi/contracts": "workspace:*",
+    "@yaagi/db": "workspace:*",
+    "hono": "^4.12.8",
+    "zod": "^3.25.76"
   }
 }

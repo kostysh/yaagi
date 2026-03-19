@@ -6,7 +6,7 @@ requiredVolumes:
   - workspace/constitution
   - data
   - models
-allowedDegradedDependencies:
+requiredDependencies:
+  - postgres
   - model-fast
-  - model-deep
-  - model-pool
+allowedDegradedDependencies:
