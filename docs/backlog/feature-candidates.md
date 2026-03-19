@@ -36,7 +36,7 @@
 | CF-017 | Context Builder и structured decision harness | когниция | candidate | CF-003, CF-004, CF-006 | Ранний Context Builder, Mastra Decision Agent и валидация структурированного решения образуют центральный cognitive harness основного тика уже в phase 0/1; этот seam должен идти после базового organ selection/router, а narrative и memetic inputs позже его расширяют (`4.2.3`, `4.2.8`, `9.2`, Phase 0). | - |
 | CF-018 | Консолидация, event envelope и graceful shutdown | жизненный цикл | candidate | CF-002, CF-003, CF-005 | Consolidation cycle, retention/compaction policy, dataset/eval candidate preparation, единый event envelope и корректный graceful shutdown удерживают биографию, auditability и lifecycle consistency как отдельный seam (`7.5`, `8.6`, `9.3`, `9.6`). | - |
 | CF-019 | Специализированные органы и политика вывода из эксплуатации | модели | candidate | CF-010, CF-011, CF-016 | Specialist model birth, organ registry expansion, staged rollout и retirement policy образуют phase-4 capability, отличную и от базовой model ecology, и от workshop pipeline (`10.6`, `10.7`, `10.8`, Phase 4). | - |
-| CF-020 | Канонический scaffold монорепы и deployment cell | платформа | candidate | - | `pnpm` monorepo, `TypeScript + Mastra` scaffold, Docker Compose deployment cell, PostgreSQL + `pg-boss`, базовые volumes/networks и первый `vllm-fast` должны иметь явного раннего владельца; иначе стек, среда запуска и runtime substrate расползаются между несвязанными фичами (`3.1`, `3.2`, `5.1`, `6`, `14.2`-`14.5`, Phase 0). | - |
+| CF-020 | Канонический scaffold монорепы и deployment cell | платформа | candidate | - | `pnpm` monorepo, `TypeScript + Mastra` scaffold, Docker Compose deployment cell, PostgreSQL + `pg-boss`, базовые volumes/networks, первый `vllm-fast` и выравнивание уже intaken boot/recovery dossier с реальным runtime substrate должны иметь явного раннего владельца; иначе стек, среда запуска и boot assumptions расползаются между несвязанными фичами (`3.1`, `3.2`, `5.1`, `6`, `14.2`-`14.5`, Phase 0). | - |
 
 ## Архитектурный аудит покрытия (`2026-03-19`)
 
@@ -63,6 +63,7 @@
 - `CF-006`: при `feature-intake` зафиксировать baseline `reflex`/`deliberation` scope и не втянуть внешних consultants раньше mature-governance phase.
 - `CF-014`: при `feature-intake` держать hardening/perimeter scope отдельно от `CF-020`, где уже живут container/cell/networks/volumes baseline.
 - `CF-020`: при `feature-intake` явно отделить уже существующий repo scaffold от недостающих частей deployment cell (`compose`, `postgres`, `pg-boss`, `vllm-fast`, volume/network policy), чтобы не дублировать уже выполненную работу.
+- `CF-020`: в scope должен входить controlled `change-proposal` для `F-0001`, который перепривяжет boot/recovery к реальному dependency set, deployment cell и containerized startup path после реализации platform substrate, не превращая `CF-020` в переписывание boot logic с нуля.
 - Для любого кандидата из этого списка intake считается завершённым только после явных секций `Scope` и `Out of scope` в новом dossier, а при архитектурной развилке — после ADR/shaping decision.
 
 ## Открытые вопросы
