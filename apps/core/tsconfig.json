@@ -7,13 +7,6 @@
     "declaration": true,
     "tsBuildInfoFile": "../../node_modules/.cache/ts/core.tsbuildinfo"
   },
-  "include": [
-    "src/**/*.ts",
-    "testing/**/*.ts",
-    "test/**/*.ts"
-  ],
-  "references": [
-    { "path": "../../packages/contracts" },
-    { "path": "../../packages/db" }
-  ]
+  "include": ["src/**/*.ts", "testing/**/*.ts", "test/**/*.ts"],
+  "references": [{ "path": "../../packages/contracts" }, { "path": "../../packages/db" }]
 }

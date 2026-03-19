@@ -6,14 +6,14 @@ import {
   type DependencyId,
   type DependencyProbeResult,
   type StartupMode,
-} from "@yaagi/contracts/boot";
+} from '@yaagi/contracts/boot';
 
 export type DependencyProbe = () => Promise<DependencyProbeResult>;
 export type DependencyProbeMap = Partial<Record<DependencyId, DependencyProbe>>;
 
 const toDetail = (value: unknown): string | undefined => {
   if (value instanceof Error) return value.message;
-  return typeof value === "string" ? value : undefined;
+  return typeof value === 'string' ? value : undefined;
 };
 
 const createDependencyResult = ({
@@ -44,33 +44,39 @@ export async function runDependencyProbes({
 
   for (const dependency of dependencyOrder) {
     const probe = dependencyProbes[dependency];
-    if (typeof probe !== "function") {
-      results.push(createDependencyResult({
-        dependency,
-        ok: false,
-        requiredForNormal: true,
-        detail: "missing dependency probe",
-      }));
+    if (typeof probe !== 'function') {
+      results.push(
+        createDependencyResult({
+          dependency,
+          ok: false,
+          requiredForNormal: true,
+          detail: 'missing dependency probe',
+        }),
+      );
       continue;
     }
 
     try {
       const result = await probe();
       const detail = toDetail(result.detail);
-      results.push(createDependencyResult({
-        dependency,
-        ok: result.ok === true,
-        requiredForNormal: true,
-        ...(detail ? { detail } : {}),
-      }));
+      results.push(
+        createDependencyResult({
+          dependency,
+          ok: result.ok === true,
+          requiredForNormal: true,
+          ...(detail ? { detail } : {}),
+        }),
+      );
     } catch (error) {
       const detail = toDetail(error);
-      results.push(createDependencyResult({
-        dependency,
-        ok: false,
-        requiredForNormal: true,
-        ...(detail ? { detail } : {}),
-      }));
+      results.push(
+        createDependencyResult({
+          dependency,
+          ok: false,
+          requiredForNormal: true,
+          ...(detail ? { detail } : {}),
+        }),
+      );
     }
   }
 

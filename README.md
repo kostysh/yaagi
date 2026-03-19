@@ -21,7 +21,10 @@ Canonical engineering decisions for the repo:
 - runtime baseline: `Node.js 22 + TypeScript`
 - default execution path for local TypeScript code: `node --experimental-strip-types`
 - default test runner: `node:test`
+- canonical quality/style toolchain: `Biome`
 - fast code verification: `pnpm test`
+- canonical changed-code flow: `pnpm quality:fix`
+- canonical automation gate: `pnpm quality:check`
 - containerized phase-0 smoke verification: `pnpm smoke:cell`
 
 Repo-level ADRs:
@@ -29,3 +32,4 @@ Repo-level ADRs:
 - `docs/adr/ADR-2026-03-19-phase0-runtime-boundary.md`
 - `docs/adr/ADR-2026-03-19-phase0-deployment-cell.md`
 - `docs/adr/ADR-2026-03-19-boot-dependency-contract.md`
+- `docs/adr/ADR-2026-03-19-quality-gate-sequence.md`

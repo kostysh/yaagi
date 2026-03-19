@@ -1,13 +1,13 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-import fs from "node:fs/promises";
-import path from "node:path";
-import { repoRoot } from "../helpers.ts";
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { repoRoot } from '../helpers.ts';
 
-const composeFile = path.join(repoRoot(), "infra", "docker", "compose.yaml");
+const composeFile = path.join(repoRoot(), 'infra', 'docker', 'compose.yaml');
 
-test("AC-F0002-04 enforces baseline container posture and declared mounts", async () => {
-  const text = await fs.readFile(composeFile, "utf8");
+test('AC-F0002-04 enforces baseline container posture and declared mounts', async () => {
+  const text = await fs.readFile(composeFile, 'utf8');
 
   assert.match(text, /postgres:/);
   assert.match(text, /vllm-fast:/);

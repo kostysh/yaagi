@@ -1,7 +1,7 @@
 ---
 id: F-0002
 title: Канонический scaffold монорепы и deployment cell
-status: planned
+status: done
 owners: ["@codex"]
 area: platform
 depends_on: []
@@ -84,6 +84,8 @@ pnpm format
 pnpm format:check
 pnpm lint
 pnpm lint:fix
+pnpm quality:fix
+pnpm quality:check
 pnpm test
 pnpm cell:up
 pnpm cell:down
@@ -171,7 +173,7 @@ interface CoreRuntimeApp {
 - Root monorepo и package/workspace manifests позволяют единообразно запускать checks и локальную cell orchestration через `pnpm`.
 - Docker Compose bootstrap и smoke/invariant suite проверяют минимум: Postgres connectivity, `vllm-fast` reachability, constitution/data/model mounts и readiness `core`.
 - `F-0001` обновлён через controlled `change-proposal`, а не остаётся со старыми boot assumptions.
-- Root quality/style gates для source и tests задокументированы и планируются как единый contract с порядком `format -> typecheck -> lint`.
+- Root quality/style gates для source и tests поставлены как единый contract с порядком `format -> typecheck -> lint`.
 - `docs/ssot/index.md` синхронизирован, dossier lint проходит без ошибок и предупреждений.
 
 ## 7. Slicing plan (2–6 increments)
@@ -254,8 +256,8 @@ Tasks:
 | AC-F0002-04 | `infra/docker/test/container-posture.test.ts` → `test("AC-F0002-04 enforces baseline container posture and declared mounts")` | done |
 | AC-F0002-05 | `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0002-05 initializes postgres and pgboss readiness before core reports ready")` | done |
 | AC-F0002-06 | `docs/features/F-0001-constitutional-boot-recovery.md`; `apps/core/test/platform/containerized-boot.integration.test.ts` → `test("AC-F0002-06 aligns F-0001 boot assumptions with the delivered deployment cell")` | done |
-| AC-F0002-07 | `test/platform/root-quality-gates.test.ts` → `test("AC-F0002-07 exposes canonical quality and style commands for source and test code")` | planned |
-| AC-F0002-08 | `test/platform/root-quality-gates.test.ts` → `test("AC-F0002-08 preserves the canonical gate order format then typecheck then lint for source and test workflows")` | planned |
+| AC-F0002-07 | `test/platform/root-quality-gates.test.ts` → `test("AC-F0002-07 exposes canonical quality and style commands for source and test code")` | done |
+| AC-F0002-08 | `test/platform/root-quality-gates.test.ts` → `test("AC-F0002-08 preserves the canonical gate order format then typecheck then lint for source and test workflows")` | done |
 
 План тестов:
 
@@ -304,7 +306,7 @@ Tasks:
 
 ## 11. Progress & links
 
-- Status: `proposed` → `shaped` → `planned` → `done` → `planned`
+- Status: `proposed` → `shaped` → `planned` → `done` → `planned` → `done`
 - Issue: -
 - PRs:
   - -
@@ -328,6 +330,10 @@ Tasks:
   - `infra/docker/test/container-posture.test.ts`
   - `infra/docker/deployment-cell.smoke.ts`
   - `infra/migrations/001_platform_bootstrap.sql`
+  - `biome.json`
+  - `test/platform/root-quality-gates.test.ts`
+  - `README.md`
+  - `AGENTS.md`
   - `docs/features/F-0001-constitutional-boot-recovery.md`
 
 ## 12. Change log
@@ -338,3 +344,4 @@ Tasks:
 - **v1.3 (2026-03-19):** Implemented the canonical `pnpm` monorepo scaffold, `TypeScript + Mastra + Hono` phase-0 core entrypoint, PostgreSQL/`pg-boss` bootstrap path, buildable Docker Compose deployment cell and AC-linked scaffold/container tests; status advanced to `done`.
 - **v1.4 (2026-03-19):** Added two implementation ADRs documenting the deliberate phase-0 boundary: health-only ingress despite Mastra runtime substrate, and an OpenAI-compatible `vllm-fast` stub that preserves service wiring until the dedicated model-serving seam lands.
 - **v1.5 (2026-03-19):** Applied a controlled change proposal to extend `F-0002` with root-level quality/style gates for source and tests, including new AC for shared formatter/linter coverage and the canonical gate order `format -> typecheck -> lint`; status returned to `planned` pending implementation.
+- **v1.6 (2026-03-19):** Implemented `SL-F0002-06` by adding root-level Biome-based `format/format:check/lint/lint:fix` commands, canonical `quality:fix` and `quality:check` sequences, expanded typechecking to repo tests and `infra/**/*.ts`, AC-linked platform tests for the gate contract, and updated developer-facing repo guidance; status advanced back to `done`.

@@ -1,12 +1,12 @@
-import path from "node:path";
-import { readdir, readFile } from "node:fs/promises";
-import { Client } from "pg";
-import { PgBoss } from "pg-boss";
+import path from 'node:path';
+import { readdir, readFile } from 'node:fs/promises';
+import { Client } from 'pg';
+import { PgBoss } from 'pg-boss';
 
-const MIGRATION_LEDGER_TABLE = "yaagi_platform_migrations";
-const PLATFORM_METADATA_TABLE = "yaagi_platform_metadata";
-const SCHEMA_VERSION_KEY = "schema_version";
-const DEFAULT_BOSS_SCHEMA = "pgboss";
+const MIGRATION_LEDGER_TABLE = 'yaagi_platform_migrations';
+const PLATFORM_METADATA_TABLE = 'yaagi_platform_metadata';
+const SCHEMA_VERSION_KEY = 'schema_version';
+const DEFAULT_BOSS_SCHEMA = 'pgboss';
 
 export type DatabaseBootstrapOptions = {
   connectionString: string;
@@ -20,8 +20,7 @@ export type DatabaseBootstrapResult = {
   bossSchema: string;
 };
 
-const createClient = (connectionString: string): Client =>
-  new Client({ connectionString });
+const createClient = (connectionString: string): Client => new Client({ connectionString });
 
 const ensureBootstrapTables = async (client: Client): Promise<void> => {
   await client.query(`
@@ -43,15 +42,13 @@ const ensureBootstrapTables = async (client: Client): Promise<void> => {
 const listMigrationFiles = async (migrationsDir: string): Promise<string[]> => {
   const entries = await readdir(migrationsDir, { withFileTypes: true });
   return entries
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".sql"))
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.sql'))
     .map((entry) => entry.name)
     .sort((left, right) => left.localeCompare(right));
 };
 
 const getAppliedMigrations = async (client: Client): Promise<Set<string>> => {
-  const result = await client.query<{ name: string }>(
-    `select name from ${MIGRATION_LEDGER_TABLE}`,
-  );
+  const result = await client.query<{ name: string }>(`select name from ${MIGRATION_LEDGER_TABLE}`);
 
   return new Set(result.rows.map((row: { name: string }) => row.name));
 };
@@ -61,7 +58,7 @@ const applyMigration = async (
   migrationName: string,
   sql: string,
 ): Promise<void> => {
-  await client.query("begin");
+  await client.query('begin');
 
   try {
     await client.query(sql);
@@ -73,9 +70,9 @@ const applyMigration = async (
       `,
       [migrationName],
     );
-    await client.query("commit");
+    await client.query('commit');
   } catch (error) {
-    await client.query("rollback");
+    await client.query('rollback');
     throw error;
   }
 };
@@ -98,15 +95,13 @@ const persistSchemaVersion = async (
   );
 };
 
-export async function checkPostgresConnectivity(
-  connectionString: string,
-): Promise<void> {
+export async function checkPostgresConnectivity(connectionString: string): Promise<void> {
   const client = createClient(connectionString);
 
   await client.connect();
 
   try {
-    await client.query("select 1");
+    await client.query('select 1');
   } finally {
     await client.end();
   }
@@ -130,7 +125,7 @@ export async function ensureDatabaseReady(
       if (existingMigrations.has(migrationFile)) continue;
 
       const migrationPath = path.join(options.migrationsDir, migrationFile);
-      const sql = await readFile(migrationPath, "utf8");
+      const sql = await readFile(migrationPath, 'utf8');
       await applyMigration(client, migrationFile, sql);
       appliedMigrations.push(migrationFile);
     }

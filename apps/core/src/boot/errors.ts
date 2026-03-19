@@ -4,7 +4,7 @@ export class BootInvariantError extends Error {
 
   constructor(code: string, message: string, details: Record<string, unknown> = {}) {
     super(message);
-    this.name = "BootInvariantError";
+    this.name = 'BootInvariantError';
     this.code = code;
     this.details = details;
   }

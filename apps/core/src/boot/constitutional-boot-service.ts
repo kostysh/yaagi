@@ -1,5 +1,5 @@
-import path from "node:path";
-import { stat } from "node:fs/promises";
+import path from 'node:path';
+import { stat } from 'node:fs/promises';
 import {
   LIFECYCLE_STATE,
   STARTUP_MODE,
@@ -12,14 +12,14 @@ import {
   type RecoveryResult,
   type StableSnapshotRecord,
   type SystemEvent,
-} from "@yaagi/contracts/boot";
-import { loadConstitution } from "./constitution-loader.ts";
-import { BootInvariantError } from "./errors.ts";
+} from '@yaagi/contracts/boot';
+import { loadConstitution } from './constitution-loader.ts';
+import { BootInvariantError } from './errors.ts';
 import {
   runDependencyProbes,
   selectStartupMode,
   type DependencyProbeMap,
-} from "./startup-policy.ts";
+} from './startup-policy.ts';
 
 type AsyncVoid = () => Promise<void>;
 type Startable = {
@@ -99,24 +99,22 @@ const noopAsync: AsyncVoid = async () => {};
 const createNoopPort = <TMethod extends string>(
   methods: readonly TMethod[],
 ): Record<TMethod, AsyncVoid> =>
-  Object.fromEntries(methods.map((method) => [method, noopAsync])) as Record<
-    TMethod,
-    AsyncVoid
-  >;
+  Object.fromEntries(methods.map((method) => [method, noopAsync])) as Record<TMethod, AsyncVoid>;
 
-const DEFAULT_TIMELINE: TimelinePort = createNoopPort(["publish"]) as unknown as TimelinePort;
-const DEFAULT_LEDGER: DevelopmentLedgerPort = createNoopPort(["record"]) as unknown as DevelopmentLedgerPort;
-const DEFAULT_LIFECYCLE: LifecycleController = createNoopPort(["setState"]) as unknown as LifecycleController;
+const DEFAULT_TIMELINE: TimelinePort = createNoopPort(['publish']) as unknown as TimelinePort;
+const DEFAULT_LEDGER: DevelopmentLedgerPort = createNoopPort([
+  'record',
+]) as unknown as DevelopmentLedgerPort;
+const DEFAULT_LIFECYCLE: LifecycleController = createNoopPort([
+  'setState',
+]) as unknown as LifecycleController;
 const DEFAULT_AGENT_STATE: AgentStateStore = {
   ...(createNoopPort([
-    "setBootState",
-    "setDevelopmentFreeze",
-    "setLastStableSnapshotId",
-    "setSchemaVersion",
-  ]) as unknown as Omit<
-    AgentStateStore,
-    "getLastStableSnapshotId"
-  >),
+    'setBootState',
+    'setDevelopmentFreeze',
+    'setLastStableSnapshotId',
+    'setSchemaVersion',
+  ]) as unknown as Omit<AgentStateStore, 'getLastStableSnapshotId'>),
   getLastStableSnapshotId: async () => null,
 };
 const DEFAULT_SNAPSHOT_STORE: SnapshotStore = {
@@ -124,15 +122,15 @@ const DEFAULT_SNAPSHOT_STORE: SnapshotStore = {
   getSnapshotById: async () => null,
 };
 const DEFAULT_BODY_GATEWAY: BodyGateway = createNoopPort([
-  "restoreGitTag",
+  'restoreGitTag',
 ]) as unknown as BodyGateway;
 const DEFAULT_MODEL_REGISTRY: ModelRegistry = createNoopPort([
-  "restoreProfileMap",
+  'restoreProfileMap',
 ]) as unknown as ModelRegistry;
-const DEFAULT_STARTABLE: Startable = createNoopPort(["start"]) as unknown as Startable;
+const DEFAULT_STARTABLE: Startable = createNoopPort(['start']) as unknown as Startable;
 
 const makeEvent = <TPayload>(
-  type: SystemEvent<TPayload>["type"],
+  type: SystemEvent<TPayload>['type'],
   payload: TPayload,
 ): SystemEvent<TPayload> => ({
   type,
@@ -169,14 +167,14 @@ export class ConstitutionalBootService {
 
   constructor(options: BootOptions) {
     if (!options.expectedSchemaVersion) {
-      throw new Error("expectedSchemaVersion is required");
+      throw new Error('expectedSchemaVersion is required');
     }
 
     this.expectedSchemaVersion = options.expectedSchemaVersion;
     this.repoRoot = options.repoRoot ?? process.cwd();
     this.constitutionPath =
       options.constitutionPath ??
-      path.join(this.repoRoot, "workspace/constitution/constitution.yaml");
+      path.join(this.repoRoot, 'workspace/constitution/constitution.yaml');
     this.fileSystem = options.fileSystem ?? { stat };
     this.dependencyProbes = options.dependencyProbes ?? {};
     this.timeline = options.timeline ?? DEFAULT_TIMELINE;
@@ -202,7 +200,7 @@ export class ConstitutionalBootService {
       if (!activated) {
         return {
           ok: false,
-          error: new Error("runtime activation was blocked"),
+          error: new Error('runtime activation was blocked'),
         };
       }
 
@@ -225,7 +223,7 @@ export class ConstitutionalBootService {
 
     if (constitution.schemaVersion !== this.expectedSchemaVersion) {
       throw new BootInvariantError(
-        "SCHEMA_VERSION_MISMATCH",
+        'SCHEMA_VERSION_MISMATCH',
         `schema version ${constitution.schemaVersion} does not match expected ${this.expectedSchemaVersion}`,
         {
           expectedSchemaVersion: this.expectedSchemaVersion,
@@ -237,8 +235,8 @@ export class ConstitutionalBootService {
     const volumeCheck = await this.checkRequiredVolumes(constitution.requiredVolumes);
     if (!volumeCheck.ok) {
       throw new BootInvariantError(
-        "REQUIRED_VOLUME_MISSING",
-        "required volumes are missing or inaccessible",
+        'REQUIRED_VOLUME_MISSING',
+        'required volumes are missing or inaccessible',
         { missingVolumes: volumeCheck.missingVolumes },
       );
     }
@@ -274,21 +272,21 @@ export class ConstitutionalBootService {
       return {
         attempted: false,
         snapshotId: null,
-        outcome: "skipped",
+        outcome: 'skipped',
       };
     }
 
     await this.agentState.setDevelopmentFreeze(true);
 
     if (!preflight.rollbackSnapshotId) {
-      return this.failRecovery("no valid stable snapshot available for recovery", null);
+      return this.failRecovery('no valid stable snapshot available for recovery', null);
     }
 
     const snapshot = await this.snapshotStore.getSnapshotById(preflight.rollbackSnapshotId);
     const manifestError = this.validateSnapshotManifest(snapshot);
     if (!snapshot || manifestError) {
       return this.failRecovery(
-        manifestError ?? "stable snapshot was not found",
+        manifestError ?? 'stable snapshot was not found',
         preflight.rollbackSnapshotId,
       );
     }
@@ -302,15 +300,13 @@ export class ConstitutionalBootService {
       const recoveryResult: RecoveryResult = {
         attempted: true,
         snapshotId: snapshot.snapshotId,
-        outcome: "recovered",
-        detail: "rollback to stable snapshot completed",
+        outcome: 'recovered',
+        detail: 'rollback to stable snapshot completed',
       };
 
-      await this.timeline.publish(
-        makeEvent(SYSTEM_EVENT.RECOVERY_COMPLETED, recoveryResult),
-      );
+      await this.timeline.publish(makeEvent(SYSTEM_EVENT.RECOVERY_COMPLETED, recoveryResult));
       await this.developmentLedger.record({
-        entry_kind: "code_rollback",
+        entry_kind: 'code_rollback',
         subject_ref: snapshot.snapshotId,
         summary: `Recovered boot from stable snapshot ${snapshot.snapshotId}`,
         evidence_json: recoveryResult as unknown as Record<string, unknown>,
@@ -325,14 +321,8 @@ export class ConstitutionalBootService {
     }
   }
 
-  async activate(
-    preflight: BootPreflightResult,
-    recovery: RecoveryResult,
-  ): Promise<boolean> {
-    if (
-      preflight.selectedMode === STARTUP_MODE.RECOVERY &&
-      recovery.outcome !== "recovered"
-    ) {
+  async activate(preflight: BootPreflightResult, recovery: RecoveryResult): Promise<boolean> {
+    if (preflight.selectedMode === STARTUP_MODE.RECOVERY && recovery.outcome !== 'recovered') {
       await this.lifecycle.setState(LIFECYCLE_STATE.INACTIVE);
       return false;
     }
@@ -343,7 +333,7 @@ export class ConstitutionalBootService {
       dependencyResults: summarizeDependencyResults(preflight.dependencyResults),
       degradedDependencies: preflight.degradedDependencies,
       snapshotId:
-        recovery.outcome === "recovered" ? recovery.snapshotId : preflight.rollbackSnapshotId,
+        recovery.outcome === 'recovered' ? recovery.snapshotId : preflight.rollbackSnapshotId,
     };
 
     await this.timeline.publish(makeEvent(SYSTEM_EVENT.BOOT_COMPLETED, bootPayload));
@@ -386,10 +376,10 @@ export class ConstitutionalBootService {
   }
 
   validateSnapshotManifest(snapshot: StableSnapshotRecord | null): string | null {
-    if (!snapshot) return "stable snapshot was not found";
-    if (!snapshot.gitTag) return "stable snapshot is missing gitTag";
+    if (!snapshot) return 'stable snapshot was not found';
+    if (!snapshot.gitTag) return 'stable snapshot is missing gitTag';
     if (!snapshot.modelProfileMapJson) {
-      return "stable snapshot is missing modelProfileMapJson";
+      return 'stable snapshot is missing modelProfileMapJson';
     }
     if (snapshot.schemaVersion !== this.expectedSchemaVersion) {
       return `stable snapshot schema version ${snapshot.schemaVersion} does not match expected ${this.expectedSchemaVersion}`;
@@ -402,17 +392,15 @@ export class ConstitutionalBootService {
     const recoveryResult: RecoveryResult = {
       attempted: true,
       snapshotId,
-      outcome: "failed",
+      outcome: 'failed',
       detail,
     };
 
-    await this.timeline.publish(
-      makeEvent(SYSTEM_EVENT.RECOVERY_COMPLETED, recoveryResult),
-    );
+    await this.timeline.publish(makeEvent(SYSTEM_EVENT.RECOVERY_COMPLETED, recoveryResult));
     await this.developmentLedger.record({
-      entry_kind: "code_rollback",
-      subject_ref: snapshotId ?? "missing-snapshot",
-      summary: "Recovery failed during boot",
+      entry_kind: 'code_rollback',
+      subject_ref: snapshotId ?? 'missing-snapshot',
+      summary: 'Recovery failed during boot',
       evidence_json: recoveryResult as unknown as Record<string, unknown>,
     });
 

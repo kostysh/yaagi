@@ -8,11 +8,11 @@
  *   node scripts/lint-dossiers.mjs --no-update-index
  */
 
-import { promises as fs } from "node:fs";
-import path from "node:path";
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
 
-const DEFAULT_DOSSIERS_DIR = "docs/features";
-const DEFAULT_INDEX_FILE = "docs/ssot/index.md";
+const DEFAULT_DOSSIERS_DIR = 'docs/features';
+const DEFAULT_INDEX_FILE = 'docs/ssot/index.md';
 
 const parseArgs = () => {
   const args = process.argv.slice(2);
@@ -21,25 +21,25 @@ const parseArgs = () => {
     const idx = args.indexOf(name);
     if (idx === -1) return fallback;
     const value = args[idx + 1];
-    if (!value || value.startsWith("--")) return fallback;
+    if (!value || value.startsWith('--')) return fallback;
     return value;
   };
 
   return {
-    dossiersDir: get("--dossiers-dir", DEFAULT_DOSSIERS_DIR),
-    indexFile: get("--index-file", DEFAULT_INDEX_FILE),
-    root: get("--root", process.cwd()),
-    updateIndex: !has("--no-update-index"),
+    dossiersDir: get('--dossiers-dir', DEFAULT_DOSSIERS_DIR),
+    indexFile: get('--index-file', DEFAULT_INDEX_FILE),
+    root: get('--root', process.cwd()),
+    updateIndex: !has('--no-update-index'),
   };
 };
 
-const readText = async (filePath) => fs.readFile(filePath, "utf8");
+const readText = async (filePath) => fs.readFile(filePath, 'utf8');
 
 const writeTextAtomic = async (filePath, text) => {
   const dir = path.dirname(filePath);
   await fs.mkdir(dir, { recursive: true });
   const tmpFile = `${filePath}.tmp-${Date.now()}`;
-  await fs.writeFile(tmpFile, text, "utf8");
+  await fs.writeFile(tmpFile, text, 'utf8');
   await fs.rename(tmpFile, filePath);
 };
 
@@ -56,25 +56,25 @@ const stripQuotes = (value) => {
 
 const parseYamlValue = (rawValue) => {
   const trimmed = rawValue.trim();
-  if (trimmed === "[]") return [];
-  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+  if (trimmed === '[]') return [];
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
     const inner = trimmed.slice(1, -1).trim();
     if (!inner) return [];
     return inner
-      .split(",")
+      .split(',')
       .map((item) => stripQuotes(item))
       .map((item) => item.trim())
       .filter(Boolean);
   }
-  if (trimmed === "true") return true;
-  if (trimmed === "false") return false;
+  if (trimmed === 'true') return true;
+  if (trimmed === 'false') return false;
   if (/^\d+$/.test(trimmed)) return Number(trimmed);
   return stripQuotes(trimmed);
 };
 
 const parseFrontmatter = (markdown) => {
-  if (!markdown.startsWith("---")) return null;
-  const end = markdown.indexOf("\n---", 3);
+  if (!markdown.startsWith('---')) return null;
+  const end = markdown.indexOf('\n---', 3);
   if (end === -1) return null;
 
   const raw = markdown.slice(3, end).trim();
@@ -86,7 +86,7 @@ const parseFrontmatter = (markdown) => {
   let currentParent = null;
 
   for (const line of lines) {
-    if (!line.trim() || line.trim().startsWith("#")) continue;
+    if (!line.trim() || line.trim().startsWith('#')) continue;
 
     const indentMatch = line.match(/^(\s+)(.+)$/);
     if (indentMatch && currentParent) {
@@ -96,7 +96,7 @@ const parseFrontmatter = (markdown) => {
       const key = keyValue[1];
       const value = parseYamlValue(keyValue[2]);
       if (
-        typeof frontmatter[currentParent] !== "object" ||
+        typeof frontmatter[currentParent] !== 'object' ||
         frontmatter[currentParent] === null ||
         Array.isArray(frontmatter[currentParent])
       ) {
@@ -111,7 +111,7 @@ const parseFrontmatter = (markdown) => {
 
     const key = keyValue[1];
     const rawValue = keyValue[2];
-    if (rawValue === "" || rawValue === null || rawValue === undefined) {
+    if (rawValue === '' || rawValue === null || rawValue === undefined) {
       currentParent = key;
       frontmatter[key] = {};
       continue;
@@ -136,14 +136,7 @@ const listDossiers = async (dir) => {
     .sort();
 };
 
-const ALLOWED_STATUS = new Set([
-  "proposed",
-  "shaped",
-  "planned",
-  "in_progress",
-  "done",
-  "parked",
-]);
+const ALLOWED_STATUS = new Set(['proposed', 'shaped', 'planned', 'in_progress', 'done', 'parked']);
 
 const extractFeatureNumericId = (featureId) => {
   const match = String(featureId).match(/^F-(\d{4})$/);
@@ -156,7 +149,7 @@ const extractAcIds = (markdown) => {
   for (;;) {
     const match = regex.exec(markdown);
     if (!match) break;
-    ids.add(`AC-F${match[1]}-${match[2].padStart(2, "0")}`);
+    ids.add(`AC-F${match[1]}-${match[2].padStart(2, '0')}`);
   }
   return [...ids].sort();
 };
@@ -167,7 +160,7 @@ const extractCoverageAcIds = (markdown) => {
   for (;;) {
     const match = regex.exec(markdown);
     if (!match) break;
-    ids.add(match[1].replace(/-(\d{1,2})$/, (_, value) => `-${String(value).padStart(2, "0")}`));
+    ids.add(match[1].replace(/-(\d{1,2})$/, (_, value) => `-${String(value).padStart(2, '0')}`));
   }
   return [...ids].sort();
 };
@@ -210,9 +203,9 @@ const main = async () => {
 
     if (!frontmatter) {
       findings.push({
-        level: "error",
+        level: 'error',
         feature: fileName,
-        message: "Missing or invalid YAML frontmatter (must start with --- and end with ---).",
+        message: 'Missing or invalid YAML frontmatter (must start with --- and end with ---).',
       });
       continue;
     }
@@ -226,35 +219,39 @@ const main = async () => {
     const updated = frontmatter.updated;
 
     const requiredKeys = [
-      ["id", id],
-      ["title", title],
-      ["status", status],
-      ["area", area],
-      ["owners", owners],
-      ["created", created],
-      ["updated", updated],
+      ['id', id],
+      ['title', title],
+      ['status', status],
+      ['area', area],
+      ['owners', owners],
+      ['created', created],
+      ['updated', updated],
     ];
 
     for (const [key, value] of requiredKeys) {
-      if (value === undefined || value === null || (typeof value === "string" && value.trim() === "")) {
+      if (
+        value === undefined ||
+        value === null ||
+        (typeof value === 'string' && value.trim() === '')
+      ) {
         findings.push({
-          level: "error",
+          level: 'error',
           feature: String(id ?? fileName),
           message: `Missing required frontmatter key: ${key}`,
         });
       }
     }
 
-    if (typeof id !== "string" || !/^F-\d{4}$/.test(id)) {
+    if (typeof id !== 'string' || !/^F-\d{4}$/.test(id)) {
       findings.push({
-        level: "error",
+        level: 'error',
         feature: String(id ?? fileName),
         message: `Invalid feature id "${String(id)}" (expected F-0001).`,
       });
     } else {
       if (featureIds.has(id)) {
         findings.push({
-          level: "error",
+          level: 'error',
           feature: id,
           message: `Duplicate feature id across dossiers: ${id}`,
         });
@@ -262,29 +259,29 @@ const main = async () => {
       featureIds.add(id);
     }
 
-    if (typeof status !== "string" || !ALLOWED_STATUS.has(status)) {
+    if (typeof status !== 'string' || !ALLOWED_STATUS.has(status)) {
       findings.push({
-        level: "error",
+        level: 'error',
         feature: String(id ?? fileName),
-        message: `Invalid status "${String(status)}" (allowed: ${[...ALLOWED_STATUS].join(", ")}).`,
+        message: `Invalid status "${String(status)}" (allowed: ${[...ALLOWED_STATUS].join(', ')}).`,
       });
     }
 
     if (!Array.isArray(owners) || owners.length === 0) {
       findings.push({
-        level: "error",
+        level: 'error',
         feature: String(id ?? fileName),
         message: 'owners must be a non-empty array (for example owners: ["@you"]).',
       });
     }
 
     for (const [key, value] of [
-      ["created", created],
-      ["updated", updated],
+      ['created', created],
+      ['updated', updated],
     ]) {
-      if (typeof value === "string" && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      if (typeof value === 'string' && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
         findings.push({
-          level: "warn",
+          level: 'warn',
           feature: String(id ?? fileName),
           message: `${key} should be YYYY-MM-DD (got "${value}").`,
         });
@@ -294,9 +291,9 @@ const main = async () => {
     const acIds = extractAcIds(markdown);
     if (acIds.length === 0) {
       findings.push({
-        level: "error",
+        level: 'error',
         feature: String(id ?? fileName),
-        message: "No acceptance criteria IDs found. Add at least one AC-F....-.. entry.",
+        message: 'No acceptance criteria IDs found. Add at least one AC-F....-.. entry.',
       });
     }
 
@@ -305,7 +302,7 @@ const main = async () => {
       for (const acId of acIds) {
         if (!acId.startsWith(`AC-F${featureNumber}-`)) {
           findings.push({
-            level: "error",
+            level: 'error',
             feature: id,
             message: `AC ID "${acId}" does not match feature numeric id ${featureNumber}.`,
           });
@@ -314,11 +311,11 @@ const main = async () => {
     }
 
     const coverageIds = extractCoverageAcIds(markdown);
-    const needsCoverage = ["planned", "in_progress", "done"].includes(String(status));
+    const needsCoverage = ['planned', 'in_progress', 'done'].includes(String(status));
     if (needsCoverage) {
       if (coverageIds.length === 0) {
         findings.push({
-          level: "error",
+          level: 'error',
           feature: id,
           message: 'Missing Coverage map table (expected rows like "| AC-F....-.. |").',
         });
@@ -326,33 +323,34 @@ const main = async () => {
         const missingCoverage = acIds.filter((acId) => !coverageIds.includes(acId));
         if (missingCoverage.length) {
           findings.push({
-            level: "error",
+            level: 'error',
             feature: id,
-            message: `Coverage map is missing AC rows: ${missingCoverage.join(", ")}`,
+            message: `Coverage map is missing AC rows: ${missingCoverage.join(', ')}`,
           });
         }
       }
     } else if (coverageIds.length === 0) {
       findings.push({
-        level: "warn",
+        level: 'warn',
         feature: id,
-        message: "Coverage map is recommended even for early statuses (planned/in_progress requires it).",
+        message:
+          'Coverage map is recommended even for early statuses (planned/in_progress requires it).',
       });
     }
 
     if (!hasChangeLogEntry(markdown)) {
       findings.push({
-        level: "warn",
+        level: 'warn',
         feature: id,
-        message: "Missing Change log section. Add at least an initial entry for traceability.",
+        message: 'Missing Change log section. Add at least an initial entry for traceability.',
       });
     }
 
     const dependsOn = Array.isArray(frontmatter.depends_on) ? frontmatter.depends_on : [];
     for (const dep of dependsOn) {
-      if (typeof dep !== "string" || !/^F-\d{4}$/.test(dep)) {
+      if (typeof dep !== 'string' || !/^F-\d{4}$/.test(dep)) {
         findings.push({
-          level: "error",
+          level: 'error',
           feature: id,
           message: `Invalid depends_on entry "${String(dep)}" (expected F-0002).`,
         });
@@ -364,13 +362,13 @@ const main = async () => {
     const absFile = path.join(absDossiersDir, fileName);
     const markdown = await readText(absFile);
     const frontmatter = parseFrontmatter(markdown);
-    if (!frontmatter || typeof frontmatter.id !== "string") continue;
+    if (!frontmatter || typeof frontmatter.id !== 'string') continue;
 
     const dependsOn = Array.isArray(frontmatter.depends_on) ? frontmatter.depends_on : [];
     for (const dep of dependsOn) {
-      if (typeof dep === "string" && /^F-\d{4}$/.test(dep) && !featureIds.has(dep)) {
+      if (typeof dep === 'string' && /^F-\d{4}$/.test(dep) && !featureIds.has(dep)) {
         findings.push({
-          level: "error",
+          level: 'error',
           feature: frontmatter.id,
           message: `depends_on references missing dossier: ${dep}`,
         });
@@ -378,18 +376,20 @@ const main = async () => {
     }
   }
 
-  const errors = findings.filter((finding) => finding.level === "error");
-  const warnings = findings.filter((finding) => finding.level === "warn");
+  const errors = findings.filter((finding) => finding.level === 'error');
+  const warnings = findings.filter((finding) => finding.level === 'warn');
   const byFeature = new Map();
 
   for (const finding of findings) {
-    const key = finding.feature ?? "global";
+    const key = finding.feature ?? 'global';
     if (!byFeature.has(key)) byFeature.set(key, []);
     byFeature.get(key).push(finding);
   }
 
   const summaryLines = [];
-  summaryLines.push(`Found ${errors.length} error(s), ${warnings.length} warning(s) across ${files.length} dossier(s).`);
+  summaryLines.push(
+    `Found ${errors.length} error(s), ${warnings.length} warning(s) across ${files.length} dossier(s).`,
+  );
 
   for (const [feature, items] of [...byFeature.entries()].sort((left, right) =>
     String(left[0]).localeCompare(String(right[0])),
@@ -399,21 +399,24 @@ const main = async () => {
     }
   }
 
-  console.log(summaryLines.join("\n"));
+  console.log(summaryLines.join('\n'));
 
   if (updateIndex) {
     try {
       const indexText = await readText(absIndexFile);
       const redFlags = findings.length
         ? findings
-            .map((finding) => `- **${finding.level.toUpperCase()}** ${finding.feature ?? "global"} — ${finding.message}`)
-            .join("\n")
-        : "- ✅ No red flags detected.";
+            .map(
+              (finding) =>
+                `- **${finding.level.toUpperCase()}** ${finding.feature ?? 'global'} — ${finding.message}`,
+            )
+            .join('\n')
+        : '- ✅ No red flags detected.';
 
       const updatedIndex = replaceBlock(
         indexText,
-        "<!-- BEGIN GENERATED RED_FLAGS -->",
-        "<!-- END GENERATED RED_FLAGS -->",
+        '<!-- BEGIN GENERATED RED_FLAGS -->',
+        '<!-- END GENERATED RED_FLAGS -->',
         redFlags,
       );
       await writeTextAtomic(absIndexFile, updatedIndex);
@@ -427,6 +430,6 @@ const main = async () => {
 };
 
 main().catch((error) => {
-  console.error("[lint-dossiers] FATAL:", error?.stack ?? String(error));
+  console.error('[lint-dossiers] FATAL:', error?.stack ?? String(error));
   process.exit(1);
 });

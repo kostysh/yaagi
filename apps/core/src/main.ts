@@ -1,6 +1,6 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { loadCoreRuntimeConfig, createCoreRuntime } from "./platform/index.ts";
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { loadCoreRuntimeConfig, createCoreRuntime } from './platform/index.ts';
 
 const isMainModule = (): boolean => {
   const entryPoint = process.argv[1];
@@ -15,17 +15,17 @@ const main = async (): Promise<void> => {
   const runtime = createCoreRuntime(config);
   const { url } = await runtime.start();
 
-  process.on("SIGINT", async () => {
+  process.on('SIGINT', async () => {
     await runtime.stop();
     process.exit(0);
   });
 
-  process.on("SIGTERM", async () => {
+  process.on('SIGTERM', async () => {
     await runtime.stop();
     process.exit(0);
   });
 
-  console.log(JSON.stringify({ status: "started", url, health: `${url}/health` }));
+  console.log(JSON.stringify({ status: 'started', url, health: `${url}/health` }));
 };
 
 if (isMainModule()) {

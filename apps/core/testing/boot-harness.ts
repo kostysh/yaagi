@@ -1,7 +1,7 @@
-import os from "node:os";
-import path from "node:path";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
-import { ConstitutionalBootService } from "../src/boot/index.ts";
+import os from 'node:os';
+import path from 'node:path';
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { ConstitutionalBootService } from '../src/boot/index.ts';
 import {
   DEPENDENCY,
   type BootCompletedPayload,
@@ -10,17 +10,17 @@ import {
   type RecoveryCompletedPayload,
   type StableSnapshotRecord,
   type SystemEvent,
-} from "@yaagi/contracts/boot";
+} from '@yaagi/contracts/boot';
 
-const DEFAULT_SCHEMA_VERSION = "2026-03-19";
+const DEFAULT_SCHEMA_VERSION = '2026-03-19';
 
 const DEFAULT_SNAPSHOT: StableSnapshotRecord = {
-  snapshotId: "snapshot-41",
-  gitTag: "stable/snapshot-41",
+  snapshotId: 'snapshot-41',
+  gitTag: 'stable/snapshot-41',
   modelProfileMapJson: {
-    reflex: "model-fast@stable",
-    deliberation: "model-deep@stable",
-    embedding: "model-pool@stable",
+    reflex: 'model-fast@stable',
+    deliberation: 'model-deep@stable',
+    embedding: 'model-pool@stable',
   },
   schemaVersion: DEFAULT_SCHEMA_VERSION,
 };
@@ -58,7 +58,7 @@ type Harness = {
     mode: string | null;
     schemaVersion: string | null;
     degradedDependencies: DependencyId[];
-    dependencyResults: BootCompletedPayload["dependencyResults"];
+    dependencyResults: BootCompletedPayload['dependencyResults'];
     developmentFreeze: boolean;
     lastStableSnapshotId: string;
     snapshotId?: string | null;
@@ -85,17 +85,17 @@ type Harness = {
   cleanup(): Promise<void>;
 };
 
-const toYamlList = (items: string[]): string => items.map((item) => `  - ${item}`).join("\n");
+const toYamlList = (items: string[]): string => items.map((item) => `  - ${item}`).join('\n');
 
 export async function createBootHarness(options: HarnessOptions = {}): Promise<Harness> {
-  const repoRoot = await mkdtemp(path.join(os.tmpdir(), "yaagi-boot-"));
+  const repoRoot = await mkdtemp(path.join(os.tmpdir(), 'yaagi-boot-'));
   const missingVolumes = new Set(options.missingVolumes ?? []);
   const requiredVolumes = [
-    "workspace/body",
-    "workspace/skills",
-    "workspace/constitution",
-    "data",
-    "models",
+    'workspace/body',
+    'workspace/skills',
+    'workspace/constitution',
+    'data',
+    'models',
   ];
 
   for (const volume of requiredVolumes) {
@@ -103,26 +103,26 @@ export async function createBootHarness(options: HarnessOptions = {}): Promise<H
     await mkdir(path.join(repoRoot, volume), { recursive: true });
   }
 
-  await mkdir(path.join(repoRoot, "workspace/constitution"), { recursive: true });
+  await mkdir(path.join(repoRoot, 'workspace/constitution'), {
+    recursive: true,
+  });
 
-  const constitutionPath = path.join(repoRoot, "workspace/constitution/constitution.yaml");
+  const constitutionPath = path.join(repoRoot, 'workspace/constitution/constitution.yaml');
   const constitution = {
-    version: options.constitutionVersion ?? "1.0.0",
+    version: options.constitutionVersion ?? '1.0.0',
     schemaVersion: options.constitutionSchemaVersion ?? DEFAULT_SCHEMA_VERSION,
     requiredVolumes,
-    requiredDependencies:
-      options.requiredDependencies ?? [
-        DEPENDENCY.POSTGRES,
-        DEPENDENCY.MODEL_FAST,
-        DEPENDENCY.MODEL_DEEP,
-        DEPENDENCY.MODEL_POOL,
-      ],
-    allowedDegradedDependencies:
-      options.allowedDegradedDependencies ?? [
-        DEPENDENCY.MODEL_FAST,
-        DEPENDENCY.MODEL_DEEP,
-        DEPENDENCY.MODEL_POOL,
-      ],
+    requiredDependencies: options.requiredDependencies ?? [
+      DEPENDENCY.POSTGRES,
+      DEPENDENCY.MODEL_FAST,
+      DEPENDENCY.MODEL_DEEP,
+      DEPENDENCY.MODEL_POOL,
+    ],
+    allowedDegradedDependencies: options.allowedDegradedDependencies ?? [
+      DEPENDENCY.MODEL_FAST,
+      DEPENDENCY.MODEL_DEEP,
+      DEPENDENCY.MODEL_POOL,
+    ],
   };
 
   await writeFile(
@@ -130,15 +130,15 @@ export async function createBootHarness(options: HarnessOptions = {}): Promise<H
     [
       `version: "${constitution.version}"`,
       `schemaVersion: "${constitution.schemaVersion}"`,
-      "requiredVolumes:",
+      'requiredVolumes:',
       toYamlList(constitution.requiredVolumes),
-      "requiredDependencies:",
+      'requiredDependencies:',
       toYamlList(constitution.requiredDependencies),
-      "allowedDegradedDependencies:",
+      'allowedDegradedDependencies:',
       toYamlList(constitution.allowedDegradedDependencies),
-      "",
-    ].join("\n"),
-    "utf8",
+      '',
+    ].join('\n'),
+    'utf8',
   );
 
   const events: Array<SystemEvent<BootCompletedPayload | RecoveryCompletedPayload>> = [];
@@ -147,7 +147,7 @@ export async function createBootHarness(options: HarnessOptions = {}): Promise<H
   const restoredProfileMaps: Array<Record<string, string>> = [];
 
   const lifecycle = {
-    state: "idle",
+    state: 'idle',
     async setState(nextState: string) {
       this.state = nextState;
     },
@@ -157,7 +157,7 @@ export async function createBootHarness(options: HarnessOptions = {}): Promise<H
     mode: null as string | null,
     schemaVersion: null as string | null,
     degradedDependencies: [] as DependencyId[],
-    dependencyResults: [] as BootCompletedPayload["dependencyResults"],
+    dependencyResults: [] as BootCompletedPayload['dependencyResults'],
     developmentFreeze: false,
     lastStableSnapshotId: options.lastStableSnapshotId ?? DEFAULT_SNAPSHOT.snapshotId,
     snapshotId: null as string | null,
@@ -256,7 +256,7 @@ export async function createBootHarness(options: HarnessOptions = {}): Promise<H
       dependency,
       async () => {
         if (result instanceof Error) throw result;
-        return result ?? { ok: false, detail: "missing dependency result" };
+        return result ?? { ok: false, detail: 'missing dependency result' };
       },
     ]),
   ) as Partial<Record<DependencyId, () => Promise<DependencyProbeResult>>>;

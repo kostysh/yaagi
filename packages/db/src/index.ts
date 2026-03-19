@@ -3,4 +3,4 @@ export {
   ensureDatabaseReady,
   type DatabaseBootstrapOptions,
   type DatabaseBootstrapResult,
-} from "./bootstrap.ts";
+} from './bootstrap.ts';

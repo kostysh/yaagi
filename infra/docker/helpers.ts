@@ -1,18 +1,18 @@
-import { access, mkdtemp, rm } from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-import type { ExecFileOptionsWithStringEncoding } from "node:child_process";
+import { access, mkdtemp, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import type { ExecFileOptionsWithStringEncoding } from 'node:child_process';
 
 const execFileAsync = promisify(execFile);
 
 export function infraRoot(): string {
-  return path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+  return path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 }
 
 export function repoRoot(): string {
-  return path.resolve(infraRoot(), "..");
+  return path.resolve(infraRoot(), '..');
 }
 
 export async function fileExists(targetPath: string): Promise<boolean> {
@@ -37,7 +37,7 @@ export async function run(
 
   try {
     const result = await execFileAsync(command, args, {
-      encoding: "utf8",
+      encoding: 'utf8',
       maxBuffer: 10 * 1024 * 1024,
       ...execOptions,
     });
@@ -56,14 +56,14 @@ export async function run(
     };
 
     return {
-      stdout: failedResult.stdout ?? "",
-      stderr: failedResult.stderr ?? "",
+      stdout: failedResult.stdout ?? '',
+      stderr: failedResult.stderr ?? '',
     };
   }
 }
 
 export async function createTempProject(): Promise<string> {
-  return mkdtemp(path.join(os.tmpdir(), "yaagi-infra-"));
+  return mkdtemp(path.join(os.tmpdir(), 'yaagi-infra-'));
 }
 
 export async function removePath(targetPath: string): Promise<void> {

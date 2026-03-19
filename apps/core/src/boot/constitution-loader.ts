@@ -1,8 +1,5 @@
-import { readFile } from "node:fs/promises";
-import {
-  DEFAULT_DEPENDENCY_ORDER,
-  type DependencyId,
-} from "@yaagi/contracts/boot";
+import { readFile } from 'node:fs/promises';
+import { DEFAULT_DEPENDENCY_ORDER, type DependencyId } from '@yaagi/contracts/boot';
 
 type ParsedYamlValue = string | string[];
 type ParsedYaml = Record<string, ParsedYamlValue>;
@@ -27,10 +24,10 @@ const parseSimpleYaml = (text: string): ParsedYaml => {
 
   for (const rawLine of text.split(/\r?\n/)) {
     const trimmed = rawLine.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
+    if (!trimmed || trimmed.startsWith('#')) continue;
 
     const listMatch = trimmed.match(/^- (.+)$/);
-    if (listMatch && typeof listMatch[1] === "string" && currentListKey) {
+    if (listMatch && typeof listMatch[1] === 'string' && currentListKey) {
       const existingValue = result[currentListKey];
       if (!Array.isArray(existingValue)) {
         result[currentListKey] = [];
@@ -48,9 +45,9 @@ const parseSimpleYaml = (text: string): ParsedYaml => {
 
     const key = keyValue[1];
     const value = keyValue[2];
-    if (typeof key !== "string" || typeof value !== "string") continue;
+    if (typeof key !== 'string' || typeof value !== 'string') continue;
 
-    if (value === "") {
+    if (value === '') {
       currentListKey = key;
       result[key] = [];
       continue;
@@ -71,32 +68,27 @@ export type ConstitutionConfig = {
   allowedDegradedDependencies: string[];
 };
 
-export async function loadConstitution(
-  constitutionPath: string,
-): Promise<ConstitutionConfig> {
-  const text = await readFile(constitutionPath, "utf8");
+export async function loadConstitution(constitutionPath: string): Promise<ConstitutionConfig> {
+  const text = await readFile(constitutionPath, 'utf8');
   const parsed = parseSimpleYaml(text);
 
-  if (typeof parsed["version"] !== "string" || parsed["version"].length === 0) {
+  if (typeof parsed['version'] !== 'string' || parsed['version'].length === 0) {
     throw new Error(`constitution file ${constitutionPath} is missing a version`);
   }
 
-  if (
-    typeof parsed["schemaVersion"] !== "string" ||
-    parsed["schemaVersion"].length === 0
-  ) {
+  if (typeof parsed['schemaVersion'] !== 'string' || parsed['schemaVersion'].length === 0) {
     throw new Error(`constitution file ${constitutionPath} is missing schemaVersion`);
   }
 
   return {
-    version: parsed["version"],
-    schemaVersion: parsed["schemaVersion"],
-    requiredVolumes: Array.isArray(parsed["requiredVolumes"]) ? parsed["requiredVolumes"] : [],
-    requiredDependencies: Array.isArray(parsed["requiredDependencies"])
-      ? parsed["requiredDependencies"] as DependencyId[]
+    version: parsed['version'],
+    schemaVersion: parsed['schemaVersion'],
+    requiredVolumes: Array.isArray(parsed['requiredVolumes']) ? parsed['requiredVolumes'] : [],
+    requiredDependencies: Array.isArray(parsed['requiredDependencies'])
+      ? (parsed['requiredDependencies'] as DependencyId[])
       : [...DEFAULT_DEPENDENCY_ORDER],
-    allowedDegradedDependencies: Array.isArray(parsed["allowedDegradedDependencies"])
-      ? parsed["allowedDegradedDependencies"]
+    allowedDegradedDependencies: Array.isArray(parsed['allowedDegradedDependencies'])
+      ? parsed['allowedDegradedDependencies']
       : [],
   };
 }

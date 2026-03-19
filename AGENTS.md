@@ -31,11 +31,17 @@ This repository uses the dossier protocol.
 6. `docs/backlog/feature-candidates.md` may contain `CF-*` candidate entries, but `docs/ssot/index.md` must list only real dossiers.
 7. Before implementation, open the target dossier, any `depends_on` dossiers, the relevant architecture section, and applicable repo-level ADRs.
 8. Deliver on the repository's canonical stack and runtime path from the first commit.
-9. If a change affects runtime, startup, or deployment behavior, run both the fast verification path and the containerized smoke path.
-10. If implementation reveals a missing prerequisite seam or a cross-cutting invariant, make the backlog/dossier/ADR realignment explicit before continuing.
+9. For changed source or test code, use the canonical quality gate order `format -> typecheck -> lint` via the root `pnpm` commands.
+10. If a change affects runtime, startup, or deployment behavior, run both the fast verification path and the containerized smoke path.
+11. If implementation reveals a missing prerequisite seam or a cross-cutting invariant, make the backlog/dossier/ADR realignment explicit before continuing.
 
 ## Common commands
+- Format code: `pnpm format`
+- Check formatting: `pnpm format:check`
 - Typecheck: `pnpm typecheck`
+- Lint code: `pnpm lint`
+- Changed-code quality gate: `pnpm quality:fix`
+- Automation quality gate: `pnpm quality:check`
 - Run fast tests: `pnpm test`
 - Run container smoke: `pnpm smoke:cell`
 - Sync index: `node scripts/sync-index.mjs`

@@ -9,11 +9,11 @@
  *   node scripts/coverage-audit.mjs --changed-only --base origin/main
  */
 
-import { execFileSync } from "node:child_process";
-import { promises as fs } from "node:fs";
-import path from "node:path";
+import { execFileSync } from 'node:child_process';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
 
-const DEFAULT_DOSSIERS_DIR = "docs/features";
+const DEFAULT_DOSSIERS_DIR = 'docs/features';
 
 const parseArgs = () => {
   const args = process.argv.slice(2);
@@ -22,28 +22,30 @@ const parseArgs = () => {
     const idx = args.indexOf(name);
     if (idx === -1) return fallback;
     const value = args[idx + 1];
-    if (!value || value.startsWith("--")) return fallback;
+    if (!value || value.startsWith('--')) return fallback;
     return value;
   };
 
   return {
-    root: get("--root", process.cwd()),
-    dossier: get("--dossier", null),
-    dossiersDir: get("--dossiers-dir", DEFAULT_DOSSIERS_DIR),
-    changedOnly: has("--changed-only"),
-    base: get("--base", null),
+    root: get('--root', process.cwd()),
+    dossier: get('--dossier', null),
+    dossiersDir: get('--dossiers-dir', DEFAULT_DOSSIERS_DIR),
+    changedOnly: has('--changed-only'),
+    base: get('--base', null),
   };
 };
 
-const readText = async (filePath) => fs.readFile(filePath, "utf8");
+const readText = async (filePath) => fs.readFile(filePath, 'utf8');
 
 const isIgnoredDir = (name) =>
-  new Set([".git", "node_modules", "dist", "build", "coverage", ".next", ".turbo", ".cache"]).has(name);
+  new Set(['.git', 'node_modules', 'dist', 'build', 'coverage', '.next', '.turbo', '.cache']).has(
+    name,
+  );
 
 const isTestFile = (filePath) =>
   /\.(test|spec)\.(ts|tsx|js|jsx)$/.test(filePath) ||
-  filePath.split(path.sep).includes("test") ||
-  filePath.split(path.sep).includes("tests");
+  filePath.split(path.sep).includes('test') ||
+  filePath.split(path.sep).includes('tests');
 
 const walk = async (dir, files = []) => {
   const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -65,7 +67,7 @@ const extractAcIds = (markdown) => {
   for (;;) {
     const match = regex.exec(markdown);
     if (!match) break;
-    ids.add(`AC-F${match[1]}-${match[2].padStart(2, "0")}`);
+    ids.add(`AC-F${match[1]}-${match[2].padStart(2, '0')}`);
   }
   return [...ids].sort();
 };
@@ -79,28 +81,29 @@ const listDossierFiles = async (dir) => {
     .sort();
 };
 
-const normalizeGitPath = (filePath) => filePath.split("/").join(path.sep);
+const normalizeGitPath = (filePath) => filePath.split('/').join(path.sep);
 
 const runGit = (root, args, { allowFailure = false } = {}) => {
   try {
-    return execFileSync("git", ["-C", root, ...args], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
+    return execFileSync('git', ['-C', root, ...args], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
     }).trim();
   } catch (error) {
     if (allowFailure) return null;
     const stderr = error?.stderr?.toString?.().trim?.();
-    throw new Error(stderr || error?.message || `git ${args.join(" ")} failed`);
+    throw new Error(stderr || error?.message || `git ${args.join(' ')} failed`);
   }
 };
 
 const splitLines = (text) =>
-  String(text || "")
+  String(text || '')
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
 
-const getHeadRef = (root) => runGit(root, ["rev-parse", "--verify", "HEAD"], { allowFailure: true });
+const getHeadRef = (root) =>
+  runGit(root, ['rev-parse', '--verify', 'HEAD'], { allowFailure: true });
 
 const resolveBaseRef = (root, explicitBase) => {
   if (explicitBase) return explicitBase;
@@ -112,17 +115,25 @@ const resolveBaseRef = (root, explicitBase) => {
 
   if (envBase) {
     for (const candidate of [envBase, `origin/${envBase}`]) {
-      if (runGit(root, ["rev-parse", "--verify", candidate], { allowFailure: true })) {
+      if (
+        runGit(root, ['rev-parse', '--verify', candidate], {
+          allowFailure: true,
+        })
+      ) {
         return candidate;
       }
     }
   }
 
-  const originHead = runGit(root, ["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"], {
-    allowFailure: true,
-  });
+  const originHead = runGit(
+    root,
+    ['symbolic-ref', '--quiet', '--short', 'refs/remotes/origin/HEAD'],
+    {
+      allowFailure: true,
+    },
+  );
 
-  if (originHead && runGit(root, ["rev-parse", "--verify", originHead], { allowFailure: true })) {
+  if (originHead && runGit(root, ['rev-parse', '--verify', originHead], { allowFailure: true })) {
     return originHead;
   }
 
@@ -138,18 +149,40 @@ const getChangedFiles = (root, baseRef) => {
   const headExists = Boolean(getHeadRef(root));
 
   if (baseRef) {
-    const mergeBase = runGit(root, ["merge-base", "HEAD", baseRef], { allowFailure: true });
+    const mergeBase = runGit(root, ['merge-base', 'HEAD', baseRef], {
+      allowFailure: true,
+    });
     if (!mergeBase) {
       throw new Error(`Could not resolve merge base for HEAD and "${baseRef}".`);
     }
-    addLines(runGit(root, ["diff", "--name-only", "--diff-filter=ACMR", mergeBase, "HEAD"], { allowFailure: true }));
+    addLines(
+      runGit(root, ['diff', '--name-only', '--diff-filter=ACMR', mergeBase, 'HEAD'], {
+        allowFailure: true,
+      }),
+    );
   } else if (headExists) {
-    addLines(runGit(root, ["diff", "--name-only", "--diff-filter=ACMR", "HEAD"], { allowFailure: true }));
+    addLines(
+      runGit(root, ['diff', '--name-only', '--diff-filter=ACMR', 'HEAD'], {
+        allowFailure: true,
+      }),
+    );
   }
 
-  addLines(runGit(root, ["diff", "--name-only", "--diff-filter=ACMR"], { allowFailure: true }));
-  addLines(runGit(root, ["diff", "--cached", "--name-only", "--diff-filter=ACMR"], { allowFailure: true }));
-  addLines(runGit(root, ["ls-files", "--others", "--exclude-standard"], { allowFailure: true }));
+  addLines(
+    runGit(root, ['diff', '--name-only', '--diff-filter=ACMR'], {
+      allowFailure: true,
+    }),
+  );
+  addLines(
+    runGit(root, ['diff', '--cached', '--name-only', '--diff-filter=ACMR'], {
+      allowFailure: true,
+    }),
+  );
+  addLines(
+    runGit(root, ['ls-files', '--others', '--exclude-standard'], {
+      allowFailure: true,
+    }),
+  );
 
   return [...files].sort();
 };
@@ -165,8 +198,8 @@ const matchesFeatureFile = (featureId, filePath) => {
 };
 
 const selectChangedDossiers = async ({ absRoot, dossiersDir, baseRef }) => {
-  if (!runGit(absRoot, ["rev-parse", "--show-toplevel"], { allowFailure: true })) {
-    throw new Error("--changed-only requires a git repository.");
+  if (!runGit(absRoot, ['rev-parse', '--show-toplevel'], { allowFailure: true })) {
+    throw new Error('--changed-only requires a git repository.');
   }
 
   const absDossiersDir = path.resolve(absRoot, dossiersDir);
@@ -175,7 +208,9 @@ const selectChangedDossiers = async ({ absRoot, dossiersDir, baseRef }) => {
   const selected = new Set();
 
   const changedFiles = getChangedFiles(absRoot, baseRef);
-  const changedAbsPaths = changedFiles.map((fileName) => path.resolve(absRoot, normalizeGitPath(fileName)));
+  const changedAbsPaths = changedFiles.map((fileName) =>
+    path.resolve(absRoot, normalizeGitPath(fileName)),
+  );
 
   for (const absPath of changedAbsPaths) {
     if (dossierAbsPaths.includes(absPath)) selected.add(absPath);
@@ -184,7 +219,7 @@ const selectChangedDossiers = async ({ absRoot, dossiersDir, baseRef }) => {
   for (const absPath of changedAbsPaths) {
     if (!isTestFile(absPath)) continue;
 
-    let content = "";
+    let content = '';
     try {
       content = await readText(absPath);
     } catch {
@@ -209,7 +244,7 @@ const main = async () => {
   const absRoot = path.resolve(root);
 
   if (dossier && changedOnly) {
-    throw new Error("--dossier and --changed-only cannot be used together.");
+    throw new Error('--dossier and --changed-only cannot be used together.');
   }
 
   const dossiers = [];
@@ -223,8 +258,8 @@ const main = async () => {
     });
 
     if (selected.length === 0) {
-      console.log("Coverage audit: 0 dossier(s) selected by --changed-only.");
-      console.log("Nothing to audit.");
+      console.log('Coverage audit: 0 dossier(s) selected by --changed-only.');
+      console.log('Nothing to audit.');
       return;
     }
 
@@ -277,7 +312,9 @@ const main = async () => {
     });
   }
 
-  const allDossierAcs = new Set(results.flatMap((result) => [...result.found.keys(), ...result.missing]));
+  const allDossierAcs = new Set(
+    results.flatMap((result) => [...result.found.keys(), ...result.missing]),
+  );
   const orphan = new Map();
   const regex = /\bAC-F(\d{4})-(\d{1,2})\b/g;
 
@@ -285,7 +322,7 @@ const main = async () => {
     for (;;) {
       const match = regex.exec(content);
       if (!match) break;
-      const acId = `AC-F${match[1]}-${match[2].padStart(2, "0")}`;
+      const acId = `AC-F${match[1]}-${match[2].padStart(2, '0')}`;
       if (!allDossierAcs.has(acId)) {
         const relPath = path.relative(absRoot, testFile);
         if (!orphan.has(acId)) orphan.set(acId, new Set());
@@ -297,11 +334,13 @@ const main = async () => {
   let totalMissing = 0;
   for (const result of results) totalMissing += result.missing.length;
 
-  console.log(`Coverage audit: ${results.length} dossier(s), ${testFiles.length} test file(s) scanned.`);
+  console.log(
+    `Coverage audit: ${results.length} dossier(s), ${testFiles.length} test file(s) scanned.`,
+  );
   for (const result of results) {
     console.log(`\n== ${result.dossier} ==`);
     if (result.missing.length === 0) {
-      console.log("All AC IDs referenced in tests.");
+      console.log('All AC IDs referenced in tests.');
     } else {
       console.log(`Missing ${result.missing.length} AC reference(s) in tests:`);
       for (const acId of result.missing) console.log(`- ${acId}`);
@@ -309,9 +348,9 @@ const main = async () => {
   }
 
   if (orphan.size) {
-    console.log("\n== Orphan AC references found in tests (no matching dossier AC) ==");
+    console.log('\n== Orphan AC references found in tests (no matching dossier AC) ==');
     for (const [acId, files] of orphan.entries()) {
-      console.log(`- ${acId}: ${[...files].join(", ")}`);
+      console.log(`- ${acId}: ${[...files].join(', ')}`);
     }
   }
 
@@ -319,6 +358,6 @@ const main = async () => {
 };
 
 main().catch((error) => {
-  console.error("[coverage-audit] FATAL:", error?.stack ?? String(error));
+  console.error('[coverage-audit] FATAL:', error?.stack ?? String(error));
   process.exit(1);
 });

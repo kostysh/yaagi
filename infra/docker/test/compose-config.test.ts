@@ -1,20 +1,20 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-import path from "node:path";
-import { fileExists, infraRoot, run } from "../helpers.ts";
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import path from 'node:path';
+import { fileExists, infraRoot, run } from '../helpers.ts';
 
-const composeFile = path.join(infraRoot(), "docker", "compose.yaml");
-const coreDockerfile = path.join(infraRoot(), "docker", "core", "Dockerfile");
-const vllmDockerfile = path.join(infraRoot(), "docker", "vllm-fast", "Dockerfile");
-const migrationFile = path.join(infraRoot(), "migrations", "001_platform_bootstrap.sql");
+const composeFile = path.join(infraRoot(), 'docker', 'compose.yaml');
+const coreDockerfile = path.join(infraRoot(), 'docker', 'core', 'Dockerfile');
+const vllmDockerfile = path.join(infraRoot(), 'docker', 'vllm-fast', 'Dockerfile');
+const migrationFile = path.join(infraRoot(), 'migrations', '001_platform_bootstrap.sql');
 
-test("AC-F0002-03 renders the canonical compose cell with phase-0 service wiring", async () => {
+test('AC-F0002-03 renders the canonical compose cell with phase-0 service wiring', async () => {
   assert.equal(await fileExists(composeFile), true);
   assert.equal(await fileExists(coreDockerfile), true);
   assert.equal(await fileExists(vllmDockerfile), true);
   assert.equal(await fileExists(migrationFile), true);
 
-  const { stdout } = await run("docker", ["compose", "-f", composeFile, "config"]);
+  const { stdout } = await run('docker', ['compose', '-f', composeFile, 'config']);
   assert.match(stdout, /core:/);
   assert.match(stdout, /postgres:/);
   assert.match(stdout, /vllm-fast:/);
