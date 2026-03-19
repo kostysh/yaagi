@@ -13,7 +13,7 @@ const getErrorCode = (error: unknown): string | undefined => {
   return typeof error.code === 'string' ? error.code : undefined;
 };
 
-test('AC-F0001-01 blocks runtime activation until constitution, schema and volume checks pass', async () => {
+void test('AC-F0001-01 blocks runtime activation until constitution, schema and volume checks pass', async () => {
   const harness = await createBootHarness({
     missingVolumes: ['models'],
   });
@@ -33,7 +33,7 @@ test('AC-F0001-01 blocks runtime activation until constitution, schema and volum
   }
 });
 
-test('AC-F0001-02 emits boot event with selected startup mode and dependency results', async () => {
+void test('AC-F0001-02 emits boot event with selected startup mode and dependency results', async () => {
   const harness = await createBootHarness();
 
   try {
@@ -55,7 +55,7 @@ test('AC-F0001-02 emits boot event with selected startup mode and dependency res
   }
 });
 
-test('AC-F0001-05 allows degraded boot only for policy-approved dependency loss', async () => {
+void test('AC-F0001-05 allows degraded boot only for policy-approved dependency loss', async () => {
   const harness = await createBootHarness({
     dependencyResults: {
       'model-fast': { ok: false, detail: 'timeout' },

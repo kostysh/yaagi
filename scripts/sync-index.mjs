@@ -250,7 +250,7 @@ const main = async () => {
   const featuresBlock = `${tableHeader}\n${rows || '| — | — | — | — | — | — | — |'}`;
   const graphBlock = buildMermaidGraph(dossiers);
 
-  let content = '';
+  let content;
   try {
     content = await readText(absIndexFile);
   } catch {

@@ -4,10 +4,10 @@
   "type": "module",
   "packageManager": "pnpm@10.28.2",
   "scripts": {
-    "format": "biome format --files-ignore-unknown=true --write apps packages infra scripts test package.json tsconfig.json tsconfig.base.json tsconfig.typecheck.json",
-    "format:check": "biome check --files-ignore-unknown=true --formatter-enabled=true --linter-enabled=false --assist-enabled=false apps packages infra scripts test package.json tsconfig.json tsconfig.base.json tsconfig.typecheck.json",
-    "lint": "biome lint --files-ignore-unknown=true --diagnostic-level=warn --error-on-warnings apps packages infra scripts test package.json tsconfig.json tsconfig.base.json tsconfig.typecheck.json",
-    "lint:fix": "biome lint --files-ignore-unknown=true --diagnostic-level=warn --error-on-warnings --write apps packages infra scripts test package.json tsconfig.json tsconfig.base.json tsconfig.typecheck.json",
+    "format": "biome format --files-ignore-unknown=true --write apps packages infra scripts test package.json tsconfig.json tsconfig.base.json tsconfig.typecheck.json tsconfig.eslint.json biome.json eslint.config.js",
+    "format:check": "biome check --files-ignore-unknown=true --formatter-enabled=true --linter-enabled=false --assist-enabled=false apps packages infra scripts test package.json tsconfig.json tsconfig.base.json tsconfig.typecheck.json tsconfig.eslint.json biome.json eslint.config.js",
+    "lint": "biome lint --files-ignore-unknown=true --diagnostic-level=warn --error-on-warnings apps packages infra scripts test package.json tsconfig.json tsconfig.base.json tsconfig.typecheck.json tsconfig.eslint.json biome.json eslint.config.js && eslint \"apps/**/*.ts\" \"packages/**/*.ts\" \"infra/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.mjs\" \"eslint.config.js\"",
+    "lint:fix": "biome lint --files-ignore-unknown=true --diagnostic-level=warn --error-on-warnings --write apps packages infra scripts test package.json tsconfig.json tsconfig.base.json tsconfig.typecheck.json tsconfig.eslint.json biome.json eslint.config.js && eslint --fix \"apps/**/*.ts\" \"packages/**/*.ts\" \"infra/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.mjs\" \"eslint.config.js\"",
     "quality:fix": "pnpm format && pnpm typecheck && pnpm lint",
     "quality:check": "pnpm format:check && pnpm typecheck && pnpm lint",
     "test": "node --experimental-strip-types --experimental-test-module-mocks --test",
@@ -23,8 +23,13 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.8",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^24.6.0",
     "@types/pg": "^8.15.6",
+    "@typescript-eslint/eslint-plugin": "^8.57.1",
+    "@typescript-eslint/parser": "^8.57.1",
+    "eslint": "^10.0.3",
+    "globals": "^17.4.0",
     "typescript": "^5.9.3"
   }
 }

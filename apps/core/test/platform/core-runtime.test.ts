@@ -35,7 +35,7 @@ const createTempWorkspace = async (): Promise<string> => {
   return root;
 };
 
-test('AC-F0002-01 loads the phase-0 runtime config from env and repo defaults', async () => {
+void test('AC-F0002-01 loads the phase-0 runtime config from env and repo defaults', async () => {
   const root = await createTempWorkspace();
 
   try {
@@ -68,7 +68,7 @@ test('AC-F0002-01 loads the phase-0 runtime config from env and repo defaults', 
   }
 });
 
-test('AC-F0002-02 serves a minimal GET /health boundary with readiness state', async () => {
+void test('AC-F0002-02 serves a minimal GET /health boundary with readiness state', async () => {
   const root = await createTempWorkspace();
 
   try {
@@ -85,10 +85,10 @@ test('AC-F0002-02 serves a minimal GET /health boundary with readiness state', a
         YAAGI_PORT: '8792',
       }),
       {
-        bootstrapDatabase: async () => {},
-        probeConfiguration: async () => true,
-        probePostgres: async () => true,
-        probeFastModel: async () => true,
+        bootstrapDatabase: () => Promise.resolve(),
+        probeConfiguration: () => Promise.resolve(true),
+        probePostgres: () => Promise.resolve(true),
+        probeFastModel: () => Promise.resolve(true),
       },
     );
 
@@ -129,7 +129,7 @@ test('AC-F0002-02 serves a minimal GET /health boundary with readiness state', a
   }
 });
 
-test('AC-F0002-02 keeps the phase-0 boundary health-only and surfaces dependency loss after startup', async () => {
+void test('AC-F0002-02 keeps the phase-0 boundary health-only and surfaces dependency loss after startup', async () => {
   const root = await createTempWorkspace();
   let fastModelChecks = 0;
 
@@ -147,12 +147,12 @@ test('AC-F0002-02 keeps the phase-0 boundary health-only and surfaces dependency
         YAAGI_PORT: '8793',
       }),
       {
-        bootstrapDatabase: async () => {},
-        probeConfiguration: async () => true,
-        probePostgres: async () => true,
-        probeFastModel: async () => {
+        bootstrapDatabase: () => Promise.resolve(),
+        probeConfiguration: () => Promise.resolve(true),
+        probePostgres: () => Promise.resolve(true),
+        probeFastModel: () => {
           fastModelChecks += 1;
-          return fastModelChecks === 1;
+          return Promise.resolve(fastModelChecks === 1);
         },
       },
     );

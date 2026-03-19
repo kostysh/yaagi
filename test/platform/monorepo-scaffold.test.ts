@@ -14,7 +14,7 @@ const fileExists = async (targetPath: string): Promise<boolean> => {
   }
 };
 
-test('AC-F0002-01 exposes the canonical pnpm monorepo scaffold and workspace layout', async () => {
+void test('AC-F0002-01 exposes the canonical pnpm monorepo scaffold and workspace layout', async () => {
   const rootPackageJson = JSON.parse(
     await readFile(path.join(repoRoot, 'package.json'), 'utf8'),
   ) as {

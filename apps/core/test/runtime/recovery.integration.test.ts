@@ -16,7 +16,7 @@ const isRecoveryEvent = (
   event: SystemEvent<BootCompletedPayload | RecoveryCompletedPayload>,
 ): event is SystemEvent<RecoveryCompletedPayload> => event.type === SYSTEM_EVENT.RECOVERY_COMPLETED;
 
-test('AC-F0001-03 restores git and model pointers from the last valid stable snapshot before activation', async () => {
+void test('AC-F0001-03 restores git and model pointers from the last valid stable snapshot before activation', async () => {
   const harness = await createBootHarness({
     allowedDegradedDependencies: [],
     dependencyResults: {
@@ -47,7 +47,7 @@ test('AC-F0001-03 restores git and model pointers from the last valid stable sna
   }
 });
 
-test('AC-F0001-04 leaves runtime inactive when recovery target is missing or invalid', async () => {
+void test('AC-F0001-04 leaves runtime inactive when recovery target is missing or invalid', async () => {
   const harness = await createBootHarness({
     allowedDegradedDependencies: [],
     dependencyResults: {

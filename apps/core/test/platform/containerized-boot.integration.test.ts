@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBootHarness } from '../../testing/boot-harness.ts';
 
-test('AC-F0002-06 aligns F-0001 boot assumptions with the delivered deployment cell', async () => {
+void test('AC-F0002-06 aligns F-0001 boot assumptions with the delivered deployment cell', async () => {
   const harness = await createBootHarness({
     requiredDependencies: ['postgres', 'model-fast'],
     allowedDegradedDependencies: [],

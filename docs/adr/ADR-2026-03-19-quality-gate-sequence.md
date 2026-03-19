@@ -17,8 +17,9 @@
 
 Репозиторий закрепляет единый quality/style contract:
 
-- канонический formatter/linter toolchain: `Biome`;
-- один и тот же toolchain применяется к application code и test code;
+- канонический formatter: `Biome`;
+- канонический typed linter: `ESLint`;
+- `Biome` и `ESLint` одинаково применяются к application code и test code через root-level `pnpm` commands;
 - canonical local fix flow: `format -> typecheck -> lint`;
 - canonical automation/read-only flow: `format:check -> typecheck -> lint`;
 - root-level `pnpm` commands являются единственным поддерживаемым интерфейсом для этих gates.
@@ -33,7 +34,7 @@ Scope применения:
 
 ## Consequences
 
-- Следующие implementation cycles получают один предсказуемый style/quality path для source и tests.
+- Следующие implementation cycles получают один предсказуемый style/quality path для source и tests: `Biome` отвечает за formatting/style pass, `ESLint` за typed lint.
 - Formatter перестаёт быть факультативным локальным шагом и становится первой стадией quality gate.
-- Typecheck выполняется до lint, поэтому stylistic noise и lint output не маскируют ошибки типов.
-- Последующая реализация должна обновить root scripts, config files, docs and tests так, чтобы этот порядок был проверяемым, а не только описанным.
+- Typecheck выполняется до composite lint stage, поэтому formatter noise и ошибки типов не маскируются downstream lint output.
+- Последующая реализация должна обновить root scripts, config files, docs and tests так, чтобы этот порядок и состав toolchain были проверяемыми, а не только описанными.

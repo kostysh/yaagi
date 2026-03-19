@@ -8,7 +8,7 @@ const coreDockerfile = path.join(infraRoot(), 'docker', 'core', 'Dockerfile');
 const vllmDockerfile = path.join(infraRoot(), 'docker', 'vllm-fast', 'Dockerfile');
 const migrationFile = path.join(infraRoot(), 'migrations', '001_platform_bootstrap.sql');
 
-test('AC-F0002-03 renders the canonical compose cell with phase-0 service wiring', async () => {
+void test('AC-F0002-03 renders the canonical compose cell with phase-0 service wiring', async () => {
   assert.equal(await fileExists(composeFile), true);
   assert.equal(await fileExists(coreDockerfile), true);
   assert.equal(await fileExists(vllmDockerfile), true);

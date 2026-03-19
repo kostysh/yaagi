@@ -125,6 +125,17 @@ const toNodeResponse = async (response: Response) => {
   return { headers, body, status: response.status };
 };
 
+const handleRequestError = (
+  response: import('node:http').ServerResponse<import('node:http').IncomingMessage>,
+  error: unknown,
+): void => {
+  console.error(error);
+  if (!response.headersSent) {
+    response.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+  }
+  response.end('internal server error');
+};
+
 export function createCoreRuntime(
   config: CoreRuntimeConfig = loadCoreRuntimeConfig(),
   dependencies: CoreRuntimeDependencies = {},
@@ -207,36 +218,40 @@ export function createCoreRuntime(
 
     await waitForDependencies();
 
-    const nextServer = createServer(async (request, response) => {
-      const requestUrl = new URL(
-        request.url ?? '/',
-        `http://${request.headers.host ?? `${config.host}:${config.port}`}`,
-      );
-      const requestHeaders = new Headers();
-      for (const [headerName, headerValue] of Object.entries(request.headers)) {
-        if (typeof headerValue === 'string') {
-          requestHeaders.set(headerName, headerValue);
-          continue;
-        }
+    const nextServer = createServer((request, response) => {
+      void (async () => {
+        const requestUrl = new URL(
+          request.url ?? '/',
+          `http://${request.headers.host ?? `${config.host}:${config.port}`}`,
+        );
+        const requestHeaders = new Headers();
+        for (const [headerName, headerValue] of Object.entries(request.headers)) {
+          if (typeof headerValue === 'string') {
+            requestHeaders.set(headerName, headerValue);
+            continue;
+          }
 
-        if (Array.isArray(headerValue)) {
-          for (const value of headerValue) {
-            requestHeaders.append(headerName, value);
+          if (Array.isArray(headerValue)) {
+            for (const value of headerValue) {
+              requestHeaders.append(headerName, value);
+            }
           }
         }
-      }
 
-      const requestInit: RequestInit = {
-        method: request.method ?? 'GET',
-        headers: requestHeaders,
-      };
+        const requestInit: RequestInit = {
+          method: request.method ?? 'GET',
+          headers: requestHeaders,
+        };
 
-      const fetchRequest = new Request(requestUrl, requestInit);
-      const fetchResponse = await app.fetch(fetchRequest);
-      const nodeResponse = await toNodeResponse(fetchResponse);
+        const fetchRequest = new Request(requestUrl, requestInit);
+        const fetchResponse = await app.fetch(fetchRequest);
+        const nodeResponse = await toNodeResponse(fetchResponse);
 
-      response.writeHead(nodeResponse.status, nodeResponse.headers);
-      response.end(nodeResponse.body);
+        response.writeHead(nodeResponse.status, nodeResponse.headers);
+        response.end(nodeResponse.body);
+      })().catch((error: unknown) => {
+        handleRequestError(response, error);
+      });
     });
     server = nextServer;
 

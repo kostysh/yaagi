@@ -19,7 +19,7 @@ async function compose(args: string[], options: Parameters<typeof run>[2] = {}) 
   });
 }
 
-test('AC-F0002-05 initializes postgres and pgboss readiness before core reports ready', async () => {
+void test('AC-F0002-05 initializes postgres and pgboss readiness before core reports ready', async () => {
   await compose(['up', '-d', '--build']);
 
   try {
@@ -48,9 +48,16 @@ test('AC-F0002-05 initializes postgres and pgboss readiness before core reports 
       "const response = await fetch('http://vllm-fast:8000/v1/models'); if (!response.ok) throw new Error('model request failed with ' + response.status); console.log(JSON.stringify(await response.json()));",
     ]);
 
-    const modelPayload = JSON.parse(modelStdout.trim());
+    const modelPayload = JSON.parse(modelStdout.trim()) as {
+      object: string;
+      data: Array<{
+        id: string;
+      }>;
+    };
     assert.equal(modelPayload.object, 'list');
-    assert.equal(modelPayload.data[0].id, 'phase-0-fast');
+    const [firstModel] = modelPayload.data;
+    assert.ok(firstModel);
+    assert.equal(firstModel.id, 'phase-0-fast');
 
     const { stdout } = await compose([
       'exec',

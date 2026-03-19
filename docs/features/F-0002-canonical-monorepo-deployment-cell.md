@@ -60,7 +60,7 @@ links:
 - **AC-F0002-04:** Container manifests и runtime wiring фиксируют baseline platform posture: non-root execution, отсутствие `privileged` и `docker.sock`, declared mounts для `/workspace/body`, `/workspace/skills`, `/workspace/constitution`, `/models` и `/data`, а также явные временные пути/resource surfaces; если phase-0 не может соблюсти часть posture, отклонение фиксируется в ADR, а не скрывается в конфиге.
 - **AC-F0002-05:** Platform bootstrap неинтерактивно подготавливает PostgreSQL connectivity, migration/schema-version readiness и `pg-boss` readiness для phase-0 cell, а smoke/invariant suite подтверждает, что `core` стартует в containerized режиме только после успешного доступа к Postgres, constitution volume и `vllm-fast`.
 - **AC-F0002-06:** В рамках этой фичи оформляется controlled `change-proposal` против `F-0001`, который обновляет `depends_on`, boot dependency assumptions и verification plan так, чтобы boot/recovery проверял реальный platform dependency set и containerized startup path, а не legacy in-memory assumptions.
-- **AC-F0002-07:** Репозиторий предоставляет канонические root-level quality/style commands через `pnpm`, которые единообразно покрывают application code и test code в `apps/*`, `packages/*`, `infra/*`, `scripts/*` и `test/*`, используют общий formatter/linter toolchain и поддерживают отдельные write/check режимы без расхождения правил между source и tests.
+- **AC-F0002-07:** Репозиторий предоставляет канонические root-level quality/style commands через `pnpm`, которые единообразно покрывают application code и test code в `apps/*`, `packages/*`, `infra/*`, `scripts/*` и `test/*`, используют `Biome` для formatting/style checks и `ESLint` для typed linting, а также поддерживают отдельные write/check режимы без расхождения правил между source и tests.
 - **AC-F0002-08:** Канонический локальный и automation gate sequence для изменённого source/test code определяется как `format -> typecheck -> lint`; этот порядок фиксируется root commands и developer-facing contract, так что форматирование происходит до проверки типов, а линтинг выполняется только после успешного typecheck.
 
 ## 4. Non-functional requirements (NFR)
@@ -140,6 +140,9 @@ interface CoreRuntimeApp {
 - HTTP surface в phase 0 ограничивается:
   - `GET /health`
 - `GET /health` используется для container readiness/smoke и не подменяет будущую operator API из `CF-009`.
+- Root quality gate contract для `SL-F0002-06`:
+  - `pnpm format` и `pnpm format:check` используют `Biome` formatter against repo code + root config files.
+  - `pnpm lint` и `pnpm lint:fix` выполняют composite lint stage: `Biome` lint pass plus root `ESLint` typed lint config.
 
 ### 5.2 Data model changes
 
@@ -302,7 +305,7 @@ Tasks:
 - Context: После поставки базового monorepo scaffold выяснилось, что root-level commands покрывают runtime и smoke checks, но не закрепляют formatter/linter toolchain и порядок quality gates для source и tests.
 - Decision: Расширить `F-0002` через controlled `change-proposal`, чтобы canonical root scaffold включал formatter/linter contract для application и test code, а repo-level decision о порядке `format -> typecheck -> lint` был вынесен в cross-cutting ADR.
 - Alternatives: Оставить quality/style gates на усмотрение отдельных пакетов; оформить их как отдельную позднюю governance feature.
-- Consequences: Root scaffold становится полнее и лучше соответствует архитектурным hooks/gates expectations, а последующая реализация может идти без повторного выбора базового quality contract.
+- Consequences: Root scaffold становится полнее и лучше соответствует архитектурным hooks/gates expectations, а последующая реализация может идти без повторного выбора базового quality contract и без повторного спора о `Biome` vs `ESLint`.
 
 ## 11. Progress & links
 
@@ -331,6 +334,8 @@ Tasks:
   - `infra/docker/deployment-cell.smoke.ts`
   - `infra/migrations/001_platform_bootstrap.sql`
   - `biome.json`
+  - `eslint.config.js`
+  - `tsconfig.eslint.json`
   - `test/platform/root-quality-gates.test.ts`
   - `README.md`
   - `AGENTS.md`
@@ -345,3 +350,4 @@ Tasks:
 - **v1.4 (2026-03-19):** Added two implementation ADRs documenting the deliberate phase-0 boundary: health-only ingress despite Mastra runtime substrate, and an OpenAI-compatible `vllm-fast` stub that preserves service wiring until the dedicated model-serving seam lands.
 - **v1.5 (2026-03-19):** Applied a controlled change proposal to extend `F-0002` with root-level quality/style gates for source and tests, including new AC for shared formatter/linter coverage and the canonical gate order `format -> typecheck -> lint`; status returned to `planned` pending implementation.
 - **v1.6 (2026-03-19):** Implemented `SL-F0002-06` by adding root-level Biome-based `format/format:check/lint/lint:fix` commands, canonical `quality:fix` and `quality:check` sequences, expanded typechecking to repo tests and `infra/**/*.ts`, AC-linked platform tests for the gate contract, and updated developer-facing repo guidance; status advanced back to `done`.
+- **v1.7 (2026-03-19):** Applied a corrective change proposal to the quality-gate contract after aligning with the reference `aequitas-api` stack: `Biome` remains the formatter/style checker, while root typed linting is provided by `ESLint`; root scripts, config files, developer guidance and AC-linked tests were updated accordingly while preserving the canonical gate order `format -> typecheck -> lint`.

@@ -92,7 +92,9 @@ const runGit = (root, args, { allowFailure = false } = {}) => {
   } catch (error) {
     if (allowFailure) return null;
     const stderr = error?.stderr?.toString?.().trim?.();
-    throw new Error(stderr || error?.message || `git ${args.join(' ')} failed`);
+    throw new Error(stderr || error?.message || `git ${args.join(' ')} failed`, {
+      cause: error,
+    });
   }
 };
 
@@ -219,7 +221,7 @@ const selectChangedDossiers = async ({ absRoot, dossiersDir, baseRef }) => {
   for (const absPath of changedAbsPaths) {
     if (!isTestFile(absPath)) continue;
 
-    let content = '';
+    let content;
     try {
       content = await readText(absPath);
     } catch {

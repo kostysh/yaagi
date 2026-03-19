@@ -15,15 +15,22 @@ const main = async (): Promise<void> => {
   const runtime = createCoreRuntime(config);
   const { url } = await runtime.start();
 
-  process.on('SIGINT', async () => {
-    await runtime.stop();
-    process.exit(0);
-  });
+  const registerShutdown = (signal: NodeJS.Signals): void => {
+    process.on(signal, () => {
+      void runtime
+        .stop()
+        .then(() => {
+          process.exit(0);
+        })
+        .catch((error: unknown) => {
+          console.error(error);
+          process.exit(1);
+        });
+    });
+  };
 
-  process.on('SIGTERM', async () => {
-    await runtime.stop();
-    process.exit(0);
-  });
+  registerShutdown('SIGINT');
+  registerShutdown('SIGTERM');
 
   console.log(JSON.stringify({ status: 'started', url, health: `${url}/health` }));
 };

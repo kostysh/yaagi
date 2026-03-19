@@ -10,6 +10,8 @@ type RootPackageJson = {
   devDependencies?: Record<string, string>;
 };
 
+const escapeRegExp = (value: string): string => value.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const getScript = (rootPackageJson: RootPackageJson, scriptName: string): string => {
   const script = rootPackageJson.scripts[scriptName];
   if (script === undefined) {
@@ -18,7 +20,7 @@ const getScript = (rootPackageJson: RootPackageJson, scriptName: string): string
   return script;
 };
 
-test('AC-F0002-07 exposes canonical quality and style commands for source and test code', async () => {
+void test('AC-F0002-07 exposes canonical quality and style commands for source and test code', async () => {
   const rootPackageJson = JSON.parse(
     await readFile(path.join(repoRoot, 'package.json'), 'utf8'),
   ) as RootPackageJson;
@@ -46,8 +48,22 @@ test('AC-F0002-07 exposes canonical quality and style commands for source and te
       };
     };
   };
+  const eslintConfig = await readFile(path.join(repoRoot, 'eslint.config.js'), 'utf8');
+  const eslintTsconfig = JSON.parse(
+    await readFile(path.join(repoRoot, 'tsconfig.eslint.json'), 'utf8'),
+  ) as {
+    include?: string[];
+  };
 
   assert.equal(rootPackageJson.devDependencies?.['@biomejs/biome'] !== undefined, true);
+  assert.equal(rootPackageJson.devDependencies?.['eslint'] !== undefined, true);
+  assert.equal(rootPackageJson.devDependencies?.['@eslint/js'] !== undefined, true);
+  assert.equal(rootPackageJson.devDependencies?.['@typescript-eslint/parser'] !== undefined, true);
+  assert.equal(
+    rootPackageJson.devDependencies?.['@typescript-eslint/eslint-plugin'] !== undefined,
+    true,
+  );
+  assert.equal(rootPackageJson.devDependencies?.['globals'] !== undefined, true);
   const formatScript = getScript(rootPackageJson, 'format');
   const formatCheckScript = getScript(rootPackageJson, 'format:check');
   const lintScript = getScript(rootPackageJson, 'lint');
@@ -60,11 +76,11 @@ test('AC-F0002-07 exposes canonical quality and style commands for source and te
   );
   assert.match(
     lintScript,
-    /^biome lint --files-ignore-unknown=true --diagnostic-level=warn --error-on-warnings /,
+    /^biome lint --files-ignore-unknown=true --diagnostic-level=warn --error-on-warnings .* && eslint /,
   );
   assert.match(
     lintFixScript,
-    /^biome lint --files-ignore-unknown=true --diagnostic-level=warn --error-on-warnings --write /,
+    /^biome lint --files-ignore-unknown=true --diagnostic-level=warn --error-on-warnings --write .* && eslint --fix /,
   );
 
   const sharedTargets = [
@@ -77,6 +93,9 @@ test('AC-F0002-07 exposes canonical quality and style commands for source and te
     'tsconfig.json',
     'tsconfig.base.json',
     'tsconfig.typecheck.json',
+    'tsconfig.eslint.json',
+    'biome.json',
+    'eslint.config.js',
   ];
 
   for (const target of sharedTargets) {
@@ -84,6 +103,22 @@ test('AC-F0002-07 exposes canonical quality and style commands for source and te
 
     assert.match(formatScript, targetPattern);
     assert.match(formatCheckScript, targetPattern);
+    assert.match(lintScript, targetPattern);
+    assert.match(lintFixScript, targetPattern);
+  }
+
+  const eslintTargets = [
+    'apps/**/*.ts',
+    'packages/**/*.ts',
+    'infra/**/*.ts',
+    'test/**/*.ts',
+    'scripts/**/*.mjs',
+    'eslint.config.js',
+  ];
+
+  for (const target of eslintTargets) {
+    const targetPattern = new RegExp(escapeRegExp(`"${target}"`));
+
     assert.match(lintScript, targetPattern);
     assert.match(lintFixScript, targetPattern);
   }
@@ -96,9 +131,17 @@ test('AC-F0002-07 exposes canonical quality and style commands for source and te
   assert.equal(biomeConfig.javascript?.formatter?.quoteStyle, 'single');
   assert.equal(biomeConfig.assist?.enabled, true);
   assert.equal(biomeConfig.assist?.actions?.source?.organizeImports, 'on');
+  assert.match(eslintConfig, /recommended-type-checked/);
+  assert.match(eslintConfig, /tsconfig\.eslint\.json/);
+  assert.deepEqual(eslintTsconfig.include, [
+    'apps/**/*.ts',
+    'packages/**/*.ts',
+    'infra/**/*.ts',
+    'test/**/*.ts',
+  ]);
 });
 
-test('AC-F0002-08 preserves the canonical gate order format then typecheck then lint for source and test workflows', async () => {
+void test('AC-F0002-08 preserves the canonical gate order format then typecheck then lint for source and test workflows', async () => {
   const rootPackageJson = JSON.parse(
     await readFile(path.join(repoRoot, 'package.json'), 'utf8'),
   ) as RootPackageJson;

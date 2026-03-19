@@ -86,6 +86,8 @@ type Harness = {
 };
 
 const toYamlList = (items: string[]): string => items.map((item) => `  - ${item}`).join('\n');
+const resolved = <T>(value: T): Promise<T> => Promise.resolve(value);
+const resolvedVoid = (): Promise<void> => Promise.resolve();
 
 export async function createBootHarness(options: HarnessOptions = {}): Promise<Harness> {
   const repoRoot = await mkdtemp(path.join(os.tmpdir(), 'yaagi-boot-'));
@@ -148,8 +150,9 @@ export async function createBootHarness(options: HarnessOptions = {}): Promise<H
 
   const lifecycle = {
     state: 'idle',
-    async setState(nextState: string) {
+    setState(nextState: string) {
       this.state = nextState;
+      return resolvedVoid();
     },
   };
 
@@ -161,36 +164,42 @@ export async function createBootHarness(options: HarnessOptions = {}): Promise<H
     developmentFreeze: false,
     lastStableSnapshotId: options.lastStableSnapshotId ?? DEFAULT_SNAPSHOT.snapshotId,
     snapshotId: null as string | null,
-    async getLastStableSnapshotId() {
-      return this.lastStableSnapshotId;
+    getLastStableSnapshotId() {
+      return resolved(this.lastStableSnapshotId);
     },
-    async setDevelopmentFreeze(nextValue: boolean) {
+    setDevelopmentFreeze(nextValue: boolean) {
       this.developmentFreeze = nextValue;
+      return resolvedVoid();
     },
-    async setLastStableSnapshotId(nextValue: string) {
+    setLastStableSnapshotId(nextValue: string) {
       this.lastStableSnapshotId = nextValue;
+      return resolvedVoid();
     },
-    async setSchemaVersion(nextValue: string) {
+    setSchemaVersion(nextValue: string) {
       this.schemaVersion = nextValue;
+      return resolvedVoid();
     },
-    async setBootState(nextValue: BootCompletedPayload) {
+    setBootState(nextValue: BootCompletedPayload) {
       this.mode = nextValue.mode;
       this.schemaVersion = nextValue.schemaVersion;
       this.degradedDependencies = nextValue.degradedDependencies;
       this.dependencyResults = nextValue.dependencyResults;
       this.snapshotId = nextValue.snapshotId;
+      return resolvedVoid();
     },
   };
 
   const timeline = {
-    async publish(event: SystemEvent<BootCompletedPayload | RecoveryCompletedPayload>) {
+    publish(event: SystemEvent<BootCompletedPayload | RecoveryCompletedPayload>) {
       events.push(event);
+      return resolvedVoid();
     },
   };
 
   const developmentLedger = {
-    async record(entry: Record<string, unknown>) {
+    record(entry: Record<string, unknown>) {
       ledgerEntries.push(entry);
+      return resolvedVoid();
     },
   };
 
@@ -199,50 +208,55 @@ export async function createBootHarness(options: HarnessOptions = {}): Promise<H
   );
 
   const snapshotStore = {
-    async getLatestValidSnapshotId(preferredSnapshotId: string | null) {
+    getLatestValidSnapshotId(preferredSnapshotId: string | null) {
       if (preferredSnapshotId && snapshots.has(preferredSnapshotId)) {
-        return preferredSnapshotId;
+        return resolved(preferredSnapshotId);
       }
 
-      return snapshots.keys().next().value ?? null;
+      return resolved(snapshots.keys().next().value ?? null);
     },
-    async getSnapshotById(snapshotId: string) {
-      return snapshots.get(snapshotId) ?? null;
+    getSnapshotById(snapshotId: string) {
+      return resolved(snapshots.get(snapshotId) ?? null);
     },
   };
 
   const bodyGateway = {
-    async restoreGitTag(gitTag: string) {
+    restoreGitTag(gitTag: string) {
       if (options.restoreGitTagError) throw options.restoreGitTagError;
       restoredTags.push(gitTag);
+      return resolvedVoid();
     },
   };
 
   const modelRegistry = {
-    async restoreProfileMap(modelProfileMapJson: Record<string, string>) {
+    restoreProfileMap(modelProfileMapJson: Record<string, string>) {
       if (options.restoreProfileMapError) throw options.restoreProfileMapError;
       restoredProfileMaps.push(modelProfileMapJson);
+      return resolvedVoid();
     },
   };
 
   const scheduler = {
     startCalls: 0,
-    async start() {
+    start() {
       this.startCalls += 1;
+      return resolvedVoid();
     },
   };
 
   const tickEngine = {
     startCalls: 0,
-    async start() {
+    start() {
       this.startCalls += 1;
+      return resolvedVoid();
     },
   };
 
   const sensorAdapter = {
     startCalls: 0,
-    async start() {
+    start() {
       this.startCalls += 1;
+      return resolvedVoid();
     },
   };
 
@@ -254,9 +268,9 @@ export async function createBootHarness(options: HarnessOptions = {}): Promise<H
   const dependencyProbes = Object.fromEntries(
     Object.entries(dependencyResults).map(([dependency, result]) => [
       dependency,
-      async () => {
+      () => {
         if (result instanceof Error) throw result;
-        return result ?? { ok: false, detail: 'missing dependency result' };
+        return resolved(result ?? { ok: false, detail: 'missing dependency result' });
       },
     ]),
   ) as Partial<Record<DependencyId, () => Promise<DependencyProbeResult>>>;

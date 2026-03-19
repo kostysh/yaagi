@@ -21,7 +21,7 @@ Canonical engineering decisions for the repo:
 - runtime baseline: `Node.js 22 + TypeScript`
 - default execution path for local TypeScript code: `node --experimental-strip-types`
 - default test runner: `node:test`
-- canonical quality/style toolchain: `Biome`
+- canonical quality/style toolchain: `Biome + ESLint`
 - fast code verification: `pnpm test`
 - canonical changed-code flow: `pnpm quality:fix`
 - canonical automation gate: `pnpm quality:check`

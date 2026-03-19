@@ -31,7 +31,7 @@ This repository uses the dossier protocol.
 6. `docs/backlog/feature-candidates.md` may contain `CF-*` candidate entries, but `docs/ssot/index.md` must list only real dossiers.
 7. Before implementation, open the target dossier, any `depends_on` dossiers, the relevant architecture section, and applicable repo-level ADRs.
 8. Deliver on the repository's canonical stack and runtime path from the first commit.
-9. For changed source or test code, use the canonical quality gate order `format -> typecheck -> lint` via the root `pnpm` commands.
+9. For changed source or test code, use the canonical quality gate order `format -> typecheck -> lint` via the root `pnpm` commands, where `format` is the Biome formatting pass and `lint` is the composite Biome + ESLint lint gate.
 10. If a change affects runtime, startup, or deployment behavior, run both the fast verification path and the containerized smoke path.
 11. If implementation reveals a missing prerequisite seam or a cross-cutting invariant, make the backlog/dossier/ADR realignment explicit before continuing.
 

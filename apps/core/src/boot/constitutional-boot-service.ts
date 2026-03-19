@@ -115,11 +115,11 @@ const DEFAULT_AGENT_STATE: AgentStateStore = {
     'setLastStableSnapshotId',
     'setSchemaVersion',
   ]) as unknown as Omit<AgentStateStore, 'getLastStableSnapshotId'>),
-  getLastStableSnapshotId: async () => null,
+  getLastStableSnapshotId: () => Promise.resolve(null),
 };
 const DEFAULT_SNAPSHOT_STORE: SnapshotStore = {
-  getLatestValidSnapshotId: async () => null,
-  getSnapshotById: async () => null,
+  getLatestValidSnapshotId: () => Promise.resolve(null),
+  getSnapshotById: () => Promise.resolve(null),
 };
 const DEFAULT_BODY_GATEWAY: BodyGateway = createNoopPort([
   'restoreGitTag',
