@@ -10,6 +10,10 @@ This repository uses the dossier protocol.
 ## Planning backlog
 - Candidate feature backlog: `docs/backlog/feature-candidates.md` (non-SSoT)
 
+## Repo-level engineering contracts
+- Canonical toolchain and runtime notes: `README.md`
+- Cross-cutting ADRs: `docs/adr/ADR-*.md`
+
 ## Rules
 1. Do not duplicate acceptance criteria text outside dossiers.
 2. Start navigation from `docs/ssot/index.md`, then follow links into dossiers.
@@ -25,9 +29,15 @@ This repository uses the dossier protocol.
    - Change log when requirements changed
 5. Tests must reference AC IDs in test names or `// Covers:` comments.
 6. `docs/backlog/feature-candidates.md` may contain `CF-*` candidate entries, but `docs/ssot/index.md` must list only real dossiers.
+7. Before implementation, open the target dossier, any `depends_on` dossiers, the relevant architecture section, and applicable repo-level ADRs.
+8. Deliver on the repository's canonical stack and runtime path from the first commit.
+9. If a change affects runtime, startup, or deployment behavior, run both the fast verification path and the containerized smoke path.
+10. If implementation reveals a missing prerequisite seam or a cross-cutting invariant, make the backlog/dossier/ADR realignment explicit before continuing.
 
 ## Common commands
-- Run tests: `node --test`
+- Typecheck: `pnpm typecheck`
+- Run fast tests: `pnpm test`
+- Run container smoke: `pnpm smoke:cell`
 - Sync index: `node scripts/sync-index.mjs`
 - Lint dossiers: `node scripts/lint-dossiers.mjs`
 - Audit coverage: `node scripts/coverage-audit.mjs`
