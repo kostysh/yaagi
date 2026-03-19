@@ -2003,6 +2003,17 @@ Homeostat должен иметь не только метрики, но и де
 
 Потому что иначе каждая удачная маленькая модель начнёт восприниматься как «новый субъект», а это ломает концепцию.
 
+### 17.6 Какие repo-level решения закреплены после первых implementation cycles
+
+После реализации первых двух фич некоторые решения подняты из feature-local ADR на уровень репозитория, потому что они влияют почти на каждую следующую поставку:
+
+- канонический toolchain: [ADR-2026-03-19 Canonical Runtime Toolchain](../adr/ADR-2026-03-19-canonical-runtime-toolchain.md);
+- phase-0 runtime boundary (`TypeScript + Mastra + Hono`, но health-only public surface): [ADR-2026-03-19 Phase-0 Runtime Boundary](../adr/ADR-2026-03-19-phase0-runtime-boundary.md);
+- обязательная phase-0 deployment cell и baseline container posture: [ADR-2026-03-19 Phase-0 Deployment Cell](../adr/ADR-2026-03-19-phase0-deployment-cell.md);
+- constitution-driven boot dependency set и связь boot с delivered substrate: [ADR-2026-03-19 Boot Dependency Contract](../adr/ADR-2026-03-19-boot-dependency-contract.md).
+
+Эти ADR не заменяют feature dossiers, а фиксируют cross-cutting engineering contract для следующих feature seams.
+
 ---
 
 ## 18. Самопроверка по стандарту качества
