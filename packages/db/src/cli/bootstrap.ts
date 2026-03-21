@@ -1,16 +1,18 @@
 import path from 'node:path';
 import { ensureDatabaseReady } from '../bootstrap.ts';
 
-const connectionString = process.env['YAAGI_POSTGRES_URL'];
+const {
+  YAAGI_POSTGRES_URL: connectionString,
+  YAAGI_MIGRATIONS_DIR: migrationsDirFromEnv,
+  YAAGI_PGBOSS_SCHEMA: bossSchema,
+} = process.env;
 
 if (!connectionString) {
   throw new Error('YAAGI_POSTGRES_URL is required');
 }
 
 const repoRoot = process.cwd();
-const migrationsDir =
-  process.env['YAAGI_MIGRATIONS_DIR'] ?? path.join(repoRoot, 'infra/migrations');
-const bossSchema = process.env['YAAGI_PGBOSS_SCHEMA'];
+const migrationsDir = migrationsDirFromEnv ?? path.join(repoRoot, 'infra/migrations');
 
 const result = await ensureDatabaseReady({
   connectionString,

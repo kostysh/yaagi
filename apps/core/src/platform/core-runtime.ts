@@ -7,6 +7,7 @@ import { Hono } from 'hono';
 import { checkPostgresConnectivity, ensureDatabaseReady } from '@yaagi/db/bootstrap';
 import { type CoreRuntimeConfig, loadCoreRuntimeConfig } from './core-config.ts';
 import { createPhase0Mastra } from './phase0-mastra.ts';
+import { createPhase0RuntimeLifecycle } from '../runtime/runtime-lifecycle.ts';
 
 const BOOT_POLL_INTERVAL_MS = 1_000;
 
@@ -28,6 +29,10 @@ export type CoreRuntimeDependencies = {
   probeConfiguration?: () => Promise<boolean>;
   probePostgres?: () => Promise<boolean>;
   probeFastModel?: () => Promise<boolean>;
+  createRuntimeLifecycle?: (config: CoreRuntimeConfig) => {
+    start(): Promise<void>;
+    stop(): Promise<void>;
+  };
 };
 
 export type CoreRuntime = {
@@ -149,6 +154,8 @@ export function createCoreRuntime(
   const probeConfiguration = dependencies.probeConfiguration ?? createFileSystemProbe(config);
   const probePostgres = dependencies.probePostgres ?? createPostgresProbe(config);
   const probeFastModel = dependencies.probeFastModel ?? createFastModelProbe(config);
+  const runtimeLifecycle =
+    dependencies.createRuntimeLifecycle?.(config) ?? createPhase0RuntimeLifecycle(config);
 
   const health = async (): Promise<CoreRuntimeHealth> => {
     const [configuration, postgres, fastModel] = await Promise.all([
@@ -217,6 +224,7 @@ export function createCoreRuntime(
     }
 
     await waitForDependencies();
+    await runtimeLifecycle.start();
 
     const nextServer = createServer((request, response) => {
       void (async () => {
@@ -279,7 +287,10 @@ export function createCoreRuntime(
   };
 
   const stop = async (): Promise<void> => {
-    if (!server) return;
+    if (!server) {
+      await runtimeLifecycle.stop();
+      return;
+    }
 
     const activeServer = server;
     server = null;
@@ -295,6 +306,8 @@ export function createCoreRuntime(
         resolve();
       });
     });
+
+    await runtimeLifecycle.stop();
   };
 
   return {

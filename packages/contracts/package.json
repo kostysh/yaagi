@@ -6,6 +6,10 @@
     "./boot": {
       "types": "./src/boot.ts",
       "default": "./src/boot.ts"
+    },
+    "./runtime": {
+      "types": "./src/runtime.ts",
+      "default": "./src/runtime.ts"
     }
   }
 }
