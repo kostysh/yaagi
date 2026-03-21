@@ -34,6 +34,8 @@ This repository uses the dossier protocol.
 9. For changed source or test code, use the canonical quality gate order `format -> typecheck -> lint` via the root `pnpm` commands, where `format` is the Biome formatting pass and `lint` is the composite Biome + ESLint lint gate.
 10. If a change affects runtime, startup, or deployment behavior, run both the fast verification path and the containerized smoke path.
 11. If implementation reveals a missing prerequisite seam or a cross-cutting invariant, make the backlog/dossier/ADR realignment explicit before continuing.
+12. During request execution, you may spawn sub-agents when this is justified by the task and likely to accelerate delivery; always assess whether delegation is actually useful before doing so.
+13. If a spawned sub-agent has completed its task and is no longer needed, stop it promptly so it does not continue consuming resources.
 
 ## Common commands
 - Format code: `pnpm format`
