@@ -89,6 +89,10 @@ void test('AC-F0002-02 serves a minimal GET /health boundary with readiness stat
         probeConfiguration: () => Promise.resolve(true),
         probePostgres: () => Promise.resolve(true),
         probeFastModel: () => Promise.resolve(true),
+        createRuntimeLifecycle: () => ({
+          start: () => Promise.resolve(),
+          stop: () => Promise.resolve(),
+        }),
       },
     );
 
@@ -154,6 +158,10 @@ void test('AC-F0002-02 keeps the phase-0 boundary health-only and surfaces depen
           fastModelChecks += 1;
           return Promise.resolve(fastModelChecks === 1);
         },
+        createRuntimeLifecycle: () => ({
+          start: () => Promise.resolve(),
+          stop: () => Promise.resolve(),
+        }),
       },
     );
 

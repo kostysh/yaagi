@@ -19,7 +19,41 @@ async function compose(args: string[], options: Parameters<typeof run>[2] = {}) 
   });
 }
 
-void test('AC-F0002-05 initializes postgres and pgboss readiness before core reports ready', async () => {
+async function queryPostgres(sql: string): Promise<string> {
+  const { stdout } = await compose([
+    'exec',
+    '-T',
+    'postgres',
+    'psql',
+    '-U',
+    'yaagi',
+    '-d',
+    'yaagi',
+    '-tAc',
+    sql,
+  ]);
+
+  return stdout.trim();
+}
+
+async function execCoreScript(source: string): Promise<string> {
+  const { stdout } = await compose([
+    'exec',
+    '-T',
+    'core',
+    'node',
+    '--experimental-strip-types',
+    '--input-type=module',
+    '-e',
+    source,
+  ]);
+
+  return stdout.trim();
+}
+
+void test('AC-F0002-05 initializes postgres and pgboss readiness before core reports ready', {
+  concurrency: false,
+}, async () => {
   await compose(['up', '-d', '--build']);
 
   try {
@@ -59,21 +93,214 @@ void test('AC-F0002-05 initializes postgres and pgboss readiness before core rep
     assert.ok(firstModel);
     assert.equal(firstModel.id, 'phase-0-fast');
 
-    const { stdout } = await compose([
-      'exec',
-      '-T',
-      'postgres',
-      'psql',
-      '-U',
-      'yaagi',
-      '-d',
-      'yaagi',
-      '-tAc',
+    const stdout = await queryPostgres(
       "select schema_name from information_schema.schemata where schema_name in ('platform_bootstrap', 'pgboss') order by schema_name;",
-    ]);
+    );
 
     assert.match(stdout, /pgboss/);
     assert.match(stdout, /platform_bootstrap/);
+  } finally {
+    await compose(['down', '-v'], { rejectOnNonZeroExitCode: false }).catch(() => {});
+  }
+});
+
+void test('AC-F0003-01 starts the mandatory wake tick only after constitutional activation', {
+  concurrency: false,
+}, async () => {
+  await compose(['up', '-d', '--build']);
+
+  try {
+    const coreResponse = await waitForHttp(coreHealthUrl);
+    assert.equal(coreResponse.status, 200);
+
+    assert.equal(
+      await queryPostgres(
+        "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'wake' and trigger_kind = 'boot' and status = 'completed';",
+      ),
+      '1',
+    );
+    assert.equal(
+      await queryPostgres(
+        "select count(*)::text from polyphony_runtime.episodes where tick_id in (select tick_id from polyphony_runtime.ticks where tick_kind = 'wake' and trigger_kind = 'boot');",
+      ),
+      '1',
+    );
+    assert.equal(
+      await queryPostgres(
+        "select count(*)::text from polyphony_runtime.timeline_events where event_type = 'system.boot.completed';",
+      ),
+      '1',
+    );
+    assert.equal(
+      await queryPostgres(
+        "select count(*)::text from polyphony_runtime.timeline_events where event_type = 'tick.completed';",
+      ),
+      '1',
+    );
+    assert.equal(
+      await queryPostgres(
+        "select coalesce(current_tick_id, '') from polyphony_runtime.agent_state where id = 1;",
+      ),
+      '',
+    );
+    assert.equal(
+      await queryPostgres(
+        `select (
+           (select min(sequence_id) from polyphony_runtime.timeline_events where event_type = 'system.boot.completed')
+           <
+           (select min(sequence_id) from polyphony_runtime.timeline_events where event_type = 'tick.started')
+         )::text;`,
+      ),
+      'true',
+    );
+  } finally {
+    await compose(['down', '-v'], { rejectOnNonZeroExitCode: false }).catch(() => {});
+  }
+});
+
+void test('AC-F0003-02 prevents overlapping active ticks through DB-backed lease discipline', {
+  concurrency: false,
+}, async () => {
+  await compose(['up', '-d', '--build']);
+
+  try {
+    const coreResponse = await waitForHttp(coreHealthUrl);
+    assert.equal(coreResponse.status, 200);
+
+    const admissionResult = JSON.parse(
+      await execCoreScript(`
+        import { createRuntimeDbClient, createTickRuntimeStore } from './packages/db/src/index.ts';
+
+        const client = createRuntimeDbClient(process.env.YAAGI_POSTGRES_URL);
+        await client.connect();
+
+        try {
+          const store = createTickRuntimeStore(client);
+          const first = await store.requestTick({
+            requestId: 'smoke-lease-1',
+            kind: 'reactive',
+            trigger: 'scheduler',
+            requestedAt: new Date('2026-03-21T00:00:01Z'),
+            payload: {},
+          });
+          const second = await store.requestTick({
+            requestId: 'smoke-lease-2',
+            kind: 'reactive',
+            trigger: 'scheduler',
+            requestedAt: new Date('2026-03-21T00:00:02Z'),
+            payload: {},
+          });
+
+          if (!first.accepted) {
+            throw new Error('expected first admission to succeed');
+          }
+
+          await store.failTick({
+            tickId: first.tick.tickId,
+            occurredAt: new Date('2026-03-21T00:00:03Z'),
+            failureJson: { reason: 'smoke_cleanup' },
+          });
+
+          console.log(
+            JSON.stringify({
+              firstAccepted: first.accepted,
+              firstTickId: first.accepted ? first.tick.tickId : null,
+              secondAccepted: second.accepted,
+              secondReason: second.accepted ? null : second.reason,
+            }),
+          );
+        } finally {
+          await client.end();
+        }
+      `),
+    ) as {
+      firstAccepted: boolean;
+      firstTickId: string;
+      secondAccepted: boolean;
+      secondReason: string | null;
+    };
+
+    assert.equal(admissionResult.firstAccepted, true);
+    assert.equal(admissionResult.secondAccepted, false);
+    assert.equal(admissionResult.secondReason, 'lease_busy');
+    assert.equal(
+      await queryPostgres(
+        "select coalesce(current_tick_id, '') from polyphony_runtime.agent_state where id = 1;",
+      ),
+      '',
+    );
+    assert.equal(
+      await queryPostgres(
+        `select count(*)::text
+         from polyphony_runtime.ticks
+         where request_id in ('smoke-lease-1', 'smoke-lease-2');`,
+      ),
+      '1',
+    );
+  } finally {
+    await compose(['down', '-v'], { rejectOnNonZeroExitCode: false }).catch(() => {});
+  }
+});
+
+void test('AC-F0003-07 reclaims stale active ticks after restart and clears agent_state.current_tick', {
+  concurrency: false,
+}, async () => {
+  await compose(['up', '-d', '--build']);
+
+  try {
+    const coreResponse = await waitForHttp(coreHealthUrl);
+    assert.equal(coreResponse.status, 200);
+
+    await queryPostgres(`
+        insert into polyphony_runtime.ticks (
+          tick_id,
+          request_id,
+          tick_kind,
+          trigger_kind,
+          status,
+          started_at,
+          lease_owner,
+          lease_expires_at,
+          request_json
+        ) values (
+          'tick-stale-smoke',
+          'request-stale-smoke',
+          'reactive',
+          'scheduler',
+          'started',
+          now() - interval '2 minutes',
+          'core',
+          now() - interval '1 minute',
+          '{}'::jsonb
+        );
+
+        update polyphony_runtime.agent_state
+        set current_tick_id = 'tick-stale-smoke',
+            updated_at = now()
+        where id = 1;
+      `);
+
+    await compose(['restart', 'core']);
+    await waitForHttp(coreHealthUrl);
+
+    assert.equal(
+      await queryPostgres(
+        "select status from polyphony_runtime.ticks where tick_id = 'tick-stale-smoke';",
+      ),
+      'failed',
+    );
+    assert.equal(
+      await queryPostgres(
+        "select failure_json ->> 'reason' from polyphony_runtime.ticks where tick_id = 'tick-stale-smoke';",
+      ),
+      'stale_tick_reclaimed',
+    );
+    assert.equal(
+      await queryPostgres(
+        "select coalesce(current_tick_id, '') from polyphony_runtime.agent_state where id = 1;",
+      ),
+      '',
+    );
   } finally {
     await compose(['down', '-v'], { rejectOnNonZeroExitCode: false }).catch(() => {});
   }
