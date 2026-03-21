@@ -1,7 +1,17 @@
 # yaagi
 Yet Another AGI
 
-## Dossier workflow
+## Concept
+
+`yaagi` is an implementation path for the Polyphony concept: one long-lived, identity-bearing agent with its continuity anchored outside any single model.
+
+- The agent lives through ticks, keeps a single timeline, and stores durable state in a PostgreSQL-based state kernel.
+- Mastra is used as the reasoning and tooling substrate, while Polyphony Runtime keeps ownership of identity, memory, temporal continuity, and execution discipline.
+- Local model services act as cognitive organs, not as separate personalities.
+- The workspace, skills, and code body are Git-governed, while constitutional constraints define boot, recovery, and operating boundaries.
+- The system is designed to grow in phases: from a local deployment cell, to a richer runtime, to workshop-driven model evolution and controlled body change.
+
+## Basic Workflow
 
 Canonical documentation entry points:
 - `docs/architecture/system.md`
