@@ -7,7 +7,7 @@ area: platform
 depends_on: []
 impacts: [runtime, infra, db, models, workspace]
 created: 2026-03-19
-updated: 2026-03-19
+updated: 2026-03-21
 links:
   issue: ""
   pr: []
@@ -60,8 +60,8 @@ links:
 - **AC-F0002-04:** Container manifests и runtime wiring фиксируют baseline platform posture: non-root execution, отсутствие `privileged` и `docker.sock`, declared mounts для `/workspace/body`, `/workspace/skills`, `/workspace/constitution`, `/models` и `/data`, а также явные временные пути/resource surfaces; если phase-0 не может соблюсти часть posture, отклонение фиксируется в ADR, а не скрывается в конфиге.
 - **AC-F0002-05:** Platform bootstrap неинтерактивно подготавливает PostgreSQL connectivity, migration/schema-version readiness и `pg-boss` readiness для phase-0 cell, а smoke/invariant suite подтверждает, что `core` стартует в containerized режиме только после успешного доступа к Postgres, constitution volume и `vllm-fast`.
 - **AC-F0002-06:** В рамках этой фичи оформляется controlled `change-proposal` против `F-0001`, который обновляет `depends_on`, boot dependency assumptions и verification plan так, чтобы boot/recovery проверял реальный platform dependency set и containerized startup path, а не legacy in-memory assumptions.
-- **AC-F0002-07:** Репозиторий предоставляет канонические root-level quality/style commands через `pnpm`, которые единообразно покрывают application code и test code в `apps/*`, `packages/*`, `infra/*`, `scripts/*` и `test/*`, используют `Biome` для formatting/style checks и `ESLint` для typed linting, а также поддерживают отдельные write/check режимы без расхождения правил между source и tests.
-- **AC-F0002-08:** Канонический локальный и automation gate sequence для изменённого source/test code определяется как `format -> typecheck -> lint`; этот порядок фиксируется root commands и developer-facing contract, так что форматирование происходит до проверки типов, а линтинг выполняется только после успешного typecheck.
+- **AC-F0002-07:** Репозиторий предоставляет канонические root-level quality/style commands через `pnpm`, которые единообразно покрывают application code и test code в `apps/*`, `packages/*`, `infra/*`, `scripts/*` и `test/*`, используют `Biome` для formatting/style checks и `ESLint` для typed linting, поддерживают отдельные write/check режимы без расхождения правил между source и tests, а также служат единственным command contract для минимального GitHub Actions testing workflow в `.github/workflows/test.yml` без дублирующего shell-only automation path.
+- **AC-F0002-08:** Канонический локальный и GitHub Actions testing gate sequence для source/test code определяется как `format/check -> typecheck -> lint -> test`; automation path в `.github/workflows/test.yml` запускается на `pull_request` и `push` в `master`, использует `Node.js 22` и repo-level `pnpm` contract, выполняет `pnpm quality:check`, а затем `pnpm test`, так что workflow не вводит альтернативный порядок или package-local command set.
 
 ## 4. Non-functional requirements (NFR)
 
@@ -230,15 +230,17 @@ Exit criteria:
 Tasks:
 - **T-F0002-09:** Подготовить и применить `change-proposal` к `F-0001` по `depends_on`, boot assumptions и verification plan. Covers: AC-F0002-06.
 
-### Slice SL-F0002-06: Root quality and style gate contract
-Delivers: единый formatter/typecheck/lint contract для source и tests на root-level `pnpm` interface.
+### Slice SL-F0002-06: Root quality gates and GitHub Actions test automation
+Delivers: единый formatter/typecheck/lint/test contract для source и tests на root-level `pnpm` interface плюс минимальный GitHub Actions testing workflow без расхождения с локальным automation path.
 Covers: AC-F0002-07, AC-F0002-08
 Exit criteria:
-- Root commands одинаково покрывают application и test code.
-- Repo-level flow и automation path явно фиксируют порядок `format -> typecheck -> lint`.
+- Root commands одинаково покрывают application и test code и остаются единственным automation contract для локального и GitHub Actions paths.
+- Repo-level flow и GitHub Actions testing workflow явно фиксируют порядок `quality:check` затем `test` без скрытого shell-only обходного пути.
 Tasks:
 - **T-F0002-10:** Выбрать и закрепить единый formatter/linter toolchain и root commands для source/test code. Covers: AC-F0002-07.
-- **T-F0002-11:** Реализовать и задокументировать канонический gate sequence `format -> typecheck -> lint` для local и automation workflows. Covers: AC-F0002-08.
+- **T-F0002-11:** Реализовать и задокументировать канонический gate sequence `format/check -> typecheck -> lint -> test` для local и GitHub Actions testing workflows. Covers: AC-F0002-08.
+- **T-F0002-12:** Добавить `.github/workflows/test.yml` с trigger-ами `pull_request` и `push` в `master`, `Node.js 22`, repo-level `pnpm` setup и вызовом `pnpm quality:check` затем `pnpm test`. Covers: AC-F0002-07, AC-F0002-08.
+- **T-F0002-13:** Добавить platform-level test coverage, которая проверяет GitHub Actions workflow triggers и использование canonical root commands без альтернативного CI command path. Covers: AC-F0002-07, AC-F0002-08.
 
 ## 8. Suggested issue titles
 
@@ -247,7 +249,7 @@ Tasks:
 - `F-0002 / SL-F0002-03 Deployment cell and baseline container posture` → [SL-F0002-03](#slice-sl-f0002-03-deployment-cell-and-baseline-container-posture)
 - `F-0002 / SL-F0002-04 PostgreSQL bootstrap and cell smoke suite` → [SL-F0002-04](#slice-sl-f0002-04-postgresql-bootstrap-and-cell-smoke-suite)
 - `F-0002 / SL-F0002-05 F-0001 realignment to the delivered cell` → [SL-F0002-05](#slice-sl-f0002-05-f-0001-realignment-to-the-delivered-cell)
-- `F-0002 / SL-F0002-06 Root quality and style gate contract` → [SL-F0002-06](#slice-sl-f0002-06-root-quality-and-style-gate-contract)
+- `F-0002 / SL-F0002-06 Root quality gates and GitHub Actions test automation` → [SL-F0002-06](#slice-sl-f0002-06-root-quality-gates-and-github-actions-test-automation)
 
 ## 9. Test plan & Coverage map
 
@@ -259,8 +261,8 @@ Tasks:
 | AC-F0002-04 | `infra/docker/test/container-posture.test.ts` → `test("AC-F0002-04 enforces baseline container posture and declared mounts")` | done |
 | AC-F0002-05 | `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0002-05 initializes postgres and pgboss readiness before core reports ready")` | done |
 | AC-F0002-06 | `docs/features/F-0001-constitutional-boot-recovery.md`; `apps/core/test/platform/containerized-boot.integration.test.ts` → `test("AC-F0002-06 aligns F-0001 boot assumptions with the delivered deployment cell")` | done |
-| AC-F0002-07 | `test/platform/root-quality-gates.test.ts` → `test("AC-F0002-07 exposes canonical quality and style commands for source and test code")` | done |
-| AC-F0002-08 | `test/platform/root-quality-gates.test.ts` → `test("AC-F0002-08 preserves the canonical gate order format then typecheck then lint for source and test workflows")` | done |
+| AC-F0002-07 | `test/platform/root-quality-gates.test.ts` → `test("AC-F0002-07 exposes canonical quality and style commands for source and test code")`; `test/platform/github-actions-ci.test.ts` → `test("AC-F0002-07 exposes a GitHub Actions testing workflow that reuses the canonical root command contract")` | done |
+| AC-F0002-08 | `test/platform/root-quality-gates.test.ts` → `test("AC-F0002-08 preserves the canonical gate order format then typecheck then lint for source and test workflows")`; `test/platform/github-actions-ci.test.ts` → `test("AC-F0002-08 preserves the canonical GitHub Actions order quality:check then test")` | done |
 
 План тестов:
 
@@ -268,7 +270,7 @@ Tasks:
 - Containerized smoke/invariant tests against Docker Compose cell.
 - Integration tests для `core` entrypoint и minimal health surface.
 - Dossier change verification для `F-0001` realignment как часть feature completion.
-- Root-level config/tests для quality/style commands, formatter/linter scope и gate order contract.
+- Root-level config/tests для quality/style commands, GitHub Actions workflow triggers и gate order contract.
 
 ## 10. Decision log (ADR blocks)
 
@@ -307,9 +309,16 @@ Tasks:
 - Alternatives: Оставить quality/style gates на усмотрение отдельных пакетов; оформить их как отдельную позднюю governance feature.
 - Consequences: Root scaffold становится полнее и лучше соответствует архитектурным hooks/gates expectations, а последующая реализация может идти без повторного выбора базового quality contract и без повторного спора о `Biome` vs `ESLint`.
 
+### ADR-F0002-06: GitHub Actions становится каноническим minimum-CI substrate для root automation contract
+- Status: Accepted
+- Context: После фиксации root-level quality gates и container smoke у репозитория остаётся локальный automation contract, но нет in-repo CI substrate, который повторяет его на pull request boundary. Пользовательский запрос требует завести GitHub Actions как минимум для test workflow, не вводя параллельный набор CI-команд и не растягивая change сразу до полного deploy/promotion pipeline.
+- Decision: Расширить `F-0002` через controlled `change-proposal`, чтобы минимальный GitHub Actions testing workflow стал частью platform contract. Первая поставка обязана жить в `.github/workflows/*`, запускаться как минимум на `pull_request` и `push` в `master` и использовать existing root `pnpm quality:check` затем `pnpm test`; deploy/release automation остаётся за следующим отдельным shaping step.
+- Alternatives: Оставить CI внешним или ручным процессом; оформить GitHub Actions как отдельную новую feature вне `F-0002`; пытаться сразу доставить полный CD/promotion pipeline без промежуточного CI baseline.
+- Consequences: PR-level automation становится частью canonical repo scaffold, local и GitHub Actions paths остаются согласованными, а более тяжёлые deploy/release workflows можно shape-ить отдельно без повторного спора о базовом CI substrate.
+
 ## 11. Progress & links
 
-- Status: `proposed` → `shaped` → `planned` → `done` → `planned` → `done`
+- Status: `proposed` → `shaped` → `planned` → `done` → `planned` → `done` → `planned` → `done`
 - Issue: -
 - PRs:
   - -
@@ -333,9 +342,11 @@ Tasks:
   - `infra/docker/test/container-posture.test.ts`
   - `infra/docker/deployment-cell.smoke.ts`
   - `infra/migrations/001_platform_bootstrap.sql`
+  - `.github/workflows/test.yml`
   - `biome.json`
   - `eslint.config.js`
   - `tsconfig.eslint.json`
+  - `test/platform/github-actions-ci.test.ts`
   - `test/platform/root-quality-gates.test.ts`
   - `README.md`
   - `AGENTS.md`
@@ -351,3 +362,6 @@ Tasks:
 - **v1.5 (2026-03-19):** Applied a controlled change proposal to extend `F-0002` with root-level quality/style gates for source and tests, including new AC for shared formatter/linter coverage and the canonical gate order `format -> typecheck -> lint`; status returned to `planned` pending implementation.
 - **v1.6 (2026-03-19):** Implemented `SL-F0002-06` by adding root-level Biome-based `format/format:check/lint/lint:fix` commands, canonical `quality:fix` and `quality:check` sequences, expanded typechecking to repo tests and `infra/**/*.ts`, AC-linked platform tests for the gate contract, and updated developer-facing repo guidance; status advanced back to `done`.
 - **v1.7 (2026-03-19):** Applied a corrective change proposal to the quality-gate contract after aligning with the reference `aequitas-api` stack: `Biome` remains the formatter/style checker, while root typed linting is provided by `ESLint`; root scripts, config files, developer guidance and AC-linked tests were updated accordingly while preserving the canonical gate order `format -> typecheck -> lint`.
+- **v1.8 (2026-03-21):** Applied a controlled change proposal to extend `F-0002` with GitHub Actions minimum-CI coverage: `AC-F0002-07` and `AC-F0002-08` now require an in-repo GitHub Actions testing workflow that reuses the canonical root automation contract (`pnpm quality:check` then `pnpm test`) on `pull_request` and `push` to `master`; status returned to `planned` pending implementation.
+- **v1.9 (2026-03-21):** Implemented the minimum GitHub Actions testing substrate by adding `.github/workflows/test.yml` for `pull_request` and `push` to `master`, wiring it to `Node.js 22`, `pnpm quality:check` and `pnpm test`, adding AC-linked platform tests for workflow triggers/order, and updating developer-facing runtime notes; status advanced back to `done`.
+- **v1.10 (2026-03-21):** Removed the fixed `pnpm` version pin from `.github/workflows/test.yml` so the minimum CI workflow keeps using the canonical repo-level `pnpm` contract without coupling the workflow to a hard-coded package-manager version.

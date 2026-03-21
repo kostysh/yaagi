@@ -25,6 +25,7 @@ Canonical engineering decisions for the repo:
 - fast code verification: `pnpm test`
 - canonical changed-code flow: `pnpm quality:fix`
 - canonical automation gate: `pnpm quality:check`
+- minimum GitHub Actions testing workflow: `.github/workflows/test.yml` runs `pnpm quality:check` then `pnpm test` on `pull_request` and `push` to `master`
 - containerized phase-0 smoke verification: `pnpm smoke:cell`
 
 Repo-level ADRs:
