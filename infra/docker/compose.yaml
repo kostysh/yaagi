@@ -54,7 +54,8 @@ services:
       YAAGI_PORT: "8080"
       YAAGI_POSTGRES_URL: postgres://yaagi:yaagi@postgres:5432/yaagi
       YAAGI_FAST_MODEL_BASE_URL: http://vllm-fast:8000/v1
-      YAAGI_CONSTITUTION_PATH: /workspace/constitution/constitution.yaml
+      YAAGI_SEED_ROOT_PATH: /seed
+      YAAGI_SEED_CONSTITUTION_PATH: /seed/constitution/constitution.yaml
       YAAGI_WORKSPACE_BODY_PATH: /workspace/body
       YAAGI_WORKSPACE_SKILLS_PATH: /workspace/skills
       YAAGI_MODELS_PATH: /models
@@ -83,11 +84,10 @@ services:
     ports:
       - "18080:8080"
     volumes:
-      - ../../workspace/body:/workspace/body
-      - ../../workspace/skills:/workspace/skills
-      - ../../workspace/constitution:/workspace/constitution:ro
-      - ../../models:/models
-      - ../../data:/data
+      - ../../seed:/seed:ro
+      - workspace_state:/workspace
+      - models_state:/models
+      - data_state:/data
     networks:
       - core_net
       - db_net
@@ -95,6 +95,9 @@ services:
 
 volumes:
   postgres_data:
+  workspace_state:
+  models_state:
+  data_state:
 
 networks:
   core_net:

@@ -7,7 +7,7 @@ area: runtime
 depends_on: [F-0002]
 impacts: [runtime, db, models, storage]
 created: 2026-03-19
-updated: 2026-03-19
+updated: 2026-03-22
 links:
   issue: ""
   pr: []
@@ -50,7 +50,7 @@ links:
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
 
-- **AC-F0001-01:** Boot sequence загружает `constitution.yaml`, валидирует schema version и проверяет целостность required volumes до инициализации scheduler, tick engine или sensor adapters; при провале любой из этих проверок переход к активному runtime запрещён.
+- **AC-F0001-01:** Boot sequence загружает `constitution.yaml` из read-only `seed` boundary, валидирует schema version и проверяет целостность both tracked `seed/*` inputs and materialized writable runtime volumes до инициализации scheduler, tick engine или sensor adapters; при провале любой из этих проверок переход к активному runtime запрещён.
 - **AC-F0001-02:** Boot sequence выполняет health checks PostgreSQL и model services, объявленных текущим platform substrate/constitution manifest, вычисляет startup mode по policy-таблице (`normal`, `degraded`, `recovery`) и записывает boot event в timeline с полями `mode`, `dependency_results`, `schema_version` и `snapshot_id|null`.
 - **AC-F0001-03:** Если policy требует `recovery`, runtime до старта новых тиков выставляет developmental freeze, восстанавливает `git_tag`, `model_profile_map_json` и `schema_version` из последнего валидного `stable_snapshots` entry и публикует recovery result event с итогом `recovered`.
 - **AC-F0001-04:** Если recovery обязателен, но подходящий stable snapshot отсутствует, не проходит manifest validation или rollback завершается ошибкой, runtime остаётся в неактивном lifecycle-state, не запускает scheduler/tick engine и публикует recovery result event с итогом `failed`.
@@ -232,6 +232,7 @@ Tasks:
 - Интеграционные тесты через in-memory boot harness и подмену dependency probes.
 - Отдельные fixtures для `constitution.yaml`, corrupted volumes manifest и `stable_snapshots` entries.
 - Явные assertions на отсутствие вызова `scheduler.start()` и `tickEngine.start()` в fail-closed ветках.
+- Supplemental platform verification через containerized boot/smoke path подтверждает boot assumptions against `seed -> materialized runtime` substrate, а не только against local in-memory fixtures.
 
 ## 10. Decision log (ADR blocks)
 
@@ -255,7 +256,7 @@ Tasks:
   - `apps/core/test/runtime/boot.integration.test.ts`
   - `apps/core/test/runtime/recovery.integration.test.ts`
   - `apps/core/test/platform/containerized-boot.integration.test.ts`
-  - `workspace/constitution/constitution.yaml`
+  - `seed/constitution/constitution.yaml`
 
 ## 12. Change log
 
@@ -266,3 +267,4 @@ Tasks:
 - **v1.4 (2026-03-19):** Aligned runtime scaffold with the canonical TypeScript stack by converting `apps/core` and shared contracts to strict TypeScript and adding monorepo tsconfig/typecheck tooling.
 - **v1.5 (2026-03-19):** Removed `tsx` from test execution and switched the repo to native `node --experimental-strip-types` with `.ts` import specifiers.
 - **v1.6 (2026-03-19):** Realigned boot assumptions to `F-0002`: `depends_on` now points to delivered platform substrate, constitution manifests declare the active dependency set, and supplemental containerized verification covers the phase-0 deployment cell path (`postgres + model-fast`).
+- **v1.7 (2026-03-22):** Realigned the constitutional boot contract to the delivered `seed -> materialized runtime` platform boundary: the constitution manifest now lives under `seed/constitution`, required volume checks cover both tracked seed inputs and writable runtime volumes, and the verification plan explicitly includes the containerized seed/materialization startup path.

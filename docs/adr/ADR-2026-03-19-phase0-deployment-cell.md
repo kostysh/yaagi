@@ -23,7 +23,7 @@
 - networks: `core_net`, `models_net`, `db_net`;
 - model contract: OpenAI-compatible `/v1/*` endpoint;
 - state bootstrap: PostgreSQL + `pg-boss` readiness;
-- mounts: `/workspace/body`, `/workspace/skills`, `/workspace/constitution`, `/models`, `/data`.
+- mounts: read-only `/seed` plus writable `/workspace`, `/models`, `/data`.
 
 Baseline container posture:
 
@@ -41,5 +41,6 @@ Baseline container posture:
 ## Consequences
 
 - Все ранние runtime features обязаны считаться с реальной deployment cell, а не только с local harness.
+- Tracked initialization content и mutable runtime state разделяются на уровне mounts: `/seed` остаётся единственным Git-tracked initialization boundary, а writable runtime volumes materialize-ятся отдельно.
 - Следующие model features должны сохранять service and protocol continuity для `vllm-fast`.
 - Security/perimeter work может усиливать baseline posture, но не отменять его и не переносить container substrate в позднюю фазу.

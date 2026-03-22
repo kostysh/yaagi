@@ -68,7 +68,8 @@ const withRuntimeClient = async <T>(
 
 const findRuntimeRoot = (config: CoreRuntimeConfig): string => {
   const targets = [
-    config.constitutionPath,
+    config.seedRootPath,
+    config.seedConstitutionPath,
     config.workspaceBodyPath,
     config.workspaceSkillsPath,
     config.modelsPath,
@@ -328,7 +329,7 @@ export function createPhase0RuntimeLifecycle(config: CoreRuntimeConfig): Runtime
       const bootService = new ConstitutionalBootService({
         expectedSchemaVersion,
         repoRoot: findRuntimeRoot(config),
-        constitutionPath: config.constitutionPath,
+        constitutionPath: config.seedConstitutionPath,
         dependencyProbes: createDependencyProbeMap(config),
         timeline: createTimelinePort(config),
         agentStateStore: createAgentStatePort(config),

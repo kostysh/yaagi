@@ -1,9 +1,13 @@
 version: "1.0.0"
 schemaVersion: "2026-03-19"
 requiredVolumes:
+  - seed/body
+  - seed/skills
+  - seed/constitution
+  - seed/models
+  - seed/data
   - workspace/body
   - workspace/skills
-  - workspace/constitution
   - data
   - models
 requiredDependencies:

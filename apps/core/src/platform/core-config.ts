@@ -4,7 +4,12 @@ import { z } from 'zod';
 export type CoreRuntimeConfig = {
   postgresUrl: string;
   fastModelBaseUrl: string;
-  constitutionPath: string;
+  seedRootPath: string;
+  seedConstitutionPath: string;
+  seedBodyPath: string;
+  seedSkillsPath: string;
+  seedModelsPath: string;
+  seedDataPath: string;
   workspaceBodyPath: string;
   workspaceSkillsPath: string;
   modelsPath: string;
@@ -22,6 +27,7 @@ const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_PORT = 8787;
 const DEFAULT_BOOT_TIMEOUT_MS = 60_000;
 const DEFAULT_PG_BOSS_SCHEMA = 'pgboss';
+const DEFAULT_SEED_ROOT_PATH = 'seed';
 
 const requireUrl = (value: string, label: string): string => {
   const url = new URL(value);
@@ -70,9 +76,22 @@ const parsePositiveInteger = (
 const resolvePath = (cwd: string, value: string | undefined, fallback: string): string =>
   path.resolve(cwd, value ?? fallback);
 
+const resolvePathFromRoot = (
+  cwd: string,
+  rootPath: string,
+  value: string | undefined,
+  fallbackRelativePath: string,
+): string => path.resolve(cwd, value ?? path.join(rootPath, fallbackRelativePath));
+
 const envSchema = z.object({
   YAAGI_POSTGRES_URL: z.string().optional(),
   YAAGI_FAST_MODEL_BASE_URL: z.string().optional(),
+  YAAGI_SEED_ROOT_PATH: z.string().optional(),
+  YAAGI_SEED_CONSTITUTION_PATH: z.string().optional(),
+  YAAGI_SEED_BODY_PATH: z.string().optional(),
+  YAAGI_SEED_SKILLS_PATH: z.string().optional(),
+  YAAGI_SEED_MODELS_PATH: z.string().optional(),
+  YAAGI_SEED_DATA_PATH: z.string().optional(),
   YAAGI_CONSTITUTION_PATH: z.string().optional(),
   YAAGI_WORKSPACE_BODY_PATH: z.string().optional(),
   YAAGI_WORKSPACE_SKILLS_PATH: z.string().optional(),
@@ -88,6 +107,7 @@ const envSchema = z.object({
 export function loadCoreRuntimeConfig(env: NodeJS.ProcessEnv = process.env): CoreRuntimeConfig {
   const cwd = process.cwd();
   const parsedEnv = envSchema.parse(env);
+  const seedRootPath = resolvePath(cwd, parsedEnv.YAAGI_SEED_ROOT_PATH, DEFAULT_SEED_ROOT_PATH);
 
   return {
     postgresUrl: requireUrl(
@@ -100,11 +120,27 @@ export function loadCoreRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Cor
         'YAAGI_FAST_MODEL_BASE_URL',
       ),
     ),
-    constitutionPath: resolvePath(
+    seedRootPath,
+    seedConstitutionPath: resolvePathFromRoot(
       cwd,
-      parsedEnv.YAAGI_CONSTITUTION_PATH,
-      'workspace/constitution/constitution.yaml',
+      seedRootPath,
+      parsedEnv.YAAGI_SEED_CONSTITUTION_PATH ?? parsedEnv.YAAGI_CONSTITUTION_PATH,
+      'constitution/constitution.yaml',
     ),
+    seedBodyPath: resolvePathFromRoot(cwd, seedRootPath, parsedEnv.YAAGI_SEED_BODY_PATH, 'body'),
+    seedSkillsPath: resolvePathFromRoot(
+      cwd,
+      seedRootPath,
+      parsedEnv.YAAGI_SEED_SKILLS_PATH,
+      'skills',
+    ),
+    seedModelsPath: resolvePathFromRoot(
+      cwd,
+      seedRootPath,
+      parsedEnv.YAAGI_SEED_MODELS_PATH,
+      'models',
+    ),
+    seedDataPath: resolvePathFromRoot(cwd, seedRootPath, parsedEnv.YAAGI_SEED_DATA_PATH, 'data'),
     workspaceBodyPath: resolvePath(cwd, parsedEnv.YAAGI_WORKSPACE_BODY_PATH, 'workspace/body'),
     workspaceSkillsPath: resolvePath(
       cwd,

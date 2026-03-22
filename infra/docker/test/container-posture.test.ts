@@ -18,11 +18,10 @@ void test('AC-F0002-04 enforces baseline container posture and declared mounts',
   assert.match(text, /tmpfs:/);
   assert.match(text, /user: "\$\{YAAGI_UID:-1000\}:\$\{YAAGI_GID:-1000\}"/);
   assert.match(text, /internal: true/);
-  assert.match(text, /workspace\/body/);
-  assert.match(text, /workspace\/skills/);
-  assert.match(text, /workspace\/constitution/);
-  assert.match(text, /models/);
-  assert.match(text, /data/);
+  assert.match(text, /\.\.\/\.\.\/seed:\/seed:ro/);
+  assert.match(text, /workspace_state:\/workspace/);
+  assert.match(text, /models_state:\/models/);
+  assert.match(text, /data_state:\/data/);
   assert.doesNotMatch(text, /privileged:/);
   assert.doesNotMatch(text, /docker\.sock/);
 });

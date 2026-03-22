@@ -173,8 +173,7 @@ export class ConstitutionalBootService {
     this.expectedSchemaVersion = options.expectedSchemaVersion;
     this.repoRoot = options.repoRoot ?? process.cwd();
     this.constitutionPath =
-      options.constitutionPath ??
-      path.join(this.repoRoot, 'workspace/constitution/constitution.yaml');
+      options.constitutionPath ?? path.join(this.repoRoot, 'seed/constitution/constitution.yaml');
     this.fileSystem = options.fileSystem ?? { stat };
     this.dependencyProbes = options.dependencyProbes ?? {};
     this.timeline = options.timeline ?? DEFAULT_TIMELINE;

@@ -24,5 +24,13 @@ void test('AC-F0002-03 renders the canonical compose cell with phase-0 service w
   assert.match(stdout, /dockerfile: infra\/docker\/core\/Dockerfile/);
   assert.match(stdout, /dockerfile: infra\/docker\/vllm-fast\/Dockerfile/);
   assert.match(stdout, /http:\/\/vllm-fast:8000\/v1/);
+  assert.match(stdout, /target: \/seed/);
+  assert.match(stdout, /read_only: true/);
+  assert.match(stdout, /source: workspace_state/);
+  assert.match(stdout, /target: \/workspace/);
+  assert.match(stdout, /source: models_state/);
+  assert.match(stdout, /target: \/models/);
+  assert.match(stdout, /source: data_state/);
+  assert.match(stdout, /target: \/data/);
   assert.match(stdout, /internal: true/);
 });

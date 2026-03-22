@@ -7,6 +7,7 @@ import { Hono } from 'hono';
 import { checkPostgresConnectivity, ensureDatabaseReady } from '@yaagi/db/bootstrap';
 import { type CoreRuntimeConfig, loadCoreRuntimeConfig } from './core-config.ts';
 import { createPhase0Mastra } from './phase0-mastra.ts';
+import { materializeRuntimeSeed } from './runtime-seed.ts';
 import { createPhase0RuntimeLifecycle } from '../runtime/runtime-lifecycle.ts';
 
 const BOOT_POLL_INTERVAL_MS = 1_000;
@@ -26,6 +27,7 @@ export type CoreRuntimeHealth = {
 
 export type CoreRuntimeDependencies = {
   bootstrapDatabase?: () => Promise<void>;
+  materializeRuntimeState?: () => Promise<void>;
   probeConfiguration?: () => Promise<boolean>;
   probePostgres?: () => Promise<boolean>;
   probeFastModel?: () => Promise<boolean>;
@@ -49,7 +51,12 @@ const withTrailingSlash = (value: string): string => (value.endsWith('/') ? valu
 
 const createFileSystemProbe = (config: CoreRuntimeConfig) => async (): Promise<boolean> => {
   const paths = [
-    config.constitutionPath,
+    config.seedRootPath,
+    config.seedConstitutionPath,
+    config.seedBodyPath,
+    config.seedSkillsPath,
+    config.seedModelsPath,
+    config.seedDataPath,
     config.workspaceBodyPath,
     config.workspaceSkillsPath,
     config.modelsPath,
@@ -151,6 +158,8 @@ export function createCoreRuntime(
   let listeningUrl: string | null = null;
 
   const bootstrapDatabase = dependencies.bootstrapDatabase ?? createDatabaseBootstrap(config);
+  const materializeRuntimeState =
+    dependencies.materializeRuntimeState ?? (() => materializeRuntimeSeed(config).then(() => {}));
   const probeConfiguration = dependencies.probeConfiguration ?? createFileSystemProbe(config);
   const probePostgres = dependencies.probePostgres ?? createPostgresProbe(config);
   const probeFastModel = dependencies.probeFastModel ?? createFastModelProbe(config);
@@ -223,6 +232,7 @@ export function createCoreRuntime(
       return { url: listeningUrl ?? `http://${config.host}:${config.port}` };
     }
 
+    await materializeRuntimeState();
     await waitForDependencies();
     await runtimeLifecycle.start();
 

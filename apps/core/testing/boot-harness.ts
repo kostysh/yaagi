@@ -93,9 +93,13 @@ export async function createBootHarness(options: HarnessOptions = {}): Promise<H
   const repoRoot = await mkdtemp(path.join(os.tmpdir(), 'yaagi-boot-'));
   const missingVolumes = new Set(options.missingVolumes ?? []);
   const requiredVolumes = [
+    'seed/body',
+    'seed/skills',
+    'seed/constitution',
+    'seed/models',
+    'seed/data',
     'workspace/body',
     'workspace/skills',
-    'workspace/constitution',
     'data',
     'models',
   ];
@@ -105,11 +109,11 @@ export async function createBootHarness(options: HarnessOptions = {}): Promise<H
     await mkdir(path.join(repoRoot, volume), { recursive: true });
   }
 
-  await mkdir(path.join(repoRoot, 'workspace/constitution'), {
+  await mkdir(path.join(repoRoot, 'seed/constitution'), {
     recursive: true,
   });
 
-  const constitutionPath = path.join(repoRoot, 'workspace/constitution/constitution.yaml');
+  const constitutionPath = path.join(repoRoot, 'seed/constitution/constitution.yaml');
   const constitution = {
     version: options.constitutionVersion ?? '1.0.0',
     schemaVersion: options.constitutionSchemaVersion ?? DEFAULT_SCHEMA_VERSION,

@@ -295,7 +295,7 @@ Pooling organ для:
 | Личность, PSM, narrative, memetic field | `polyphony-core` + PostgreSQL | identity-bearing state должен быть централизован |
 | LLM inference | vLLM services | отдельные органы проще масштабировать и обновлять |
 | Fine-tuning / model training | `polyphony-workshop` | тяжёлые вычисления не должны блокировать core |
-| Код и навыки | Git workspace volume | versioned body discipline |
+| Код, навыки и bootstrap manifests | read-only `seed` volume + materialized runtime volumes | tracked initialization content must stay separate from generated mutable state |
 | Background queue | PostgreSQL + pg-boss | не нужен отдельный брокер для первой зрелой версии |
 
 ### 3.4 Основной инженерный тезис
@@ -665,10 +665,15 @@ polyphony/
     evals/
     skills/
     testkits/
-  workspace/
+  seed/
     body/
     skills/
     constitution/
+    models/
+    data/
+  workspace/
+    body/
+    skills/
     journals/
   models/
     base/
@@ -1008,21 +1013,37 @@ Append-only журнал выполненных действий и опасны
 
 ### 7.3 Файловые области
 
+#### `/seed/body`
+
+Git-tracked initialization body. This is the canonical versioned source that enters the deployment cell as a read-only seed.
+
+#### `/seed/skills`
+
+Git-tracked initialization skills.
+
+#### `/seed/constitution`
+
+Git-tracked constitutional files used for bootstrap and recovery policy.
+
+#### `/seed/models`
+
+Mandatory initialization directory for model bootstrap descriptors. It may contain only tiny placeholders/manifests in phase 0; cached weights do not belong here.
+
+#### `/seed/data`
+
+Mandatory initialization directory for bootstrap fixtures/manifests. It may remain near-empty in phase 0; runtime datasets, reports and snapshots do not belong here.
+
 #### `/workspace/body`
 
-Git-managed codebase.
+Materialized writable body formed inside the container or runtime environment from `/seed/body`. Worktrees and self-modification flows operate here, not in `/seed`.
 
 #### `/workspace/skills`
 
-Versioned skill packages.
-
-#### `/workspace/constitution`
-
-Immutable or rarely mutable constitutional files.
+Materialized writable skills tree derived from `/seed/skills`.
 
 #### `/models/base`
 
-Base model manifests and cached weights.
+Mutable runtime model cache and base-model manifests.
 
 #### `/models/adapters`
 
@@ -1039,6 +1060,8 @@ Dataset artifacts.
 #### `/data/snapshots`
 
 Stable snapshot manifests.
+
+Практическое правило: только `/seed/**` может быть Git-tracked initialization content. `workspace/**`, `models/**` и `data/**` являются mutable runtime areas, materialized from seed and/or produced by system activity, so they must not be treated as canonical repo source.
 
 ### 7.4 Канонические JSON-контракты
 
@@ -1541,8 +1564,8 @@ Router использует простое правило выбора:
 
 ```text
 1. Governor формирует CodeChangeProposal
-2. Git Gateway создаёт branch + worktree
-3. Агент работает только внутри worktree
+2. Git Gateway создаёт branch + worktree inside the materialized writable body, not inside `/seed`
+3. Агент работает только внутри этого runtime worktree
 4. Применяет editor tool / restricted shell scripts
 5. Запускает hooks + unit/smoke/invariant tests
 6. Запускает eval suite
@@ -1563,7 +1586,7 @@ Router использует простое правило выбора:
 
 #### Worktrees
 
-Каждое заметное изменение тела делается в отдельном worktree.
+Каждое заметное изменение тела делается в отдельном worktree, созданном внутри materialized writable body, производного от `/seed/body`.
 
 Это нужно, чтобы:
 
@@ -1750,11 +1773,12 @@ Raw shell не даётся decision agent напрямую.
 
 | Mount | Назначение | R/W |
 |---|---|---|
-| `/workspace/body` | код и worktrees | RW для core/workshop |
-| `/workspace/skills` | versioned skills | RW ограниченно |
-| `/workspace/constitution` | базовые ограничения | RO |
-| `/models` | модели и адаптеры | RW для workshop, RO/RW policy-controlled для core |
-| `/data` | datasets, reports, snapshots | RW |
+| `/seed` | tracked initialization code, skills, constitution and bootstrap manifests | RO |
+| `/workspace` | writable runtime workspace hosting materialized body, skills and worktrees derived from `/seed/*` | RW для core/workshop |
+| `/models` | mutable model cache, adapters and specialists | RW для workshop, RO/RW policy-controlled для core |
+| `/data` | mutable datasets, reports, snapshots and other generated runtime artifacts | RW |
+
+Все volume mounts кроме `/seed` должны считаться generated runtime state: они не являются источником истины для Git и должны храниться вне tracked repo content или быть защищены ignore policy.
 
 ### 14.6 Secrets policy
 

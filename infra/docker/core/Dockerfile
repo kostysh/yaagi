@@ -23,9 +23,19 @@ RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 COPY apps/core ./apps/core
 COPY packages ./packages
 COPY infra/migrations ./infra/migrations
-COPY workspace/constitution ./workspace/constitution
+COPY seed ./seed
 
-RUN mkdir -p /workspace/body /workspace/skills /workspace/constitution /models /data /tmp
+RUN mkdir -p \
+    /workspace/body \
+    /workspace/skills \
+    /models/base \
+    /models/adapters \
+    /models/specialists \
+    /data/datasets \
+    /data/reports \
+    /data/snapshots \
+    /tmp \
+  && chown -R node:node /workspace /models /data /tmp
 
 USER node
 

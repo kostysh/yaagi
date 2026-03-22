@@ -93,6 +93,60 @@ void test('AC-F0002-05 initializes postgres and pgboss readiness before core rep
     assert.ok(firstModel);
     assert.equal(firstModel.id, 'phase-0-fast');
 
+    const materializationPayload = JSON.parse(
+      await execCoreScript(`
+        import { access, writeFile, rm } from 'node:fs/promises';
+
+        const canAccess = async (targetPath) => {
+          try {
+            await access(targetPath);
+            return true;
+          } catch {
+            return false;
+          }
+        };
+
+        let seedWriteErrorCode = null;
+        try {
+          await writeFile('/seed/runtime-write-check.txt', 'forbidden');
+          await rm('/seed/runtime-write-check.txt');
+        } catch (error) {
+          seedWriteErrorCode =
+            error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
+              ? error.code
+              : 'unknown';
+        }
+
+        await writeFile('/workspace/body/runtime-write-check.txt', 'allowed');
+        await rm('/workspace/body/runtime-write-check.txt');
+
+        console.log(
+          JSON.stringify({
+            seedConstitution: await canAccess('/seed/constitution/constitution.yaml'),
+            workspaceBody: await canAccess('/workspace/body/.gitkeep'),
+            workspaceSkills: await canAccess('/workspace/skills/.gitkeep'),
+            modelsBase: await canAccess('/models/base/.gitkeep'),
+            dataDatasets: await canAccess('/data/datasets/.gitkeep'),
+            seedWriteErrorCode,
+          }),
+        );
+      `),
+    ) as {
+      seedConstitution: boolean;
+      workspaceBody: boolean;
+      workspaceSkills: boolean;
+      modelsBase: boolean;
+      dataDatasets: boolean;
+      seedWriteErrorCode: string | null;
+    };
+
+    assert.equal(materializationPayload.seedConstitution, true);
+    assert.equal(materializationPayload.workspaceBody, true);
+    assert.equal(materializationPayload.workspaceSkills, true);
+    assert.equal(materializationPayload.modelsBase, true);
+    assert.equal(materializationPayload.dataDatasets, true);
+    assert.match(materializationPayload.seedWriteErrorCode ?? '', /^(EROFS|EACCES|EPERM)$/);
+
     const stdout = await queryPostgres(
       "select schema_name from information_schema.schemata where schema_name in ('platform_bootstrap', 'pgboss') order by schema_name;",
     );
