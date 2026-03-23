@@ -14,6 +14,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 const DEFAULT_DOSSIERS_DIR = 'docs/features';
+const STRICT_COVERAGE_STATUSES = new Set(['planned', 'in_progress', 'done']);
 
 const parseArgs = () => {
   const args = process.argv.slice(2);
@@ -70,6 +71,14 @@ const extractAcIds = (markdown) => {
     ids.add(`AC-F${match[1]}-${match[2].padStart(2, '0')}`);
   }
   return [...ids].sort();
+};
+
+const extractFrontmatterStatus = (markdown) => {
+  const match = String(markdown).match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!match) return null;
+
+  const statusMatch = match[1].match(/^\s*status:\s*([^\s#]+)\s*$/m);
+  return statusMatch ? statusMatch[1].trim() : null;
 };
 
 const listDossierFiles = async (dir) => {
@@ -284,15 +293,23 @@ const main = async () => {
     }
   }
 
-  /** @type {{ dossier: string, missing: string[], found: Map<string, string[]> }[]} */
+  /** @type {{ dossier: string, status: string | null, strictCoverage: boolean, missing: string[], found: Map<string, string[]> }[]} */
   const results = [];
 
   for (const dossierFile of dossiers) {
     const markdown = await readText(dossierFile);
+    const status = extractFrontmatterStatus(markdown);
+    const strictCoverage = STRICT_COVERAGE_STATUSES.has(status);
     const acIds = extractAcIds(markdown);
 
     if (acIds.length === 0) {
-      results.push({ dossier: dossierFile, missing: [], found: new Map() });
+      results.push({
+        dossier: dossierFile,
+        status,
+        strictCoverage,
+        missing: [],
+        found: new Map(),
+      });
       continue;
     }
 
@@ -309,6 +326,8 @@ const main = async () => {
 
     results.push({
       dossier: path.relative(absRoot, dossierFile),
+      status,
+      strictCoverage,
       missing,
       found,
     });
@@ -333,19 +352,31 @@ const main = async () => {
     }
   }
 
-  let totalMissing = 0;
-  for (const result of results) totalMissing += result.missing.length;
+  let totalBlockingMissing = 0;
+  for (const result of results) {
+    if (result.strictCoverage) totalBlockingMissing += result.missing.length;
+  }
 
   console.log(
     `Coverage audit: ${results.length} dossier(s), ${testFiles.length} test file(s) scanned.`,
   );
   for (const result of results) {
     console.log(`\n== ${result.dossier} ==`);
+    if (result.status) {
+      console.log(
+        `Status: ${result.status} (${result.strictCoverage ? 'blocking coverage audit' : 'informational coverage audit'})`,
+      );
+    }
     if (result.missing.length === 0) {
       console.log('All AC IDs referenced in tests.');
     } else {
       console.log(`Missing ${result.missing.length} AC reference(s) in tests:`);
       for (const acId of result.missing) console.log(`- ${acId}`);
+      if (!result.strictCoverage) {
+        console.log(
+          'Coverage gaps are informational for this dossier status; they become blocking when the dossier reaches `planned`.',
+        );
+      }
     }
   }
 
@@ -356,7 +387,7 @@ const main = async () => {
     }
   }
 
-  if (totalMissing > 0) process.exit(3);
+  if (totalBlockingMissing > 0) process.exit(3);
 };
 
 main().catch((error) => {

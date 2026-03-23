@@ -7,7 +7,7 @@ area: runtime
 depends_on: [F-0001, F-0002]
 impacts: [runtime, db, timeline, jobs]
 created: 2026-03-21
-updated: 2026-03-21
+updated: 2026-03-23
 links:
   issue: ""
   pr: []
@@ -15,6 +15,7 @@ links:
     - "docs/architecture/system.md"
     - "docs/features/F-0001-constitutional-boot-recovery.md"
     - "docs/features/F-0002-canonical-monorepo-deployment-cell.md"
+    - "docs/features/F-0008-baseline-model-router-and-organ-profiles.md"
     - "docs/adr/ADR-2026-03-19-boot-dependency-contract.md"
     - "docs/adr/ADR-2026-03-19-canonical-runtime-toolchain.md"
     - "docs/adr/ADR-2026-03-19-phase0-deployment-cell.md"
@@ -61,7 +62,7 @@ links:
 
 - **AC-F0003-01:** После `F-0001` activation в режиме `normal` или policy-approved `degraded` runtime загружает существующий singleton `agent_state`, запускает scheduler/tick engine и создаёт обязательный baseline `wake` tick с `trigger_kind = boot`, записывая в PostgreSQL `tick_id`, `tick_kind`, `trigger_kind`, `started_at` и `status`; если boot неактивен или fail-closed, новый tick не создаётся.
 - **AC-F0003-02:** Scheduler использует DB-backed lease discipline на canonical phase-0 substrate и гарантирует, что конкурентные попытки старта не создают overlapping active ticks или конфликтующие значения `agent_state.current_tick` для одного агента.
-- **AC-F0003-03:** Tick engine фиксирует lifecycle transitions `started`, `completed`, `failed` и `cancelled`, публикует соответствующие timeline/event records в том же субъективном порядке, в котором коммитятся terminal outcomes тиков, и атомарно обновляет narrow runtime pointer `agent_state.current_tick` при входе и выходе из active tick.
+- **AC-F0003-03:** Tick engine фиксирует lifecycle transitions `started`, `completed`, `failed` и `cancelled`, публикует соответствующие timeline/event records в том же субъективном порядке, в котором коммитятся terminal outcomes тиков, и атомарно обновляет active-tick continuity pointers этого seam при входе и выходе из active tick: в delivered baseline обязательно `agent_state.current_tick`, а дополнительные pointers вроде `agent_state.current_model_profile_id` и `ticks.selected_model_profile_id` могут присоединяться к той же transaction boundary, когда соседний delivered seam передаёт соответствующий selection result.
 - **AC-F0003-04:** При успешном завершении тика runtime создаёт `episodes` row, связанный с `tick_id`, с минимальным summary/result payload и коммитит этот episode atomically вместе с terminal tick status, так что биография не содержит episode без owning tick.
 - **AC-F0003-05:** Если тик завершился ошибкой или bounded cancel, runtime помечает его terminal state, освобождает активный lease, записывает failure context в timeline/event sink и оставляет scheduler способным поставить следующий eligible tick без ручного ремонта БД.
 - **AC-F0003-06:** Runtime фиксирует канонический contract для tick kinds `reactive`, `deliberative`, `contemplative`, `consolidation`, `developmental` и `wake`; в scope этой фичи минимально delivered set обязателен как `wake` после boot handoff и `reactive` для явных `system` / `scheduler` requests, а запрос любого другого kind до поставки его prerequisite seam должен завершаться явным `unsupported_tick_kind` результатом без создания active tick или episode.
@@ -133,9 +134,9 @@ interface TickRuntime {
 ### 5.2 Data model changes
 
 - Этот shaped scope закрепляет ownership над durable `ticks` и `episodes` lifecycle boundary из раздела `7.2` архитектуры.
-- Для `ticks` в scope этой фичи обязательны поля `tick_id`, `tick_kind`, `trigger_kind`, `started_at`, `ended_at`, `status` и `continuity_flags_json`; `selected_coalition_id`, `selected_model_profile_id` и `action_id` на этой фазе остаются `null`.
+- Для `ticks` в scope этой фичи обязательны поля `tick_id`, `tick_kind`, `trigger_kind`, `started_at`, `ended_at`, `status` и `continuity_flags_json`; `selected_coalition_id` и `action_id` на этой фазе остаются `null`, а `selected_model_profile_id` в delivered baseline ещё может оставаться `null`, но этот continuity field принадлежит тому же lifecycle boundary и может заполняться позже соседним delivered routing seam без смены ownership.
 - Для `episodes` в scope этой фичи обязательны `episode_id`, `tick_id`, `summary`, `result_json` и `created_at`; richer fields (`importance`, `valence`, `participants_json`, `internal_tension_json`, `evidence_refs_json`) допускаются пустыми или значениями по умолчанию до следующих seams.
-- Этот shaped scope также закрепляет узкий bridge к уже существующему `agent_state`: runtime загружает singleton row после boot handoff, выставляет `current_tick` при активации тика и очищает или заменяет его на terminal transition, не изменяя `psm_json`, goals или beliefs.
+- Этот shaped scope также закрепляет узкий bridge к уже существующему `agent_state`: runtime загружает singleton row после boot handoff, выставляет `current_tick` при активации тика и очищает или заменяет его на terminal transition; дополнительные active-tick continuity pointers, такие как `current_model_profile_id`, могут позже присоединяться к той же transactional boundary, не меняя ownership над `psm_json`, goals или beliefs.
 - Timeline/event sink переиспользуется как существующий lifecycle/audit surface для `tick.started`, `tick.completed`, `tick.failed` и `tick.cancelled`, используя единый event envelope с `eventId`, `eventType`, `occurredAt`, `subjectRef = tick_id` и structured `payload`.
 - Scheduler foundation должен опираться на PostgreSQL/`pg-boss` и/или узкий DB-backed lease layer, а не на in-memory timers как canonical source of truth.
 - Ownership полного `agent_state`, `psm_json`, goals и beliefs остаётся вне этой фичи и будет уточняться в следующем dossier memory seam.
@@ -180,6 +181,7 @@ interface TickRuntime {
 - Backlog candidate `CF-002` переведён в `intaken`, а `docs/ssot/index.md` синхронизирован с новым dossier.
 - Так как фича меняет runtime/startup behavior, план верификации при реализации обязан включать и быстрый test path, и containerized smoke path внутри deployment cell.
 - Phase-0 scheduler topology (`in-process core worker + DB-backed leases`) закреплена явно и не конфликтует с уже delivered `F-0002`.
+- Dossier остаётся совместимым с later delivered continuity extensions вроде `selected_model_profile_id` / `current_model_profile_id`, не расширяя самостоятельно tick admission matrix beyond `wake/reactive`.
 - Dossier lint и coverage audit проходят без ошибок после реализации, а `docs/ssot/index.md` отражает статус `done`.
 
 ## 7. Slicing plan (2–6 increments)
@@ -207,16 +209,16 @@ Tasks:
 - **T-F0003-04:** Implement the phase-0 tick-kind matrix and explicit rejection semantics for unsupported kinds. Covers: AC-F0003-06.
 - **T-F0003-05:** Add duplicate `requestId` guardrails as part of `SL-F0003-02` request admission logic. Covers: SL-F0003-02.
 
-### Slice SL-F0003-03: Tick lifecycle events and `agent_state` pointer
-Delivers: transactional tick lifecycle transitions, event-envelope publication and atomic maintenance of the narrow `agent_state.current_tick` bridge.
+### Slice SL-F0003-03: Tick lifecycle events and continuity pointers
+Delivers: transactional tick lifecycle transitions, event-envelope publication and atomic maintenance of the active-tick continuity bridge owned by this seam.
 Covers: AC-F0003-03
 Verification: `integration`
 Exit criteria:
 - `started`, `completed`, `failed` and `cancelled` transitions are persisted in subjective order.
-- `agent_state.current_tick` is set on active tick entry and cleared or replaced on terminal transition in the same transactional boundary.
+- `agent_state.current_tick` is set on active tick entry and cleared or replaced on terminal transition in the same transactional boundary; the same continuity boundary remains available for later delivered pointers such as `selected_model_profile_id` / `current_model_profile_id`.
 Tasks:
 - **T-F0003-06:** Implement transactional lifecycle transitions and terminal status persistence for active ticks. Covers: AC-F0003-03.
-- **T-F0003-07:** Publish `tick.*` event envelopes and atomically update `agent_state.current_tick` around active and terminal transitions. Covers: AC-F0003-03.
+- **T-F0003-07:** Publish `tick.*` event envelopes and atomically update the active-tick continuity pointers owned by this seam around active and terminal transitions, with `agent_state.current_tick` as the delivered baseline. Covers: AC-F0003-03.
 
 ### Slice SL-F0003-04: Episode commit and terminal failure path
 Delivers: atomic success-path episode creation plus failure/cancel handling that releases leases and preserves schedulability.
@@ -246,7 +248,7 @@ Tasks:
 |---|---|---|
 | AC-F0003-01 | `apps/core/test/runtime/tick-engine.integration.test.ts` → `test("AC-F0003-01 starts the mandatory wake tick only after constitutional activation")`; smoke in `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0003-01 starts the mandatory wake tick only after constitutional activation")` | done |
 | AC-F0003-02 | `apps/core/test/runtime/tick-scheduler.integration.test.ts` → `test("AC-F0003-02 prevents overlapping active ticks through DB-backed lease discipline")` | done |
-| AC-F0003-03 | `apps/core/test/runtime/agent-state-handoff.integration.test.ts` → `test("AC-F0003-03 maintains agent_state.current_tick atomically across active and terminal tick transitions")` | done |
+| AC-F0003-03 | `apps/core/test/runtime/agent-state-handoff.integration.test.ts` → `test("AC-F0003-03 maintains agent_state.current_tick atomically across active and terminal tick transitions")`; future router-bound continuity extensions reuse the same AC via `F-0008` implementation coverage without changing tick admission semantics | done |
 | AC-F0003-04 | `apps/core/test/runtime/episode-encoder.integration.test.ts` → `test("AC-F0003-04 commits the episode atomically with its owning tick")` | done |
 | AC-F0003-05 | `apps/core/test/runtime/tick-failure.integration.test.ts` → `test("AC-F0003-05 releases the active lease and records failure context after a failed tick")` | done |
 | AC-F0003-06 | `apps/core/test/runtime/tick-kinds.contract.test.ts` → `test("AC-F0003-06 delivers wake and reactive as the phase-0 supported tick kinds and rejects the rest explicitly")` | done |
@@ -309,3 +311,4 @@ Tasks:
 - **v1.3 (2026-03-21):** `plan-slice` completed: dossier moved to `planned` and decomposed into delivery slices covering boot handoff, lease discipline, lifecycle transitions, episode commit and stale-tick reclaim.
 - **v1.4 (2026-03-21):** Implementation completed: added the `polyphony_runtime` PostgreSQL substrate and runtime contracts, wired `core` through constitutional boot into a DB-backed phase-0 tick lifecycle, delivered AC-linked integration tests plus deployment-cell smoke for wake/reclaim, and fixed boot-specific seams around authoritative DB `tick_id`, dependency probes, container volume root resolution and per-boot wake request deduplication.
 - **v1.5 (2026-03-23):** `F-0007` realigned smoke ownership: lease-discipline proof for `AC-F0003-02` was removed from container smoke and закреплён только за fast integration surface, while deployment-cell smoke remained owner for boot-to-wake and stale-tick reclaim behavior.
+- **v1.6 (2026-03-23):** `change-proposal`: clarified that `F-0003` owns the active-tick continuity boundary, so later delivered seams may attach `selected_model_profile_id` / `current_model_profile_id` to the same transaction without expanding the phase-0 tick admission matrix or transferring organ-routing ownership into this dossier.
