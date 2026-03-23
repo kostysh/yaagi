@@ -2,7 +2,13 @@ import path from 'node:path';
 import type { Client } from 'pg';
 import { DEPENDENCY } from '@yaagi/contracts/boot';
 import {
+  DEFAULT_PERCEPTION_HEALTH,
+  type HttpIngestStimulusInput,
+  type PerceptionHealthSnapshot,
+} from '@yaagi/contracts/perception';
+import {
   appendRuntimeTimelineEvent,
+  createPerceptionStore,
   createRuntimeDbClient,
   createTickRuntimeStore,
   ensureRuntimeAgentStateRow,
@@ -13,6 +19,7 @@ import {
 import type { SystemEvent } from '@yaagi/contracts/boot';
 import { TICK_STATUS, type TickTerminalResult } from '@yaagi/contracts/runtime';
 import { ConstitutionalBootService } from '../boot/index.ts';
+import { createPerceptionController, type StimulusIngestResult } from '../perception/index.ts';
 import type { CoreRuntimeConfig } from '../platform/core-config.ts';
 import {
   createTickRuntime,
@@ -36,6 +43,8 @@ type RuntimeLifecycle = {
     accepted: boolean;
     reason?: 'boot_inactive' | 'lease_busy' | 'unsupported_tick_kind';
   }>;
+  ingestHttpStimulus(input: HttpIngestStimulusInput): Promise<StimulusIngestResult>;
+  health(): Promise<PerceptionHealthSnapshot>;
 };
 
 const buildPhase0SubjectStateDelta = (input: FinishTickInput): SubjectStateDelta => {
@@ -221,18 +230,105 @@ const createDbBackedTickRuntimeStore = (config: CoreRuntimeConfig): TickRuntimeS
 });
 
 const createTickExecution =
-  () =>
-  (context: StartedTick): TickTerminalResult => ({
-    status: TICK_STATUS.COMPLETED,
-    summary:
-      context.kind === 'wake' ? 'Phase-0 wake tick completed' : 'Phase-0 reactive tick completed',
-    result: {
-      kind: context.kind,
-      trigger: context.trigger,
-      requestId: context.requestId,
-      payload: context.payload,
-    },
-  });
+  (dependencies: {
+    prepareReactiveTick: (tickId: string) => Promise<{
+      claimedStimulusIds: string[];
+      highestPriority: string | null;
+      items: Array<{
+        primaryStimulusId: string;
+        source: string;
+      }>;
+      sourceKinds: string[];
+    }>;
+  }) =>
+  async (context: StartedTick): Promise<TickTerminalResult> => {
+    const perceptionBatch =
+      context.kind === 'reactive'
+        ? await dependencies.prepareReactiveTick(context.tickId)
+        : {
+            claimedStimulusIds: [],
+            highestPriority: null,
+            items: [],
+            sourceKinds: [],
+          };
+
+    return {
+      status: TICK_STATUS.COMPLETED,
+      summary:
+        context.kind === 'wake' ? 'Phase-0 wake tick completed' : 'Phase-0 reactive tick completed',
+      result: {
+        kind: context.kind,
+        trigger: context.trigger,
+        requestId: context.requestId,
+        payload: context.payload,
+        perceptionBatch,
+      },
+    };
+  };
+
+const createDbBackedPerceptionStore = (config: CoreRuntimeConfig) => ({
+  enqueueStimulus: (
+    input: Parameters<ReturnType<typeof createPerceptionStore>['enqueueStimulus']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createPerceptionStore(client);
+      return await store.enqueueStimulus(input);
+    }),
+
+  findLatestBySourceAndDedupeKey: (
+    input: Parameters<
+      ReturnType<typeof createPerceptionStore>['findLatestBySourceAndDedupeKey']
+    >[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createPerceptionStore(client);
+      return await store.findLatestBySourceAndDedupeKey(input);
+    }),
+
+  updateQueuedStimulus: (
+    input: Parameters<ReturnType<typeof createPerceptionStore>['updateQueuedStimulus']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createPerceptionStore(client);
+      return await store.updateQueuedStimulus(input);
+    }),
+
+  loadReadyStimuli: (
+    input?: Parameters<ReturnType<typeof createPerceptionStore>['loadReadyStimuli']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createPerceptionStore(client);
+      return await store.loadReadyStimuli(input);
+    }),
+
+  claimStimuli: (input: Parameters<ReturnType<typeof createPerceptionStore>['claimStimuli']>[0]) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createPerceptionStore(client);
+      return await store.claimStimuli(input);
+    }),
+
+  releaseClaimedStimuli: (
+    input: Parameters<ReturnType<typeof createPerceptionStore>['releaseClaimedStimuli']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createPerceptionStore(client);
+      return await store.releaseClaimedStimuli(input);
+    }),
+
+  countBacklog: () =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createPerceptionStore(client);
+      return await store.countBacklog();
+    }),
+
+  attachTickPerceptionClaim: (
+    input: Parameters<ReturnType<typeof createPerceptionStore>['attachTickPerceptionClaim']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createPerceptionStore(client);
+      await store.attachTickPerceptionClaim(input);
+    }),
+});
 
 const createTimelinePort = (config: CoreRuntimeConfig) => ({
   publish: (event: SystemEvent<Record<string, unknown>>) =>
@@ -331,9 +427,27 @@ const createNoopModelRegistry = () => ({
 });
 
 export function createPhase0RuntimeLifecycle(config: CoreRuntimeConfig): RuntimeLifecycle {
-  const tickRuntime: TickRuntime = createTickRuntime({
+  let tickRuntime: TickRuntime | null = null;
+  const perceptionController = createPerceptionController({
+    config,
+    store: createDbBackedPerceptionStore(config),
+    requestReactiveTick: async (input) => {
+      if (!tickRuntime) {
+        return {
+          accepted: false,
+          reason: 'boot_inactive',
+        };
+      }
+
+      return await tickRuntime.requestTick(input);
+    },
+  });
+
+  tickRuntime = createTickRuntime({
     store: createDbBackedTickRuntimeStore(config),
-    executeTick: createTickExecution(),
+    executeTick: createTickExecution({
+      prepareReactiveTick: (tickId) => perceptionController.prepareReactiveTick(tickId),
+    }),
   });
 
   let started = false;
@@ -366,24 +480,61 @@ export function createPhase0RuntimeLifecycle(config: CoreRuntimeConfig): Runtime
         bodyGateway: createUnsupportedRecoveryGateway('git restore'),
         modelRegistry: createNoopModelRegistry(),
         scheduler: {
-          start: () => Promise.resolve(),
+          start: async () => {
+            await perceptionController.emitSchedulerSignal({
+              signalType: 'scheduler.started',
+              occurredAt: new Date().toISOString(),
+              priority: 'low',
+              payload: {
+                driver: 'pg-boss',
+                phase: 'boot',
+              },
+              dedupeKey: 'scheduler:started',
+            });
+          },
         },
         tickEngine: {
           start: () => tickRuntime.start(),
         },
+        sensorAdapters: [
+          {
+            start: () => perceptionController.start(),
+          },
+        ],
       });
 
-      const result = await bootService.boot();
-      if (!result.ok) {
-        throw result.error;
-      }
+      try {
+        const result = await bootService.boot();
+        if (!result.ok) {
+          throw result.error;
+        }
 
-      started = true;
+        await perceptionController.emitSystemSignal({
+          signalType: 'system.boot.completed',
+          occurredAt: new Date().toISOString(),
+          priority: 'high',
+          payload: {
+            mode: result.preflight.selectedMode,
+            recoveryOutcome: result.recovery.outcome,
+          },
+        });
+
+        started = true;
+      } catch (error) {
+        await perceptionController.stop().catch(() => {});
+        if (tickRuntime) {
+          await tickRuntime.stop().catch(() => {});
+        }
+        throw error;
+      }
     },
 
     async stop(): Promise<void> {
       started = false;
-      await tickRuntime.stop();
+      await perceptionController.stop();
+      if (tickRuntime) {
+        await tickRuntime.stop();
+      }
     },
 
     async requestTick(input) {
@@ -396,6 +547,18 @@ export function createPhase0RuntimeLifecycle(config: CoreRuntimeConfig): Runtime
         accepted: false,
         reason: result.reason,
       };
+    },
+
+    ingestHttpStimulus(input) {
+      return perceptionController.ingestHttpStimulus(input);
+    },
+
+    async health(): Promise<PerceptionHealthSnapshot> {
+      try {
+        return await perceptionController.health();
+      } catch {
+        return DEFAULT_PERCEPTION_HEALTH;
+      }
     },
   };
 }

@@ -1,59 +1,204 @@
 import assert from 'node:assert/strict';
+import net from 'node:net';
 import test from 'node:test';
 import path from 'node:path';
 import { repoRoot, run, waitForHttp } from './helpers.ts';
 
 const composeFile = path.join(repoRoot(), 'infra', 'docker', 'compose.yaml');
+const telegramSmokeComposeFile = path.join(
+  repoRoot(),
+  'infra',
+  'docker',
+  'compose.smoke-telegram.yaml',
+);
 const projectName = 'yaagi-phase0';
+const telegramProjectName = 'yaagi-phase0-telegram';
 const coreHealthUrl = 'http://127.0.0.1:18080/health';
 
-async function compose(args: string[], options: Parameters<typeof run>[2] = {}) {
-  return run('docker', ['compose', '-f', composeFile, '-p', projectName, ...args], {
-    cwd: repoRoot(),
-    env: {
-      ...process.env,
-      DOCKER_BUILDKIT: '0',
-      COMPOSE_DOCKER_CLI_BUILD: '0',
+type ComposeOptions = Parameters<typeof run>[2] & {
+  telegram?: boolean;
+  projectName?: string;
+};
+
+async function compose(args: string[], options: ComposeOptions = {}) {
+  const {
+    telegram = false,
+    projectName: composeProjectName = projectName,
+    ...runOptions
+  } = options;
+  const composeFiles = telegram ? [composeFile, telegramSmokeComposeFile] : [composeFile];
+
+  return run(
+    'docker',
+    ['compose', ...composeFiles.flatMap((file) => ['-f', file]), '-p', composeProjectName, ...args],
+    {
+      cwd: repoRoot(),
+      env: {
+        ...process.env,
+        DOCKER_BUILDKIT: '0',
+        COMPOSE_DOCKER_CLI_BUILD: '0',
+      },
+      ...runOptions,
     },
-    ...options,
-  });
+  );
 }
 
-async function queryPostgres(sql: string): Promise<string> {
-  const { stdout } = await compose([
-    'exec',
-    '-T',
-    'postgres',
-    'psql',
-    '-U',
-    'yaagi',
-    '-d',
-    'yaagi',
-    '-tAc',
-    sql,
-  ]);
+async function resetSmokeProjects(): Promise<void> {
+  await compose(['down', '-v', '--remove-orphans'], {
+    rejectOnNonZeroExitCode: false,
+    telegram: true,
+  }).catch(() => {});
+  await compose(['down', '-v', '--remove-orphans'], {
+    rejectOnNonZeroExitCode: false,
+    telegram: true,
+    projectName: telegramProjectName,
+  }).catch(() => {});
+  await waitForPortToClose(18080);
+}
+
+async function waitForPortToClose(port: number, timeoutMs = 20_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() <= deadline) {
+    const isOpen = await new Promise<boolean>((resolve) => {
+      const socket = net.createConnection({ host: '127.0.0.1', port });
+      const cleanup = (open: boolean) => {
+        socket.removeAllListeners();
+        socket.destroy();
+        resolve(open);
+      };
+
+      socket.once('connect', () => cleanup(true));
+      socket.once('error', () => cleanup(false));
+    });
+
+    if (!isOpen) {
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+
+  throw new Error(`timed out waiting for port ${port} to close`);
+}
+
+async function queryPostgres(
+  sql: string,
+  options: { telegram?: boolean; projectName?: string } = {},
+): Promise<string> {
+  const { stdout } = await compose(
+    ['exec', '-T', 'postgres', 'psql', '-U', 'yaagi', '-d', 'yaagi', '-tAc', sql],
+    options,
+  );
 
   return stdout.trim();
 }
 
-async function execCoreScript(source: string): Promise<string> {
-  const { stdout } = await compose([
-    'exec',
-    '-T',
-    'core',
-    'node',
-    '--experimental-strip-types',
-    '--input-type=module',
-    '-e',
-    source,
-  ]);
+async function execCoreScript(
+  source: string,
+  options: { telegram?: boolean; projectName?: string } = {},
+): Promise<string> {
+  const { stdout } = await compose(
+    [
+      'exec',
+      '-T',
+      'core',
+      'node',
+      '--experimental-strip-types',
+      '--input-type=module',
+      '-e',
+      source,
+    ],
+    options,
+  );
 
   return stdout.trim();
+}
+
+async function enqueueFakeTelegramUpdate(input: {
+  updateId: number;
+  chatId: string;
+  text: string;
+}): Promise<void> {
+  await execCoreScript(
+    `
+    const response = await fetch('http://fake-telegram-api:8081/__test__/updates', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        update_id: ${input.updateId},
+        chat_id: '${input.chatId}',
+        text: ${JSON.stringify(input.text)},
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('failed to enqueue fake telegram update: ' + response.status);
+    }
+  `,
+    { telegram: true, projectName: telegramProjectName },
+  );
+}
+
+async function waitForPostgresValue(
+  sql: string,
+  expected: string,
+  timeoutMs = 20_000,
+  options: { telegram?: boolean; projectName?: string } = {},
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() <= deadline) {
+    if ((await queryPostgres(sql, options)) === expected) {
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  throw new Error(`timed out waiting for postgres query to return ${expected}: ${sql}`);
+}
+
+async function waitForAdapterStatus(
+  source: string,
+  status: string,
+  timeoutMs = 20_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() <= deadline) {
+    try {
+      const response = await fetch(coreHealthUrl);
+      if (response.ok) {
+        const payload = (await response.json()) as {
+          perception?: {
+            adapters?: Array<{
+              source: string;
+              status: string;
+            }>;
+          };
+        };
+        const adapter = payload.perception?.adapters?.find((entry) => entry.source === source);
+        if (adapter?.status === status) {
+          return;
+        }
+      }
+    } catch {
+      // Keep polling while the host port flips between compose projects.
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  throw new Error(`timed out waiting for adapter ${source} to become ${status}`);
 }
 
 void test('AC-F0002-05 initializes postgres and pgboss readiness before core reports ready', {
   concurrency: false,
 }, async () => {
+  await resetSmokeProjects();
   await compose(['up', '-d', '--build']);
 
   try {
@@ -161,6 +306,7 @@ void test('AC-F0002-05 initializes postgres and pgboss readiness before core rep
 void test('AC-F0003-01 starts the mandatory wake tick only after constitutional activation', {
   concurrency: false,
 }, async () => {
+  await resetSmokeProjects();
   await compose(['up', '-d', '--build']);
 
   try {
@@ -215,6 +361,7 @@ void test('AC-F0003-01 starts the mandatory wake tick only after constitutional 
 void test('AC-F0003-02 prevents overlapping active ticks through DB-backed lease discipline', {
   concurrency: false,
 }, async () => {
+  await resetSmokeProjects();
   await compose(['up', '-d', '--build']);
 
   try {
@@ -299,6 +446,7 @@ void test('AC-F0003-02 prevents overlapping active ticks through DB-backed lease
 void test('AC-F0003-07 reclaims stale active ticks after restart and clears agent_state.current_tick', {
   concurrency: false,
 }, async () => {
+  await resetSmokeProjects();
   await compose(['up', '-d', '--build']);
 
   try {
@@ -363,6 +511,7 @@ void test('AC-F0003-07 reclaims stale active ticks after restart and clears agen
 void test('AC-F0004-06 reloads the last committed subject-state after restart without process-local reconstruction', {
   concurrency: false,
 }, async () => {
+  await resetSmokeProjects();
   await compose(['up', '-d', '--build']);
 
   try {
@@ -494,5 +643,139 @@ void test('AC-F0004-06 reloads the last committed subject-state after restart wi
     assert.deepEqual(snapshot.goals, ['goal-smoke-reload']);
   } finally {
     await compose(['down', '-v'], { rejectOnNonZeroExitCode: false }).catch(() => {});
+  }
+});
+
+void test('AC-F0005-02 accepts POST /ingest inside the deployment cell and reuses the canonical reactive handoff', {
+  concurrency: false,
+}, async () => {
+  await resetSmokeProjects();
+  await compose(['up', '-d', '--build']);
+
+  try {
+    const coreResponse = await waitForHttp(coreHealthUrl);
+    assert.equal(coreResponse.status, 200);
+
+    const ingestResponse = await fetch('http://127.0.0.1:18080/ingest', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        signalType: 'http.operator.message',
+        priority: 'critical',
+        requiresImmediateTick: true,
+        threadId: 'operator-http',
+        payload: {
+          text: 'smoke http ingest',
+        },
+      }),
+    });
+
+    assert.equal(ingestResponse.status, 202);
+    const ingestPayload = (await ingestResponse.json()) as {
+      accepted: boolean;
+      stimulusId: string;
+      deduplicated: boolean;
+      tickAdmission: {
+        accepted: boolean;
+      } | null;
+    };
+    assert.equal(ingestPayload.accepted, true);
+    assert.equal(ingestPayload.deduplicated, false);
+    assert.equal(ingestPayload.tickAdmission?.accepted, true);
+
+    await waitForPostgresValue(
+      "select count(*)::text from polyphony_runtime.stimulus_inbox where source_kind = 'http' and normalized_json ->> 'signalType' = 'http.operator.message';",
+      '1',
+    );
+    await waitForPostgresValue(
+      "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed';",
+      '1',
+    );
+
+    assert.equal(
+      await queryPostgres(
+        "select normalized_json -> 'envelope' ->> 'source' from polyphony_runtime.stimulus_inbox where source_kind = 'http' and normalized_json ->> 'signalType' = 'http.operator.message' limit 1;",
+      ),
+      'http',
+    );
+    assert.equal(
+      await queryPostgres(
+        "select normalized_json -> 'envelope' ->> 'threadId' from polyphony_runtime.stimulus_inbox where source_kind = 'http' and normalized_json ->> 'signalType' = 'http.operator.message' limit 1;",
+      ),
+      'operator-http',
+    );
+    assert.equal(
+      await queryPostgres(
+        "select request_json -> 'perception' -> 'sourceKinds' ->> 0 from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' limit 1;",
+      ),
+      'http',
+    );
+  } finally {
+    await compose(['down', '-v'], { rejectOnNonZeroExitCode: false }).catch(() => {});
+  }
+});
+
+void test('AC-F0005-02 ingests a Telegram update from a fake Bot API inside the deployment cell', {
+  concurrency: false,
+}, async () => {
+  await resetSmokeProjects();
+  await compose(['up', '-d', '--build'], {
+    telegram: true,
+    projectName: telegramProjectName,
+  });
+
+  try {
+    const coreResponse = await waitForHttp(coreHealthUrl);
+    assert.equal(coreResponse.status, 200);
+    await waitForAdapterStatus('telegram', 'healthy');
+
+    await enqueueFakeTelegramUpdate({
+      updateId: 1,
+      chatId: '12345',
+      text: 'smoke telegram message',
+    });
+
+    await waitForPostgresValue(
+      "select count(*)::text from polyphony_runtime.stimulus_inbox where source_kind = 'telegram';",
+      '1',
+      20_000,
+      { telegram: true, projectName: telegramProjectName },
+    );
+    await waitForPostgresValue(
+      "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed';",
+      '1',
+      20_000,
+      { telegram: true, projectName: telegramProjectName },
+    );
+
+    assert.equal(
+      await queryPostgres(
+        "select normalized_json -> 'envelope' ->> 'source' from polyphony_runtime.stimulus_inbox where source_kind = 'telegram' limit 1;",
+        { telegram: true, projectName: telegramProjectName },
+      ),
+      'telegram',
+    );
+    assert.equal(
+      await queryPostgres(
+        "select normalized_json -> 'envelope' ->> 'threadId' from polyphony_runtime.stimulus_inbox where source_kind = 'telegram' limit 1;",
+        { telegram: true, projectName: telegramProjectName },
+      ),
+      '12345',
+    );
+    assert.equal(
+      await queryPostgres(
+        "select request_json -> 'perception' -> 'sourceKinds' ->> 0 from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' limit 1;",
+        { telegram: true, projectName: telegramProjectName },
+      ),
+      'telegram',
+    );
+  } finally {
+    await compose(['down', '-v'], {
+      rejectOnNonZeroExitCode: false,
+      telegram: true,
+      projectName: telegramProjectName,
+    }).catch(() => {});
   }
 });

@@ -63,6 +63,10 @@ services:
       YAAGI_MIGRATIONS_DIR: /app/infra/migrations
       YAAGI_PGBOSS_SCHEMA: pgboss
       YAAGI_BOOT_TIMEOUT_MS: "60000"
+      YAAGI_TELEGRAM_ENABLED: "${YAAGI_TELEGRAM_ENABLED:-false}"
+      YAAGI_TELEGRAM_BOT_TOKEN: "${YAAGI_TELEGRAM_BOT_TOKEN:-}"
+      YAAGI_TELEGRAM_ALLOWED_CHAT_IDS: "${YAAGI_TELEGRAM_ALLOWED_CHAT_IDS:-}"
+      YAAGI_TELEGRAM_API_BASE_URL: "${YAAGI_TELEGRAM_API_BASE_URL:-https://api.telegram.org}"
     depends_on:
       postgres:
         condition: service_healthy

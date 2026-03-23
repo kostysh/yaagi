@@ -4,6 +4,13 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import net from 'node:net';
 import type { Mastra } from '@mastra/core';
 import { Hono } from 'hono';
+import { ZodError } from 'zod';
+import {
+  DEFAULT_PERCEPTION_HEALTH,
+  httpIngestStimulusSchema,
+  type HttpIngestStimulusInput,
+  type PerceptionHealthSnapshot,
+} from '@yaagi/contracts/perception';
 import { checkPostgresConnectivity, ensureDatabaseReady } from '@yaagi/db/bootstrap';
 import { type CoreRuntimeConfig, loadCoreRuntimeConfig } from './core-config.ts';
 import { createPhase0Mastra } from './phase0-mastra.ts';
@@ -18,6 +25,7 @@ export type CoreRuntimeHealth = {
   fastModel: boolean;
   configuration: boolean;
   agents: string[];
+  perception: PerceptionHealthSnapshot;
   checks: Array<{
     name: 'configuration' | 'postgres' | 'fastModel';
     ok: boolean;
@@ -34,6 +42,12 @@ export type CoreRuntimeDependencies = {
   createRuntimeLifecycle?: (config: CoreRuntimeConfig) => {
     start(): Promise<void>;
     stop(): Promise<void>;
+    health?(): Promise<PerceptionHealthSnapshot>;
+    ingestHttpStimulus?(input: unknown): Promise<{
+      stimulusId: string;
+      deduplicated: boolean;
+      tickAdmission?: { accepted: boolean; reason?: string };
+    }>;
   };
 };
 
@@ -172,6 +186,14 @@ export function createCoreRuntime(
       probePostgres(),
       probeFastModel(),
     ]);
+    let perception = DEFAULT_PERCEPTION_HEALTH;
+    if (postgres && runtimeLifecycle.health) {
+      try {
+        perception = await runtimeLifecycle.health();
+      } catch {
+        perception = DEFAULT_PERCEPTION_HEALTH;
+      }
+    }
 
     return {
       ok: configuration && postgres && fastModel,
@@ -179,6 +201,7 @@ export function createCoreRuntime(
       postgres,
       fastModel,
       agents: Object.keys(mastra.listAgents()),
+      perception,
       checks: [
         { name: 'configuration', ok: configuration },
         { name: 'postgres', ok: postgres },
@@ -190,6 +213,60 @@ export function createCoreRuntime(
   app.get('/health', async (context) => {
     const snapshot = await health();
     return context.json(snapshot, snapshot.ok ? 200 : 503);
+  });
+
+  app.post('/ingest', async (context) => {
+    let payload: unknown;
+
+    try {
+      payload = await context.req.json();
+    } catch (error) {
+      return context.json(
+        {
+          accepted: false,
+          error: error instanceof Error ? error.message : 'invalid_json',
+        },
+        400,
+      );
+    }
+
+    let parsedPayload: HttpIngestStimulusInput;
+    try {
+      parsedPayload = httpIngestStimulusSchema.parse(payload);
+    } catch (error) {
+      return context.json(
+        {
+          accepted: false,
+          error: error instanceof ZodError ? error.message : String(error),
+        },
+        400,
+      );
+    }
+
+    if (!runtimeLifecycle.ingestHttpStimulus) {
+      return context.json({ error: 'ingest_unavailable' }, 503);
+    }
+
+    try {
+      const result = await runtimeLifecycle.ingestHttpStimulus(parsedPayload);
+      return context.json(
+        {
+          accepted: true,
+          stimulusId: result.stimulusId,
+          deduplicated: result.deduplicated,
+          tickAdmission: result.tickAdmission ?? null,
+        },
+        202,
+      );
+    } catch (error) {
+      return context.json(
+        {
+          accepted: false,
+          error: error instanceof Error ? error.message : 'ingest_failed',
+        },
+        503,
+      );
+    }
   });
 
   const waitForDependencies = async (): Promise<void> => {
@@ -260,6 +337,11 @@ export function createCoreRuntime(
           method: request.method ?? 'GET',
           headers: requestHeaders,
         };
+
+        if (request.method && request.method !== 'GET' && request.method !== 'HEAD') {
+          requestInit.body = request as unknown as NonNullable<RequestInit['body']>;
+          (requestInit as RequestInit & { duplex: 'half' }).duplex = 'half';
+        }
 
         const fetchRequest = new Request(requestUrl, requestInit);
         const fetchResponse = await app.fetch(fetchRequest);

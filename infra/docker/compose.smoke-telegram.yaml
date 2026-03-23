@@ -1,0 +1,32 @@
+services:
+  fake-telegram-api:
+    image: python:3.13-alpine
+    working_dir: /app
+    command: ["python", "/app/server.py"]
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/health', timeout=2)\""]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 3s
+    volumes:
+      - ../../infra/docker/fake-telegram-api/server.py:/app/server.py:ro
+    networks:
+      - core_net
+
+  core:
+    environment:
+      YAAGI_TELEGRAM_ENABLED: "true"
+      YAAGI_TELEGRAM_BOT_TOKEN: "smoke-token"
+      YAAGI_TELEGRAM_ALLOWED_CHAT_IDS: "12345"
+      YAAGI_TELEGRAM_API_BASE_URL: "http://fake-telegram-api:8081"
+    depends_on:
+      fake-telegram-api:
+        condition: service_healthy

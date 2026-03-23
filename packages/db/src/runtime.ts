@@ -9,6 +9,7 @@ import {
   type SubjectStateSnapshotInput,
   type SubjectStateStore,
 } from './subject-state.ts';
+import { createPerceptionStore, parseTickPerceptionClaim } from './perception.ts';
 
 export const DEFAULT_RUNTIME_AGENT_ID = 'polyphony-core';
 export const DEFAULT_RUNTIME_LEASE_OWNER = 'core';
@@ -548,6 +549,7 @@ const finalizeTickRow = async (
   event: RuntimeTimelineEventRow;
 }> => {
   const occurredAt = toTimestamp(input.occurredAt);
+  const perceptionStore = createPerceptionStore(db);
   return await transaction(db, async () => {
     await ensureAgentStateSeed(db, input.agentId ?? DEFAULT_RUNTIME_AGENT_ID);
     await lockAgentStateRow(db);
@@ -565,6 +567,21 @@ const finalizeTickRow = async (
     }
     if (existingTick.status !== TICK_STATUS.STARTED) {
       throw new Error(`tick ${input.tickId} is not active`);
+    }
+
+    const perceptionClaim = parseTickPerceptionClaim(existingTick.requestJson);
+    if (perceptionClaim) {
+      if (status === TICK_STATUS.COMPLETED) {
+        await perceptionStore.consumeClaimedStimuli({
+          tickId: input.tickId,
+          stimulusIds: perceptionClaim.claimedStimulusIds,
+        });
+      } else {
+        await perceptionStore.releaseClaimedStimuli({
+          tickId: input.tickId,
+          stimulusIds: perceptionClaim.claimedStimulusIds,
+        });
+      }
     }
 
     const updatedTickResult = await db.query<RuntimeTickRow>(
@@ -623,6 +640,7 @@ async function reclaimStaleTicksInternal(
   agentId: string,
   now: Date,
 ): Promise<RuntimeTickRow[]> {
+  const perceptionStore = createPerceptionStore(db);
   const staleTicksResult = await db.query<RuntimeTickRow>(
     `select ${tickColumns}
      from ${tickTable}
@@ -672,6 +690,8 @@ async function reclaimStaleTicksInternal(
       },
     });
   }
+
+  await perceptionStore.releaseClaimedStimuliForTicks(staleTicks.map((tick) => tick.tickId));
 
   await db.query(
     `update ${agentStateTable}
@@ -848,6 +868,7 @@ export function createTickRuntimeStore(
     }> {
       const nextAgentId = input.agentId ?? agentId;
       const occurredAt = input.occurredAt ?? new Date();
+      const perceptionStore = createPerceptionStore(db);
       await ensureAgentStateSeed(db, nextAgentId);
 
       return await transaction(db, async () => {
@@ -866,6 +887,14 @@ export function createTickRuntimeStore(
         }
         if (existingTick.status !== TICK_STATUS.STARTED) {
           throw new Error(`tick ${input.tickId} is not active`);
+        }
+
+        const perceptionClaim = parseTickPerceptionClaim(existingTick.requestJson);
+        if (perceptionClaim) {
+          await perceptionStore.consumeClaimedStimuli({
+            tickId: input.tickId,
+            stimulusIds: perceptionClaim.claimedStimulusIds,
+          });
         }
 
         if (state.currentTickId && state.currentTickId !== input.tickId) {

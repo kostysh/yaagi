@@ -43,6 +43,13 @@ export {
   type TickTrigger,
 } from './runtime.ts';
 export {
+  PERCEPTION_SCHEMA,
+  createPerceptionStore,
+  parseTickPerceptionClaim,
+  type PerceptionDbExecutor,
+  type PerceptionStore,
+} from './perception.ts';
+export {
   normalizeEvidenceRefs,
   type ApplyTickStateDeltaInput,
   type BeliefUpsert,

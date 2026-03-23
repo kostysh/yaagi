@@ -125,24 +125,45 @@ void test('AC-F0002-02 serves a minimal GET /health boundary with readiness stat
         fastModel: boolean;
         configuration: boolean;
         agents: string[];
+        perception: {
+          adapters: Array<{
+            source: string;
+            status: string;
+          }>;
+          backlog: {
+            queued: number;
+            claimed: number;
+            consumed: number;
+            dropped: number;
+          };
+        };
         checks: Array<{
           name: 'configuration' | 'postgres' | 'fastModel';
           ok: boolean;
         }>;
       };
 
-      assert.deepEqual(payload, {
-        ok: true,
-        postgres: true,
-        fastModel: true,
-        configuration: true,
-        agents: ['phase0DecisionAgent'],
-        checks: [
-          { name: 'configuration', ok: true },
-          { name: 'postgres', ok: true },
-          { name: 'fastModel', ok: true },
-        ],
+      assert.equal(payload.ok, true);
+      assert.equal(payload.postgres, true);
+      assert.equal(payload.fastModel, true);
+      assert.equal(payload.configuration, true);
+      assert.deepEqual(payload.agents, ['phase0DecisionAgent']);
+      assert.deepEqual(payload.checks, [
+        { name: 'configuration', ok: true },
+        { name: 'postgres', ok: true },
+        { name: 'fastModel', ok: true },
+      ]);
+      assert.deepEqual(payload.perception.backlog, {
+        queued: 0,
+        claimed: 0,
+        consumed: 0,
+        dropped: 0,
       });
+      assert.ok(
+        payload.perception.adapters.some(
+          (adapter) => adapter.source === 'http' && adapter.status === 'healthy',
+        ),
+      );
     } finally {
       await runtime.stop();
     }
@@ -239,6 +260,117 @@ void test('AC-F0002-02 keeps the phase-0 boundary health-only and surfaces depen
 
       const unknownRoute = await fetch(`${started.url}/state`);
       assert.equal(unknownRoute.status, 404);
+    } finally {
+      await runtime.stop();
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+void test('AC-F0005-02 exposes POST /ingest through the runtime boundary and returns canonical admission metadata', async () => {
+  const root = await createTempWorkspace();
+
+  try {
+    const runtime = createCoreRuntime(
+      loadCoreRuntimeConfig({
+        ...createConfigEnv(root),
+        YAAGI_PORT: '8795',
+      }),
+      {
+        bootstrapDatabase: () => Promise.resolve(),
+        probeConfiguration: () => Promise.resolve(true),
+        probePostgres: () => Promise.resolve(true),
+        probeFastModel: () => Promise.resolve(true),
+        createRuntimeLifecycle: () => ({
+          start: () => Promise.resolve(),
+          stop: () => Promise.resolve(),
+          ingestHttpStimulus: () =>
+            Promise.resolve({
+              stimulusId: 'stimulus-http-1',
+              deduplicated: false,
+              tickAdmission: {
+                accepted: true,
+              },
+            }),
+        }),
+      },
+    );
+
+    const started = await runtime.start();
+    try {
+      const response = await fetch(`${started.url}/ingest`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          signalType: 'http.operator.message',
+          payload: {
+            text: 'hello',
+          },
+        }),
+      });
+
+      assert.equal(response.status, 202);
+      assert.deepEqual(await response.json(), {
+        accepted: true,
+        stimulusId: 'stimulus-http-1',
+        deduplicated: false,
+        tickAdmission: {
+          accepted: true,
+        },
+      });
+    } finally {
+      await runtime.stop();
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+void test('AC-F0005-02 returns 503 when the runtime ingest path fails after payload validation', async () => {
+  const root = await createTempWorkspace();
+
+  try {
+    const runtime = createCoreRuntime(
+      loadCoreRuntimeConfig({
+        ...createConfigEnv(root),
+        YAAGI_PORT: '8796',
+      }),
+      {
+        bootstrapDatabase: () => Promise.resolve(),
+        probeConfiguration: () => Promise.resolve(true),
+        probePostgres: () => Promise.resolve(true),
+        probeFastModel: () => Promise.resolve(true),
+        createRuntimeLifecycle: () => ({
+          start: () => Promise.resolve(),
+          stop: () => Promise.resolve(),
+          ingestHttpStimulus: () => Promise.reject(new Error('postgres unavailable')),
+        }),
+      },
+    );
+
+    const started = await runtime.start();
+    try {
+      const response = await fetch(`${started.url}/ingest`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          signalType: 'http.operator.message',
+          payload: {
+            text: 'hello',
+          },
+        }),
+      });
+
+      assert.equal(response.status, 503);
+      assert.deepEqual(await response.json(), {
+        accepted: false,
+        error: 'postgres unavailable',
+      });
     } finally {
       await runtime.stop();
     }

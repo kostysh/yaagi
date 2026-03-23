@@ -5,6 +5,7 @@ import type {
   RuntimeTickRow,
   RuntimeTimelineEventRow,
 } from '../src/runtime.ts';
+import type { StimulusInboxRecord } from '@yaagi/contracts/perception';
 import type {
   EvidenceRef,
   SubjectBelief,
@@ -25,6 +26,7 @@ type HarnessState = {
   beliefs: Record<string, SubjectBelief>;
   entities: Record<string, SubjectEntity>;
   relationships: Record<string, SubjectRelationship>;
+  stimuli: Record<string, StimulusInboxRecord>;
   events: HarnessEvent[];
 };
 
@@ -141,6 +143,7 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
     beliefs: structuredClone(options.seed?.beliefs ?? {}),
     entities: structuredClone(options.seed?.entities ?? {}),
     relationships: structuredClone(options.seed?.relationships ?? {}),
+    stimuli: structuredClone(options.seed?.stimuli ?? {}),
     events: structuredClone(options.seed?.events ?? []),
   };
 
@@ -178,6 +181,7 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
         state.beliefs = restored.beliefs;
         state.entities = restored.entities;
         state.relationships = restored.relationships;
+        state.stimuli = restored.stimuli;
         state.events = restored.events;
       }
       transactionBackup = null;
@@ -270,6 +274,28 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
       return { rows: [structuredClone(tick) as TRow] };
     }
 
+    if (
+      sql.startsWith('select') &&
+      sql.includes('from polyphony_runtime.ticks') &&
+      sql.includes('where agent_id = $1') &&
+      sql.includes('lease_expires_at < $3')
+    ) {
+      const agentId = String(params[0]);
+      const status = String(params[1]);
+      const now = String(params[2]);
+      const rows = Object.values(state.ticks)
+        .filter(
+          (tick) =>
+            tick.agentId === agentId &&
+            tick.status === status &&
+            tick.endedAt === null &&
+            tick.leaseExpiresAt < now,
+        )
+        .sort((left, right) => left.startedAt.localeCompare(right.startedAt))
+        .map((tick) => structuredClone(tick) as TRow);
+      return { rows };
+    }
+
     if (sql.startsWith('update polyphony_runtime.ticks') && sql.includes('set status = $2')) {
       const tick = state.ticks[String(params[0])];
       if (!tick) {
@@ -325,6 +351,217 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
       };
       state.events.push(event);
       return { rows: [structuredClone(event) as TRow] };
+    }
+
+    if (sql.startsWith('insert into polyphony_runtime.stimulus_inbox')) {
+      const stimulus: StimulusInboxRecord = {
+        stimulusId: String(params[0]),
+        sourceKind: params[1] as StimulusInboxRecord['sourceKind'],
+        threadId: (params[2] as string | null) ?? null,
+        occurredAt: String(params[3]),
+        priority: params[4] as StimulusInboxRecord['priority'],
+        priorityRank: Number(params[5]),
+        requiresImmediateTick: Boolean(params[6]),
+        payloadJson: parseJsonParam<Record<string, unknown>>(params[7]),
+        normalizedJson: parseJsonParam<StimulusInboxRecord['normalizedJson']>(params[8]),
+        dedupeKey: (params[9] as string | null) ?? null,
+        claimTickId: null,
+        status: params[10] as StimulusInboxRecord['status'],
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      };
+      state.stimuli[stimulus.stimulusId] = stimulus;
+      return { rows: [structuredClone(stimulus) as TRow] };
+    }
+
+    if (
+      sql.startsWith('select') &&
+      sql.includes('from polyphony_runtime.stimulus_inbox') &&
+      sql.includes('where source_kind = $1') &&
+      sql.includes('and dedupe_key = $2')
+    ) {
+      const sourceKind = String(params[0]);
+      const dedupeKey = String(params[1]);
+      const stimuli = Object.values(state.stimuli)
+        .filter(
+          (stimulus) => stimulus.sourceKind === sourceKind && stimulus.dedupeKey === dedupeKey,
+        )
+        .sort((left, right) => {
+          const byOccurredAt = right.occurredAt.localeCompare(left.occurredAt);
+          if (byOccurredAt !== 0) return byOccurredAt;
+          return right.stimulusId.localeCompare(left.stimulusId);
+        })
+        .slice(0, 1);
+      return { rows: stimuli.map((stimulus) => structuredClone(stimulus) as TRow) };
+    }
+
+    if (
+      sql.startsWith('select') &&
+      sql.includes('from polyphony_runtime.stimulus_inbox') &&
+      sql.includes('where status = $1') &&
+      sql.includes('order by')
+    ) {
+      const status = String(params[0]);
+      const limit = Number(params[1]);
+      const stimuli = Object.values(state.stimuli)
+        .filter((stimulus) => stimulus.status === status)
+        .sort((left, right) => {
+          const byImmediate =
+            Number(right.requiresImmediateTick) - Number(left.requiresImmediateTick);
+          if (byImmediate !== 0) return byImmediate;
+          const byPriority = right.priorityRank - left.priorityRank;
+          if (byPriority !== 0) return byPriority;
+          const byOccurredAt = left.occurredAt.localeCompare(right.occurredAt);
+          if (byOccurredAt !== 0) return byOccurredAt;
+          return left.stimulusId.localeCompare(right.stimulusId);
+        })
+        .slice(0, limit);
+      return { rows: stimuli.map((stimulus) => structuredClone(stimulus) as TRow) };
+    }
+
+    if (
+      sql.startsWith('update polyphony_runtime.stimulus_inbox') &&
+      sql.includes('set status = $2, claim_tick_id = $1')
+    ) {
+      const tickId = String(params[0]);
+      const nextStatus = String(params[1]) as StimulusInboxRecord['status'];
+      const stimulusIds = new Set((params[2] as string[]) ?? []);
+      const expectedStatus = String(params[3]);
+      const rows: TRow[] = [];
+
+      for (const stimulusId of stimulusIds) {
+        const stimulus = state.stimuli[stimulusId];
+        if (!stimulus || stimulus.status !== expectedStatus) {
+          continue;
+        }
+
+        stimulus.status = nextStatus;
+        stimulus.claimTickId = tickId;
+        stimulus.updatedAt = nowIso();
+        rows.push(structuredClone(stimulus) as TRow);
+      }
+
+      return { rows };
+    }
+
+    if (
+      sql.startsWith('update polyphony_runtime.stimulus_inbox') &&
+      sql.includes('set status = $2, updated_at = now()') &&
+      sql.includes('where claim_tick_id = $1')
+    ) {
+      const tickId = String(params[0]);
+      const nextStatus = String(params[1]) as StimulusInboxRecord['status'];
+      const expectedStatus = String(params[2]);
+      const stimulusIds = sql.includes('stimulus_id = any($4::text[])')
+        ? new Set((params[3] as string[]) ?? [])
+        : null;
+      const rows: TRow[] = [];
+
+      for (const stimulus of Object.values(state.stimuli)) {
+        if (stimulus.claimTickId !== tickId || stimulus.status !== expectedStatus) {
+          continue;
+        }
+
+        if (stimulusIds && !stimulusIds.has(stimulus.stimulusId)) {
+          continue;
+        }
+
+        stimulus.status = nextStatus;
+        stimulus.updatedAt = nowIso();
+        rows.push({ count: '1' } as TRow);
+      }
+
+      return { rows };
+    }
+
+    if (
+      sql.startsWith('update polyphony_runtime.stimulus_inbox') &&
+      sql.includes('set status = $1') &&
+      sql.includes('claim_tick_id = null') &&
+      sql.includes('where claim_tick_id = any($2::text[])')
+    ) {
+      const nextStatus = String(params[0]) as StimulusInboxRecord['status'];
+      const tickIds = new Set((params[1] as string[]) ?? []);
+      const expectedStatus = String(params[2]);
+      const rows: TRow[] = [];
+
+      for (const stimulus of Object.values(state.stimuli)) {
+        if (!tickIds.has(stimulus.claimTickId ?? '') || stimulus.status !== expectedStatus) {
+          continue;
+        }
+
+        stimulus.status = nextStatus;
+        stimulus.claimTickId = null;
+        stimulus.updatedAt = nowIso();
+        rows.push({ count: '1' } as TRow);
+      }
+
+      return { rows };
+    }
+
+    if (
+      sql.startsWith('update polyphony_runtime.stimulus_inbox') &&
+      sql.includes('set status = $2') &&
+      sql.includes('claim_tick_id = null') &&
+      sql.includes('where claim_tick_id = $1')
+    ) {
+      const tickId = String(params[0]);
+      const nextStatus = String(params[1]) as StimulusInboxRecord['status'];
+      const expectedStatus = String(params[2]);
+      const stimulusIds = sql.includes('stimulus_id = any($4::text[])')
+        ? new Set((params[3] as string[]) ?? [])
+        : null;
+      const rows: TRow[] = [];
+
+      for (const stimulus of Object.values(state.stimuli)) {
+        if (stimulus.claimTickId !== tickId || stimulus.status !== expectedStatus) {
+          continue;
+        }
+
+        if (stimulusIds && !stimulusIds.has(stimulus.stimulusId)) {
+          continue;
+        }
+
+        stimulus.status = nextStatus;
+        stimulus.claimTickId = null;
+        stimulus.updatedAt = nowIso();
+        rows.push({ count: '1' } as TRow);
+      }
+
+      return { rows };
+    }
+
+    if (
+      sql.startsWith('select status, count(*)::text as count') &&
+      sql.includes('from polyphony_runtime.stimulus_inbox')
+    ) {
+      const counts = new Map<string, number>();
+      for (const stimulus of Object.values(state.stimuli)) {
+        counts.set(stimulus.status, (counts.get(stimulus.status) ?? 0) + 1);
+      }
+
+      return {
+        rows: [...counts.entries()].map(
+          ([status, count]) => ({ status, count: String(count) }) as TRow,
+        ),
+      };
+    }
+
+    if (
+      sql.startsWith('update polyphony_runtime.ticks') &&
+      sql.includes("jsonb_build_object('perception'")
+    ) {
+      const tick = state.ticks[String(params[0])];
+      if (!tick) {
+        return { rows: [] };
+      }
+
+      tick.requestJson = {
+        ...tick.requestJson,
+        perception: parseJsonParam<Record<string, unknown>>(params[1]),
+      };
+      tick.updatedAt = nowIso();
+      return { rows: [] };
     }
 
     if (

@@ -4,6 +4,10 @@ import { z } from 'zod';
 export type CoreRuntimeConfig = {
   postgresUrl: string;
   fastModelBaseUrl: string;
+  telegramEnabled: boolean;
+  telegramBotToken: string | null;
+  telegramAllowedChatIds: string[];
+  telegramApiBaseUrl: string;
   seedRootPath: string;
   seedConstitutionPath: string;
   seedBodyPath: string;
@@ -23,6 +27,7 @@ export type CoreRuntimeConfig = {
 
 const DEFAULT_POSTGRES_URL = 'postgres://yaagi:yaagi@127.0.0.1:5432/yaagi';
 const DEFAULT_FAST_MODEL_BASE_URL = 'http://127.0.0.1:8000/v1';
+const DEFAULT_TELEGRAM_API_BASE_URL = 'https://api.telegram.org';
 const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_PORT = 8787;
 const DEFAULT_BOOT_TIMEOUT_MS = 60_000;
@@ -60,6 +65,19 @@ const parsePort = (value: string | undefined, label = 'YAAGI_PORT'): number => {
   return port;
 };
 
+const parseBoolean = (value: string | undefined, fallback = false): boolean => {
+  if (!value) return fallback;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  throw new Error(`Boolean env value must be 'true' or 'false', received ${value}`);
+};
+
+const parseCsv = (value: string | undefined): string[] =>
+  (value ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+
 const parsePositiveInteger = (
   value: string | undefined,
   label: string,
@@ -86,6 +104,10 @@ const resolvePathFromRoot = (
 const envSchema = z.object({
   YAAGI_POSTGRES_URL: z.string().optional(),
   YAAGI_FAST_MODEL_BASE_URL: z.string().optional(),
+  YAAGI_TELEGRAM_ENABLED: z.string().optional(),
+  YAAGI_TELEGRAM_BOT_TOKEN: z.string().optional(),
+  YAAGI_TELEGRAM_ALLOWED_CHAT_IDS: z.string().optional(),
+  YAAGI_TELEGRAM_API_BASE_URL: z.string().optional(),
   YAAGI_SEED_ROOT_PATH: z.string().optional(),
   YAAGI_SEED_CONSTITUTION_PATH: z.string().optional(),
   YAAGI_SEED_BODY_PATH: z.string().optional(),
@@ -108,6 +130,19 @@ export function loadCoreRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Cor
   const cwd = process.cwd();
   const parsedEnv = envSchema.parse(env);
   const seedRootPath = resolvePath(cwd, parsedEnv.YAAGI_SEED_ROOT_PATH, DEFAULT_SEED_ROOT_PATH);
+  const telegramEnabled = parseBoolean(parsedEnv.YAAGI_TELEGRAM_ENABLED, false);
+  const telegramBotToken = parsedEnv.YAAGI_TELEGRAM_BOT_TOKEN?.trim() || null;
+  const telegramAllowedChatIds = parseCsv(parsedEnv.YAAGI_TELEGRAM_ALLOWED_CHAT_IDS);
+
+  if (telegramEnabled && !telegramBotToken) {
+    throw new Error('YAAGI_TELEGRAM_BOT_TOKEN is required when YAAGI_TELEGRAM_ENABLED=true');
+  }
+
+  if (telegramEnabled && telegramAllowedChatIds.length === 0) {
+    throw new Error(
+      'YAAGI_TELEGRAM_ALLOWED_CHAT_IDS must contain at least one chat id when YAAGI_TELEGRAM_ENABLED=true',
+    );
+  }
 
   return {
     postgresUrl: requireUrl(
@@ -119,6 +154,13 @@ export function loadCoreRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Cor
         parsedEnv.YAAGI_FAST_MODEL_BASE_URL ?? DEFAULT_FAST_MODEL_BASE_URL,
         'YAAGI_FAST_MODEL_BASE_URL',
       ),
+    ),
+    telegramEnabled,
+    telegramBotToken,
+    telegramAllowedChatIds,
+    telegramApiBaseUrl: requireUrl(
+      parsedEnv.YAAGI_TELEGRAM_API_BASE_URL ?? DEFAULT_TELEGRAM_API_BASE_URL,
+      'YAAGI_TELEGRAM_API_BASE_URL',
     ),
     seedRootPath,
     seedConstitutionPath: resolvePathFromRoot(

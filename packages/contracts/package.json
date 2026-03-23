@@ -7,9 +7,16 @@
       "types": "./src/boot.ts",
       "default": "./src/boot.ts"
     },
+    "./perception": {
+      "types": "./src/perception.ts",
+      "default": "./src/perception.ts"
+    },
     "./runtime": {
       "types": "./src/runtime.ts",
       "default": "./src/runtime.ts"
     }
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
   }
 }
