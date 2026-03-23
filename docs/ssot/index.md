@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-03-23T13:19:35.666Z_
+_Last sync: 2026-03-23T14:57:10.003Z_
 
 ## Features
 
@@ -14,7 +14,7 @@ _Last sync: 2026-03-23T13:19:35.666Z_
 | F-0002 | Канонический scaffold монорепы и deployment cell | done | platform | — | runtime,infra,db,models,workspace | `../features/F-0002-canonical-monorepo-deployment-cell.md` |
 | F-0003 | Тиковый runtime, scheduler и эпизодическая линия времени | done | runtime | F-0001, F-0002 | runtime,db,timeline,jobs | `../features/F-0003-tick-runtime-scheduler-episodic-timeline.md` |
 | F-0004 | Ядро субъектного состояния и модель памяти | done | memory | F-0001, F-0002, F-0003 | runtime,db,memory,state | `../features/F-0004-subject-state-kernel-and-memory-model.md` |
-| F-0005 | Буфер восприятия и сенсорные адаптеры | planned | perception | F-0001, F-0002, F-0003 | runtime,db,ingress,perception | `../features/F-0005-perception-buffer-and-sensor-adapters.md` |
+| F-0005 | Буфер восприятия и сенсорные адаптеры | done | perception | F-0001, F-0002, F-0003 | runtime,db,ingress,perception | `../features/F-0005-perception-buffer-and-sensor-adapters.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph

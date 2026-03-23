@@ -27,7 +27,7 @@
 
 Interpretation rules:
 
-- `POST /ingest` принимает внешний envelope-shaped payload и приводит его к тому же canonical normalized contract, что и internal adapters;
+- `POST /ingest` принимает внешний HTTP-ingest payload и нормализует его в тот же canonical `StimulusEnvelope`, что и internal adapters;
 - adapter-specific transient metadata может жить только во runtime controller, но не должно становиться отдельным долгоживущим storage contract;
 - perception retention/purge policy применяется к `stimulus_inbox`, а не к отдельному shadow buffer table.
 

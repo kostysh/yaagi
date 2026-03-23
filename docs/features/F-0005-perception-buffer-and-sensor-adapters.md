@@ -1,7 +1,7 @@
 ---
 id: F-0005
 title: Буфер восприятия и сенсорные адаптеры
-status: planned
+status: done
 owners: ["@codex"]
 area: perception
 depends_on: [F-0001, F-0002, F-0003]
@@ -101,6 +101,7 @@ links:
   - `apps/core/src/perception` владеет adapter lifecycle controller, ingress normalization, queue/buffer policy и batch claim/release semantics;
   - `packages/db` владеет `stimulus_inbox` persistence и queue queries;
   - `apps/core/src/runtime` остаётся владельцем tick admission/lifecycle и получает от perception только canonical `requestTick(...)` calls plus future batch claim hooks.
+- `scheduler-adapter` первой delivered реализации не invent-ит собственный polling/heartbeat topology: он переводит существующие runtime scheduler hooks в canonical scheduler stimuli, а в phase-0 использует lifecycle/activation seam планировщика.
 - Startup order для этой фичи фиксируется так:
   1. `F-0001` завершает boot activation;
   2. `F-0003` runtime initializes and reclaims stale ticks;
@@ -145,7 +146,7 @@ interface PerceptionIngress {
 }
 ```
 
-- `POST /ingest` принимает `StimulusEnvelope`-shaped JSON payload и приводит его к тому же canonical normalized contract, что и internal adapters.
+- `POST /ingest` принимает canonical HTTP-ingest payload (`signalType`, optional priority/thread metadata, `payload`, optional `dedupeKey` / `aggregateHints`) и приводит его к тому же canonical normalized contract, что и internal adapters.
 - `entityRefs` в этом phase остаются opaque references; perception layer не обязана разрешать их против `F-0004` entities before queueing or claiming.
 
 ### 5.2 Data model changes
@@ -161,14 +162,14 @@ interface PerceptionIngress {
   - `requires_immediate_tick boolean not null default false`
   - `payload_json jsonb not null default '{}'::jsonb`
   - `normalized_json jsonb not null default '{}'::jsonb`
-  - `dedupe_key text not null`
+  - `dedupe_key text`
   - `claim_tick_id text references polyphony_runtime.ticks(tick_id) on delete set null`
   - `status text not null check (status in ('queued', 'claimed', 'consumed', 'dropped'))`
   - `created_at timestamptz not null default now()`
   - `updated_at timestamptz not null default now()`
 - Required indexes for bounded queue and restart-safe recovery:
   - `stimulus_inbox_ready_idx` on `(status, requires_immediate_tick desc, priority_rank desc, occurred_at asc, stimulus_id asc)`
-  - `stimulus_inbox_dedupe_idx` on `(status, dedupe_key, occurred_at desc)`
+  - `stimulus_inbox_dedupe_idx` on `(source_kind, dedupe_key, occurred_at desc) where dedupe_key is not null`
   - `stimulus_inbox_claim_idx` on `(claim_tick_id, status, updated_at desc)`
 - Shaped storage semantics:
   - `normalized_json` stores the canonical `StimulusEnvelope` plus normalization metadata needed for burst coalescing and aggregate hints;
@@ -311,12 +312,12 @@ Tasks:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0005-01 | `apps/core/test/perception/adapter-lifecycle.integration.test.ts` → `test("AC-F0005-01 starts and stops adapters only under lifecycle control")` | planned |
-| AC-F0005-02 | `apps/core/test/perception/ingest.integration.test.ts` → `test("AC-F0005-02 normalizes ingest and adapter signals into the canonical perception intake layer")`; `apps/core/test/perception/telegram-adapter.integration.test.ts` → `test("AC-F0005-02 normalizes Telegram long-poll updates into the canonical perception intake layer")`; smoke in `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0005-02 ingests a Telegram update from a fake Bot API inside the deployment cell")` | planned |
-| AC-F0005-03 | `apps/core/test/perception/perception-buffer.integration.test.ts` → `test("AC-F0005-03 keeps the perception buffer bounded and normalized before tick handoff")` | planned |
-| AC-F0005-04 | `apps/core/test/perception/reactive-handoff.integration.test.ts` → `test("AC-F0005-04 escalates urgent signals through the canonical reactive tick path")`; smoke in `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0005-04 accepts ingest and reuses the canonical reactive tick path inside the deployment cell")` | planned |
-| AC-F0005-05 | `apps/core/test/perception/adapter-failure.integration.test.ts` → `test("AC-F0005-05 degrades failing adapter sources without crashing core")`; `apps/core/test/perception/telegram-config.integration.test.ts` → `test("AC-F0005-05 validates Telegram secrets and allowlist before enabling the adapter")` | planned |
-| AC-F0005-06 | `apps/core/test/perception/stimulus-retention.integration.test.ts` → `test("AC-F0005-06 keeps perception intake purgeable after normalization and tick inclusion")`; `apps/core/test/perception/perception-restart.integration.test.ts` → `test("AC-F0005-06 releases claimed stimuli after restart or stale-tick reclaim")` | planned |
+| AC-F0005-01 | `apps/core/test/perception/lifecycle.integration.test.ts` → `test("AC-F0005-01 starts, stops and restarts real sensor adapters only under runtime lifecycle control")` | done |
+| AC-F0005-02 | `apps/core/test/perception/ingest.integration.test.ts` → `test("AC-F0005-02 normalizes ingest and adapter signals into the canonical perception intake layer")`; `apps/core/test/perception/adapter-paths.integration.test.ts` → `test("AC-F0005-02 normalizes filesystem adapter events into the canonical perception intake layer")`; `apps/core/test/perception/adapter-paths.integration.test.ts` → `test("AC-F0005-02 normalizes scheduler runtime-hook signals into the canonical perception intake layer")`; `apps/core/test/perception/adapter-paths.integration.test.ts` → `test("AC-F0005-02 normalizes resource adapter pressure signals into the canonical perception intake layer")`; `apps/core/test/perception/telegram-adapter.integration.test.ts` → `test("AC-F0005-02 normalizes Telegram long-poll updates into the canonical perception intake layer")`; `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0005-02 exposes POST /ingest through the runtime boundary and returns canonical admission metadata")`; smoke in `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0005-02 accepts POST /ingest inside the deployment cell and reuses the canonical reactive handoff")`; smoke in `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0005-02 ingests a Telegram update from a fake Bot API inside the deployment cell")` | done |
+| AC-F0005-03 | `apps/core/test/perception/batching.integration.test.ts` → `test("AC-F0005-03 builds a bounded deterministic perception batch with coalescing and claim semantics")`; `packages/db/test/perception-store.integration.test.ts` → `test("AC-F0005-03 stores and orders queued stimuli deterministically inside stimulus_inbox")` | done |
+| AC-F0005-04 | `apps/core/test/perception/batching.integration.test.ts` → `test("AC-F0005-04 reuses only the canonical reactive requestTick path for urgent stimuli")`; `apps/core/test/perception/batching.integration.test.ts` → `test("AC-F0005-04 requests a reactive tick when a queued duplicate is upgraded to urgent")` | done |
+| AC-F0005-05 | `apps/core/test/perception/adapter-failure.integration.test.ts` → `test("AC-F0005-05 degrades failing adapter sources without crashing core")`; `apps/core/test/perception/telegram-config.integration.test.ts` → `test("AC-F0005-05 validates Telegram secrets and allowlist before enabling the adapter")`; `infra/docker/test/perception-local-secrets.contract.test.ts` → `test("AC-F0005-05 forwards YAAGI_TELEGRAM_* variables through the canonical local compose path")` | done |
+| AC-F0005-06 | `packages/db/test/perception-store.integration.test.ts` → `test("AC-F0005-06 consumes or releases claimed stimuli atomically with tick finalization and stale reclaim")` | done |
 
 План верификации:
 
@@ -342,12 +343,22 @@ Tasks:
 
 ## 10. Progress & links
 
-- Status: `proposed` → `shaped` → `planned`
+- Status: `proposed` → `shaped` → `planned` → `done`
 - Issue: -
 - PRs:
   - -
 - Code:
-  - -
+  - `packages/contracts/src/perception.ts`
+  - `packages/db/src/perception.ts`
+  - `packages/db/src/runtime.ts`
+  - `infra/migrations/004_perception_intake.sql`
+  - `apps/core/src/perception/*`
+  - `apps/core/src/runtime/runtime-lifecycle.ts`
+  - `apps/core/src/platform/core-config.ts`
+  - `apps/core/src/platform/core-runtime.ts`
+  - `infra/docker/compose.smoke-telegram.yaml`
+  - `infra/docker/fake-telegram-api/server.py`
+  - `infra/docker/deployment-cell.smoke.ts`
 
 ## 11. Change log
 
@@ -355,3 +366,6 @@ Tasks:
 - **v1.1 (2026-03-23):** `spec-compact` refined the perception/runtime contract: fixed the first delivered adapter set, aligned `SensorSignal` ↔ `StimulusEnvelope` through a repo-level ADR, specified `stimulus_inbox` + bounded buffer semantics, added claim/release recovery rules, and reserved smoke verification for ingest/reactive-handoff behavior in the canonical deployment cell.
 - **v1.2 (2026-03-23):** `spec-compact` realignment moved Telegram from optional taxonomy-only source into the required first delivered adapter set, fixed long-poll testing and fake-Bot-API smoke strategy, and bound local Telegram secrets to repo-root `.env.local` / `.env.example` without introducing an in-process secret loader.
 - **v1.3 (2026-03-23):** `plan-slice` decomposed `F-0005` into six delivery slices covering the perception contracts/storage substrate, the generic kernel and HTTP/system ingress, the Telegram-first operator milestone, the remaining internal adapters, replay/recovery hardening and deployment-cell smoke closure.
+- **v1.4 (2026-03-23):** Реализация закрыла все slices `F-0005`: добавлены `@yaagi/contracts/perception`, миграция `stimulus_inbox`, SQL-backed perception store, lifecycle-managed controller/adapters, `POST /ingest`, Telegram long polling с allowlist/dedupe, filesystem/resource/scheduler adapters, terminal consume/release semantics, fake-Bot-API-backed smoke override и AC-linked fast/smoke verification.
+- **v1.5 (2026-03-23):** После полного независимого ревью verification surface был усилен без сужения scope: добавлены реальные adapter-path tests для `filesystem`, `scheduler` и `resource`, lifecycle-тест теперь доказывает stop/restart без dangling watchers/pollers, а `resource-adapter` сбрасывает internal severity state на stop/restart для корректного recovery поведения.
+- **v1.6 (2026-03-23):** После повторного full-scope review устранены скрытые implementation gaps: queued urgent duplicate теперь повторно использует canonical reactive handoff, local `.env.local` Telegram contract реально прокинут в compose-based runtime path, а `scheduler-adapter` переведён с synthetic heartbeat на existing runtime scheduler hook seam.

@@ -419,7 +419,7 @@ interface SensorAdapter {
 
 - `http-ingress-adapter` — принимает внешние стимулы через Mastra/custom HTTP routes;
 - `filesystem-adapter` — отслеживает allowlisted директории через `chokidar`;
-- `scheduler-adapter` — переводит события `pg-boss` в сенсорные сигналы;
+- `scheduler-adapter` — переводит существующие runtime/scheduler hooks в сенсорные сигналы; в phase-0 это lifecycle/activation hooks планировщика, а не синтетический heartbeat loop, с последующим расширением до событий `pg-boss`;
 - `resource-adapter` — публикует сигналы давления CPU/RAM/GPU/диска;
 - `telegram-adapter` — принимает allowlisted operator stimuli через Telegram Bot API;
 - `system-adapter` — boot/recovery/freeze/promote/rollback сигналы самого организма.
