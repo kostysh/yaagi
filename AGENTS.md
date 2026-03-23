@@ -36,6 +36,10 @@ This repository uses the dossier protocol.
 11. If implementation reveals a missing prerequisite seam or a cross-cutting invariant, make the backlog/dossier/ADR realignment explicit before continuing.
 12. During request execution, you may spawn sub-agents when this is justified by the task and likely to accelerate delivery; always assess whether delegation is actually useful before doing so.
 13. If a spawned sub-agent has completed its task and is no longer needed, stop it promptly so it does not continue consuming resources.
+14. The repository operates under a no-technical-debt rule. Here, a "step" means a completed dossier workflow unit (`feature-intake`, `spec-compact`, `plan-slice`, `implementation`) or a user-approved implementation increment/slice when delivery is intentionally split across turns.
+15. For every completed step, run an explicit technical-debt review of the changed scope, then re-check that debt against related dependencies and adjacent seams to surface hidden debt. This debt review happens after the step's local checks and before the mandatory independent review gate is considered complete.
+16. Any technical debt discovered during that review must end with an explicit, recorded resolution path before the step is considered complete: eliminate it immediately, realign the relevant dossier/backlog/ADR, or record a user-approved follow-up in the canonical artifact for that debt class with stable references and dependencies.
+17. Canonical follow-up artifacts for unresolved debt are fixed: use the existing feature dossier when the debt belongs to an intaken feature, `docs/backlog/feature-candidates.md` when it exposes a not-yet-intaken seam, and `docs/adr/ADR-*.md` when it is cross-cutting. Chat-only or TODO-only follow-ups do not satisfy this rule.
 
 ## Common commands
 - Format code: `pnpm format`
@@ -46,6 +50,8 @@ This repository uses the dossier protocol.
 - Automation quality gate: `pnpm quality:check`
 - Run fast tests: `pnpm test`
 - Run container smoke: `pnpm smoke:cell`
+- Audit repo debt markers: `pnpm debt:audit`
+- Audit changed-scope debt markers: `pnpm debt:audit:changed`
 - Sync index: `node scripts/sync-index.mjs`
 - Lint dossiers: `node scripts/lint-dossiers.mjs`
 - Audit coverage: `node scripts/coverage-audit.mjs`
