@@ -86,7 +86,7 @@ services:
       retries: 30
       start_period: 10s
     ports:
-      - "18080:8080"
+      - "${YAAGI_CORE_HOST_PORT:-18080}:8080"
     volumes:
       - ../../seed:/seed:ro
       - workspace_state:/workspace

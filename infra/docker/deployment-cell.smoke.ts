@@ -13,17 +13,28 @@ const telegramSmokeComposeFile = path.join(
 );
 const projectName = 'yaagi-phase0';
 const telegramProjectName = 'yaagi-phase0-telegram';
-const coreHealthUrl = 'http://127.0.0.1:18080/health';
+const defaultCoreHostPort = 18080;
+const telegramCoreHostPort = 18081;
+
+function coreBaseUrl(port = defaultCoreHostPort): string {
+  return `http://127.0.0.1:${port}`;
+}
+
+function coreHealthUrl(port = defaultCoreHostPort): string {
+  return `${coreBaseUrl(port)}/health`;
+}
 
 type ComposeOptions = Parameters<typeof run>[2] & {
   telegram?: boolean;
   projectName?: string;
+  coreHostPort?: number;
 };
 
 async function compose(args: string[], options: ComposeOptions = {}) {
   const {
     telegram = false,
     projectName: composeProjectName = projectName,
+    coreHostPort = defaultCoreHostPort,
     ...runOptions
   } = options;
   const composeFiles = telegram ? [composeFile, telegramSmokeComposeFile] : [composeFile];
@@ -37,6 +48,7 @@ async function compose(args: string[], options: ComposeOptions = {}) {
         ...process.env,
         DOCKER_BUILDKIT: '0',
         COMPOSE_DOCKER_CLI_BUILD: '0',
+        YAAGI_CORE_HOST_PORT: String(coreHostPort),
       },
       ...runOptions,
     },
@@ -44,16 +56,17 @@ async function compose(args: string[], options: ComposeOptions = {}) {
 }
 
 async function resetSmokeProjects(): Promise<void> {
-  await compose(['down', '-v', '--remove-orphans'], {
+  await tearDownSmokeProject({
     rejectOnNonZeroExitCode: false,
     telegram: true,
-  }).catch(() => {});
-  await compose(['down', '-v', '--remove-orphans'], {
+    coreHostPort: defaultCoreHostPort,
+  });
+  await tearDownSmokeProject({
     rejectOnNonZeroExitCode: false,
     telegram: true,
     projectName: telegramProjectName,
-  }).catch(() => {});
-  await waitForPortToClose(18080);
+    coreHostPort: telegramCoreHostPort,
+  });
 }
 
 async function waitForPortToClose(port: number, timeoutMs = 20_000): Promise<void> {
@@ -80,6 +93,65 @@ async function waitForPortToClose(port: number, timeoutMs = 20_000): Promise<voi
   }
 
   throw new Error(`timed out waiting for port ${port} to close`);
+}
+
+async function waitForProjectResourcesToDisappear(
+  composeProjectName: string,
+  timeoutMs = 20_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  const containerPrefix = `${composeProjectName}-`;
+  const resourcePrefix = `${composeProjectName}_`;
+
+  while (Date.now() <= deadline) {
+    const [containers, networks, volumes] = await Promise.all([
+      run('docker', ['ps', '-a', '--format', '{{.Names}}'], {
+        cwd: repoRoot(),
+      }),
+      run('docker', ['network', 'ls', '--format', '{{.Name}}'], {
+        cwd: repoRoot(),
+      }),
+      run('docker', ['volume', 'ls', '--format', '{{.Name}}'], {
+        cwd: repoRoot(),
+      }),
+    ]);
+
+    const activeContainers = containers.stdout
+      .split('\n')
+      .map((value) => value.trim())
+      .filter((value) => value.startsWith(containerPrefix));
+    const activeNetworks = networks.stdout
+      .split('\n')
+      .map((value) => value.trim())
+      .filter((value) => value.startsWith(resourcePrefix));
+    const activeVolumes = volumes.stdout
+      .split('\n')
+      .map((value) => value.trim())
+      .filter((value) => value.startsWith(resourcePrefix));
+
+    if (
+      activeContainers.length === 0 &&
+      activeNetworks.length === 0 &&
+      activeVolumes.length === 0
+    ) {
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+
+  throw new Error(
+    `timed out waiting for docker resources of project ${composeProjectName} to disappear`,
+  );
+}
+
+async function tearDownSmokeProject(options: ComposeOptions = {}): Promise<void> {
+  const { projectName: composeProjectName = projectName, coreHostPort = defaultCoreHostPort } =
+    options;
+
+  await compose(['down', '-v', '--remove-orphans'], options).catch(() => {});
+  await waitForProjectResourcesToDisappear(composeProjectName);
+  await waitForPortToClose(coreHostPort);
 }
 
 async function queryPostgres(
@@ -165,12 +237,13 @@ async function waitForAdapterStatus(
   source: string,
   status: string,
   timeoutMs = 20_000,
+  port = defaultCoreHostPort,
 ): Promise<void> {
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() <= deadline) {
     try {
-      const response = await fetch(coreHealthUrl);
+      const response = await fetch(coreHealthUrl(port));
       if (response.ok) {
         const payload = (await response.json()) as {
           perception?: {
@@ -202,7 +275,7 @@ void test('AC-F0002-05 initializes postgres and pgboss readiness before core rep
   await compose(['up', '-d', '--build']);
 
   try {
-    const coreResponse = await waitForHttp(coreHealthUrl);
+    const coreResponse = await waitForHttp(coreHealthUrl());
     const corePayload = (await coreResponse.json()) as {
       ok: boolean;
       postgres: boolean;
@@ -299,7 +372,7 @@ void test('AC-F0002-05 initializes postgres and pgboss readiness before core rep
     assert.match(stdout, /pgboss/);
     assert.match(stdout, /platform_bootstrap/);
   } finally {
-    await compose(['down', '-v'], { rejectOnNonZeroExitCode: false }).catch(() => {});
+    await tearDownSmokeProject({ rejectOnNonZeroExitCode: false });
   }
 });
 
@@ -310,7 +383,7 @@ void test('AC-F0003-01 starts the mandatory wake tick only after constitutional 
   await compose(['up', '-d', '--build']);
 
   try {
-    const coreResponse = await waitForHttp(coreHealthUrl);
+    const coreResponse = await waitForHttp(coreHealthUrl());
     assert.equal(coreResponse.status, 200);
 
     assert.equal(
@@ -354,7 +427,7 @@ void test('AC-F0003-01 starts the mandatory wake tick only after constitutional 
       'true',
     );
   } finally {
-    await compose(['down', '-v'], { rejectOnNonZeroExitCode: false }).catch(() => {});
+    await tearDownSmokeProject({ rejectOnNonZeroExitCode: false });
   }
 });
 
@@ -365,7 +438,7 @@ void test('AC-F0003-02 prevents overlapping active ticks through DB-backed lease
   await compose(['up', '-d', '--build']);
 
   try {
-    const coreResponse = await waitForHttp(coreHealthUrl);
+    const coreResponse = await waitForHttp(coreHealthUrl());
     assert.equal(coreResponse.status, 200);
 
     const admissionResult = JSON.parse(
@@ -439,7 +512,7 @@ void test('AC-F0003-02 prevents overlapping active ticks through DB-backed lease
       '1',
     );
   } finally {
-    await compose(['down', '-v'], { rejectOnNonZeroExitCode: false }).catch(() => {});
+    await tearDownSmokeProject({ rejectOnNonZeroExitCode: false });
   }
 });
 
@@ -450,7 +523,7 @@ void test('AC-F0003-07 reclaims stale active ticks after restart and clears agen
   await compose(['up', '-d', '--build']);
 
   try {
-    const coreResponse = await waitForHttp(coreHealthUrl);
+    const coreResponse = await waitForHttp(coreHealthUrl());
     assert.equal(coreResponse.status, 200);
 
     await queryPostgres(`
@@ -483,7 +556,7 @@ void test('AC-F0003-07 reclaims stale active ticks after restart and clears agen
       `);
 
     await compose(['restart', 'core']);
-    await waitForHttp(coreHealthUrl);
+    await waitForHttp(coreHealthUrl());
 
     assert.equal(
       await queryPostgres(
@@ -504,7 +577,7 @@ void test('AC-F0003-07 reclaims stale active ticks after restart and clears agen
       '',
     );
   } finally {
-    await compose(['down', '-v'], { rejectOnNonZeroExitCode: false }).catch(() => {});
+    await tearDownSmokeProject({ rejectOnNonZeroExitCode: false });
   }
 });
 
@@ -515,7 +588,7 @@ void test('AC-F0004-06 reloads the last committed subject-state after restart wi
   await compose(['up', '-d', '--build']);
 
   try {
-    const coreResponse = await waitForHttp(coreHealthUrl);
+    const coreResponse = await waitForHttp(coreHealthUrl());
     assert.equal(coreResponse.status, 200);
 
     const commitResult = JSON.parse(
@@ -581,7 +654,7 @@ void test('AC-F0004-06 reloads the last committed subject-state after restart wi
     assert.match(commitResult.episodeId, /^[0-9a-f-]+$/);
 
     await compose(['restart', 'core']);
-    await waitForHttp(coreHealthUrl);
+    await waitForHttp(coreHealthUrl());
 
     assert.equal(
       await queryPostgres(
@@ -642,7 +715,7 @@ void test('AC-F0004-06 reloads the last committed subject-state after restart wi
     assert.equal(snapshot.memory, 'steady');
     assert.deepEqual(snapshot.goals, ['goal-smoke-reload']);
   } finally {
-    await compose(['down', '-v'], { rejectOnNonZeroExitCode: false }).catch(() => {});
+    await tearDownSmokeProject({ rejectOnNonZeroExitCode: false });
   }
 });
 
@@ -653,10 +726,10 @@ void test('AC-F0005-02 accepts POST /ingest inside the deployment cell and reuse
   await compose(['up', '-d', '--build']);
 
   try {
-    const coreResponse = await waitForHttp(coreHealthUrl);
+    const coreResponse = await waitForHttp(coreHealthUrl());
     assert.equal(coreResponse.status, 200);
 
-    const ingestResponse = await fetch('http://127.0.0.1:18080/ingest', {
+    const ingestResponse = await fetch(`${coreBaseUrl()}/ingest`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -713,7 +786,7 @@ void test('AC-F0005-02 accepts POST /ingest inside the deployment cell and reuse
       'http',
     );
   } finally {
-    await compose(['down', '-v'], { rejectOnNonZeroExitCode: false }).catch(() => {});
+    await tearDownSmokeProject({ rejectOnNonZeroExitCode: false });
   }
 });
 
@@ -724,12 +797,13 @@ void test('AC-F0005-02 ingests a Telegram update from a fake Bot API inside the 
   await compose(['up', '-d', '--build'], {
     telegram: true,
     projectName: telegramProjectName,
+    coreHostPort: telegramCoreHostPort,
   });
 
   try {
-    const coreResponse = await waitForHttp(coreHealthUrl);
+    const coreResponse = await waitForHttp(coreHealthUrl(telegramCoreHostPort));
     assert.equal(coreResponse.status, 200);
-    await waitForAdapterStatus('telegram', 'healthy');
+    await waitForAdapterStatus('telegram', 'healthy', 20_000, telegramCoreHostPort);
 
     await enqueueFakeTelegramUpdate({
       updateId: 1,
@@ -772,10 +846,11 @@ void test('AC-F0005-02 ingests a Telegram update from a fake Bot API inside the 
       'telegram',
     );
   } finally {
-    await compose(['down', '-v'], {
+    await tearDownSmokeProject({
       rejectOnNonZeroExitCode: false,
       telegram: true,
       projectName: telegramProjectName,
-    }).catch(() => {});
+      coreHostPort: telegramCoreHostPort,
+    });
   }
 });

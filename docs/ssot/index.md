@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-03-23T14:57:10.003Z_
+_Last sync: 2026-03-23T16:09:50.477Z_
 
 ## Features
 
@@ -15,6 +15,7 @@ _Last sync: 2026-03-23T14:57:10.003Z_
 | F-0003 | Тиковый runtime, scheduler и эпизодическая линия времени | done | runtime | F-0001, F-0002 | runtime,db,timeline,jobs | `../features/F-0003-tick-runtime-scheduler-episodic-timeline.md` |
 | F-0004 | Ядро субъектного состояния и модель памяти | done | memory | F-0001, F-0002, F-0003 | runtime,db,memory,state | `../features/F-0004-subject-state-kernel-and-memory-model.md` |
 | F-0005 | Буфер восприятия и сенсорные адаптеры | done | perception | F-0001, F-0002, F-0003 | runtime,db,ingress,perception | `../features/F-0005-perception-buffer-and-sensor-adapters.md` |
+| F-0006 | Актуализация базовых зависимостей и выравнивание инструментального стека | done | platform | F-0001, F-0002, F-0003, F-0004, F-0005 | runtime,infra,toolchain,dependencies | `../features/F-0006-baseline-dependency-refresh-and-toolchain-alignment.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -27,6 +28,7 @@ graph TD
   F0003["F-0003 Тиковый runtime, scheduler и эпизодическая линия времени"]
   F0004["F-0004 Ядро субъектного состояния и модель памяти"]
   F0005["F-0005 Буфер восприятия и сенсорные адаптеры"]
+  F0006["F-0006 Актуализация базовых зависимостей и выравнивание инструментального стека"]
   F0001 --> F0002
   F0003 --> F0001
   F0003 --> F0002
@@ -36,6 +38,11 @@ graph TD
   F0005 --> F0001
   F0005 --> F0002
   F0005 --> F0003
+  F0006 --> F0001
+  F0006 --> F0002
+  F0006 --> F0003
+  F0006 --> F0004
+  F0006 --> F0005
 ```
 <!-- END GENERATED DEP_GRAPH -->
 

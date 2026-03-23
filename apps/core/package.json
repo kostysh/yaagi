@@ -21,11 +21,11 @@
     "smoke": "node --experimental-strip-types src/main.ts"
   },
   "dependencies": {
-    "@mastra/core": "^1.14.0",
+    "@mastra/core": "^1.15.0",
     "@yaagi/contracts": "workspace:*",
     "@yaagi/db": "workspace:*",
-    "chokidar": "^4.0.3",
-    "hono": "^4.12.8",
-    "zod": "^3.25.76"
+    "chokidar": "^5.0.0",
+    "hono": "^4.12.9",
+    "zod": "^4.3.6"
   }
 }

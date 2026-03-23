@@ -40,7 +40,7 @@ export type AdapterHealthStatus =
   (typeof ADAPTER_HEALTH_STATUS)[keyof typeof ADAPTER_HEALTH_STATUS];
 
 const isoTimestampSchema = z.string().datetime({ offset: true });
-const jsonRecordSchema = z.record(z.unknown());
+const jsonRecordSchema = z.record(z.string(), z.unknown());
 
 export const sensorSourceSchema = z.enum([
   SENSOR_SOURCE.HTTP,
