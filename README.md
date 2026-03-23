@@ -30,6 +30,7 @@ Canonical engineering decisions for the repo:
 - package manager and command surface: `pnpm`
 - runtime baseline: `Node.js 22 + TypeScript`
 - default execution path for local TypeScript code: `node --experimental-strip-types`
+- local secret-bearing overrides: repo-root `.env.local` (gitignored), with checked-in shape in `.env.example`; canonical local-secret launch paths are `pnpm cell:up:local` and `pnpm smoke:cell:local`, while application code continues to read `process.env`
 - default test runner: `node:test`
 - canonical quality/style toolchain: `Biome + ESLint`
 - fast code verification: `pnpm test`

@@ -415,14 +415,16 @@ interface SensorAdapter {
 }
 ```
 
-Минимальный набор адаптеров первой зрелой версии:
+Минимальный обязательный набор адаптеров первой delivered версии:
 
 - `http-ingress-adapter` — принимает внешние стимулы через Mastra/custom HTTP routes;
 - `filesystem-adapter` — отслеживает allowlisted директории через `chokidar`;
 - `scheduler-adapter` — переводит события `pg-boss` в сенсорные сигналы;
 - `resource-adapter` — публикует сигналы давления CPU/RAM/GPU/диска;
-- `telegram-adapter` — опциональный социальный входной канал;
+- `telegram-adapter` — принимает allowlisted operator stimuli через Telegram Bot API;
 - `system-adapter` — boot/recovery/freeze/promote/rollback сигналы самого организма.
+
+Первая delivered реализация `telegram-adapter` использует long polling, а не webhook ingress, и активируется только при явном config enable + secret contract, чтобы не требовать отдельный публичный callback endpoint в локальной deployment cell.
 
 Сигналы не подаются прямо в decision loop. Они сначала попадают в **perception buffer** фиксированного размера, где выполняются:
 
@@ -971,9 +973,18 @@ Singleton-таблица.
 - `source_kind`
 - `thread_id`
 - `occurred_at`
+- `priority`
+- `priority_rank`
+- `requires_immediate_tick`
 - `payload_json`
 - `normalized_json`
+- `dedupe_key`
+- `claim_tick_id`
 - `status`
+- `created_at`
+- `updated_at`
+
+Это canonical durable intake table. Минимальный query contract для perception layer опирается на queue ordering, dedupe и restart-safe claim recovery поверх этих полей.
 
 #### `jobs`
 
@@ -1072,14 +1083,18 @@ Stable snapshot manifests.
 ```json
 {
   "id": "uuid",
-  "source": "http|file|telegram|scheduler|system",
+  "source": "http|file|telegram|scheduler|resource|system",
   "occurredAt": "2026-03-18T12:00:00Z",
+  "priority": "low|normal|high|critical",
   "threadId": "optional",
   "entityRefs": ["entity-1"],
+  "requiresImmediateTick": false,
   "payload": {},
   "reliability": 0.92
 }
 ```
+
+`StimulusEnvelope` является canonical serialized intake contract perception layer. Он durable-пишется в `stimulus_inbox`, а bounded perception buffer остаётся derived working set, а не второй permanent history layer.
 
 #### `PerceptualContext`
 
