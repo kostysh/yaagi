@@ -5,6 +5,7 @@ Yet Another AGI
 
 `yaagi` is an implementation path for the Polyphony concept: one long-lived, identity-bearing agent with its continuity anchored outside any single model.
 
+- Concept document: [English translation](docs/polyphony_concept.en.md), [canonical Russian original](docs/polyphony_concept.md)
 - The agent lives through ticks, keeps a single timeline, and stores durable state in a PostgreSQL-based state kernel.
 - Mastra is used as the reasoning and tooling substrate, while Polyphony Runtime keeps ownership of identity, memory, temporal continuity, and execution discipline.
 - Local model services act as cognitive organs, not as separate personalities.
