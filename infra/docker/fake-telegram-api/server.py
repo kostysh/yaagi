@@ -80,6 +80,15 @@ class Handler(BaseHTTPRequestHandler):
 
         self._send_json(404, {"ok": False, "error": "not_found"})
 
+    def do_DELETE(self) -> None:
+        parsed = urlparse(self.path)
+        if parsed.path == "/__test__/updates":
+            UPDATES.clear()
+            self._send_json(200, {"ok": True, "cleared": True})
+            return
+
+        self._send_json(404, {"ok": False, "error": "not_found"})
+
     def log_message(self, format: str, *args) -> None:
         return
 

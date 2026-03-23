@@ -168,7 +168,7 @@ interface TickRuntime {
   - failure-path integration tests для stale-tick reclaim и episode atomicity.
 - Containerized smoke path:
   - `pnpm smoke:cell` должен подтверждать boot-to-wake startup внутри deployment cell;
-  - smoke должен подтверждать, что `core` не запускает overlapping ticks после forced restart / reclaim scenario;
+  - smoke должен подтверждать restart/reclaim behavior inside deployment cell without reintroducing overlapping active ticks;
   - smoke должен оставаться в рамках phase-0 topology `core + postgres + vllm-fast`, без отдельного `jobs` container.
 - Manual/operator surface:
   - достаточно inspection через health/logs/timeline rows; richer operator API остаётся вне scope.
@@ -245,7 +245,7 @@ Tasks:
 | AC ID | Test reference | Status |
 |---|---|---|
 | AC-F0003-01 | `apps/core/test/runtime/tick-engine.integration.test.ts` → `test("AC-F0003-01 starts the mandatory wake tick only after constitutional activation")`; smoke in `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0003-01 starts the mandatory wake tick only after constitutional activation")` | done |
-| AC-F0003-02 | `apps/core/test/runtime/tick-scheduler.integration.test.ts` → `test("AC-F0003-02 prevents overlapping active ticks through DB-backed lease discipline")`; smoke in `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0003-02 prevents overlapping active ticks through DB-backed lease discipline")` | done |
+| AC-F0003-02 | `apps/core/test/runtime/tick-scheduler.integration.test.ts` → `test("AC-F0003-02 prevents overlapping active ticks through DB-backed lease discipline")` | done |
 | AC-F0003-03 | `apps/core/test/runtime/agent-state-handoff.integration.test.ts` → `test("AC-F0003-03 maintains agent_state.current_tick atomically across active and terminal tick transitions")` | done |
 | AC-F0003-04 | `apps/core/test/runtime/episode-encoder.integration.test.ts` → `test("AC-F0003-04 commits the episode atomically with its owning tick")` | done |
 | AC-F0003-05 | `apps/core/test/runtime/tick-failure.integration.test.ts` → `test("AC-F0003-05 releases the active lease and records failure context after a failed tick")` | done |
@@ -308,3 +308,4 @@ Tasks:
 - **v1.2 (2026-03-21):** `spec-compact` completed: status raised to `shaped`, phase-0 scheduler topology fixed, stale-tick reclaim semantics added, data/event contracts tightened and verification surface expanded.
 - **v1.3 (2026-03-21):** `plan-slice` completed: dossier moved to `planned` and decomposed into delivery slices covering boot handoff, lease discipline, lifecycle transitions, episode commit and stale-tick reclaim.
 - **v1.4 (2026-03-21):** Implementation completed: added the `polyphony_runtime` PostgreSQL substrate and runtime contracts, wired `core` through constitutional boot into a DB-backed phase-0 tick lifecycle, delivered AC-linked integration tests plus deployment-cell smoke for wake/reclaim, and fixed boot-specific seams around authoritative DB `tick_id`, dependency probes, container volume root resolution and per-boot wake request deduplication.
+- **v1.5 (2026-03-23):** `F-0007` realigned smoke ownership: lease-discipline proof for `AC-F0003-02` was removed from container smoke and закреплён только за fast integration surface, while deployment-cell smoke remained owner for boot-to-wake and stale-tick reclaim behavior.

@@ -70,7 +70,11 @@ export async function removePath(targetPath: string): Promise<void> {
   await rm(targetPath, { recursive: true, force: true });
 }
 
-export async function waitForHttp(url: string, timeoutMs = 60_000): Promise<Response> {
+export async function waitForHttp(
+  url: string,
+  timeoutMs = 60_000,
+  intervalMs = 250,
+): Promise<Response> {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
     try {
@@ -81,7 +85,7 @@ export async function waitForHttp(url: string, timeoutMs = 60_000): Promise<Resp
     } catch {
       // keep waiting
     }
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
 
   throw new Error(`timeout waiting for ${url}`);

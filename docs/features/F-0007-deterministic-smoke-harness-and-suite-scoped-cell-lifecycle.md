@@ -1,7 +1,7 @@
 ---
 id: F-0007
 title: Детерминированный smoke harness и suite-scoped lifecycle deployment cell
-status: planned
+status: done
 owners: ["@codex"]
 area: platform
 depends_on: [F-0002, F-0003, F-0004, F-0005, F-0006]
@@ -228,12 +228,12 @@ Tasks:
 
 | AC ID | Verification reference | Status |
 | --- | --- | --- |
-| AC-F0007-01 | `infra/docker/deployment-cell.smoke.ts` suite lifecycle realignment to scenario-family scoped compose boot | planned |
-| AC-F0007-02 | deterministic reset/readiness helpers plus smoke reruns without compose resource races | planned |
-| AC-F0007-03 | dossier/test realignment with explicit retention of the `F-0002` bootstrap/materialization smoke proof and explicit removal of the lease-discipline plus restart-safe perception probes from container smoke with preserved fast integration ownership | planned |
-| AC-F0007-04 | before/after `pnpm smoke:cell` duration evidence on the same machine and repo state class | planned |
-| AC-F0007-05 | post-suite Docker resource audit for `yaagi-phase0*` containers/networks/volumes | planned |
-| AC-F0007-06 | `README.md`, `F-0002`, `F-0003`, `F-0004`, `F-0005`, `F-0007` and `docs/ssot/index.md` realignment as needed | planned |
+| AC-F0007-01 | `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0007-01 reuses suite-scoped compose families instead of per-test full deployment-cell restarts")`; `test/platform/smoke-harness.contract.test.ts` → `test("AC-F0007-01 keeps the deployment-cell harness on one base family boot and one Telegram family boot")` | done |
+| AC-F0007-02 | `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0007-02 restores clean post-bootstrap runtime state through deterministic resets between suite-scoped smoke scenarios")`; `test/platform/smoke-harness.contract.test.ts` → `test("AC-F0007-02 restores clean post-bootstrap runtime state through deterministic reset and readiness helpers")` | done |
+| AC-F0007-03 | `test/platform/smoke-harness.contract.test.ts` → `test("AC-F0007-03 retains F-0002 startup smoke ownership and removes lease plus perception restart probes from container smoke")`; [F-0003](./F-0003-tick-runtime-scheduler-episodic-timeline.md); [F-0005](./F-0005-perception-buffer-and-sensor-adapters.md) | done |
+| AC-F0007-04 | `test/platform/smoke-harness.contract.test.ts` → `test("AC-F0007-04 records before and after smoke timings with a materially faster post-implementation result")`; before: `/usr/bin/time -p pnpm smoke:cell` → `real 133.47`; after: `/usr/bin/time -p pnpm smoke:cell` → `real 57.13` | done |
+| AC-F0007-05 | `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0007-05 tears down suite-scoped smoke projects without orphaned docker resources")`; `test/platform/smoke-harness.contract.test.ts` → `test("AC-F0007-05 keeps an explicit teardown audit for both smoke projects and their host ports")` | done |
+| AC-F0007-06 | `test/platform/smoke-harness.contract.test.ts` → `test("AC-F0007-06 realigns README and dossier references to the delivered smoke execution model")`; [README.md](/code/projects/yaagi/README.md); [F-0003](./F-0003-tick-runtime-scheduler-episodic-timeline.md); [F-0005](./F-0005-perception-buffer-and-sensor-adapters.md); `docs/ssot/index.md` | done |
 
 План проверки:
 
@@ -263,17 +263,25 @@ Tasks:
 
 ## 11. Progress & links
 
-- Статус: `planned`
+- Статус: `done`
 - Intake source: user-approved follow-up after `F-0006`
 - PRs:
   - -
 - Code:
-  - -
+  - `infra/docker/deployment-cell.smoke.ts`
+  - `infra/docker/helpers.ts`
+  - `infra/docker/fake-telegram-api/server.py`
+  - `README.md`
+  - `docs/features/F-0003-tick-runtime-scheduler-episodic-timeline.md`
+  - `docs/features/F-0005-perception-buffer-and-sensor-adapters.md`
 - Verification:
-  - `rg` audit по `infra/docker/deployment-cell.smoke.ts`, `infra/docker/helpers.ts`, `infra/docker/compose.yaml`
+  - `/usr/bin/time -p pnpm smoke:cell` before → `real 133.47`
+  - `/usr/bin/time -p pnpm smoke:cell` after → `real 57.13`
+  - `node --experimental-strip-types --test infra/docker/deployment-cell.smoke.ts`
 
 ## 12. Журнал изменений (Change log)
 
 - **v1.0 (2026-03-23):** Выполнен intake отдельного workstream на детерминизацию и ускорение `pnpm smoke:cell` после подтверждения, что текущий harness тратит основное время на repeated full deployment-cell lifecycle и readiness polling.
 - **v1.1 (2026-03-23):** Выполнен `spec-compact`: зафиксированы suite-scoped lifecycle model, deterministic reset/readiness contract, canonical smoke scope, relative performance-measurement contract и explicit ADR decisions по coverage realignment.
 - **v1.2 (2026-03-23):** Выполнен `plan-slice`: работа разложена на 5 delivery slices с явными exit criteria, task IDs, coverage realignment steps и отдельным acceptance closure path для performance evidence и repo-level smoke contract.
+- **v1.3 (2026-03-23):** Выполнен `implementation`: `deployment-cell.smoke.ts` переведён на scenario-family scoped lifecycle, full compose boots сокращены до двух на весь suite, межсценарная изоляция заменена на deterministic runtime DB reset + `core` stop/start barriers, fake Telegram API получил explicit reset endpoint, ownership был realigned в `F-0003` и `F-0005`, а measured single-run `pnpm smoke:cell` improved from `133.47s` to `57.13s`.

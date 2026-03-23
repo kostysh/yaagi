@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-03-23T18:29:59.566Z_
+_Last sync: 2026-03-23T19:07:03.677Z_
 
 ## Features
 
@@ -16,7 +16,7 @@ _Last sync: 2026-03-23T18:29:59.566Z_
 | F-0004 | Ядро субъектного состояния и модель памяти | done | memory | F-0001, F-0002, F-0003 | runtime,db,memory,state | `../features/F-0004-subject-state-kernel-and-memory-model.md` |
 | F-0005 | Буфер восприятия и сенсорные адаптеры | done | perception | F-0001, F-0002, F-0003 | runtime,db,ingress,perception | `../features/F-0005-perception-buffer-and-sensor-adapters.md` |
 | F-0006 | Актуализация базовых зависимостей и выравнивание инструментального стека | done | platform | F-0001, F-0002, F-0003, F-0004, F-0005 | runtime,infra,toolchain,dependencies | `../features/F-0006-baseline-dependency-refresh-and-toolchain-alignment.md` |
-| F-0007 | Детерминированный smoke harness и suite-scoped lifecycle deployment cell | planned | platform | F-0002, F-0003, F-0004, F-0005, F-0006 | runtime,infra,verification,smoke | `../features/F-0007-deterministic-smoke-harness-and-suite-scoped-cell-lifecycle.md` |
+| F-0007 | Детерминированный smoke harness и suite-scoped lifecycle deployment cell | done | platform | F-0002, F-0003, F-0004, F-0005, F-0006 | runtime,infra,verification,smoke | `../features/F-0007-deterministic-smoke-harness-and-suite-scoped-cell-lifecycle.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph

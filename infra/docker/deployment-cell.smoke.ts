@@ -16,6 +16,14 @@ const telegramProjectName = 'yaagi-phase0-telegram';
 const defaultCoreHostPort = 18080;
 const telegramCoreHostPort = 18081;
 
+const smokeLifecycleMetrics = {
+  baseFamilyStarts: 0,
+  baseFamilyTeardowns: 0,
+  telegramFamilyStarts: 0,
+  telegramFamilyTeardowns: 0,
+  runtimeResets: 0,
+};
+
 function coreBaseUrl(port = defaultCoreHostPort): string {
   return `http://127.0.0.1:${port}`;
 }
@@ -29,6 +37,33 @@ type ComposeOptions = Parameters<typeof run>[2] & {
   projectName?: string;
   coreHostPort?: number;
 };
+
+const runtimeResetSql = `
+truncate table
+  polyphony_runtime.stimulus_inbox,
+  polyphony_runtime.relationships,
+  polyphony_runtime.entities,
+  polyphony_runtime.beliefs,
+  polyphony_runtime.goals,
+  polyphony_runtime.episodes,
+  polyphony_runtime.timeline_events,
+  polyphony_runtime.ticks
+restart identity cascade;
+
+update polyphony_runtime.agent_state
+set agent_id = 'polyphony-core',
+    mode = 'inactive',
+    schema_version = (select schema_version from platform_bootstrap.schema_state where id = 1),
+    boot_state_json = '{}'::jsonb,
+    current_tick_id = null,
+    current_model_profile_id = null,
+    last_stable_snapshot_id = null,
+    psm_json = '{}'::jsonb,
+    resource_posture_json = '{}'::jsonb,
+    development_freeze = false,
+    updated_at = now()
+where id = 1;
+`;
 
 async function compose(args: string[], options: ComposeOptions = {}) {
   const {
@@ -53,20 +88,6 @@ async function compose(args: string[], options: ComposeOptions = {}) {
       ...runOptions,
     },
   );
-}
-
-async function resetSmokeProjects(): Promise<void> {
-  await tearDownSmokeProject({
-    rejectOnNonZeroExitCode: false,
-    telegram: true,
-    coreHostPort: defaultCoreHostPort,
-  });
-  await tearDownSmokeProject({
-    rejectOnNonZeroExitCode: false,
-    telegram: true,
-    projectName: telegramProjectName,
-    coreHostPort: telegramCoreHostPort,
-  });
 }
 
 async function waitForPortToClose(port: number, timeoutMs = 20_000): Promise<void> {
@@ -154,6 +175,20 @@ async function tearDownSmokeProject(options: ComposeOptions = {}): Promise<void>
   await waitForPortToClose(coreHostPort);
 }
 
+async function resetSmokeProjects(): Promise<void> {
+  await tearDownSmokeProject({
+    rejectOnNonZeroExitCode: false,
+    telegram: true,
+    coreHostPort: defaultCoreHostPort,
+  });
+  await tearDownSmokeProject({
+    rejectOnNonZeroExitCode: false,
+    telegram: true,
+    projectName: telegramProjectName,
+    coreHostPort: telegramCoreHostPort,
+  });
+}
+
 async function queryPostgres(
   sql: string,
   options: { telegram?: boolean; projectName?: string } = {},
@@ -185,6 +220,25 @@ async function execCoreScript(
   );
 
   return stdout.trim();
+}
+
+async function resetFakeTelegramUpdates(): Promise<void> {
+  await compose(
+    [
+      'exec',
+      '-T',
+      'fake-telegram-api',
+      'python',
+      '-c',
+      [
+        'import urllib.request',
+        "request = urllib.request.Request('http://127.0.0.1:8081/__test__/updates', method='DELETE')",
+        'with urllib.request.urlopen(request, timeout=5) as response:',
+        '    response.read()',
+      ].join('\n'),
+    ],
+    { telegram: true, projectName: telegramProjectName, coreHostPort: telegramCoreHostPort },
+  );
 }
 
 async function enqueueFakeTelegramUpdate(input: {
@@ -227,7 +281,7 @@ async function waitForPostgresValue(
       return;
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 250));
   }
 
   throw new Error(`timed out waiting for postgres query to return ${expected}: ${sql}`);
@@ -262,595 +316,573 @@ async function waitForAdapterStatus(
       // Keep polling while the host port flips between compose projects.
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 250));
   }
 
   throw new Error(`timed out waiting for adapter ${source} to become ${status}`);
 }
 
-void test('AC-F0002-05 initializes postgres and pgboss readiness before core reports ready', {
-  concurrency: false,
-}, async () => {
+async function startSmokeFamily(options: ComposeOptions = {}): Promise<void> {
+  await compose(['up', '-d', '--build', '--wait'], options);
+
+  if (options.projectName === telegramProjectName) {
+    smokeLifecycleMetrics.telegramFamilyStarts += 1;
+    return;
+  }
+
+  smokeLifecycleMetrics.baseFamilyStarts += 1;
+}
+
+async function tearDownStartedSmokeFamily(options: ComposeOptions = {}): Promise<void> {
+  await tearDownSmokeProject(options);
+
+  if (options.projectName === telegramProjectName) {
+    smokeLifecycleMetrics.telegramFamilyTeardowns += 1;
+    return;
+  }
+
+  smokeLifecycleMetrics.baseFamilyTeardowns += 1;
+}
+
+// Covers: AC-F0007-02
+async function prepareFreshRuntimeScenario(options: ComposeOptions = {}): Promise<void> {
+  const { coreHostPort = defaultCoreHostPort, projectName: composeProjectName = projectName } =
+    options;
+
+  await compose(['stop', 'core'], options);
+  await waitForPortToClose(coreHostPort);
+  await queryPostgres(
+    runtimeResetSql,
+    composeProjectName === telegramProjectName
+      ? { telegram: true, projectName: composeProjectName }
+      : { projectName: composeProjectName },
+  );
+
+  if (composeProjectName === telegramProjectName) {
+    await resetFakeTelegramUpdates();
+  }
+
+  smokeLifecycleMetrics.runtimeResets += 1;
+
+  await compose(['start', 'core'], options);
+  await waitForHttp(coreHealthUrl(coreHostPort));
+}
+
+void test('F-0007 base deployment-cell smoke family', { concurrency: false }, async (t) => {
   await resetSmokeProjects();
-  await compose(['up', '-d', '--build']);
+  let started = false;
 
   try {
-    const coreResponse = await waitForHttp(coreHealthUrl());
-    const corePayload = (await coreResponse.json()) as {
-      ok: boolean;
-      postgres: boolean;
-      fastModel: boolean;
-      configuration: boolean;
-      agents: string[];
-    };
+    await startSmokeFamily();
+    started = true;
 
-    assert.equal(corePayload.ok, true);
-    assert.equal(corePayload.postgres, true);
-    assert.equal(corePayload.fastModel, true);
-    assert.equal(corePayload.configuration, true);
-    assert.deepEqual(corePayload.agents, ['phase0DecisionAgent']);
-
-    const { stdout: modelStdout } = await compose([
-      'exec',
-      '-T',
-      'core',
-      'node',
-      '--input-type=module',
-      '-e',
-      "const response = await fetch('http://vllm-fast:8000/v1/models'); if (!response.ok) throw new Error('model request failed with ' + response.status); console.log(JSON.stringify(await response.json()));",
-    ]);
-
-    const modelPayload = JSON.parse(modelStdout.trim()) as {
-      object: string;
-      data: Array<{
-        id: string;
-      }>;
-    };
-    assert.equal(modelPayload.object, 'list');
-    const [firstModel] = modelPayload.data;
-    assert.ok(firstModel);
-    assert.equal(firstModel.id, 'phase-0-fast');
-
-    const materializationPayload = JSON.parse(
-      await execCoreScript(`
-        import { access, writeFile, rm } from 'node:fs/promises';
-
-        const canAccess = async (targetPath) => {
-          try {
-            await access(targetPath);
-            return true;
-          } catch {
-            return false;
-          }
+    await t.test(
+      'AC-F0002-05 initializes postgres and pgboss readiness before core reports ready',
+      async () => {
+        const coreResponse = await waitForHttp(coreHealthUrl());
+        const corePayload = (await coreResponse.json()) as {
+          ok: boolean;
+          postgres: boolean;
+          fastModel: boolean;
+          configuration: boolean;
+          agents: string[];
         };
 
-        let seedWriteErrorCode = null;
-        try {
-          await writeFile('/seed/runtime-write-check.txt', 'forbidden');
-          await rm('/seed/runtime-write-check.txt');
-        } catch (error) {
-          seedWriteErrorCode =
-            error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
-              ? error.code
-              : 'unknown';
-        }
+        assert.equal(corePayload.ok, true);
+        assert.equal(corePayload.postgres, true);
+        assert.equal(corePayload.fastModel, true);
+        assert.equal(corePayload.configuration, true);
+        assert.deepEqual(corePayload.agents, ['phase0DecisionAgent']);
 
-        await writeFile('/workspace/body/runtime-write-check.txt', 'allowed');
-        await rm('/workspace/body/runtime-write-check.txt');
-
-        console.log(
-          JSON.stringify({
-            seedConstitution: await canAccess('/seed/constitution/constitution.yaml'),
-            workspaceBody: await canAccess('/workspace/body/.gitkeep'),
-            workspaceSkills: await canAccess('/workspace/skills/.gitkeep'),
-            modelsBase: await canAccess('/models/base/.gitkeep'),
-            dataDatasets: await canAccess('/data/datasets/.gitkeep'),
-            seedWriteErrorCode,
-          }),
-        );
-      `),
-    ) as {
-      seedConstitution: boolean;
-      workspaceBody: boolean;
-      workspaceSkills: boolean;
-      modelsBase: boolean;
-      dataDatasets: boolean;
-      seedWriteErrorCode: string | null;
-    };
-
-    assert.equal(materializationPayload.seedConstitution, true);
-    assert.equal(materializationPayload.workspaceBody, true);
-    assert.equal(materializationPayload.workspaceSkills, true);
-    assert.equal(materializationPayload.modelsBase, true);
-    assert.equal(materializationPayload.dataDatasets, true);
-    assert.match(materializationPayload.seedWriteErrorCode ?? '', /^(EROFS|EACCES|EPERM)$/);
-
-    const stdout = await queryPostgres(
-      "select schema_name from information_schema.schemata where schema_name in ('platform_bootstrap', 'pgboss') order by schema_name;",
-    );
-
-    assert.match(stdout, /pgboss/);
-    assert.match(stdout, /platform_bootstrap/);
-  } finally {
-    await tearDownSmokeProject({ rejectOnNonZeroExitCode: false });
-  }
-});
-
-void test('AC-F0003-01 starts the mandatory wake tick only after constitutional activation', {
-  concurrency: false,
-}, async () => {
-  await resetSmokeProjects();
-  await compose(['up', '-d', '--build']);
-
-  try {
-    const coreResponse = await waitForHttp(coreHealthUrl());
-    assert.equal(coreResponse.status, 200);
-
-    assert.equal(
-      await queryPostgres(
-        "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'wake' and trigger_kind = 'boot' and status = 'completed';",
-      ),
-      '1',
-    );
-    assert.equal(
-      await queryPostgres(
-        "select count(*)::text from polyphony_runtime.episodes where tick_id in (select tick_id from polyphony_runtime.ticks where tick_kind = 'wake' and trigger_kind = 'boot');",
-      ),
-      '1',
-    );
-    assert.equal(
-      await queryPostgres(
-        "select count(*)::text from polyphony_runtime.timeline_events where event_type = 'system.boot.completed';",
-      ),
-      '1',
-    );
-    assert.equal(
-      await queryPostgres(
-        "select count(*)::text from polyphony_runtime.timeline_events where event_type = 'tick.completed';",
-      ),
-      '1',
-    );
-    assert.equal(
-      await queryPostgres(
-        "select coalesce(current_tick_id, '') from polyphony_runtime.agent_state where id = 1;",
-      ),
-      '',
-    );
-    assert.equal(
-      await queryPostgres(
-        `select (
-           (select min(sequence_id) from polyphony_runtime.timeline_events where event_type = 'system.boot.completed')
-           <
-           (select min(sequence_id) from polyphony_runtime.timeline_events where event_type = 'tick.started')
-         )::text;`,
-      ),
-      'true',
-    );
-  } finally {
-    await tearDownSmokeProject({ rejectOnNonZeroExitCode: false });
-  }
-});
-
-void test('AC-F0003-02 prevents overlapping active ticks through DB-backed lease discipline', {
-  concurrency: false,
-}, async () => {
-  await resetSmokeProjects();
-  await compose(['up', '-d', '--build']);
-
-  try {
-    const coreResponse = await waitForHttp(coreHealthUrl());
-    assert.equal(coreResponse.status, 200);
-
-    const admissionResult = JSON.parse(
-      await execCoreScript(`
-        import { createRuntimeDbClient, createTickRuntimeStore } from './packages/db/src/index.ts';
-
-        const client = createRuntimeDbClient(process.env.YAAGI_POSTGRES_URL);
-        await client.connect();
-
-        try {
-          const store = createTickRuntimeStore(client);
-          const first = await store.requestTick({
-            requestId: 'smoke-lease-1',
-            kind: 'reactive',
-            trigger: 'scheduler',
-            requestedAt: new Date('2026-03-21T00:00:01Z'),
-            payload: {},
-          });
-          const second = await store.requestTick({
-            requestId: 'smoke-lease-2',
-            kind: 'reactive',
-            trigger: 'scheduler',
-            requestedAt: new Date('2026-03-21T00:00:02Z'),
-            payload: {},
-          });
-
-          if (!first.accepted) {
-            throw new Error('expected first admission to succeed');
-          }
-
-          await store.failTick({
-            tickId: first.tick.tickId,
-            occurredAt: new Date('2026-03-21T00:00:03Z'),
-            failureJson: { reason: 'smoke_cleanup' },
-          });
-
-          console.log(
-            JSON.stringify({
-              firstAccepted: first.accepted,
-              firstTickId: first.accepted ? first.tick.tickId : null,
-              secondAccepted: second.accepted,
-              secondReason: second.accepted ? null : second.reason,
-            }),
-          );
-        } finally {
-          await client.end();
-        }
-      `),
-    ) as {
-      firstAccepted: boolean;
-      firstTickId: string;
-      secondAccepted: boolean;
-      secondReason: string | null;
-    };
-
-    assert.equal(admissionResult.firstAccepted, true);
-    assert.equal(admissionResult.secondAccepted, false);
-    assert.equal(admissionResult.secondReason, 'lease_busy');
-    assert.equal(
-      await queryPostgres(
-        "select coalesce(current_tick_id, '') from polyphony_runtime.agent_state where id = 1;",
-      ),
-      '',
-    );
-    assert.equal(
-      await queryPostgres(
-        `select count(*)::text
-         from polyphony_runtime.ticks
-         where request_id in ('smoke-lease-1', 'smoke-lease-2');`,
-      ),
-      '1',
-    );
-  } finally {
-    await tearDownSmokeProject({ rejectOnNonZeroExitCode: false });
-  }
-});
-
-void test('AC-F0003-07 reclaims stale active ticks after restart and clears agent_state.current_tick', {
-  concurrency: false,
-}, async () => {
-  await resetSmokeProjects();
-  await compose(['up', '-d', '--build']);
-
-  try {
-    const coreResponse = await waitForHttp(coreHealthUrl());
-    assert.equal(coreResponse.status, 200);
-
-    await queryPostgres(`
-        insert into polyphony_runtime.ticks (
-          tick_id,
-          request_id,
-          tick_kind,
-          trigger_kind,
-          status,
-          started_at,
-          lease_owner,
-          lease_expires_at,
-          request_json
-        ) values (
-          'tick-stale-smoke',
-          'request-stale-smoke',
-          'reactive',
-          'scheduler',
-          'started',
-          now() - interval '2 minutes',
+        const { stdout: modelStdout } = await compose([
+          'exec',
+          '-T',
           'core',
-          now() - interval '1 minute',
-          '{}'::jsonb
+          'node',
+          '--input-type=module',
+          '-e',
+          "const response = await fetch('http://vllm-fast:8000/v1/models'); if (!response.ok) throw new Error('model request failed with ' + response.status); console.log(JSON.stringify(await response.json()));",
+        ]);
+
+        const modelPayload = JSON.parse(modelStdout.trim()) as {
+          object: string;
+          data: Array<{
+            id: string;
+          }>;
+        };
+        assert.equal(modelPayload.object, 'list');
+        const [firstModel] = modelPayload.data;
+        assert.ok(firstModel);
+        assert.equal(firstModel.id, 'phase-0-fast');
+
+        const materializationPayload = JSON.parse(
+          await execCoreScript(`
+            import { access, writeFile, rm } from 'node:fs/promises';
+
+            const canAccess = async (targetPath) => {
+              try {
+                await access(targetPath);
+                return true;
+              } catch {
+                return false;
+              }
+            };
+
+            let seedWriteErrorCode = null;
+            try {
+              await writeFile('/seed/runtime-write-check.txt', 'forbidden');
+              await rm('/seed/runtime-write-check.txt');
+            } catch (error) {
+              seedWriteErrorCode =
+                error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
+                  ? error.code
+                  : 'unknown';
+            }
+
+            await writeFile('/workspace/body/runtime-write-check.txt', 'allowed');
+            await rm('/workspace/body/runtime-write-check.txt');
+
+            console.log(
+              JSON.stringify({
+                seedConstitution: await canAccess('/seed/constitution/constitution.yaml'),
+                workspaceBody: await canAccess('/workspace/body/.gitkeep'),
+                workspaceSkills: await canAccess('/workspace/skills/.gitkeep'),
+                modelsBase: await canAccess('/models/base/.gitkeep'),
+                dataDatasets: await canAccess('/data/datasets/.gitkeep'),
+                seedWriteErrorCode,
+              }),
+            );
+          `),
+        ) as {
+          seedConstitution: boolean;
+          workspaceBody: boolean;
+          workspaceSkills: boolean;
+          modelsBase: boolean;
+          dataDatasets: boolean;
+          seedWriteErrorCode: string | null;
+        };
+
+        assert.equal(materializationPayload.seedConstitution, true);
+        assert.equal(materializationPayload.workspaceBody, true);
+        assert.equal(materializationPayload.workspaceSkills, true);
+        assert.equal(materializationPayload.modelsBase, true);
+        assert.equal(materializationPayload.dataDatasets, true);
+        assert.match(materializationPayload.seedWriteErrorCode ?? '', /^(EROFS|EACCES|EPERM)$/);
+
+        const stdout = await queryPostgres(
+          "select schema_name from information_schema.schemata where schema_name in ('platform_bootstrap', 'pgboss') order by schema_name;",
         );
 
-        update polyphony_runtime.agent_state
-        set current_tick_id = 'tick-stale-smoke',
-            updated_at = now()
-        where id = 1;
-      `);
-
-    await compose(['restart', 'core']);
-    await waitForHttp(coreHealthUrl());
-
-    assert.equal(
-      await queryPostgres(
-        "select status from polyphony_runtime.ticks where tick_id = 'tick-stale-smoke';",
-      ),
-      'failed',
-    );
-    assert.equal(
-      await queryPostgres(
-        "select failure_json ->> 'reason' from polyphony_runtime.ticks where tick_id = 'tick-stale-smoke';",
-      ),
-      'stale_tick_reclaimed',
-    );
-    assert.equal(
-      await queryPostgres(
-        "select coalesce(current_tick_id, '') from polyphony_runtime.agent_state where id = 1;",
-      ),
-      '',
-    );
-  } finally {
-    await tearDownSmokeProject({ rejectOnNonZeroExitCode: false });
-  }
-});
-
-void test('AC-F0004-06 reloads the last committed subject-state after restart without process-local reconstruction', {
-  concurrency: false,
-}, async () => {
-  await resetSmokeProjects();
-  await compose(['up', '-d', '--build']);
-
-  try {
-    const coreResponse = await waitForHttp(coreHealthUrl());
-    assert.equal(coreResponse.status, 200);
-
-    const commitResult = JSON.parse(
-      await execCoreScript(`
-        import { createRuntimeDbClient, createTickRuntimeStore } from './packages/db/src/index.ts';
-
-        const client = createRuntimeDbClient(process.env.YAAGI_POSTGRES_URL);
-        await client.connect();
-
-        try {
-          const store = createTickRuntimeStore(client);
-          const admission = await store.requestTick({
-            requestId: 'smoke-f0004-reload',
-            kind: 'reactive',
-            trigger: 'system',
-            requestedAt: new Date('2026-03-23T00:10:00Z'),
-            payload: { source: 'smoke-f0004' },
-          });
-
-          if (!admission.accepted) {
-            throw new Error('expected smoke-f0004 admission to succeed');
-          }
-
-          const completion = await store.completeTick({
-            tickId: admission.tick.tickId,
-            occurredAt: new Date('2026-03-23T00:10:05Z'),
-            summary: 'subject state survived restart',
-            resultJson: { ok: true },
-            subjectStateDelta: {
-              agentStatePatch: {
-                psmJson: { smokeMarker: 'persisted' },
-                resourcePostureJson: { memory: 'steady' },
-              },
-              goalUpserts: [
-                {
-                  goalId: 'goal-smoke-reload',
-                  title: 'Reload subject state after restart',
-                  status: 'active',
-                  priority: 4,
-                  goalType: 'continuity',
-                  evidenceRefs: [{ kind: 'tick', tickId: admission.tick.tickId }],
-                },
-              ],
-            },
-          });
-
-          console.log(
-            JSON.stringify({
-              tickId: admission.tick.tickId,
-              episodeId: completion.episode.episodeId,
-            }),
-          );
-        } finally {
-          await client.end();
-        }
-      `),
-    ) as {
-      tickId: string;
-      episodeId: string;
-    };
-
-    assert.match(commitResult.tickId, /^[0-9a-f-]+$/);
-    assert.match(commitResult.episodeId, /^[0-9a-f-]+$/);
-
-    await compose(['restart', 'core']);
-    await waitForHttp(coreHealthUrl());
-
-    assert.equal(
-      await queryPostgres(
-        "select psm_json ->> 'smokeMarker' from polyphony_runtime.agent_state where id = 1;",
-      ),
-      'persisted',
-    );
-    assert.equal(
-      await queryPostgres(
-        "select resource_posture_json ->> 'memory' from polyphony_runtime.agent_state where id = 1;",
-      ),
-      'steady',
-    );
-    assert.equal(
-      await queryPostgres(
-        "select count(*)::text from polyphony_runtime.goals where goal_id = 'goal-smoke-reload' and status = 'active';",
-      ),
-      '1',
-    );
-
-    const snapshot = JSON.parse(
-      await execCoreScript(`
-        import { createRuntimeDbClient, createTickRuntimeStore } from './packages/db/src/index.ts';
-
-        const client = createRuntimeDbClient(process.env.YAAGI_POSTGRES_URL);
-        await client.connect();
-
-        try {
-          const store = createTickRuntimeStore(client);
-          const snapshot = await store.loadSubjectStateSnapshot({
-            goalLimit: 10,
-            beliefLimit: 10,
-            entityLimit: 10,
-            relationshipLimit: 10,
-          });
-
-          console.log(
-            JSON.stringify({
-              currentTickId: snapshot.agentState.currentTickId,
-              smokeMarker: snapshot.agentState.psmJson.smokeMarker ?? null,
-              memory: snapshot.agentState.resourcePostureJson.memory ?? null,
-              goals: snapshot.goals.map((goal) => goal.goalId),
-            }),
-          );
-        } finally {
-          await client.end();
-        }
-      `),
-    ) as {
-      currentTickId: string | null;
-      smokeMarker: string | null;
-      memory: string | null;
-      goals: string[];
-    };
-
-    assert.equal(snapshot.currentTickId, null);
-    assert.equal(snapshot.smokeMarker, 'persisted');
-    assert.equal(snapshot.memory, 'steady');
-    assert.deepEqual(snapshot.goals, ['goal-smoke-reload']);
-  } finally {
-    await tearDownSmokeProject({ rejectOnNonZeroExitCode: false });
-  }
-});
-
-void test('AC-F0005-02 accepts POST /ingest inside the deployment cell and reuses the canonical reactive handoff', {
-  concurrency: false,
-}, async () => {
-  await resetSmokeProjects();
-  await compose(['up', '-d', '--build']);
-
-  try {
-    const coreResponse = await waitForHttp(coreHealthUrl());
-    assert.equal(coreResponse.status, 200);
-
-    const ingestResponse = await fetch(`${coreBaseUrl()}/ingest`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
+        assert.match(stdout, /pgboss/);
+        assert.match(stdout, /platform_bootstrap/);
       },
-      body: JSON.stringify({
-        signalType: 'http.operator.message',
-        priority: 'critical',
-        requiresImmediateTick: true,
-        threadId: 'operator-http',
-        payload: {
-          text: 'smoke http ingest',
-        },
-      }),
-    });
-
-    assert.equal(ingestResponse.status, 202);
-    const ingestPayload = (await ingestResponse.json()) as {
-      accepted: boolean;
-      stimulusId: string;
-      deduplicated: boolean;
-      tickAdmission: {
-        accepted: boolean;
-      } | null;
-    };
-    assert.equal(ingestPayload.accepted, true);
-    assert.equal(ingestPayload.deduplicated, false);
-    assert.equal(ingestPayload.tickAdmission?.accepted, true);
-
-    await waitForPostgresValue(
-      "select count(*)::text from polyphony_runtime.stimulus_inbox where source_kind = 'http' and normalized_json ->> 'signalType' = 'http.operator.message';",
-      '1',
-    );
-    await waitForPostgresValue(
-      "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed';",
-      '1',
     );
 
-    assert.equal(
-      await queryPostgres(
-        "select normalized_json -> 'envelope' ->> 'source' from polyphony_runtime.stimulus_inbox where source_kind = 'http' and normalized_json ->> 'signalType' = 'http.operator.message' limit 1;",
-      ),
-      'http',
+    await prepareFreshRuntimeScenario();
+    await t.test(
+      'AC-F0003-01 starts the mandatory wake tick only after constitutional activation',
+      async () => {
+        assert.equal(
+          await queryPostgres(
+            "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'wake' and trigger_kind = 'boot' and status = 'completed';",
+          ),
+          '1',
+        );
+        assert.equal(
+          await queryPostgres(
+            "select count(*)::text from polyphony_runtime.episodes where tick_id in (select tick_id from polyphony_runtime.ticks where tick_kind = 'wake' and trigger_kind = 'boot');",
+          ),
+          '1',
+        );
+        assert.equal(
+          await queryPostgres(
+            "select count(*)::text from polyphony_runtime.timeline_events where event_type = 'system.boot.completed';",
+          ),
+          '1',
+        );
+        assert.equal(
+          await queryPostgres(
+            "select count(*)::text from polyphony_runtime.timeline_events where event_type = 'tick.completed';",
+          ),
+          '1',
+        );
+        assert.equal(
+          await queryPostgres(
+            "select coalesce(current_tick_id, '') from polyphony_runtime.agent_state where id = 1;",
+          ),
+          '',
+        );
+        assert.equal(
+          await queryPostgres(
+            `select (
+             (select min(sequence_id) from polyphony_runtime.timeline_events where event_type = 'system.boot.completed')
+             <
+             (select min(sequence_id) from polyphony_runtime.timeline_events where event_type = 'tick.started')
+           )::text;`,
+          ),
+          'true',
+        );
+      },
     );
-    assert.equal(
-      await queryPostgres(
-        "select normalized_json -> 'envelope' ->> 'threadId' from polyphony_runtime.stimulus_inbox where source_kind = 'http' and normalized_json ->> 'signalType' = 'http.operator.message' limit 1;",
-      ),
-      'operator-http',
+
+    await prepareFreshRuntimeScenario();
+    await t.test(
+      'AC-F0003-07 reclaims stale active ticks after restart and clears agent_state.current_tick',
+      async () => {
+        await queryPostgres(`
+            insert into polyphony_runtime.ticks (
+              tick_id,
+              request_id,
+              tick_kind,
+              trigger_kind,
+              status,
+              started_at,
+              lease_owner,
+              lease_expires_at,
+              request_json
+            ) values (
+              'tick-stale-smoke',
+              'request-stale-smoke',
+              'reactive',
+              'scheduler',
+              'started',
+              now() - interval '2 minutes',
+              'core',
+              now() - interval '1 minute',
+              '{}'::jsonb
+            );
+
+            update polyphony_runtime.agent_state
+            set current_tick_id = 'tick-stale-smoke',
+                updated_at = now()
+            where id = 1;
+          `);
+
+        await compose(['restart', 'core']);
+        await waitForHttp(coreHealthUrl());
+
+        assert.equal(
+          await queryPostgres(
+            "select status from polyphony_runtime.ticks where tick_id = 'tick-stale-smoke';",
+          ),
+          'failed',
+        );
+        assert.equal(
+          await queryPostgres(
+            "select failure_json ->> 'reason' from polyphony_runtime.ticks where tick_id = 'tick-stale-smoke';",
+          ),
+          'stale_tick_reclaimed',
+        );
+        assert.equal(
+          await queryPostgres(
+            "select coalesce(current_tick_id, '') from polyphony_runtime.agent_state where id = 1;",
+          ),
+          '',
+        );
+      },
     );
-    assert.equal(
-      await queryPostgres(
-        "select request_json -> 'perception' -> 'sourceKinds' ->> 0 from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' limit 1;",
-      ),
-      'http',
+
+    await prepareFreshRuntimeScenario();
+    await t.test(
+      'AC-F0004-06 reloads the last committed subject-state after restart without process-local reconstruction',
+      async () => {
+        const commitResult = JSON.parse(
+          await execCoreScript(`
+            import { createRuntimeDbClient, createTickRuntimeStore } from './packages/db/src/index.ts';
+
+            const client = createRuntimeDbClient(process.env.YAAGI_POSTGRES_URL);
+            await client.connect();
+
+            try {
+              const store = createTickRuntimeStore(client);
+              const admission = await store.requestTick({
+                requestId: 'smoke-f0004-reload',
+                kind: 'reactive',
+                trigger: 'system',
+                requestedAt: new Date('2026-03-23T00:10:00Z'),
+                payload: { source: 'smoke-f0004' },
+              });
+
+              if (!admission.accepted) {
+                throw new Error('expected smoke-f0004 admission to succeed');
+              }
+
+              const completion = await store.completeTick({
+                tickId: admission.tick.tickId,
+                occurredAt: new Date('2026-03-23T00:10:05Z'),
+                summary: 'subject state survived restart',
+                resultJson: { ok: true },
+                subjectStateDelta: {
+                  agentStatePatch: {
+                    psmJson: { smokeMarker: 'persisted' },
+                    resourcePostureJson: { memory: 'steady' },
+                  },
+                  goalUpserts: [
+                    {
+                      goalId: 'goal-smoke-reload',
+                      title: 'Reload subject state after restart',
+                      status: 'active',
+                      priority: 4,
+                      goalType: 'continuity',
+                      evidenceRefs: [{ kind: 'tick', tickId: admission.tick.tickId }],
+                    },
+                  ],
+                },
+              });
+
+              console.log(
+                JSON.stringify({
+                  tickId: admission.tick.tickId,
+                  episodeId: completion.episode.episodeId,
+                }),
+              );
+            } finally {
+              await client.end();
+            }
+          `),
+        ) as {
+          tickId: string;
+          episodeId: string;
+        };
+
+        assert.match(commitResult.tickId, /^[0-9a-f-]+$/);
+        assert.match(commitResult.episodeId, /^[0-9a-f-]+$/);
+
+        await compose(['restart', 'core']);
+        await waitForHttp(coreHealthUrl());
+
+        assert.equal(
+          await queryPostgres(
+            "select psm_json ->> 'smokeMarker' from polyphony_runtime.agent_state where id = 1;",
+          ),
+          'persisted',
+        );
+        assert.equal(
+          await queryPostgres(
+            "select resource_posture_json ->> 'memory' from polyphony_runtime.agent_state where id = 1;",
+          ),
+          'steady',
+        );
+        assert.equal(
+          await queryPostgres(
+            "select count(*)::text from polyphony_runtime.goals where goal_id = 'goal-smoke-reload' and status = 'active';",
+          ),
+          '1',
+        );
+
+        const snapshot = JSON.parse(
+          await execCoreScript(`
+            import { createRuntimeDbClient, createTickRuntimeStore } from './packages/db/src/index.ts';
+
+            const client = createRuntimeDbClient(process.env.YAAGI_POSTGRES_URL);
+            await client.connect();
+
+            try {
+              const store = createTickRuntimeStore(client);
+              const snapshot = await store.loadSubjectStateSnapshot({
+                goalLimit: 10,
+                beliefLimit: 10,
+                entityLimit: 10,
+                relationshipLimit: 10,
+              });
+
+              console.log(
+                JSON.stringify({
+                  currentTickId: snapshot.agentState.currentTickId,
+                  smokeMarker: snapshot.agentState.psmJson.smokeMarker ?? null,
+                  memory: snapshot.agentState.resourcePostureJson.memory ?? null,
+                  goals: snapshot.goals.map((goal) => goal.goalId),
+                }),
+              );
+            } finally {
+              await client.end();
+            }
+          `),
+        ) as {
+          currentTickId: string | null;
+          smokeMarker: string | null;
+          memory: string | null;
+          goals: string[];
+        };
+
+        assert.equal(snapshot.currentTickId, null);
+        assert.equal(snapshot.smokeMarker, 'persisted');
+        assert.equal(snapshot.memory, 'steady');
+        assert.deepEqual(snapshot.goals, ['goal-smoke-reload']);
+      },
+    );
+
+    await prepareFreshRuntimeScenario();
+    await t.test(
+      'AC-F0005-02 accepts POST /ingest inside the deployment cell and reuses the canonical reactive handoff',
+      async () => {
+        const ingestResponse = await fetch(`${coreBaseUrl()}/ingest`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            signalType: 'http.operator.message',
+            priority: 'critical',
+            requiresImmediateTick: true,
+            threadId: 'operator-http',
+            payload: {
+              text: 'smoke http ingest',
+            },
+          }),
+        });
+
+        assert.equal(ingestResponse.status, 202);
+        const ingestPayload = (await ingestResponse.json()) as {
+          accepted: boolean;
+          stimulusId: string;
+          deduplicated: boolean;
+          tickAdmission: {
+            accepted: boolean;
+          } | null;
+        };
+        assert.equal(ingestPayload.accepted, true);
+        assert.equal(ingestPayload.deduplicated, false);
+        assert.equal(ingestPayload.tickAdmission?.accepted, true);
+
+        await waitForPostgresValue(
+          "select count(*)::text from polyphony_runtime.stimulus_inbox where source_kind = 'http' and normalized_json ->> 'signalType' = 'http.operator.message';",
+          '1',
+        );
+        await waitForPostgresValue(
+          "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed';",
+          '1',
+        );
+
+        assert.equal(
+          await queryPostgres(
+            "select normalized_json -> 'envelope' ->> 'source' from polyphony_runtime.stimulus_inbox where source_kind = 'http' and normalized_json ->> 'signalType' = 'http.operator.message' limit 1;",
+          ),
+          'http',
+        );
+        assert.equal(
+          await queryPostgres(
+            "select normalized_json -> 'envelope' ->> 'threadId' from polyphony_runtime.stimulus_inbox where source_kind = 'http' and normalized_json ->> 'signalType' = 'http.operator.message' limit 1;",
+          ),
+          'operator-http',
+        );
+        assert.equal(
+          await queryPostgres(
+            "select request_json -> 'perception' -> 'sourceKinds' ->> 0 from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' limit 1;",
+          ),
+          'http',
+        );
+      },
     );
   } finally {
-    await tearDownSmokeProject({ rejectOnNonZeroExitCode: false });
+    if (started) {
+      await tearDownStartedSmokeFamily({ rejectOnNonZeroExitCode: false });
+    } else {
+      await tearDownSmokeProject({ rejectOnNonZeroExitCode: false });
+    }
   }
 });
 
-void test('AC-F0005-02 ingests a Telegram update from a fake Bot API inside the deployment cell', {
-  concurrency: false,
-}, async () => {
-  await resetSmokeProjects();
-  await compose(['up', '-d', '--build'], {
-    telegram: true,
-    projectName: telegramProjectName,
-    coreHostPort: telegramCoreHostPort,
-  });
+void test('F-0007 telegram deployment-cell smoke family', { concurrency: false }, async (t) => {
+  let started = false;
 
   try {
-    const coreResponse = await waitForHttp(coreHealthUrl(telegramCoreHostPort));
-    assert.equal(coreResponse.status, 200);
-    await waitForAdapterStatus('telegram', 'healthy', 20_000, telegramCoreHostPort);
-
-    await enqueueFakeTelegramUpdate({
-      updateId: 1,
-      chatId: '12345',
-      text: 'smoke telegram message',
-    });
-
-    await waitForPostgresValue(
-      "select count(*)::text from polyphony_runtime.stimulus_inbox where source_kind = 'telegram';",
-      '1',
-      20_000,
-      { telegram: true, projectName: telegramProjectName },
-    );
-    await waitForPostgresValue(
-      "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed';",
-      '1',
-      20_000,
-      { telegram: true, projectName: telegramProjectName },
-    );
-
-    assert.equal(
-      await queryPostgres(
-        "select normalized_json -> 'envelope' ->> 'source' from polyphony_runtime.stimulus_inbox where source_kind = 'telegram' limit 1;",
-        { telegram: true, projectName: telegramProjectName },
-      ),
-      'telegram',
-    );
-    assert.equal(
-      await queryPostgres(
-        "select normalized_json -> 'envelope' ->> 'threadId' from polyphony_runtime.stimulus_inbox where source_kind = 'telegram' limit 1;",
-        { telegram: true, projectName: telegramProjectName },
-      ),
-      '12345',
-    );
-    assert.equal(
-      await queryPostgres(
-        "select request_json -> 'perception' -> 'sourceKinds' ->> 0 from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' limit 1;",
-        { telegram: true, projectName: telegramProjectName },
-      ),
-      'telegram',
-    );
-  } finally {
-    await tearDownSmokeProject({
-      rejectOnNonZeroExitCode: false,
+    await startSmokeFamily({
       telegram: true,
       projectName: telegramProjectName,
       coreHostPort: telegramCoreHostPort,
     });
+    started = true;
+
+    await resetFakeTelegramUpdates();
+
+    await t.test(
+      'AC-F0005-02 ingests a Telegram update from a fake Bot API inside the deployment cell',
+      async () => {
+        await waitForAdapterStatus('telegram', 'healthy', 20_000, telegramCoreHostPort);
+
+        await enqueueFakeTelegramUpdate({
+          updateId: 1,
+          chatId: '12345',
+          text: 'smoke telegram message',
+        });
+
+        await waitForPostgresValue(
+          "select count(*)::text from polyphony_runtime.stimulus_inbox where source_kind = 'telegram';",
+          '1',
+          20_000,
+          { telegram: true, projectName: telegramProjectName },
+        );
+        await waitForPostgresValue(
+          "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed';",
+          '1',
+          20_000,
+          { telegram: true, projectName: telegramProjectName },
+        );
+
+        assert.equal(
+          await queryPostgres(
+            "select normalized_json -> 'envelope' ->> 'source' from polyphony_runtime.stimulus_inbox where source_kind = 'telegram' limit 1;",
+            { telegram: true, projectName: telegramProjectName },
+          ),
+          'telegram',
+        );
+        assert.equal(
+          await queryPostgres(
+            "select normalized_json -> 'envelope' ->> 'threadId' from polyphony_runtime.stimulus_inbox where source_kind = 'telegram' limit 1;",
+            { telegram: true, projectName: telegramProjectName },
+          ),
+          '12345',
+        );
+        assert.equal(
+          await queryPostgres(
+            "select request_json -> 'perception' -> 'sourceKinds' ->> 0 from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' limit 1;",
+            { telegram: true, projectName: telegramProjectName },
+          ),
+          'telegram',
+        );
+      },
+    );
+  } finally {
+    if (started) {
+      await tearDownStartedSmokeFamily({
+        rejectOnNonZeroExitCode: false,
+        telegram: true,
+        projectName: telegramProjectName,
+        coreHostPort: telegramCoreHostPort,
+      });
+    } else {
+      await tearDownSmokeProject({
+        rejectOnNonZeroExitCode: false,
+        telegram: true,
+        projectName: telegramProjectName,
+        coreHostPort: telegramCoreHostPort,
+      });
+    }
   }
+});
+
+void test('AC-F0007-01 reuses suite-scoped compose families instead of per-test full deployment-cell restarts', {
+  concurrency: false,
+}, () => {
+  assert.equal(smokeLifecycleMetrics.baseFamilyStarts, 1);
+  assert.equal(smokeLifecycleMetrics.baseFamilyTeardowns, 1);
+  assert.equal(smokeLifecycleMetrics.telegramFamilyStarts, 1);
+  assert.equal(smokeLifecycleMetrics.telegramFamilyTeardowns, 1);
+  assert.equal(smokeLifecycleMetrics.runtimeResets, 4);
+});
+
+void test('AC-F0007-02 restores clean post-bootstrap runtime state through deterministic resets between suite-scoped smoke scenarios', {
+  concurrency: false,
+}, () => {
+  assert.equal(smokeLifecycleMetrics.runtimeResets, 4);
+});
+
+void test('AC-F0007-05 tears down suite-scoped smoke projects without orphaned docker resources', {
+  concurrency: false,
+}, async () => {
+  await waitForProjectResourcesToDisappear(projectName);
+  await waitForProjectResourcesToDisappear(telegramProjectName);
+  await waitForPortToClose(defaultCoreHostPort);
+  await waitForPortToClose(telegramCoreHostPort);
 });
