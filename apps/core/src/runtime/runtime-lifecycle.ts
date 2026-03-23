@@ -7,6 +7,7 @@ import {
   createTickRuntimeStore,
   ensureRuntimeAgentStateRow,
   getRuntimeAgentStateRow,
+  type SubjectStateDelta,
   type RuntimeMode,
 } from '@yaagi/db';
 import type { SystemEvent } from '@yaagi/contracts/boot';
@@ -35,6 +36,22 @@ type RuntimeLifecycle = {
     accepted: boolean;
     reason?: 'boot_inactive' | 'lease_busy' | 'unsupported_tick_kind';
   }>;
+};
+
+const buildPhase0SubjectStateDelta = (input: FinishTickInput): SubjectStateDelta => {
+  if (input.terminal.status !== TICK_STATUS.COMPLETED) {
+    return {};
+  }
+
+  return {
+    agentStatePatch: {
+      psmJson: {
+        lastCompletedTickId: input.tickId,
+        lastCompletedSummary: input.terminal.summary ?? null,
+        lastCompletedResult: input.terminal.result ?? {},
+      },
+    },
+  };
 };
 
 const readSchemaVersion = async (client: Client): Promise<string> => {
@@ -132,7 +149,9 @@ const createDependencyProbeMap = (config: CoreRuntimeConfig) => ({
 const createDbBackedTickRuntimeStore = (config: CoreRuntimeConfig): TickRuntimeStore => ({
   initialize: () =>
     withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createTickRuntimeStore(client);
       await ensureRuntimeAgentStateRow(client);
+      await store.loadSubjectStateSnapshot();
     }),
 
   startTick: (input: StartedTick): Promise<StartTickResult> =>
@@ -177,7 +196,10 @@ const createDbBackedTickRuntimeStore = (config: CoreRuntimeConfig): TickRuntimeS
       };
 
       if (input.terminal.status === TICK_STATUS.COMPLETED) {
-        await store.completeTick(finalization);
+        await store.completeTick({
+          ...finalization,
+          subjectStateDelta: buildPhase0SubjectStateDelta(input),
+        });
         return;
       }
 

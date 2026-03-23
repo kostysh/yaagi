@@ -1,5 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { Client, type QueryResultRow } from 'pg';
+import {
+  applySubjectStateDeltaMutation,
+  createSubjectStateStore,
+  type ApplyTickStateDeltaInput,
+  type SubjectStateDelta,
+  type SubjectStateSnapshot,
+  type SubjectStateSnapshotInput,
+  type SubjectStateStore,
+} from './subject-state.ts';
 
 export const DEFAULT_RUNTIME_AGENT_ID = 'polyphony-core';
 export const DEFAULT_RUNTIME_LEASE_OWNER = 'core';
@@ -60,6 +69,8 @@ export type RuntimeAgentStateRow = {
   currentTickId: string | null;
   currentModelProfileId: string | null;
   lastStableSnapshotId: string | null;
+  psmJson: Record<string, unknown>;
+  resourcePostureJson: Record<string, unknown>;
   developmentFreeze: boolean;
   updatedAt: string;
 };
@@ -138,6 +149,7 @@ export type TickFinalizationInput = {
   failureJson?: Record<string, unknown>;
   continuityFlagsJson?: Record<string, unknown>;
   occurredAt?: Date;
+  subjectStateDelta?: SubjectStateDelta;
 };
 
 export type RuntimeTimelineEventInput = {
@@ -148,7 +160,7 @@ export type RuntimeTimelineEventInput = {
   eventId?: string;
 };
 
-export type RuntimeTickStore = {
+export type RuntimeTickStore = SubjectStateStore & {
   ensureAgentStateRow(agentId?: string): Promise<RuntimeAgentStateRow>;
   getAgentState(agentId?: string): Promise<RuntimeAgentStateRow | null>;
   setBootState(input: BootStateBridge, agentId?: string): Promise<RuntimeAgentStateRow>;
@@ -201,6 +213,8 @@ const agentStateColumns = `
   current_tick_id as "currentTickId",
   current_model_profile_id as "currentModelProfileId",
   last_stable_snapshot_id as "lastStableSnapshotId",
+  psm_json as "psmJson",
+  resource_posture_json as "resourcePostureJson",
   development_freeze as "developmentFreeze",
   updated_at as "updatedAt"
 `;
@@ -686,8 +700,21 @@ export function createTickRuntimeStore(
   const agentId = options.agentId ?? DEFAULT_RUNTIME_AGENT_ID;
   const leaseOwner = options.leaseOwner ?? DEFAULT_RUNTIME_LEASE_OWNER;
   const leaseDurationMs = options.leaseDurationMs ?? DEFAULT_RUNTIME_LEASE_DURATION_MS;
+  const subjectStateStore = createSubjectStateStore(db);
 
   return {
+    ensureSubjectStateAnchor(): Promise<SubjectStateSnapshot['agentState']> {
+      return subjectStateStore.ensureSubjectStateAnchor();
+    },
+
+    loadSubjectStateSnapshot(input?: SubjectStateSnapshotInput): Promise<SubjectStateSnapshot> {
+      return subjectStateStore.loadSubjectStateSnapshot(input);
+    },
+
+    applyTickStateDelta(input: ApplyTickStateDeltaInput): Promise<void> {
+      return subjectStateStore.applyTickStateDelta(input);
+    },
+
     async ensureAgentStateRow(nextAgentId = agentId): Promise<RuntimeAgentStateRow> {
       await ensureAgentStateSeed(db, nextAgentId);
       const row = await loadAgentStateRow(db);
@@ -880,6 +907,13 @@ export function createTickRuntimeStore(
           input.tickId,
         );
 
+        await applySubjectStateDeltaMutation(db, {
+          tickId: input.tickId,
+          terminalStatus: 'completed',
+          episodeId: episode.episodeId,
+          delta: input.subjectStateDelta ?? {},
+        });
+
         await updateAgentCurrentTick(db, null);
 
         const event = await appendTimelineEventRow(db, {
@@ -1004,6 +1038,26 @@ export async function appendRuntimeTimelineEvent(
   input: RuntimeTimelineEventInput,
 ): Promise<RuntimeTimelineEventRow> {
   return await appendTimelineEventRow(db, input);
+}
+
+export async function ensureSubjectStateAnchor(
+  db: RuntimeDbExecutor,
+): Promise<SubjectStateSnapshot['agentState']> {
+  return await createSubjectStateStore(db).ensureSubjectStateAnchor();
+}
+
+export async function loadSubjectStateSnapshot(
+  db: RuntimeDbExecutor,
+  input?: SubjectStateSnapshotInput,
+): Promise<SubjectStateSnapshot> {
+  return await createSubjectStateStore(db).loadSubjectStateSnapshot(input);
+}
+
+export async function applyTickStateDelta(
+  db: RuntimeDbExecutor,
+  input: ApplyTickStateDeltaInput,
+): Promise<void> {
+  await createSubjectStateStore(db).applyTickStateDelta(input);
 }
 
 export async function reclaimRuntimeStaleTicks(

@@ -359,3 +359,140 @@ void test('AC-F0003-07 reclaims stale active ticks after restart and clears agen
     await compose(['down', '-v'], { rejectOnNonZeroExitCode: false }).catch(() => {});
   }
 });
+
+void test('AC-F0004-06 reloads the last committed subject-state after restart without process-local reconstruction', {
+  concurrency: false,
+}, async () => {
+  await compose(['up', '-d', '--build']);
+
+  try {
+    const coreResponse = await waitForHttp(coreHealthUrl);
+    assert.equal(coreResponse.status, 200);
+
+    const commitResult = JSON.parse(
+      await execCoreScript(`
+        import { createRuntimeDbClient, createTickRuntimeStore } from './packages/db/src/index.ts';
+
+        const client = createRuntimeDbClient(process.env.YAAGI_POSTGRES_URL);
+        await client.connect();
+
+        try {
+          const store = createTickRuntimeStore(client);
+          const admission = await store.requestTick({
+            requestId: 'smoke-f0004-reload',
+            kind: 'reactive',
+            trigger: 'system',
+            requestedAt: new Date('2026-03-23T00:10:00Z'),
+            payload: { source: 'smoke-f0004' },
+          });
+
+          if (!admission.accepted) {
+            throw new Error('expected smoke-f0004 admission to succeed');
+          }
+
+          const completion = await store.completeTick({
+            tickId: admission.tick.tickId,
+            occurredAt: new Date('2026-03-23T00:10:05Z'),
+            summary: 'subject state survived restart',
+            resultJson: { ok: true },
+            subjectStateDelta: {
+              agentStatePatch: {
+                psmJson: { smokeMarker: 'persisted' },
+                resourcePostureJson: { memory: 'steady' },
+              },
+              goalUpserts: [
+                {
+                  goalId: 'goal-smoke-reload',
+                  title: 'Reload subject state after restart',
+                  status: 'active',
+                  priority: 4,
+                  goalType: 'continuity',
+                  evidenceRefs: [{ kind: 'tick', tickId: admission.tick.tickId }],
+                },
+              ],
+            },
+          });
+
+          console.log(
+            JSON.stringify({
+              tickId: admission.tick.tickId,
+              episodeId: completion.episode.episodeId,
+            }),
+          );
+        } finally {
+          await client.end();
+        }
+      `),
+    ) as {
+      tickId: string;
+      episodeId: string;
+    };
+
+    assert.match(commitResult.tickId, /^[0-9a-f-]+$/);
+    assert.match(commitResult.episodeId, /^[0-9a-f-]+$/);
+
+    await compose(['restart', 'core']);
+    await waitForHttp(coreHealthUrl);
+
+    assert.equal(
+      await queryPostgres(
+        "select psm_json ->> 'smokeMarker' from polyphony_runtime.agent_state where id = 1;",
+      ),
+      'persisted',
+    );
+    assert.equal(
+      await queryPostgres(
+        "select resource_posture_json ->> 'memory' from polyphony_runtime.agent_state where id = 1;",
+      ),
+      'steady',
+    );
+    assert.equal(
+      await queryPostgres(
+        "select count(*)::text from polyphony_runtime.goals where goal_id = 'goal-smoke-reload' and status = 'active';",
+      ),
+      '1',
+    );
+
+    const snapshot = JSON.parse(
+      await execCoreScript(`
+        import { createRuntimeDbClient, createTickRuntimeStore } from './packages/db/src/index.ts';
+
+        const client = createRuntimeDbClient(process.env.YAAGI_POSTGRES_URL);
+        await client.connect();
+
+        try {
+          const store = createTickRuntimeStore(client);
+          const snapshot = await store.loadSubjectStateSnapshot({
+            goalLimit: 10,
+            beliefLimit: 10,
+            entityLimit: 10,
+            relationshipLimit: 10,
+          });
+
+          console.log(
+            JSON.stringify({
+              currentTickId: snapshot.agentState.currentTickId,
+              smokeMarker: snapshot.agentState.psmJson.smokeMarker ?? null,
+              memory: snapshot.agentState.resourcePostureJson.memory ?? null,
+              goals: snapshot.goals.map((goal) => goal.goalId),
+            }),
+          );
+        } finally {
+          await client.end();
+        }
+      `),
+    ) as {
+      currentTickId: string | null;
+      smokeMarker: string | null;
+      memory: string | null;
+      goals: string[];
+    };
+
+    assert.equal(snapshot.currentTickId, null);
+    assert.equal(snapshot.smokeMarker, 'persisted');
+    assert.equal(snapshot.memory, 'steady');
+    assert.deepEqual(snapshot.goals, ['goal-smoke-reload']);
+  } finally {
+    await compose(['down', '-v'], { rejectOnNonZeroExitCode: false }).catch(() => {});
+  }
+});

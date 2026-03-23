@@ -769,6 +769,7 @@ Singleton-таблица.
 - `state_json`
 - `trust_json`
 - `last_seen_at`
+- `updated_at`
 
 #### `relationships`
 
@@ -791,6 +792,7 @@ Singleton-таблица.
 - `goal_type`
 - `parent_goal_id`
 - `rationale_json`
+- `evidence_refs_json`
 - `updated_at`
 
 #### `beliefs`
@@ -802,7 +804,7 @@ Singleton-таблица.
 - `proposition`
 - `confidence`
 - `status`
-- `evidence_episode_ids`
+- `evidence_refs_json`
 - `updated_at`
 
 #### `memetic_units`
@@ -1271,7 +1273,7 @@ Mastra Server используется как HTTP ingress с custom routes.
 3. Проверить health PostgreSQL и model servers
 4. Определить режим старта: normal / degraded / recovery
 5. Если нужно, откатить код/модели к последнему stable snapshot
-6. Загрузить agent_state, narrative spine, active memetic field
+6. Загрузить agent_state и bounded subject-state snapshot; narrative spine и active memetic field подключаются следующими seams
 7. Запустить scheduler и tick engine
 8. Войти в DORMANT или обработать накопленный stimulus backlog
 ```
@@ -1341,7 +1343,7 @@ Recovery делает:
 2. Запретить старт новых тиков
 3. Дождаться завершения активного тика или выполнить bounded cancel
 4. Сбросить perception buffer и scheduler leases
-5. Сохранить agent_state / narrative / memetic deltas
+5. Сохранить agent_state / subject-state / narrative / memetic deltas
 6. Записать shutdown episode и open concerns
 7. Остановить sensor adapters
 8. Закрыть model-router connections

@@ -1,7 +1,7 @@
 ---
 id: F-0004
 title: Ядро субъектного состояния и модель памяти
-status: planned
+status: done
 owners: ["@codex"]
 area: memory
 depends_on: [F-0001, F-0002, F-0003]
@@ -217,7 +217,7 @@ interface SubjectStateStore {
   - primary key `(src_entity_id, dst_entity_id, relation_kind)`.
 - Required indexes for bounded snapshot assembly:
   - `goals_active_priority_idx` on `(status, priority desc, updated_at desc)`;
-  - `beliefs_active_confidence_idx` on `(status, confidence desc, updated_at desc)`;
+  - `beliefs_snapshot_confidence_idx` on `(confidence desc, updated_at desc, belief_id asc)`;
   - `entities_name_idx` on `(canonical_name)`;
   - `entities_last_seen_idx` on `(last_seen_at desc nulls last, updated_at desc)`;
   - `relationships_src_idx` on `(src_entity_id, updated_at desc)`;
@@ -349,18 +349,18 @@ Tasks:
 
 | AC ID | Planned test reference | Status |
 |---|---|---|
-| AC-F0004-01 | `apps/core/test/runtime/subject-state-store.integration.test.ts` → `test("AC-F0004-01 uses PostgreSQL as the canonical subject-memory state kernel")` | planned |
-| AC-F0004-02 | `apps/core/test/runtime/subject-state-store.integration.test.ts` → `test("AC-F0004-02 reloads the singleton agent_state with identity-bearing fields after boot handoff")` | planned |
-| AC-F0004-03 | `apps/core/test/runtime/subject-state-transaction.integration.test.ts` → `test("AC-F0004-03 commits or rolls back subject-state mutations atomically with terminal tick outcome")` | planned |
-| AC-F0004-04 | `apps/core/test/runtime/subjective-snapshot.integration.test.ts` → `test("AC-F0004-04 assembles a bounded subjective snapshot without narrative or memetic prerequisites")` | planned |
-| AC-F0004-05 | `apps/core/test/runtime/belief-goal-revision.integration.test.ts` → `test("AC-F0004-05 preserves goal and belief traceability through status and evidence refs")` | planned |
-| AC-F0004-06 | `apps/core/test/runtime/subject-state-restart.integration.test.ts` → `test("AC-F0004-06 reloads the last committed subject-state after restart without process-local reconstruction")`; smoke in `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0004-06 reloads the last committed subject-state after restart without process-local reconstruction")` | planned |
+| AC-F0004-01 | `packages/db/test/subject-state-store.integration.test.ts` → `test("AC-F0004-01 uses PostgreSQL as the canonical subject-memory state kernel")` | done |
+| AC-F0004-02 | `packages/db/test/subject-state-store.integration.test.ts` → `test("AC-F0004-02 reloads the singleton agent_state with identity-bearing fields after boot handoff")` | done |
+| AC-F0004-03 | `packages/db/test/subject-state-transaction.integration.test.ts` → `test("AC-F0004-03 commits or rolls back subject-state mutations atomically with terminal tick outcome")` | done |
+| AC-F0004-04 | `packages/db/test/subject-state-store.integration.test.ts` → `test("AC-F0004-04 assembles a bounded subjective snapshot without narrative or memetic prerequisites")` | done |
+| AC-F0004-05 | `packages/db/test/belief-goal-revision.integration.test.ts` → `test("AC-F0004-05 preserves goal and belief traceability through status and evidence refs")` | done |
+| AC-F0004-06 | `packages/db/test/subject-state-restart.integration.test.ts` → `test("AC-F0004-06 reloads the last committed subject-state after restart without process-local reconstruction")`; smoke in `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0004-06 reloads the last committed subject-state after restart without process-local reconstruction")` | done |
 
 План верификации:
 
-- Fast path: integration tests around state store bootstrap, bounded snapshot assembly, transactional commit/rollback and restart/reload behavior.
-- Smoke path: containerized restart/reload verification inside canonical deployment cell после появления runtime wiring.
-- Supplemental runtime verification: exact coupling points with `F-0001` boot/recovery and `F-0003` tick lifecycle stay explicit before implementation starts.
+- Fast path: `packages/db/test/*.test.ts` covers state store bootstrap, bounded snapshot assembly, transactional commit/rollback and restart/reload behavior.
+- Smoke path: `infra/docker/deployment-cell.smoke.ts` confirms committed subject-state survives `core` restart inside the canonical deployment cell.
+- Supplemental runtime verification: `apps/core/src/runtime/runtime-lifecycle.ts` keeps the completed-tick coupling with `F-0003` explicit and reloads the subject-state snapshot during runtime initialization.
 
 ## 10. Decision log (ADR blocks)
 
@@ -380,12 +380,23 @@ Tasks:
 
 ## 11. Progress & links
 
-- Status: `planned`
+- Status: `proposed` → `shaped` → `planned` → `done`
 - Issue: -
 - PRs:
   - -
 - Code:
-  - -
+  - `apps/core/src/runtime/runtime-lifecycle.ts`
+  - `docs/architecture/system.md`
+  - `infra/docker/deployment-cell.smoke.ts`
+  - `infra/migrations/003_subject_state_kernel.sql`
+  - `packages/db/src/index.ts`
+  - `packages/db/src/runtime.ts`
+  - `packages/db/src/subject-state.ts`
+  - `packages/db/test/belief-goal-revision.integration.test.ts`
+  - `packages/db/testing/subject-state-db-harness.ts`
+  - `packages/db/test/subject-state-restart.integration.test.ts`
+  - `packages/db/test/subject-state-store.integration.test.ts`
+  - `packages/db/test/subject-state-transaction.integration.test.ts`
 
 ## 12. Change log
 
@@ -393,3 +404,4 @@ Tasks:
 - **v1.1 (2026-03-23):** `spec-compact` refined ACs into testable runtime/data contracts, fixed schema/index/revision semantics for `agent_state` + `goals`/`beliefs`/`entities`/`relationships`, and added explicit verification boundaries for restart/reload behavior.
 - **v1.2 (2026-03-23):** Post-review realignment promoted evidence-reference encoding to a repo-level ADR and made subject-state delta semantics explicit: only `tick.completed` may commit subject-memory changes in this phase.
 - **v1.3 (2026-03-23):** `plan-slice` completed: dossier moved to `planned`, decomposed into five delivery slices, and made the `F-0003` terminal-path realignment plus restart/reload smoke verification explicit.
+- **v1.4 (2026-03-23):** `implementation` completed: subject-state schema/store/runtime wiring shipped, bounded snapshot + delta semantics landed in `packages/db`, the completed-tick path now commits subject-state atomically with episodes, restart/reload proof was added to fast tests and deployment-cell smoke, the beliefs snapshot index was realigned to the delivered query contract, and architecture terminology was updated to the delivered evidence-ref and subject-state contracts.
