@@ -10,6 +10,7 @@ import {
   appendRuntimeTimelineEvent,
   createPerceptionStore,
   createRuntimeDbClient,
+  createRuntimeModelProfileStore,
   createTickRuntimeStore,
   ensureRuntimeAgentStateRow,
   getRuntimeAgentStateRow,
@@ -21,6 +22,12 @@ import { TICK_STATUS, type TickTerminalResult } from '@yaagi/contracts/runtime';
 import { ConstitutionalBootService } from '../boot/index.ts';
 import { createPerceptionController, type StimulusIngestResult } from '../perception/index.ts';
 import type { CoreRuntimeConfig } from '../platform/core-config.ts';
+import {
+  createPhase0ModelRouter,
+  type BaselineModelProfileDiagnostic,
+  type BaselineRoutingSelection,
+  type ModelHealthSummary,
+} from './model-router.ts';
 import {
   createTickRuntime,
   type FinishTickInput,
@@ -45,6 +52,7 @@ type RuntimeLifecycle = {
   }>;
   ingestHttpStimulus(input: HttpIngestStimulusInput): Promise<StimulusIngestResult>;
   health(): Promise<PerceptionHealthSnapshot>;
+  getModelRoutingDiagnostics(): Promise<BaselineModelProfileDiagnostic[]>;
 };
 
 const buildPhase0SubjectStateDelta = (input: FinishTickInput): SubjectStateDelta => {
@@ -155,12 +163,52 @@ const createDependencyProbeMap = (config: CoreRuntimeConfig) => ({
   },
 });
 
-const createDbBackedTickRuntimeStore = (config: CoreRuntimeConfig): TickRuntimeStore => ({
+const createFastModelHealthProbe =
+  (config: CoreRuntimeConfig) => async (): Promise<ModelHealthSummary> => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1_500);
+
+    try {
+      const response = await fetch(new URL('models', `${config.fastModelBaseUrl}/`), {
+        method: 'GET',
+        signal: controller.signal,
+      });
+
+      if (response.ok) {
+        return {
+          healthy: true,
+          detail: 'model-fast dependency is reachable',
+        };
+      }
+
+      return {
+        healthy: false,
+        detail: `model-fast probe returned ${response.status}`,
+      };
+    } catch (error) {
+      return {
+        healthy: false,
+        detail: error instanceof Error ? error.message : String(error),
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
+const createDbBackedTickRuntimeStore = (
+  config: CoreRuntimeConfig,
+  options: {
+    ensureBaselineProfiles?: () => Promise<void>;
+  } = {},
+): TickRuntimeStore => ({
   initialize: () =>
     withRuntimeClient(config.postgresUrl, async (client) => {
       const store = createTickRuntimeStore(client);
       await ensureRuntimeAgentStateRow(client);
       await store.loadSubjectStateSnapshot();
+      if (options.ensureBaselineProfiles) {
+        await options.ensureBaselineProfiles();
+      }
     }),
 
   startTick: (input: StartedTick): Promise<StartTickResult> =>
@@ -229,8 +277,113 @@ const createDbBackedTickRuntimeStore = (config: CoreRuntimeConfig): TickRuntimeS
     }),
 });
 
-const createTickExecution =
+const createDbBackedModelProfileStore = (config: CoreRuntimeConfig) => ({
+  ensureModelProfiles: (
+    profiles: Parameters<
+      ReturnType<typeof createRuntimeModelProfileStore>['ensureModelProfiles']
+    >[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createRuntimeModelProfileStore(client);
+      return await store.ensureModelProfiles(profiles);
+    }),
+
+  listModelProfiles: (
+    input?: Parameters<ReturnType<typeof createRuntimeModelProfileStore>['listModelProfiles']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createRuntimeModelProfileStore(client);
+      return await store.listModelProfiles(input);
+    }),
+
+  persistTickModelSelection: (
+    input: Parameters<
+      ReturnType<typeof createRuntimeModelProfileStore>['persistTickModelSelection']
+    >[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createRuntimeModelProfileStore(client);
+      return await store.persistTickModelSelection(input);
+    }),
+
+  setCurrentModelProfile: (
+    modelProfileId: Parameters<
+      ReturnType<typeof createRuntimeModelProfileStore>['setCurrentModelProfile']
+    >[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createRuntimeModelProfileStore(client);
+      await store.setCurrentModelProfile(modelProfileId);
+    }),
+});
+
+const buildRoutingInputFromTick = (
+  context: StartedTick,
+): Parameters<ReturnType<typeof createPhase0ModelRouter>['selectProfile']>[0] => {
+  const payload = context.payload;
+  const tickMode =
+    context.kind === 'reactive' ||
+    context.kind === 'deliberative' ||
+    context.kind === 'contemplative'
+      ? context.kind
+      : (() => {
+          throw new Error(
+            `tick kind ${context.kind} cannot be routed through the baseline model router`,
+          );
+        })();
+  const contextSize =
+    typeof payload['contextSize'] === 'number' && Number.isFinite(payload['contextSize'])
+      ? payload['contextSize']
+      : JSON.stringify(payload).length;
+  const requiredCapabilities = Array.isArray(payload['requiredCapabilities'])
+    ? payload['requiredCapabilities'].filter(
+        (capability): capability is string => typeof capability === 'string',
+      )
+    : [];
+  const lastEvalScore =
+    typeof payload['lastEvalScore'] === 'number' && Number.isFinite(payload['lastEvalScore'])
+      ? payload['lastEvalScore']
+      : null;
+
+  return {
+    tickMode,
+    taskKind:
+      typeof payload['taskKind'] === 'string' && payload['taskKind'].length > 0
+        ? payload['taskKind']
+        : `${context.kind}.default`,
+    latencyBudget:
+      payload['latencyBudget'] === 'tight' ||
+      payload['latencyBudget'] === 'normal' ||
+      payload['latencyBudget'] === 'extended'
+        ? payload['latencyBudget']
+        : context.kind === 'reactive'
+          ? 'tight'
+          : 'normal',
+    riskLevel:
+      payload['riskLevel'] === 'low' ||
+      payload['riskLevel'] === 'medium' ||
+      payload['riskLevel'] === 'high'
+        ? payload['riskLevel']
+        : 'low',
+    contextSize,
+    requiredCapabilities,
+    lastEvalScore,
+    ...(typeof payload['requestedRole'] === 'string'
+      ? { requestedRole: payload['requestedRole'] }
+      : {}),
+  };
+};
+
+export const createPhase0TickExecution =
   (dependencies: {
+    selectProfile: (
+      input: ReturnType<typeof buildRoutingInputFromTick>,
+    ) => Promise<BaselineRoutingSelection>;
+    persistTickModelSelection: (input: {
+      tickId: string;
+      modelProfileId: string;
+      selectionReasonJson: Record<string, unknown>;
+    }) => Promise<void>;
     prepareReactiveTick: (tickId: string) => Promise<{
       claimedStimulusIds: string[];
       highestPriority: string | null;
@@ -242,6 +395,47 @@ const createTickExecution =
     }>;
   }) =>
   async (context: StartedTick): Promise<TickTerminalResult> => {
+    if (context.kind === 'wake') {
+      return {
+        status: TICK_STATUS.COMPLETED,
+        summary: 'Phase-0 wake tick completed',
+        result: {
+          kind: context.kind,
+          trigger: context.trigger,
+        },
+      };
+    }
+
+    const selection = await dependencies.selectProfile(buildRoutingInputFromTick(context));
+    if (!selection.accepted) {
+      return {
+        status: TICK_STATUS.FAILED,
+        summary: `${context.kind} tick failed before model selection`,
+        failureDetail: `model selection rejected: ${selection.reason}`,
+        continuityFlags: {
+          modelSelectionRejected: {
+            reason: selection.reason,
+            detail: selection.detail,
+          },
+        },
+        result: {
+          kind: context.kind,
+          trigger: context.trigger,
+          requestId: context.requestId,
+          selectionRejected: {
+            reason: selection.reason,
+            detail: selection.detail,
+          },
+        },
+      };
+    }
+
+    await dependencies.persistTickModelSelection({
+      tickId: context.tickId,
+      modelProfileId: selection.modelProfileId,
+      selectionReasonJson: selection.selectionReason,
+    });
+
     const perceptionBatch =
       context.kind === 'reactive'
         ? await dependencies.prepareReactiveTick(context.tickId)
@@ -255,13 +449,22 @@ const createTickExecution =
     return {
       status: TICK_STATUS.COMPLETED,
       summary:
-        context.kind === 'wake' ? 'Phase-0 wake tick completed' : 'Phase-0 reactive tick completed',
+        context.kind === 'reactive'
+          ? 'Phase-0 reactive tick completed'
+          : 'Phase-0 baseline routed tick completed',
       result: {
         kind: context.kind,
         trigger: context.trigger,
         requestId: context.requestId,
         payload: context.payload,
+        selectedModelProfileId: selection.modelProfileId,
+        selectedRole: selection.role,
+        modelEndpoint: selection.endpoint,
+        selectionReason: selection.selectionReason,
         perceptionBatch,
+      },
+      continuityFlags: {
+        selectedModelProfileId: selection.modelProfileId,
       },
     };
   };
@@ -428,6 +631,24 @@ const createNoopModelRegistry = () => ({
 
 export function createPhase0RuntimeLifecycle(config: CoreRuntimeConfig): RuntimeLifecycle {
   let tickRuntime: TickRuntime | null = null;
+  const fastModelHealthProbe = createFastModelHealthProbe(config);
+  const resolveBaselineHealth = async (): Promise<
+    Record<'reflex' | 'deliberation' | 'reflection', ModelHealthSummary>
+  > => {
+    const fastModelHealth = await fastModelHealthProbe();
+
+    return {
+      reflex: fastModelHealth,
+      deliberation: fastModelHealth,
+      reflection: fastModelHealth,
+    };
+  };
+  const modelProfileStore = createDbBackedModelProfileStore(config);
+  const modelRouter = createPhase0ModelRouter({
+    fastModelBaseUrl: config.fastModelBaseUrl,
+    store: modelProfileStore,
+    resolveBaselineHealth,
+  });
   const perceptionController = createPerceptionController({
     config,
     store: createDbBackedPerceptionStore(config),
@@ -444,8 +665,16 @@ export function createPhase0RuntimeLifecycle(config: CoreRuntimeConfig): Runtime
   });
 
   tickRuntime = createTickRuntime({
-    store: createDbBackedTickRuntimeStore(config),
-    executeTick: createTickExecution({
+    store: createDbBackedTickRuntimeStore(config, {
+      ensureBaselineProfiles: async () => {
+        await modelRouter.ensureBaselineProfiles();
+      },
+    }),
+    executeTick: createPhase0TickExecution({
+      selectProfile: (input) => modelRouter.selectProfile(input),
+      persistTickModelSelection: async (input) => {
+        await modelProfileStore.persistTickModelSelection(input);
+      },
       prepareReactiveTick: (tickId) => perceptionController.prepareReactiveTick(tickId),
     }),
   });
@@ -559,6 +788,10 @@ export function createPhase0RuntimeLifecycle(config: CoreRuntimeConfig): Runtime
       } catch {
         return DEFAULT_PERCEPTION_HEALTH;
       }
+    },
+
+    getModelRoutingDiagnostics(): Promise<BaselineModelProfileDiagnostic[]> {
+      return modelRouter.getBaselineDiagnostics();
     },
   };
 }

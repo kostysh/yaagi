@@ -1,7 +1,7 @@
 ---
 id: F-0008
 title: Базовый маршрутизатор моделей и профили органов
-status: shaped
+status: done
 owners: ["@codex"]
 area: models
 depends_on: [F-0002, F-0003]
@@ -276,12 +276,12 @@ Tasks:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0008-01 | `apps/core/test/models/model-router.integration.test.ts` -> `test("AC-F0008-01 loads baseline profiles from the canonical profile store")` | planned |
-| AC-F0008-02 | `apps/core/test/models/model-router.integration.test.ts` -> `test("AC-F0008-02 keeps reflection as an explicit profile or adapter-over-deliberation mapping")` | planned |
-| AC-F0008-03 | `apps/core/test/models/model-router.contract.test.ts` -> `test("AC-F0008-03 selects baseline profiles deterministically for reactive, deliberative and contemplative modes")` | planned |
-| AC-F0008-04 | `apps/core/test/runtime/tick-model-selection.integration.test.ts` -> `test("AC-F0008-04 persists selected_model_profile_id and current_model_profile_id for the active tick")` | planned |
-| AC-F0008-05 | `apps/core/test/models/model-router.contract.test.ts` -> `test("AC-F0008-05 rejects unsupported or unavailable roles without silent fallback")` | planned |
-| AC-F0008-06 | `apps/core/test/runtime/health.integration.test.ts` -> `test("AC-F0008-06 surfaces baseline profile diagnostics without opening a models API")`; supplemental deployment check in `infra/docker/deployment-cell.smoke.ts` | planned |
+| AC-F0008-01 | `apps/core/test/models/model-router.integration.test.ts` -> `test("AC-F0008-01 loads baseline profiles from the canonical profile store")` | done |
+| AC-F0008-02 | `apps/core/test/models/model-router.integration.test.ts` -> `test("AC-F0008-02 keeps reflection as an explicit profile or adapter-over-deliberation mapping")` | done |
+| AC-F0008-03 | `apps/core/test/models/model-router.contract.test.ts` -> `test("AC-F0008-03 selects baseline profiles deterministically for reactive, deliberative and contemplative modes")` | done |
+| AC-F0008-04 | `apps/core/test/runtime/tick-model-selection.integration.test.ts` -> `test("AC-F0008-04 persists selected_model_profile_id and current_model_profile_id for the active tick")` | done |
+| AC-F0008-05 | `apps/core/test/models/model-router.contract.test.ts` -> `test("AC-F0008-05 rejects unsupported or unavailable roles without silent fallback")` | done |
+| AC-F0008-06 | `apps/core/test/runtime/health.integration.test.ts` -> `test("AC-F0008-06 surfaces baseline profile diagnostics without opening a models API")`; supplemental deployment check in `infra/docker/deployment-cell.smoke.ts` -> `test("AC-F0008-06 surfaces baseline model-routing diagnostics without opening a /models API in the deployment cell")` | done |
 
 План тестов:
 
@@ -308,15 +308,41 @@ Tasks:
 
 ## 11. Progress & links
 
-- Status: `shaped` (justified alternative for completed `plan-slice`: repo coverage policy makes `planned` blocking until AC-linked tests exist)
+- Status: `proposed` -> `shaped` -> `done`
 - Issue: -
 - PRs:
   - -
 - Code:
-  - -
+  - `apps/core/src/platform/core-runtime.ts`
+  - `apps/core/src/runtime/index.ts`
+  - `apps/core/src/runtime/model-router.ts`
+  - `apps/core/src/runtime/runtime-lifecycle.ts`
+  - `apps/core/test/models/model-router.contract.test.ts`
+  - `apps/core/test/models/model-router.integration.test.ts`
+  - `apps/core/test/runtime/health.integration.test.ts`
+  - `apps/core/test/runtime/tick-model-selection.integration.test.ts`
+  - `infra/docker/deployment-cell.smoke.ts`
+  - `infra/migrations/005_model_registry.sql`
+  - `packages/db/src/index.ts`
+  - `packages/db/src/model-routing.ts`
+  - `packages/db/src/runtime.ts`
+  - `packages/db/test/subject-state-restart.integration.test.ts`
+  - `packages/db/testing/subject-state-db-harness.ts`
+- Verification:
+  - `pnpm format`
+  - `pnpm typecheck`
+  - `pnpm lint`
+  - `pnpm test`
+  - `pnpm smoke:cell`
+  - `node scripts/sync-index.mjs`
+  - `node scripts/lint-dossiers.mjs`
+  - `node scripts/coverage-audit.mjs --dossier docs/features/F-0008-baseline-model-router-and-organ-profiles.md`
+  - `pnpm debt:audit:changed`
+  - `pnpm debt:audit`
 
 ## 12. Change log
 
 - **v1.0 (2026-03-23):** Initial dossier created from `CF-006` intake with explicit baseline scope for `reflex` / `deliberation` / `reflection`, runtime continuity hooks and phase-boundary constraints.
 - **v1.1 (2026-03-23):** Promoted dossier to `shaped`, made the current phase baseline explicit, accepted the local ADR forks, and added required `F-0003` realignment before continuity integration.
 - **v1.2 (2026-03-24):** Closed the `plan-slice` step with a justified alternative status: the dossier now carries the validated four-slice delivery order, explicit verification artifacts and the required `F-0003` realignment task, while frontmatter stays `shaped` because repo coverage policy treats `planned` dossiers as blocking until AC-linked tests exist.
+- **v1.3 (2026-03-24):** Completed `implementation`: added the baseline `model_registry` schema/store, seeded `reflex` / `deliberation` / explicit `reflection` adapter profiles, introduced deterministic phase-0 model routing with structured refusals, persisted `selected_model_profile_id` plus active `current_model_profile_id` through the tick continuity boundary, enriched `GET /health` with baseline routing diagnostics without opening `/models`, and closed both fast-path and containerized verification.

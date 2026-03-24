@@ -79,7 +79,7 @@ void test('AC-F0004-06 reloads the last committed subject-state after restart wi
   const snapshot = await secondStore.loadSubjectStateSnapshot();
 
   assert.equal(snapshot.agentState.currentTickId, null);
-  assert.equal(snapshot.agentState.currentModelProfileId, 'model-fast@stable');
+  assert.equal(snapshot.agentState.currentModelProfileId, null);
   assert.equal(snapshot.agentState.lastStableSnapshotId, 'snapshot-77');
   assert.equal(snapshot.agentState.psmJson['continuityMarker'], 'persisted');
   assert.equal(snapshot.agentState.resourcePostureJson['memory'], 'nominal');

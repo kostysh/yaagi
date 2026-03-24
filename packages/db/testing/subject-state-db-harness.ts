@@ -5,6 +5,7 @@ import type {
   RuntimeTickRow,
   RuntimeTimelineEventRow,
 } from '../src/runtime.ts';
+import type { RuntimeModelProfileRow } from '../src/model-routing.ts';
 import type { StimulusInboxRecord } from '@yaagi/contracts/perception';
 import type {
   EvidenceRef,
@@ -22,6 +23,7 @@ type HarnessState = {
   agentState: RuntimeAgentStateRow | null;
   ticks: Record<string, HarnessTick>;
   episodesById: Record<string, HarnessEpisode>;
+  modelProfiles: Record<string, RuntimeModelProfileRow>;
   goals: Record<string, SubjectGoal>;
   beliefs: Record<string, SubjectBelief>;
   entities: Record<string, SubjectEntity>;
@@ -139,6 +141,7 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
     agentState: options.seed?.agentState ? structuredClone(options.seed.agentState) : null,
     ticks: structuredClone(options.seed?.ticks ?? {}),
     episodesById: structuredClone(options.seed?.episodesById ?? {}),
+    modelProfiles: structuredClone(options.seed?.modelProfiles ?? {}),
     goals: structuredClone(options.seed?.goals ?? {}),
     beliefs: structuredClone(options.seed?.beliefs ?? {}),
     entities: structuredClone(options.seed?.entities ?? {}),
@@ -177,6 +180,7 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
         state.agentState = restored.agentState;
         state.ticks = restored.ticks;
         state.episodesById = restored.episodesById;
+        state.modelProfiles = restored.modelProfiles;
         state.goals = restored.goals;
         state.beliefs = restored.beliefs;
         state.entities = restored.entities;
@@ -206,7 +210,17 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
       sql.includes('set current_tick_id =')
     ) {
       if (!state.agentState) state.agentState = defaultAgentState();
-      state.agentState.currentTickId = (params[0] as string | null) ?? null;
+
+      if (sql.includes('current_tick_id = any($1::text[])')) {
+        const tickIds = new Set((params[0] as string[]) ?? []);
+        if (tickIds.has(state.agentState.currentTickId ?? '')) {
+          state.agentState.currentTickId = null;
+          state.agentState.currentModelProfileId = null;
+        }
+      } else {
+        state.agentState.currentTickId = (params[0] as string | null) ?? null;
+      }
+
       state.agentState.updatedAt = nowIso();
       return { rows: toAgentStateRow(state) as TRow[] };
     }
@@ -274,6 +288,44 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
       return { rows: [structuredClone(tick) as TRow] };
     }
 
+    if (sql.startsWith('insert into polyphony_runtime.model_registry')) {
+      const profile: RuntimeModelProfileRow = {
+        modelProfileId: String(params[0]),
+        role: params[1] as RuntimeModelProfileRow['role'],
+        endpoint: String(params[2]),
+        artifactUri: (params[3] as string | null) ?? null,
+        baseModel: String(params[4]),
+        adapterOf: (params[5] as string | null) ?? null,
+        capabilitiesJson: parseJsonParam<string[]>(params[6]),
+        costJson: parseJsonParam<Record<string, unknown>>(params[7]),
+        healthJson: parseJsonParam<Record<string, unknown>>(params[8]),
+        status: params[9] as RuntimeModelProfileRow['status'],
+        createdAt: state.modelProfiles[String(params[0])]?.createdAt ?? nowIso(),
+        updatedAt: nowIso(),
+      };
+      state.modelProfiles[profile.modelProfileId] = profile;
+      return { rows: [structuredClone(profile) as TRow] };
+    }
+
+    if (
+      sql.startsWith('select') &&
+      sql.includes('from polyphony_runtime.model_registry') &&
+      sql.includes('order by role asc, model_profile_id asc')
+    ) {
+      const roles = sql.includes('where role = any($1::text[])')
+        ? new Set((params[0] as string[]) ?? [])
+        : null;
+      const profiles = Object.values(state.modelProfiles)
+        .filter((profile) => (roles ? roles.has(profile.role) : true))
+        .sort((left, right) => {
+          const byRole = left.role.localeCompare(right.role);
+          if (byRole !== 0) return byRole;
+          return left.modelProfileId.localeCompare(right.modelProfileId);
+        })
+        .map((profile) => structuredClone(profile) as TRow);
+      return { rows: profiles };
+    }
+
     if (
       sql.startsWith('select') &&
       sql.includes('from polyphony_runtime.ticks') &&
@@ -307,6 +359,22 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
       tick.resultJson = parseJsonParam<Record<string, unknown>>(params[3]);
       tick.failureJson = parseJsonParam<Record<string, unknown>>(params[4]);
       tick.continuityFlagsJson = parseJsonParam<Record<string, unknown>>(params[5]);
+      tick.updatedAt = nowIso();
+
+      return { rows: [structuredClone(tick) as TRow] };
+    }
+
+    if (
+      sql.startsWith('update polyphony_runtime.ticks') &&
+      sql.includes('set selected_model_profile_id = $2')
+    ) {
+      const tick = state.ticks[String(params[0])];
+      if (!tick) {
+        return { rows: [] };
+      }
+
+      tick.selectedModelProfileId = (params[1] as string | null) ?? null;
+      tick.continuityFlagsJson = parseJsonParam<Record<string, unknown>>(params[2]);
       tick.updatedAt = nowIso();
 
       return { rows: [structuredClone(tick) as TRow] };

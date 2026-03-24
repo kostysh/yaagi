@@ -16,6 +16,7 @@ import { type CoreRuntimeConfig, loadCoreRuntimeConfig } from './core-config.ts'
 import { createPhase0Mastra } from './phase0-mastra.ts';
 import { materializeRuntimeSeed } from './runtime-seed.ts';
 import { createPhase0RuntimeLifecycle } from '../runtime/runtime-lifecycle.ts';
+import type { BaselineModelProfileDiagnostic } from '../runtime/model-router.ts';
 
 const BOOT_POLL_INTERVAL_MS = 1_000;
 
@@ -26,6 +27,9 @@ export type CoreRuntimeHealth = {
   configuration: boolean;
   agents: string[];
   perception: PerceptionHealthSnapshot;
+  modelRouting: {
+    profiles: BaselineModelProfileDiagnostic[];
+  };
   checks: Array<{
     name: 'configuration' | 'postgres' | 'fastModel';
     ok: boolean;
@@ -43,6 +47,7 @@ export type CoreRuntimeDependencies = {
     start(): Promise<void>;
     stop(): Promise<void>;
     health?(): Promise<PerceptionHealthSnapshot>;
+    getModelRoutingDiagnostics?(): Promise<BaselineModelProfileDiagnostic[]>;
     ingestHttpStimulus?(input: unknown): Promise<{
       stimulusId: string;
       deduplicated: boolean;
@@ -187,11 +192,19 @@ export function createCoreRuntime(
       probeFastModel(),
     ]);
     let perception = DEFAULT_PERCEPTION_HEALTH;
+    let modelRoutingProfiles: BaselineModelProfileDiagnostic[] = [];
     if (postgres && runtimeLifecycle.health) {
       try {
         perception = await runtimeLifecycle.health();
       } catch {
         perception = DEFAULT_PERCEPTION_HEALTH;
+      }
+    }
+    if (postgres && runtimeLifecycle.getModelRoutingDiagnostics) {
+      try {
+        modelRoutingProfiles = await runtimeLifecycle.getModelRoutingDiagnostics();
+      } catch {
+        modelRoutingProfiles = [];
       }
     }
 
@@ -202,6 +215,9 @@ export function createCoreRuntime(
       fastModel,
       agents: Object.keys(mastra.listAgents()),
       perception,
+      modelRouting: {
+        profiles: modelRoutingProfiles,
+      },
       checks: [
         { name: 'configuration', ok: configuration },
         { name: 'postgres', ok: postgres },

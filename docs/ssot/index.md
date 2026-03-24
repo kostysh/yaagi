@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-03-24T09:02:14.352Z_
+_Last sync: 2026-03-24T10:33:20.365Z_
 
 ## Features
 
@@ -17,7 +17,7 @@ _Last sync: 2026-03-24T09:02:14.352Z_
 | F-0005 | Буфер восприятия и сенсорные адаптеры | done | perception | F-0001, F-0002, F-0003 | runtime,db,ingress,perception | `../features/F-0005-perception-buffer-and-sensor-adapters.md` |
 | F-0006 | Актуализация базовых зависимостей и выравнивание инструментального стека | done | platform | F-0001, F-0002, F-0003, F-0004, F-0005 | runtime,infra,toolchain,dependencies | `../features/F-0006-baseline-dependency-refresh-and-toolchain-alignment.md` |
 | F-0007 | Детерминированный smoke harness и suite-scoped lifecycle deployment cell | done | platform | F-0002, F-0003, F-0004, F-0005, F-0006 | runtime,infra,verification,smoke | `../features/F-0007-deterministic-smoke-harness-and-suite-scoped-cell-lifecycle.md` |
-| F-0008 | Базовый маршрутизатор моделей и профили органов | shaped | models | F-0002, F-0003 | runtime,db,models,cognition | `../features/F-0008-baseline-model-router-and-organ-profiles.md` |
+| F-0008 | Базовый маршрутизатор моделей и профили органов | done | models | F-0002, F-0003 | runtime,db,models,cognition | `../features/F-0008-baseline-model-router-and-organ-profiles.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph

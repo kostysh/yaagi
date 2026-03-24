@@ -480,6 +480,67 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
 
     await prepareFreshRuntimeScenario();
     await t.test(
+      'AC-F0008-06 surfaces baseline model-routing diagnostics without opening a /models API in the deployment cell',
+      async () => {
+        const healthResponse = await waitForHttp(coreHealthUrl());
+        const healthPayload = (await healthResponse.json()) as {
+          ok: boolean;
+          fastModel: boolean;
+          modelRouting: {
+            profiles: Array<{
+              modelProfileId: string;
+              role: string;
+              status: string;
+              eligibility: string;
+            }>;
+          };
+        };
+
+        assert.equal(healthPayload.ok, true);
+        assert.equal(healthPayload.fastModel, true);
+        assert.deepEqual(
+          healthPayload.modelRouting.profiles.map((profile) => ({
+            modelProfileId: profile.modelProfileId,
+            role: profile.role,
+            status: profile.status,
+            eligibility: profile.eligibility,
+          })),
+          [
+            {
+              modelProfileId: 'deliberation.fast@baseline',
+              role: 'deliberation',
+              status: 'active',
+              eligibility: 'eligible',
+            },
+            {
+              modelProfileId: 'reflex.fast@baseline',
+              role: 'reflex',
+              status: 'active',
+              eligibility: 'eligible',
+            },
+            {
+              modelProfileId: 'reflection.fast@baseline',
+              role: 'reflection',
+              status: 'active',
+              eligibility: 'eligible',
+            },
+          ],
+        );
+
+        const modelsResponse = await fetch(`${coreBaseUrl()}/models`);
+        assert.equal(modelsResponse.status, 404);
+
+        assert.equal(
+          await queryPostgres(
+            "select count(*)::text from polyphony_runtime.model_registry where role in ('reflex', 'deliberation', 'reflection') and status = 'active';",
+          ),
+          '3',
+        );
+      },
+    );
+
+    await prepareFreshRuntimeScenario();
+    await t.test(
       'AC-F0003-01 starts the mandatory wake tick only after constitutional activation',
       async () => {
         assert.equal(
@@ -869,13 +930,13 @@ void test('AC-F0007-01 reuses suite-scoped compose families instead of per-test 
   assert.equal(smokeLifecycleMetrics.baseFamilyTeardowns, 1);
   assert.equal(smokeLifecycleMetrics.telegramFamilyStarts, 1);
   assert.equal(smokeLifecycleMetrics.telegramFamilyTeardowns, 1);
-  assert.equal(smokeLifecycleMetrics.runtimeResets, 4);
+  assert.equal(smokeLifecycleMetrics.runtimeResets, 5);
 });
 
 void test('AC-F0007-02 restores clean post-bootstrap runtime state through deterministic resets between suite-scoped smoke scenarios', {
   concurrency: false,
 }, () => {
-  assert.equal(smokeLifecycleMetrics.runtimeResets, 4);
+  assert.equal(smokeLifecycleMetrics.runtimeResets, 5);
 });
 
 void test('AC-F0007-05 tears down suite-scoped smoke projects without orphaned docker resources', {

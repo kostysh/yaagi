@@ -10,6 +10,7 @@ import {
   type SubjectStateStore,
 } from './subject-state.ts';
 import { createPerceptionStore, parseTickPerceptionClaim } from './perception.ts';
+import { setRuntimeCurrentModelProfile } from './model-routing.ts';
 
 export const DEFAULT_RUNTIME_AGENT_ID = 'polyphony-core';
 export const DEFAULT_RUNTIME_LEASE_OWNER = 'core';
@@ -427,6 +428,11 @@ const updateAgentCurrentTick = async (
   return normalizeAgentStateRow(row);
 };
 
+const clearAgentActiveTickPointers = async (db: RuntimeDbExecutor): Promise<void> => {
+  await updateAgentCurrentTick(db, null);
+  await setRuntimeCurrentModelProfile(db, null);
+};
+
 const updateAgentBootState = async (
   db: RuntimeDbExecutor,
   input: BootStateBridge,
@@ -609,7 +615,7 @@ const finalizeTickRow = async (
       throw new Error(`failed to update tick ${input.tickId}`);
     }
 
-    await updateAgentCurrentTick(db, null);
+    await clearAgentActiveTickPointers(db);
 
     const eventInput: RuntimeTimelineEventInput = {
       eventType,
@@ -696,6 +702,7 @@ async function reclaimStaleTicksInternal(
   await db.query(
     `update ${agentStateTable}
      set current_tick_id = null,
+         current_model_profile_id = null,
          updated_at = now()
      where id = 1
        and current_tick_id = any($1::text[])`,
@@ -799,7 +806,7 @@ export function createTickRuntimeStore(
         if (state.currentTickId) {
           const currentTick = await loadTickById(db, state.currentTickId);
           if (!currentTick || currentTick.status !== TICK_STATUS.STARTED || currentTick.endedAt) {
-            await updateAgentCurrentTick(db, null);
+            await clearAgentActiveTickPointers(db);
           }
         }
 
@@ -807,6 +814,7 @@ export function createTickRuntimeStore(
         if (existingByRequest) {
           if (existingByRequest.status === TICK_STATUS.STARTED) {
             await updateAgentCurrentTick(db, existingByRequest.tickId);
+            await setRuntimeCurrentModelProfile(db, existingByRequest.selectedModelProfileId);
           }
 
           return {
@@ -837,6 +845,7 @@ export function createTickRuntimeStore(
         );
 
         await updateAgentCurrentTick(db, tick.tickId);
+        await setRuntimeCurrentModelProfile(db, null);
 
         await appendTimelineEventRow(db, {
           eventType: 'tick.started',
@@ -900,7 +909,7 @@ export function createTickRuntimeStore(
         if (state.currentTickId && state.currentTickId !== input.tickId) {
           const currentTick = await loadTickById(db, state.currentTickId);
           if (!currentTick || currentTick.status !== TICK_STATUS.STARTED || currentTick.endedAt) {
-            await updateAgentCurrentTick(db, null);
+            await clearAgentActiveTickPointers(db);
           }
         }
 
@@ -943,7 +952,7 @@ export function createTickRuntimeStore(
           delta: input.subjectStateDelta ?? {},
         });
 
-        await updateAgentCurrentTick(db, null);
+        await clearAgentActiveTickPointers(db);
 
         const event = await appendTimelineEventRow(db, {
           eventType: 'tick.completed',

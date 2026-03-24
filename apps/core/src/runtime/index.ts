@@ -9,4 +9,17 @@ export {
   type TickRuntimeOptions,
   type TickRuntimeStore,
 } from './tick-runtime.ts';
-export { createPhase0RuntimeLifecycle } from './runtime-lifecycle.ts';
+export {
+  createPhase0ModelRouter,
+  PHASE0_BASELINE_PROFILE_ID,
+  type BaselineModelProfileDiagnostic,
+  type BaselineRoutingInput,
+  type BaselineRoutingSelection,
+  type BaselineTickMode,
+  type ModelHealthSummary,
+  type Phase0ModelRouter,
+} from './model-router.ts';
+export {
+  createPhase0RuntimeLifecycle,
+  createPhase0TickExecution,
+} from './runtime-lifecycle.ts';

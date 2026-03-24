@@ -43,6 +43,23 @@ export {
   type TickTrigger,
 } from './runtime.ts';
 export {
+  BASELINE_MODEL_PROFILE_ROLE,
+  createRuntimeModelProfileStore,
+  MODEL_PROFILE_ROLE,
+  MODEL_PROFILE_STATUS,
+  MODEL_SELECTION_CONTINUITY_KEY,
+  setRuntimeCurrentModelProfile,
+  type BaselineModelProfileRole,
+  type ModelProfileRole,
+  type ModelProfileStatus,
+  type ModelRoutingDbExecutor,
+  type RuntimeModelProfileRow,
+  type RuntimeModelProfileSeedInput,
+  type RuntimeModelProfileSelectionInput,
+  type RuntimeModelProfileStore,
+  type RuntimeModelSelectionPersistenceResult,
+} from './model-routing.ts';
+export {
   PERCEPTION_SCHEMA,
   createPerceptionStore,
   parseTickPerceptionClaim,
