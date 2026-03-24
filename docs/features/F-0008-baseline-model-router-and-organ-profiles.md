@@ -7,7 +7,7 @@ area: models
 depends_on: [F-0002, F-0003]
 impacts: [runtime, db, models, cognition]
 created: 2026-03-23
-updated: 2026-03-23
+updated: 2026-03-24
 links:
   issue: ""
   pr: []
@@ -308,7 +308,7 @@ Tasks:
 
 ## 11. Progress & links
 
-- Status: `shaped`
+- Status: `shaped` (justified alternative for completed `plan-slice`: repo coverage policy makes `planned` blocking until AC-linked tests exist)
 - Issue: -
 - PRs:
   - -
@@ -319,3 +319,4 @@ Tasks:
 
 - **v1.0 (2026-03-23):** Initial dossier created from `CF-006` intake with explicit baseline scope for `reflex` / `deliberation` / `reflection`, runtime continuity hooks and phase-boundary constraints.
 - **v1.1 (2026-03-23):** Promoted dossier to `shaped`, made the current phase baseline explicit, accepted the local ADR forks, and added required `F-0003` realignment before continuity integration.
+- **v1.2 (2026-03-24):** Closed the `plan-slice` step with a justified alternative status: the dossier now carries the validated four-slice delivery order, explicit verification artifacts and the required `F-0003` realignment task, while frontmatter stays `shaped` because repo coverage policy treats `planned` dossiers as blocking until AC-linked tests exist.
