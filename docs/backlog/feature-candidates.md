@@ -73,6 +73,7 @@
 ## Intake watchpoints
 
 - `CF-005`: при `feature-intake` явно решить, остаются ли `memetics + narrative + field journal` в одном dossier, или их нужно разделить до `shaped`.
+- `CF-005`: при `feature-intake` обязательно зафиксировать `Memetic Lifecycle` contract: bootstrap seed set, границу между tick-local candidates и durable `memetic_units`, ownership `tick` vs `consolidation`, invariants `no raw-ingest-to-durable` и `provenance required`.
 - `CF-002`: при будущих realignment/shaping шагах явно закрепить canonical worker/job harness ownership (`retry`, `lease`, `registration`, `monitoring`) и не допустить drift между tick scheduler и downstream job families.
 - `CF-006`: при `feature-intake` зафиксировать baseline `reflex`/`deliberation` scope и не втянуть внешних consultants раньше mature-governance phase.
 - `CF-006`: в scope должен явно входить `reflection` profile или adapter-over-deliberation path для contemplative mode; `code`/`embedding`/`reranker`/`classifier-safety` не должны тихо прилипнуть к этому intake.

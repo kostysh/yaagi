@@ -447,6 +447,25 @@ interface SensorAdapter {
 - quarantine паразитических паттернов;
 - handoff winning coalition в PSM/Decision Agent.
 
+##### Memetic Lifecycle
+
+Меметический слой состоит из **двух разных сущностей**, и их нельзя смешивать:
+
+- **memetic candidate** — tick-local pattern, собранный внутри текущего тика из текущего контекста; сам по себе не является durable state;
+- **memetic unit** — durable abstracted pattern, сохранённый в `memetic_units` и способный возвращаться в будущие тики.
+
+Канонический lifecycle должен работать так:
+
+1. **Bootstrap before first tick:** до первого `wake` тика runtime materialize-ит минимальный baseline set из constitution, identity core и initial goals/beliefs. Первый тик не может зависеть от "прошлого цикла", которого ещё не было.
+2. **Candidate assembly inside tick:** `Memetic Arena` строит candidate set из current stimulus, retrieved episodes, active goals/beliefs, narrative tensions, field journal excerpts, active durable units и resource posture.
+3. **Tick-local competition:** candidates и existing units вместе участвуют в activation, suppression/support scoring и coalition formation; победившая coalition only influences attention, organ selection и final decision path.
+4. **No raw-ingest-to-durable rule:** raw `stimulus_inbox.normalized_json`, пользовательские сообщения и любые single-shot payloads не могут verbatim становиться `memetic_units`. Сначала они должны пройти через tick, episode encoding и evidence linking.
+5. **Tick write boundary:** обычный tick может обновлять activation/reinforcement/decay у existing units, создавать `coalitions` rows и добавлять anchors/evidence к уже существующим patterns, но не должен сам по себе silently промоутить разовый stimulus в durable meme.
+6. **Promotion boundary:** новые durable `memetic_units` могут появляться только тремя путями: bootstrap seeding, consolidation из повторяющихся patterns, либо explicit governor/operator labeling. Creation always requires abstracted content, provenance anchors и evidence beyond one isolated stimulus.
+7. **Consolidation ownership:** именно `consolidation` tick является owner-ом promotion, merge, split, decay, quarantine и retire semantics для durable memetic state; это не должно происходить ad hoc в reactive path.
+8. **Narrative boundary:** one-off unresolved tensions и незрелые patterns должны жить в `field_journal_entries` / narrative, пока не появится достаточное повторяющееся evidence для durable promotion.
+9. **Provenance invariant:** каждый durable unit обязан иметь traceable anchors к episodes, goals, beliefs, entities, narrative tensions или model organs; anchorless units запрещены.
+
 #### 4.2.5 PSM Manager
 
 Отвечает за:
@@ -814,6 +833,7 @@ Singleton-таблица.
 Содержит:
 
 - `unit_id`
+- `origin_kind` (`seeded`, `consolidated`, `governor_labeled`)
 - `unit_type`
 - `content`
 - `activation`
@@ -822,7 +842,7 @@ Singleton-таблица.
 - `plasticity`
 - `evidence_score`
 - `anchors_json`
-- `status`
+- `status` (`active`, `dormant`, `quarantined`, `retired`, `merged`)
 - `updated_at`
 
 #### `memetic_edges`
@@ -1314,7 +1334,8 @@ Mastra Server используется как HTTP ingress с custom routes.
 Назначение:
 
 - compaction field journal;
-- merge/decay memetic units;
+- promote repeated candidates into durable memetic units;
+- merge/split/decay/quarantine/retire memetic units;
 - summarize repeated episodes;
 - create dataset candidates;
 - retire stale tensions;
