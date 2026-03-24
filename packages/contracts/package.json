@@ -15,6 +15,10 @@
       "types": "./src/cognition.ts",
       "default": "./src/cognition.ts"
     },
+    "./actions": {
+      "types": "./src/actions.ts",
+      "default": "./src/actions.ts"
+    },
     "./runtime": {
       "types": "./src/runtime.ts",
       "default": "./src/runtime.ts"

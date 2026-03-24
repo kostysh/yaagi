@@ -108,6 +108,19 @@ void test('AC-F0008-04 persists selected_model_profile_id and current_model_prof
     loadSubjectStateSnapshot: (input) => tickStore.loadSubjectStateSnapshot(input),
     listRecentEpisodes: (input) => tickStore.listRecentEpisodes(input),
     runDecision: () => Promise.resolve(acceptedDecision),
+    handleDecisionAction: ({ action }) =>
+      Promise.resolve({
+        accepted: true as const,
+        actionId: 'action-reactive-model',
+        verdictKind: 'review_request',
+        boundaryCheck: {
+          allowed: true,
+          reason: 'test executive stub accepted the reflective handoff',
+        },
+        resultJson: {
+          summary: action.summary,
+        },
+      }),
   });
 
   await router.ensureBaselineProfiles();
@@ -139,6 +152,7 @@ void test('AC-F0008-04 persists selected_model_profile_id and current_model_prof
     summary: 'reactive tick completed',
     resultJson: terminal.result ?? {},
     ...(terminal.continuityFlags ? { continuityFlagsJson: terminal.continuityFlags } : {}),
+    ...(terminal.actionId ? { actionId: terminal.actionId } : {}),
     subjectStateDelta: {},
   });
 
@@ -147,6 +161,7 @@ void test('AC-F0008-04 persists selected_model_profile_id and current_model_prof
     harness.state.ticks[startedReactiveTick.tickId]?.selectedModelProfileId,
     PHASE0_BASELINE_PROFILE_ID.REFLEX,
   );
+  assert.equal(harness.state.ticks[startedReactiveTick.tickId]?.actionId, 'action-reactive-model');
 
   const reclaimHarness = createSubjectStateDbHarness({
     seed: {

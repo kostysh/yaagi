@@ -5,6 +5,8 @@ import type {
   RuntimeTickRow,
   RuntimeTimelineEventRow,
 } from '../src/runtime.ts';
+import { TICK_STATUS } from '../src/runtime.ts';
+import type { RuntimeActionLogRow } from '../src/action-log.ts';
 import type { RuntimeModelProfileRow } from '../src/model-routing.ts';
 import type { StimulusInboxRecord } from '@yaagi/contracts/perception';
 import type {
@@ -18,11 +20,13 @@ import type {
 type HarnessTick = RuntimeTickRow;
 type HarnessEpisode = RuntimeEpisodeRow;
 type HarnessEvent = RuntimeTimelineEventRow;
+type HarnessActionLog = RuntimeActionLogRow;
 
 type HarnessState = {
   agentState: RuntimeAgentStateRow | null;
   ticks: Record<string, HarnessTick>;
   episodesById: Record<string, HarnessEpisode>;
+  actionLogsById: Record<string, HarnessActionLog>;
   modelProfiles: Record<string, RuntimeModelProfileRow>;
   goals: Record<string, SubjectGoal>;
   beliefs: Record<string, SubjectBelief>;
@@ -148,6 +152,7 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
     agentState: options.seed?.agentState ? structuredClone(options.seed.agentState) : null,
     ticks: structuredClone(options.seed?.ticks ?? {}),
     episodesById: structuredClone(options.seed?.episodesById ?? {}),
+    actionLogsById: structuredClone(options.seed?.actionLogsById ?? {}),
     modelProfiles: structuredClone(options.seed?.modelProfiles ?? {}),
     goals: structuredClone(options.seed?.goals ?? {}),
     beliefs: structuredClone(options.seed?.beliefs ?? {}),
@@ -187,6 +192,7 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
         state.agentState = restored.agentState;
         state.ticks = restored.ticks;
         state.episodesById = restored.episodesById;
+        state.actionLogsById = restored.actionLogsById;
         state.modelProfiles = restored.modelProfiles;
         state.goals = restored.goals;
         state.beliefs = restored.beliefs;
@@ -366,8 +372,15 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
       tick.status = String(params[1]) as RuntimeTickRow['status'];
       tick.endedAt = String(params[2]);
       tick.resultJson = parseJsonParam<Record<string, unknown>>(params[3]);
-      tick.failureJson = parseJsonParam<Record<string, unknown>>(params[4]);
-      tick.continuityFlagsJson = parseJsonParam<Record<string, unknown>>(params[5]);
+      if (sql.includes("failure_json = '{}'::jsonb")) {
+        tick.failureJson = {};
+        tick.continuityFlagsJson = parseJsonParam<Record<string, unknown>>(params[4]);
+        tick.actionId = (params[5] as string | null) ?? null;
+      } else {
+        tick.failureJson = parseJsonParam<Record<string, unknown>>(params[4]);
+        tick.continuityFlagsJson = parseJsonParam<Record<string, unknown>>(params[5]);
+        tick.actionId = (params[6] as string | null) ?? null;
+      }
       tick.updatedAt = nowIso();
 
       return { rows: [structuredClone(tick) as TRow] };
@@ -384,6 +397,18 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
 
       tick.selectedModelProfileId = (params[1] as string | null) ?? null;
       tick.continuityFlagsJson = parseJsonParam<Record<string, unknown>>(params[2]);
+      tick.updatedAt = nowIso();
+
+      return { rows: [structuredClone(tick) as TRow] };
+    }
+
+    if (sql.startsWith('update polyphony_runtime.ticks') && sql.includes('set action_id = $2')) {
+      const tick = state.ticks[String(params[0])];
+      if (!tick || tick.status !== TICK_STATUS.STARTED) {
+        return { rows: [] };
+      }
+
+      tick.actionId = String(params[1]);
       tick.updatedAt = nowIso();
 
       return { rows: [structuredClone(tick) as TRow] };
@@ -431,6 +456,57 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
             ? ([{ episode_id: episode.episodeId, episodeId: episode.episodeId }] as TRow[])
             : [],
       };
+    }
+
+    if (sql.startsWith('insert into polyphony_runtime.action_log')) {
+      const createdAt =
+        params[8] == null
+          ? nowIso()
+          : typeof params[8] === 'string'
+            ? params[8]
+            : params[8] instanceof Date
+              ? params[8].toISOString()
+              : nowIso();
+      const row: HarnessActionLog = {
+        actionId: String(params[0]),
+        tickId: String(params[1]),
+        actionKind: params[2] as HarnessActionLog['actionKind'],
+        toolName: (params[3] as string | null) ?? null,
+        parametersJson: parseJsonParam<Record<string, unknown>>(params[4]),
+        boundaryCheckJson: parseJsonParam<HarnessActionLog['boundaryCheckJson']>(params[5]),
+        resultJson: parseJsonParam<Record<string, unknown>>(params[6]),
+        success: Boolean(params[7]),
+        createdAt,
+      };
+      state.actionLogsById[row.actionId] = row;
+      return { rows: [structuredClone(row) as TRow] };
+    }
+
+    if (
+      sql.startsWith('select') &&
+      sql.includes('from polyphony_runtime.action_log') &&
+      sql.includes('where action_id = $1')
+    ) {
+      const row = state.actionLogsById[String(params[0])];
+      return { rows: row ? ([structuredClone(row)] as TRow[]) : [] };
+    }
+
+    if (
+      sql.startsWith('select') &&
+      sql.includes('from polyphony_runtime.action_log') &&
+      sql.includes('where tick_id = $1')
+    ) {
+      const limit = Number(params[1]);
+      const rows = Object.values(state.actionLogsById)
+        .filter((row) => row.tickId === String(params[0]))
+        .sort((left, right) => {
+          const byCreatedAt = right.createdAt.localeCompare(left.createdAt);
+          if (byCreatedAt !== 0) return byCreatedAt;
+          return right.actionId.localeCompare(left.actionId);
+        })
+        .slice(0, limit)
+        .map((row) => structuredClone(row) as TRow);
+      return { rows };
     }
 
     if (sql.startsWith('insert into polyphony_runtime.timeline_events')) {

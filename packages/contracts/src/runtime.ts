@@ -66,4 +66,5 @@ export type TickTerminalResult = {
   result?: Record<string, unknown>;
   failureDetail?: string;
   continuityFlags?: Record<string, unknown>;
+  actionId?: string;
 };

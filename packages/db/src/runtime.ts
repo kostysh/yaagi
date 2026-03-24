@@ -150,6 +150,7 @@ export type TickFinalizationInput = {
   resultJson?: Record<string, unknown>;
   failureJson?: Record<string, unknown>;
   continuityFlagsJson?: Record<string, unknown>;
+  actionId?: string;
   occurredAt?: Date;
   subjectStateDelta?: SubjectStateDelta;
 };
@@ -171,6 +172,7 @@ export type RuntimeTickStore = SubjectStateStore & {
   getAgentState(agentId?: string): Promise<RuntimeAgentStateRow | null>;
   setBootState(input: BootStateBridge, agentId?: string): Promise<RuntimeAgentStateRow>;
   setCurrentTick(tickId: string | null, agentId?: string): Promise<RuntimeAgentStateRow>;
+  setTickActionId(input: { tickId: string; actionId: string }): Promise<RuntimeTickRow>;
   setDevelopmentFreeze(developmentFreeze: boolean, agentId?: string): Promise<RuntimeAgentStateRow>;
   listRecentEpisodes(input?: RuntimeRecentEpisodesInput): Promise<RuntimeEpisodeRow[]>;
   requestTick(input: TickRequestInput): Promise<TickAdmissionResult>;
@@ -661,6 +663,7 @@ const finalizeTickRow = async (
            result_json = $4::jsonb,
            failure_json = $5::jsonb,
            continuity_flags_json = $6::jsonb,
+           action_id = $7,
            updated_at = now()
        where tick_id = $1
        returning ${tickColumns}`,
@@ -671,6 +674,7 @@ const finalizeTickRow = async (
         JSON.stringify(input.resultJson ?? {}),
         JSON.stringify(input.failureJson ?? {}),
         JSON.stringify(input.continuityFlagsJson ?? {}),
+        input.actionId ?? null,
       ],
     );
 
@@ -690,6 +694,7 @@ const finalizeTickRow = async (
         resultJson: input.resultJson ?? {},
         failureJson: input.failureJson ?? {},
         continuityFlagsJson: input.continuityFlagsJson ?? {},
+        ...(input.actionId ? { actionId: input.actionId } : {}),
       },
     };
     if (input.occurredAt) {
@@ -834,6 +839,25 @@ export function createTickRuntimeStore(
     ): Promise<RuntimeAgentStateRow> {
       await ensureAgentStateSeed(db, nextAgentId);
       return await updateAgentCurrentTick(db, tickId);
+    },
+
+    async setTickActionId(input: { tickId: string; actionId: string }): Promise<RuntimeTickRow> {
+      const result = await db.query<RuntimeTickRow>(
+        `update ${tickTable}
+         set action_id = $2,
+             updated_at = now()
+         where tick_id = $1
+           and status = '${TICK_STATUS.STARTED}'
+         returning ${tickColumns}`,
+        [input.tickId, input.actionId],
+      );
+
+      const row = result.rows[0];
+      if (!row) {
+        throw new Error(`active tick ${input.tickId} was not found while reserving action_id`);
+      }
+
+      return normalizeTickRow(row);
     },
 
     async setDevelopmentFreeze(
@@ -988,6 +1012,7 @@ export function createTickRuntimeStore(
                result_json = $4::jsonb,
                failure_json = '{}'::jsonb,
                continuity_flags_json = $5::jsonb,
+               action_id = $6,
                updated_at = now()
            where tick_id = $1
            returning ${tickColumns}`,
@@ -997,6 +1022,7 @@ export function createTickRuntimeStore(
             toTimestamp(occurredAt),
             JSON.stringify(input.resultJson ?? {}),
             JSON.stringify(input.continuityFlagsJson ?? {}),
+            input.actionId ?? null,
           ],
         );
         const tick = updatedTickResult.rows[0];
@@ -1031,6 +1057,7 @@ export function createTickRuntimeStore(
             episodeId: episode.episodeId,
             summary: episode.summary,
             resultJson: episode.resultJson,
+            ...(input.actionId ? { actionId: input.actionId } : {}),
           },
         });
 

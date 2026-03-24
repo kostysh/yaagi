@@ -85,6 +85,18 @@ void test('AC-F0009-04 does not mirror structured decision artifacts into subjec
         schema: 'TickDecisionV1',
       },
     },
+    executive: {
+      accepted: true,
+      actionId: 'action-reactive-completed',
+      verdictKind: 'review_request',
+      boundaryCheck: {
+        allowed: true,
+        reason: 'review was explicitly requested',
+      },
+      resultJson: {
+        outcome: 'review_request',
+      },
+    },
   } satisfies Record<string, unknown>;
 
   await tickStore.completeTick({
@@ -92,6 +104,7 @@ void test('AC-F0009-04 does not mirror structured decision artifacts into subjec
     occurredAt: new Date('2026-03-24T00:00:05.000Z'),
     summary: 'bounded reactive decision completed',
     resultJson: terminalResult,
+    actionId: 'action-reactive-completed',
     continuityFlagsJson: {
       selectedModelProfileId: 'reflex.fast@baseline',
     },
@@ -102,6 +115,7 @@ void test('AC-F0009-04 does not mirror structured decision artifacts into subjec
         status: TICK_STATUS.COMPLETED,
         summary: 'bounded reactive decision completed',
         result: terminalResult,
+        actionId: 'action-reactive-completed',
         continuityFlags: {
           selectedModelProfileId: 'reflex.fast@baseline',
         },
@@ -116,5 +130,9 @@ void test('AC-F0009-04 does not mirror structured decision artifacts into subjec
   assert.equal(
     Object.hasOwn(harness.state.agentState?.psmJson ?? {}, 'lastCompletedResult'),
     false,
+  );
+  assert.equal(
+    harness.state.ticks[startedReactiveTick.tickId]?.actionId,
+    'action-reactive-completed',
   );
 });

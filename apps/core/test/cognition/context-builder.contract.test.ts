@@ -1,10 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DECISION_MODE } from '@yaagi/contracts/cognition';
-import {
-  buildDecisionContext,
-  type DecisionContextBuildInput,
-} from '../../src/cognition/index.ts';
+import { buildDecisionContext, type DecisionContextBuildInput } from '../../src/cognition/index.ts';
 
 const subjectStateSnapshot = {
   subjectStateSchemaVersion: '2026-03-24',

@@ -23,6 +23,7 @@ const smokeLifecycleMetrics = {
   telegramFamilyTeardowns: 0,
   runtimeResets: 0,
 };
+const expectedRuntimeResets = 8;
 
 function coreBaseUrl(port = defaultCoreHostPort): string {
   return `http://127.0.0.1:${port}`;
@@ -46,6 +47,7 @@ truncate table
   polyphony_runtime.beliefs,
   polyphony_runtime.goals,
   polyphony_runtime.episodes,
+  polyphony_runtime.action_log,
   polyphony_runtime.timeline_events,
   polyphony_runtime.ticks
 restart identity cascade;
@@ -950,6 +952,61 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
         assert.equal(missingRouteResponse.status, 404);
       },
     );
+
+    await prepareFreshRuntimeScenario();
+    await t.test(
+      'AC-F0010-04 audits one bounded reactive executive outcome inside the deployment cell without new public API surface',
+      async () => {
+        const ingestResponse = await fetch(`${coreBaseUrl()}/ingest`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            signalType: 'http.operator.executive',
+            priority: 'critical',
+            requiresImmediateTick: true,
+            threadId: 'operator-executive',
+            payload: {
+              text: 'decide conservatively and keep the action bounded',
+            },
+          }),
+        });
+
+        assert.equal(ingestResponse.status, 202);
+
+        await waitForPostgresValue(
+          "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' and action_id is not null;",
+          '1',
+        );
+        await waitForPostgresValue(
+          "select count(*)::text from polyphony_runtime.action_log where tick_id = (select tick_id from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' order by created_at desc limit 1);",
+          '1',
+        );
+
+        const tickActionId = await queryPostgres(
+          "select action_id from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' order by created_at desc limit 1;",
+        );
+        const logActionId = await queryPostgres(
+          "select action_id from polyphony_runtime.action_log where tick_id = (select tick_id from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' order by created_at desc limit 1) order by created_at desc limit 1;",
+        );
+        const verdictKind = await queryPostgres(
+          "select action_kind from polyphony_runtime.action_log where tick_id = (select tick_id from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' order by created_at desc limit 1) order by created_at desc limit 1;",
+        );
+
+        assert.equal(logActionId, tickActionId);
+        assert.match(verdictKind, /^(conscious_inaction|review_request|tool_call|schedule_job)$/);
+        assert.equal(
+          await queryPostgres(
+            "select result_json -> 'executive' ->> 'actionId' from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' order by created_at desc limit 1;",
+          ),
+          tickActionId,
+        );
+
+        const missingRouteResponse = await fetch(`${coreBaseUrl()}/actions`);
+        assert.equal(missingRouteResponse.status, 404);
+      },
+    );
   } finally {
     if (started) {
       await tearDownStartedSmokeFamily({ rejectOnNonZeroExitCode: false });
@@ -1045,13 +1102,13 @@ void test('AC-F0007-01 reuses suite-scoped compose families instead of per-test 
   assert.equal(smokeLifecycleMetrics.baseFamilyTeardowns, 1);
   assert.equal(smokeLifecycleMetrics.telegramFamilyStarts, 1);
   assert.equal(smokeLifecycleMetrics.telegramFamilyTeardowns, 1);
-  assert.equal(smokeLifecycleMetrics.runtimeResets, 7);
+  assert.equal(smokeLifecycleMetrics.runtimeResets, expectedRuntimeResets);
 });
 
 void test('AC-F0007-02 restores clean post-bootstrap runtime state through deterministic resets between suite-scoped smoke scenarios', {
   concurrency: false,
 }, () => {
-  assert.equal(smokeLifecycleMetrics.runtimeResets, 7);
+  assert.equal(smokeLifecycleMetrics.runtimeResets, expectedRuntimeResets);
 });
 
 void test('AC-F0007-05 tears down suite-scoped smoke projects without orphaned docker resources', {

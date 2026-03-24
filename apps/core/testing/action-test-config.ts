@@ -1,0 +1,26 @@
+import path from 'node:path';
+import type { CoreRuntimeConfig } from '../src/platform/core-config.ts';
+
+export const createActionTestConfig = (rootDir: string): CoreRuntimeConfig => ({
+  postgresUrl: 'postgres://yaagi:yaagi@127.0.0.1:5432/yaagi',
+  fastModelBaseUrl: 'http://127.0.0.1:8000/v1',
+  telegramEnabled: false,
+  telegramBotToken: null,
+  telegramAllowedChatIds: [],
+  telegramApiBaseUrl: 'https://api.telegram.org',
+  seedRootPath: path.join(rootDir, 'seed'),
+  seedConstitutionPath: path.join(rootDir, 'seed', 'constitution.yaml'),
+  seedBodyPath: path.join(rootDir, 'seed', 'body'),
+  seedSkillsPath: path.join(rootDir, 'seed', 'skills'),
+  seedModelsPath: path.join(rootDir, 'seed', 'models'),
+  seedDataPath: path.join(rootDir, 'seed', 'data'),
+  workspaceBodyPath: path.join(rootDir, 'workspace', 'body'),
+  workspaceSkillsPath: path.join(rootDir, 'workspace', 'skills'),
+  modelsPath: path.join(rootDir, 'runtime-models'),
+  dataPath: path.join(rootDir, 'runtime-data'),
+  migrationsDir: path.join(rootDir, 'migrations'),
+  pgBossSchema: 'pgboss',
+  host: '127.0.0.1',
+  port: 8787,
+  bootTimeoutMs: 60_000,
+});

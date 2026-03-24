@@ -1,6 +1,7 @@
 import path from 'node:path';
 import type { Client } from 'pg';
 import { DEPENDENCY } from '@yaagi/contracts/boot';
+import type { ExecutiveVerdict } from '@yaagi/contracts/actions';
 import type { DecisionMode, DecisionResult } from '@yaagi/contracts/cognition';
 import {
   DEFAULT_PERCEPTION_HEALTH,
@@ -10,6 +11,7 @@ import {
 } from '@yaagi/contracts/perception';
 import {
   appendRuntimeTimelineEvent,
+  createRuntimeActionLogStore,
   createPerceptionStore,
   createRuntimeDbClient,
   createRuntimeModelProfileStore,
@@ -24,6 +26,11 @@ import {
 } from '@yaagi/db';
 import type { SystemEvent } from '@yaagi/contracts/boot';
 import { TICK_STATUS, type TickTerminalResult } from '@yaagi/contracts/runtime';
+import {
+  createExecutiveCenter,
+  createPhase0ToolGateway,
+  executiveVerdictToResultJson,
+} from '../actions/index.ts';
 import { ConstitutionalBootService } from '../boot/index.ts';
 import {
   createDecisionHarness,
@@ -274,6 +281,7 @@ const createDbBackedTickRuntimeStore = (
         ...(input.terminal.continuityFlags
           ? { continuityFlagsJson: input.terminal.continuityFlags }
           : {}),
+        ...(input.terminal.actionId ? { actionId: input.terminal.actionId } : {}),
       };
 
       if (input.terminal.status === TICK_STATUS.COMPLETED) {
@@ -340,6 +348,33 @@ const createDbBackedModelProfileStore = (config: CoreRuntimeConfig) => ({
       await store.setCurrentModelProfile(modelProfileId);
     }),
 });
+
+const createDbBackedActionLogStore = (config: CoreRuntimeConfig) => ({
+  appendActionLog: (
+    input: Parameters<ReturnType<typeof createRuntimeActionLogStore>['appendActionLog']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createRuntimeActionLogStore(client);
+      return await store.appendActionLog(input);
+    }),
+
+  listActionLogForTick: (
+    input: Parameters<ReturnType<typeof createRuntimeActionLogStore>['listActionLogForTick']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createRuntimeActionLogStore(client);
+      return await store.listActionLogForTick(input);
+    }),
+});
+
+const reserveDbBackedTickActionId = (
+  config: CoreRuntimeConfig,
+  input: Parameters<ReturnType<typeof createTickRuntimeStore>['setTickActionId']>[0],
+) =>
+  withRuntimeClient(config.postgresUrl, async (client) => {
+    const store = createTickRuntimeStore(client);
+    await store.setTickActionId(input);
+  });
 
 const buildRoutingInputFromTick = (
   context: StartedTick,
@@ -425,6 +460,12 @@ export const createPhase0TickExecution =
       recentEpisodes: RuntimeEpisodeRow[];
       perceptionBatch?: PerceptionBatch;
     }) => Promise<DecisionResult>;
+    handleDecisionAction: (input: {
+      tickId: string;
+      decisionMode: DecisionMode;
+      selectedModelProfileId: string;
+      action: Extract<DecisionResult, { accepted: true }>['decision']['action'];
+    }) => Promise<ExecutiveVerdict>;
     resolveSelectedProfileEligibility?: (input: {
       modelProfileId: string;
       role: 'reflex' | 'deliberation' | 'reflection';
@@ -532,7 +573,6 @@ export const createPhase0TickExecution =
             detail: decision.detail,
           },
     };
-
     if (!decision.accepted) {
       return {
         status: TICK_STATUS.FAILED,
@@ -560,22 +600,66 @@ export const createPhase0TickExecution =
       };
     }
 
+    const buildResultPayload = (executiveVerdict: ExecutiveVerdict) => ({
+      kind: context.kind,
+      trigger: context.trigger,
+      requestId: context.requestId,
+      payload: context.payload,
+      selectedModelProfileId: selection.modelProfileId,
+      selectedRole: selection.role,
+      modelEndpoint: selection.endpoint,
+      selectionReason: selection.selectionReason,
+      perceptionBatch,
+      decision: decision.decision,
+      decisionTrace,
+      executive: executiveVerdict.accepted
+        ? {
+            accepted: true,
+            actionId: executiveVerdict.actionId,
+            verdictKind: executiveVerdict.verdictKind,
+            boundaryCheck: executiveVerdict.boundaryCheck,
+            resultJson: executiveVerdict.resultJson,
+          }
+        : {
+            accepted: false,
+            actionId: executiveVerdict.actionId,
+            verdictKind: executiveVerdict.verdictKind,
+            boundaryCheck: executiveVerdict.boundaryCheck,
+            refusalReason: executiveVerdict.refusalReason,
+            detail: executiveVerdict.detail,
+            resultJson: executiveVerdictToResultJson(executiveVerdict),
+          },
+    });
+
+    const executiveVerdict = await dependencies.handleDecisionAction({
+      tickId: context.tickId,
+      decisionMode,
+      selectedModelProfileId: selection.modelProfileId,
+      action: decision.decision.action,
+    });
+
+    if (!executiveVerdict.accepted) {
+      return {
+        status: TICK_STATUS.FAILED,
+        summary: `${context.kind} tick refused by the executive boundary`,
+        failureDetail: `executive boundary rejected: ${executiveVerdict.refusalReason}`,
+        actionId: executiveVerdict.actionId,
+        continuityFlags: {
+          selectedModelProfileId: selection.modelProfileId,
+          executiveRejected: {
+            reason: executiveVerdict.refusalReason,
+            detail: executiveVerdict.detail,
+          },
+        },
+        result: buildResultPayload(executiveVerdict),
+      };
+    }
+
     return {
       status: TICK_STATUS.COMPLETED,
       summary: decision.decision.episode.summary,
-      result: {
-        kind: context.kind,
-        trigger: context.trigger,
-        requestId: context.requestId,
-        payload: context.payload,
-        selectedModelProfileId: selection.modelProfileId,
-        selectedRole: selection.role,
-        modelEndpoint: selection.endpoint,
-        selectionReason: selection.selectionReason,
-        perceptionBatch,
-        decision: decision.decision,
-        decisionTrace,
-      },
+      actionId: executiveVerdict.actionId,
+      result: buildResultPayload(executiveVerdict),
       continuityFlags: {
         selectedModelProfileId: selection.modelProfileId,
       },
@@ -763,6 +847,7 @@ export function createPhase0RuntimeLifecycle(
     };
   };
   const modelProfileStore = createDbBackedModelProfileStore(config);
+  const actionLogStore = createDbBackedActionLogStore(config);
   const modelRouter = createPhase0ModelRouter({
     fastModelBaseUrl: config.fastModelBaseUrl,
     store: modelProfileStore,
@@ -774,6 +859,12 @@ export function createPhase0RuntimeLifecycle(
   const decisionHarness = createDecisionHarness({
     invokeAgent: invokeDecision,
     limits: DECISION_CONTEXT_LIMITS,
+  });
+  const toolGateway = createPhase0ToolGateway({ config });
+  const executiveCenter = createExecutiveCenter({
+    actionLogStore,
+    toolGateway,
+    reserveActionId: (input) => reserveDbBackedTickActionId(config, input),
   });
   const perceptionController = createPerceptionController({
     config,
@@ -813,6 +904,7 @@ export function createPhase0RuntimeLifecycle(
           return await store.listRecentEpisodes(input);
         }),
       runDecision: (input) => decisionHarness.run(input),
+      handleDecisionAction: (input) => executiveCenter.handleDecisionAction(input),
       resolveSelectedProfileEligibility: async (input) => {
         const profiles = await modelProfileStore.listModelProfiles({
           roles: [input.role],

@@ -5,6 +5,13 @@ export {
   type DatabaseBootstrapResult,
 } from './bootstrap.ts';
 export {
+  createRuntimeActionLogStore,
+  type RuntimeActionLogAppendInput,
+  type RuntimeActionLogRow,
+  type RuntimeActionLogStore,
+} from './action-log.ts';
+export { createRuntimeJobEnqueuer, type RuntimeJobEnqueuer } from './jobs.ts';
+export {
   applyTickStateDelta,
   appendRuntimeTimelineEvent,
   createRuntimeDbClient,

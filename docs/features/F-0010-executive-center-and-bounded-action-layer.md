@@ -1,7 +1,7 @@
 ---
 id: F-0010
 title: Исполнительный центр и ограниченный слой действий
-status: shaped
+status: done
 owners: ["@codex"]
 area: actions
 depends_on: [F-0002, F-0003, F-0005, F-0008, F-0009]
@@ -239,10 +239,10 @@ interface ToolGateway {
 
 ## 6. Definition of Done
 
-- `F-0010` is `shaped` with explicit ownership boundaries against `F-0003`, `F-0004`, `F-0008` and `F-0009`, and without hidden admission/state/governor ownership grab.
-- Compact design fixes the decision-action normalization rule, the first-wave allowlist execution profiles, the refusal taxonomy and `action_log` as the sole durable audit surface of this seam.
-- Verification plan explicitly includes fast contract/integration coverage and a required deployment-cell smoke path for the eventual runtime change.
-- `docs/backlog/feature-candidates.md`, `docs/ssot/index.md` and architecture coverage map stay aligned on this feature’s owner and status.
+- `F-0010` is delivered with explicit ownership boundaries against `F-0003`, `F-0004`, `F-0008` and `F-0009`, and without hidden admission/state/governor ownership grab.
+- Runtime now normalizes declarative `TickDecisionV1.action` through one canonical executive seam, persists `action_log` append-only audit evidence and writes `ticks.action_id` only through the runtime continuity boundary.
+- First-wave allowlist execution profiles (`safe_data`, `git_body`, `network_http`, `restricted_shell`, `job_enqueue`) are bounded by explicit boundary checks, refusal taxonomy and write-authority regressions proving no backdoor writes into foreign canonical owners or `/seed`.
+- Fast contract/integration suites and the required deployment-cell smoke path are green, and `docs/ssot/index.md` plus the architecture coverage map stay aligned on this feature’s delivered status.
 
 ## 7. Slicing plan (2–6 increments)
 
@@ -324,19 +324,19 @@ Tasks:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0010-01 | `apps/core/test/actions/executive-center.contract.test.ts` -> `test("AC-F0010-01 normalizes a validated TickDecisionV1 action through the canonical executive interface")`; `apps/core/test/runtime/reactive-action-handoff.integration.test.ts` -> `test("AC-F0010-01 routes reactive decision handoff only through the executive seam")` | planned |
-| AC-F0010-02 | `apps/core/test/actions/tool-gateway.contract.test.ts` -> `test("AC-F0010-02 enforces allowlisted execution profiles and boundary checks before any side effect")`; `apps/core/test/actions/tool-gateway.integration.test.ts` -> `test("AC-F0010-02 refuses out-of-scope world/state mutation tools until canonical owner adapters exist")` | planned |
-| AC-F0010-03 | `packages/db/test/action-log.integration.test.ts` -> `test("AC-F0010-03 writes one append-only action_log row for each accepted, refused and review-oriented executive verdict")` | planned |
-| AC-F0010-04 | `apps/core/test/runtime/reactive-action-handoff.integration.test.ts` -> `test("AC-F0010-04 keeps the executive seam reactive-first and single-outcome for the owning tick")`; `infra/docker/deployment-cell.smoke.ts` -> `test("AC-F0010-04 audits one bounded reactive executive outcome inside the deployment cell without new public API surface")` | planned |
-| AC-F0010-05 | `apps/core/test/actions/executive-refusal.integration.test.ts` -> `test("AC-F0010-05 returns structured refusal and action_log evidence before boundary-denied side effects")` | planned |
-| AC-F0010-06 | `apps/core/test/actions/executive-write-authority.contract.test.ts` -> `test("AC-F0010-06 routes body or state consequences through bounded canonical owners instead of direct foreign writes")` | planned |
+| AC-F0010-01 | `apps/core/test/actions/executive-center.contract.test.ts` -> `test("AC-F0010-01 normalizes a validated TickDecisionV1 action through the canonical executive interface")`; `apps/core/test/runtime/reactive-action-handoff.integration.test.ts` -> `test("AC-F0010-04 keeps the executive seam reactive-first and single-outcome for the owning tick")` | done |
+| AC-F0010-02 | `apps/core/test/actions/tool-gateway.contract.test.ts` -> `test("AC-F0010-02 enforces allowlisted execution profiles and boundary checks before any side effect")`; `apps/core/test/actions/tool-gateway.contract.test.ts` -> `test("AC-F0010-02 returns execution_timeout before a delayed git_body parent inspection can reach any write side effect")`; `apps/core/test/actions/tool-gateway.contract.test.ts` -> `test("AC-F0010-02 prevents a late schedule_job enqueue from surfacing after the bounded timeout window")`; `apps/core/test/actions/tool-gateway.integration.test.ts` -> `test("AC-F0010-02 refuses out-of-scope world/state mutation tools until canonical owner adapters exist")` | done |
+| AC-F0010-03 | `packages/db/test/action-log.integration.test.ts` -> `test("AC-F0010-03 writes one append-only action_log row for each accepted, refused and review-oriented executive verdict")`; `apps/core/test/actions/executive-center.contract.test.ts` -> `test("AC-F0010-03 appends one action_log row for conscious inaction, review, accepted tools and structured refusals")` | done |
+| AC-F0010-04 | `apps/core/test/runtime/reactive-action-handoff.integration.test.ts` -> `test("AC-F0010-04 keeps the executive seam reactive-first and single-outcome for the owning tick")`; `infra/docker/deployment-cell.smoke.ts` -> `test("AC-F0010-04 audits one bounded reactive executive outcome inside the deployment cell without new public API surface")` | done |
+| AC-F0010-05 | `apps/core/test/actions/executive-refusal.integration.test.ts` -> `test("AC-F0010-05 returns structured refusal and action_log evidence before boundary-denied side effects")` | done |
+| AC-F0010-06 | `apps/core/test/actions/executive-write-authority.contract.test.ts` -> `test("AC-F0010-06 routes body or state consequences through bounded canonical owners instead of direct foreign writes")`; `apps/core/test/actions/tool-gateway.contract.test.ts` -> `test("AC-F0010-02 enforces allowlisted execution profiles and boundary checks before any side effect")` | done |
 
 План верификации:
 
 - Fast path обязателен для action normalization, tool-gateway boundary checks, append-only audit semantics and write-authority discipline.
 - Runtime integration обязателен для reactive decision handoff inside the existing tick lifecycle from `F-0003` and `F-0009`.
 - Containerized smoke обязателен на implementation step, потому что feature меняет runtime behavior inside the canonical deployment cell.
-- Coverage gaps остаются informational while the dossier is `shaped`; they become blocking once the dossier advances to `planned`.
+- AC-linked fast and smoke coverage are now delivered; no informational gaps remain for this dossier in the final implementation snapshot.
 
 ## 11. Decision log (ADR blocks)
 
@@ -356,17 +356,30 @@ Tasks:
 
 ## 12. Progress & links
 
-- Status: `proposed` -> `shaped`
+- Status: `proposed` -> `shaped` -> `done`
 - Issue: -
 - PRs:
   - -
 - Code:
-  - -
+  - `packages/contracts/src/actions.ts`
+  - `packages/db/src/action-log.ts`
+  - `packages/db/src/jobs.ts`
+  - `packages/db/src/runtime.ts`
+  - `apps/core/src/actions/executive-center.ts`
+  - `apps/core/src/actions/tool-gateway.ts`
+  - `apps/core/src/runtime/runtime-lifecycle.ts`
+  - `infra/migrations/006_action_log.sql`
 - Verification:
+  - `pnpm format`
+  - `pnpm typecheck`
+  - `pnpm lint`
+  - `pnpm test`
+  - `pnpm smoke:cell`
   - `node scripts/sync-index.mjs`
   - `node scripts/lint-dossiers.mjs`
   - `node scripts/coverage-audit.mjs --dossier docs/features/F-0010-executive-center-and-bounded-action-layer.md`
   - `pnpm debt:audit:changed`
+  - `pnpm debt:audit`
   - `git diff --check`
 
 ## 13. Change log
@@ -374,3 +387,6 @@ Tasks:
 - **v1.0 (2026-03-24):** Initial dossier created from candidate `CF-007`; intake fixed the executive/tool seam as a bounded action boundary on top of delivered platform/runtime/perception/router/decision prerequisites, made `action_log` and `boundary_check_json` explicit in scope, and prohibited backdoor writes into identity-bearing tables from the action layer.
 - **v1.1 (2026-03-24):** `spec-compact` completed: the dossier advanced to `shaped`, fixed the normalization contract from declarative `TickDecisionV1.action` to executive verdicts, narrowed the first-wave allowlist and refusal taxonomy, made `action_log` the sole durable audit surface of the seam, and pinned the planned fast/smoke verification map for the future implementation.
 - **v1.2 (2026-03-24):** `plan-slice` completed: the dossier now carries a four-slice delivery order covering executive audit substrate, bounded gateway refusals, reactive runtime handoff and deployment-cell/write-authority verification. Frontmatter intentionally remains `shaped` as a justified alternative because the repo coverage policy treats `planned` dossiers as blocking until AC-linked tests exist.
+- **v1.3 (2026-03-24):** Implementation completed: delivered shared executive/action contracts, append-only `action_log`, bounded `ToolGateway`, reactive runtime handoff with `ticks.action_id`, the required `F-0003` continuity realignment, AC-linked fast suites and deployment-cell smoke. Status advanced to `done`.
+- **v1.4 (2026-03-24):** Review hardening closed symlink-based workspace escape, reserved `ticks.action_id` before bounded execution, added rollback-aware audit failure handling for mutable wrappers, and bounded `job_enqueue` latency with explicit timeout coverage.
+- **v1.5 (2026-03-24):** Final review hardening made timeout handling cancellation-safe on the delivered executive substrate: `job_enqueue.phase0_followup` now uses deterministic job ids plus abort-aware cleanup so late enqueue completion cannot survive a timeout refusal, while `git_body.write_file` now normalizes delayed parent inspection into canonical `execution_timeout` refusals before any write side effect.

@@ -70,6 +70,7 @@ const createRuntimeStoreAdapter = (store: RuntimeTickStore): TickRuntimeStore =>
         ...(input.terminal.continuityFlags
           ? { continuityFlagsJson: input.terminal.continuityFlags }
           : {}),
+        ...(input.terminal.actionId ? { actionId: input.terminal.actionId } : {}),
         subjectStateDelta: buildPhase0SubjectStateDelta(input),
       });
       return;
@@ -87,6 +88,7 @@ const createRuntimeStoreAdapter = (store: RuntimeTickStore): TickRuntimeStore =>
         ...(input.terminal.continuityFlags
           ? { continuityFlagsJson: input.terminal.continuityFlags }
           : {}),
+        ...(input.terminal.actionId ? { actionId: input.terminal.actionId } : {}),
       });
       return;
     }
@@ -102,6 +104,7 @@ const createRuntimeStoreAdapter = (store: RuntimeTickStore): TickRuntimeStore =>
       ...(input.terminal.continuityFlags
         ? { continuityFlagsJson: input.terminal.continuityFlags }
         : {}),
+      ...(input.terminal.actionId ? { actionId: input.terminal.actionId } : {}),
     });
   },
   reclaimStaleTicks: async (now: string): Promise<number> =>
@@ -247,6 +250,9 @@ void test('AC-F0009-05 rejects a reactive runtime handoff when the selected prof
       loadSubjectStateSnapshot: async (input) => await tickStore.loadSubjectStateSnapshot(input),
       listRecentEpisodes: async (input) => await tickStore.listRecentEpisodes(input),
       runDecision: async (input) => await decisionHarness.run(input),
+      handleDecisionAction: () => {
+        throw new Error('executive boundary must not run when profile eligibility already failed');
+      },
       resolveSelectedProfileEligibility: (): Promise<'profile_unhealthy'> =>
         Promise.resolve('profile_unhealthy'),
     }),

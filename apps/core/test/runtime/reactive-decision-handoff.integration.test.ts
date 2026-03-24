@@ -100,6 +100,19 @@ const buildExecution = () =>
           developmentHints: ['do not expand runtime admission implicitly'],
         },
       }),
+    handleDecisionAction: ({ action }) =>
+      Promise.resolve({
+        accepted: true as const,
+        actionId: `action-${action.type}`,
+        verdictKind: action.type === 'reflect' ? 'review_request' : 'conscious_inaction',
+        boundaryCheck: {
+          allowed: true,
+          reason: 'test executive stub accepted the declarative action',
+        },
+        resultJson: {
+          summary: action.summary,
+        },
+      }),
   });
 
 void test('AC-F0009-06 keeps the harness reactive-first without silently expanding deliberative or contemplative admission', async () => {

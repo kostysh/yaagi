@@ -24,6 +24,7 @@ type TickRecord = {
   status: TickStatus;
   continuityFlags: Record<string, unknown>;
   failureDetail: string | null;
+  actionId: string | null;
 };
 
 type EpisodeRecord = {
@@ -87,6 +88,7 @@ export function createTickRuntimeHarness(options: HarnessOptions = {}): TickRunt
       status: TICK_STATUS.STARTED,
       continuityFlags: {},
       failureDetail: null,
+      actionId: null,
     });
     agentState.currentTick = options.seedStartedTick.tickId;
   }
@@ -122,6 +124,7 @@ export function createTickRuntimeHarness(options: HarnessOptions = {}): TickRunt
         status: TICK_STATUS.STARTED,
         continuityFlags: {},
         failureDetail: null,
+        actionId: null,
       });
       agentState.currentTick = input.tickId;
       events.push({
@@ -152,6 +155,7 @@ export function createTickRuntimeHarness(options: HarnessOptions = {}): TickRunt
       tick.endedAt = input.finishedAt;
       tick.failureDetail = input.terminal.failureDetail ?? null;
       tick.continuityFlags = input.terminal.continuityFlags ?? {};
+      tick.actionId = input.terminal.actionId ?? null;
       agentState.currentTick = null;
       events.push({
         eventId: `event-${input.tickId}-${input.terminal.status}`,

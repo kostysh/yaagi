@@ -92,6 +92,7 @@ const toTerminalResult = (error: unknown): TickTerminalResult => {
       ...(candidate.result ? { result: candidate.result } : {}),
       ...(candidate.failureDetail ? { failureDetail: candidate.failureDetail } : {}),
       ...(candidate.continuityFlags ? { continuityFlags: candidate.continuityFlags } : {}),
+      ...(candidate.actionId ? { actionId: candidate.actionId } : {}),
     };
   }
 
