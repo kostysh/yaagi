@@ -249,6 +249,17 @@ export function createPhase0ModelRouter(options: Phase0ModelRouterOptions): Phas
     return profiles.sort(baselineProfileSorter);
   };
 
+  const resolveHealthIfNeeded = async (
+    roles: BaselineModelProfileRole[],
+    overrides?: Partial<Record<BaselineModelProfileRole, ModelHealthSummary>>,
+  ): Promise<Partial<Record<BaselineModelProfileRole, ModelHealthSummary>>> => {
+    if (roles.every((role) => overrides?.[role] !== undefined)) {
+      return {};
+    }
+
+    return await resolveBaselineHealth();
+  };
+
   return {
     async ensureBaselineProfiles(): Promise<BaselineModelProfileDiagnostic[]> {
       await options.store.ensureModelProfiles(baselineProfiles);
@@ -258,9 +269,14 @@ export function createPhase0ModelRouter(options: Phase0ModelRouterOptions): Phas
     async getBaselineDiagnostics(
       input?: Pick<BaselineRoutingInput, 'organHealth'>,
     ): Promise<BaselineModelProfileDiagnostic[]> {
+      const baselineRoles: BaselineModelProfileRole[] = [
+        BASELINE_MODEL_PROFILE_ROLE.REFLEX,
+        BASELINE_MODEL_PROFILE_ROLE.DELIBERATION,
+        BASELINE_MODEL_PROFILE_ROLE.REFLECTION,
+      ];
       const [profiles, resolvedHealth] = await Promise.all([
         loadBaselineProfiles(),
-        resolveBaselineHealth(),
+        resolveHealthIfNeeded(baselineRoles, input?.organHealth),
       ]);
 
       return profiles.map((profile) => {
@@ -288,7 +304,7 @@ export function createPhase0ModelRouter(options: Phase0ModelRouterOptions): Phas
 
       const [profiles, resolvedHealth] = await Promise.all([
         loadBaselineProfiles(),
-        resolveBaselineHealth(),
+        resolveHealthIfNeeded([requestedRole], input.organHealth),
       ]);
       const requiredCapabilities = input.requiredCapabilities ?? [];
       const matchingProfiles = profiles.filter((profile) => profile.role === requestedRole);

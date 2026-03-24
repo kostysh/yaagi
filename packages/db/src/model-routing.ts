@@ -339,13 +339,15 @@ export function createRuntimeModelProfileStore(
     async ensureModelProfiles(
       profiles: RuntimeModelProfileSeedInput[],
     ): Promise<RuntimeModelProfileRow[]> {
-      const seededProfiles: RuntimeModelProfileRow[] = [];
+      return await transaction(db, async () => {
+        const seededProfiles: RuntimeModelProfileRow[] = [];
 
-      for (const profile of profiles) {
-        seededProfiles.push(await upsertModelProfile(db, profile));
-      }
+        for (const profile of profiles) {
+          seededProfiles.push(await upsertModelProfile(db, profile));
+        }
 
-      return seededProfiles;
+        return seededProfiles;
+      });
     },
 
     listModelProfiles(input?: { roles?: ModelProfileRole[] }): Promise<RuntimeModelProfileRow[]> {

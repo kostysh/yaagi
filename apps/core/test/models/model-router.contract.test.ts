@@ -114,3 +114,56 @@ void test('AC-F0008-05 rejects unsupported or unavailable roles without silent f
     detail: 'model-fast is degraded',
   });
 });
+
+void test('AC-F0008-06 reuses caller-provided health summaries without re-probing baseline dependencies', async () => {
+  const harness = createSubjectStateDbHarness();
+  const store = createRuntimeModelProfileStore(harness.db);
+  let resolveBaselineHealthCalls = 0;
+  const router = createPhase0ModelRouter({
+    fastModelBaseUrl: 'http://vllm-fast:8000/v1',
+    store,
+    resolveBaselineHealth: () => {
+      resolveBaselineHealthCalls += 1;
+      return Promise.resolve({
+        reflex: { healthy: true, detail: 'resolved reflex health' },
+        deliberation: { healthy: true, detail: 'resolved deliberation health' },
+        reflection: { healthy: true, detail: 'resolved reflection health' },
+      });
+    },
+  });
+
+  await router.ensureBaselineProfiles();
+  resolveBaselineHealthCalls = 0;
+
+  const sharedHealth = {
+    healthy: true,
+    detail: 'reused health verdict',
+  };
+  const diagnostics = await router.getBaselineDiagnostics({
+    organHealth: {
+      reflex: sharedHealth,
+      deliberation: sharedHealth,
+      reflection: sharedHealth,
+    },
+  });
+  const selection = await router.selectProfile({
+    tickMode: 'reactive',
+    taskKind: 'reactive.signal',
+    latencyBudget: 'tight',
+    riskLevel: 'low',
+    contextSize: 64,
+    organHealth: {
+      reflex: sharedHealth,
+    },
+  });
+
+  assert.equal(resolveBaselineHealthCalls, 0);
+  assert.ok(
+    diagnostics.every((profile) => profile.healthSummary.detail === 'reused health verdict'),
+  );
+  assert.equal(selection.accepted, true);
+  assert.equal(
+    selection.accepted ? selection.selectionReason.health.detail : null,
+    'reused health verdict',
+  );
+});

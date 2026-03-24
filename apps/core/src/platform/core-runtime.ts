@@ -16,7 +16,10 @@ import { type CoreRuntimeConfig, loadCoreRuntimeConfig } from './core-config.ts'
 import { createPhase0Mastra } from './phase0-mastra.ts';
 import { materializeRuntimeSeed } from './runtime-seed.ts';
 import { createPhase0RuntimeLifecycle } from '../runtime/runtime-lifecycle.ts';
-import type { BaselineModelProfileDiagnostic } from '../runtime/model-router.ts';
+import type {
+  BaselineModelProfileDiagnostic,
+  ModelHealthSummary,
+} from '../runtime/model-router.ts';
 
 const BOOT_POLL_INTERVAL_MS = 1_000;
 
@@ -47,7 +50,11 @@ export type CoreRuntimeDependencies = {
     start(): Promise<void>;
     stop(): Promise<void>;
     health?(): Promise<PerceptionHealthSnapshot>;
-    getModelRoutingDiagnostics?(): Promise<BaselineModelProfileDiagnostic[]>;
+    getModelRoutingDiagnostics?(input?: {
+      reflex?: ModelHealthSummary;
+      deliberation?: ModelHealthSummary;
+      reflection?: ModelHealthSummary;
+    }): Promise<BaselineModelProfileDiagnostic[]>;
     ingestHttpStimulus?(input: unknown): Promise<{
       stimulusId: string;
       deduplicated: boolean;
@@ -193,6 +200,15 @@ export function createCoreRuntime(
     ]);
     let perception = DEFAULT_PERCEPTION_HEALTH;
     let modelRoutingProfiles: BaselineModelProfileDiagnostic[] = [];
+    const baselineHealthSummary: ModelHealthSummary = fastModel
+      ? {
+          healthy: true,
+          detail: 'model-fast dependency is reachable',
+        }
+      : {
+          healthy: false,
+          detail: 'model-fast dependency is unavailable',
+        };
     if (postgres && runtimeLifecycle.health) {
       try {
         perception = await runtimeLifecycle.health();
@@ -202,7 +218,11 @@ export function createCoreRuntime(
     }
     if (postgres && runtimeLifecycle.getModelRoutingDiagnostics) {
       try {
-        modelRoutingProfiles = await runtimeLifecycle.getModelRoutingDiagnostics();
+        modelRoutingProfiles = await runtimeLifecycle.getModelRoutingDiagnostics({
+          reflex: baselineHealthSummary,
+          deliberation: baselineHealthSummary,
+          reflection: baselineHealthSummary,
+        });
       } catch {
         modelRoutingProfiles = [];
       }

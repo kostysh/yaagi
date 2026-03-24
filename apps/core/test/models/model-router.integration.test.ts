@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRuntimeModelProfileStore } from '@yaagi/db';
+import { createRuntimeModelProfileStore, type ModelRoutingDbExecutor } from '@yaagi/db';
 import { createPhase0ModelRouter, PHASE0_BASELINE_PROFILE_ID } from '../../src/runtime/index.ts';
 import { createSubjectStateDbHarness } from '../../../../packages/db/testing/subject-state-db-harness.ts';
 
@@ -40,6 +40,30 @@ void test('AC-F0008-01 loads baseline profiles from the canonical profile store'
         profile.status === 'active',
     ),
   );
+});
+
+void test('AC-F0008-01 rolls back baseline profile seeding on partial failure', async () => {
+  const harness = createSubjectStateDbHarness();
+  let modelRegistryUpserts = 0;
+  const failingQuery = (async (sqlText: string, params?: unknown[]) => {
+    if (sqlText.includes('insert into polyphony_runtime.model_registry')) {
+      modelRegistryUpserts += 1;
+      if (modelRegistryUpserts === 3) {
+        throw new Error('forced baseline seed failure');
+      }
+    }
+
+    return await harness.db.query(sqlText, params);
+  }) as unknown as ModelRoutingDbExecutor['query'];
+  const store = createRuntimeModelProfileStore({ query: failingQuery });
+  const router = createPhase0ModelRouter({
+    fastModelBaseUrl: 'http://vllm-fast:8000/v1',
+    store,
+  });
+
+  await assert.rejects(router.ensureBaselineProfiles(), /forced baseline seed failure/);
+  assert.equal(modelRegistryUpserts, 3);
+  assert.deepEqual(await store.listModelProfiles(), []);
 });
 
 void test('AC-F0008-02 keeps reflection as an explicit profile or adapter-over-deliberation mapping', async () => {

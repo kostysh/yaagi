@@ -52,7 +52,11 @@ type RuntimeLifecycle = {
   }>;
   ingestHttpStimulus(input: HttpIngestStimulusInput): Promise<StimulusIngestResult>;
   health(): Promise<PerceptionHealthSnapshot>;
-  getModelRoutingDiagnostics(): Promise<BaselineModelProfileDiagnostic[]>;
+  getModelRoutingDiagnostics(input?: {
+    reflex?: ModelHealthSummary;
+    deliberation?: ModelHealthSummary;
+    reflection?: ModelHealthSummary;
+  }): Promise<BaselineModelProfileDiagnostic[]>;
 };
 
 const buildPhase0SubjectStateDelta = (input: FinishTickInput): SubjectStateDelta => {
@@ -790,8 +794,12 @@ export function createPhase0RuntimeLifecycle(config: CoreRuntimeConfig): Runtime
       }
     },
 
-    getModelRoutingDiagnostics(): Promise<BaselineModelProfileDiagnostic[]> {
-      return modelRouter.getBaselineDiagnostics();
+    getModelRoutingDiagnostics(input?: {
+      reflex?: ModelHealthSummary;
+      deliberation?: ModelHealthSummary;
+      reflection?: ModelHealthSummary;
+    }): Promise<BaselineModelProfileDiagnostic[]> {
+      return modelRouter.getBaselineDiagnostics(input ? { organHealth: input } : undefined);
     },
   };
 }

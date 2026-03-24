@@ -276,12 +276,12 @@ Tasks:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0008-01 | `apps/core/test/models/model-router.integration.test.ts` -> `test("AC-F0008-01 loads baseline profiles from the canonical profile store")` | done |
+| AC-F0008-01 | `apps/core/test/models/model-router.integration.test.ts` -> `test("AC-F0008-01 loads baseline profiles from the canonical profile store")`; `test("AC-F0008-01 rolls back baseline profile seeding on partial failure")` | done |
 | AC-F0008-02 | `apps/core/test/models/model-router.integration.test.ts` -> `test("AC-F0008-02 keeps reflection as an explicit profile or adapter-over-deliberation mapping")` | done |
 | AC-F0008-03 | `apps/core/test/models/model-router.contract.test.ts` -> `test("AC-F0008-03 selects baseline profiles deterministically for reactive, deliberative and contemplative modes")` | done |
 | AC-F0008-04 | `apps/core/test/runtime/tick-model-selection.integration.test.ts` -> `test("AC-F0008-04 persists selected_model_profile_id and current_model_profile_id for the active tick")` | done |
 | AC-F0008-05 | `apps/core/test/models/model-router.contract.test.ts` -> `test("AC-F0008-05 rejects unsupported or unavailable roles without silent fallback")` | done |
-| AC-F0008-06 | `apps/core/test/runtime/health.integration.test.ts` -> `test("AC-F0008-06 surfaces baseline profile diagnostics without opening a models API")`; supplemental deployment check in `infra/docker/deployment-cell.smoke.ts` -> `test("AC-F0008-06 surfaces baseline model-routing diagnostics without opening a /models API in the deployment cell")` | done |
+| AC-F0008-06 | `apps/core/test/models/model-router.contract.test.ts` -> `test("AC-F0008-06 reuses caller-provided health summaries without re-probing baseline dependencies")`; `apps/core/test/runtime/health.integration.test.ts` -> `test("AC-F0008-06 surfaces baseline profile diagnostics without opening a models API")`; supplemental deployment check in `infra/docker/deployment-cell.smoke.ts` -> `test("AC-F0008-06 surfaces baseline model-routing diagnostics without opening a /models API in the deployment cell")` | done |
 
 План тестов:
 
@@ -346,3 +346,6 @@ Tasks:
 - **v1.1 (2026-03-23):** Promoted dossier to `shaped`, made the current phase baseline explicit, accepted the local ADR forks, and added required `F-0003` realignment before continuity integration.
 - **v1.2 (2026-03-24):** Closed the `plan-slice` step with a justified alternative status: the dossier now carries the validated four-slice delivery order, explicit verification artifacts and the required `F-0003` realignment task, while frontmatter stays `shaped` because repo coverage policy treats `planned` dossiers as blocking until AC-linked tests exist.
 - **v1.3 (2026-03-24):** Completed `implementation`: added the baseline `model_registry` schema/store, seeded `reflex` / `deliberation` / explicit `reflection` adapter profiles, introduced deterministic phase-0 model routing with structured refusals, persisted `selected_model_profile_id` plus active `current_model_profile_id` through the tick continuity boundary, enriched `GET /health` with baseline routing diagnostics without opening `/models`, and closed both fast-path and containerized verification.
+- **v1.4 (2026-03-24):** Tightened the same implementation step after independent review: baseline profile seeding is now transactional, and `AC-F0008-01` additionally proves rollback on partial seed failure so bootstrap cannot leave a partial baseline registry behind.
+- **v1.5 (2026-03-24):** Eliminated the remaining review-derived health-path debt inside the same implementation step: `GET /health` now reuses the already-computed `model-fast` verdict when assembling routing diagnostics instead of probing the same dependency twice per request.
+- **v1.6 (2026-03-24):** Final review tightening: `ModelRouter` no longer resolves baseline health when the caller already provided the needed organ-health override, and `AC-F0008-06` now pins that no-reprobe invariant directly in fast-path tests.
