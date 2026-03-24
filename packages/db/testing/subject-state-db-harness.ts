@@ -404,6 +404,23 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
     if (
       sql.startsWith('select') &&
       sql.includes('from polyphony_runtime.episodes') &&
+      sql.includes('order by created_at desc, episode_id desc')
+    ) {
+      const limit = Number(params[0]);
+      const rows = Object.values(state.episodesById)
+        .sort((left, right) => {
+          const byCreatedAt = right.createdAt.localeCompare(left.createdAt);
+          if (byCreatedAt !== 0) return byCreatedAt;
+          return right.episodeId.localeCompare(left.episodeId);
+        })
+        .slice(0, limit)
+        .map((episode) => structuredClone(episode) as TRow);
+      return { rows };
+    }
+
+    if (
+      sql.startsWith('select') &&
+      sql.includes('from polyphony_runtime.episodes') &&
       sql.includes('where episode_id = $1')
     ) {
       const episode = state.episodesById[String(params[0])];

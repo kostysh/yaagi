@@ -16,6 +16,50 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _structured_decision_content(self, messages):
+        prompt_parts = []
+        for message in messages:
+            if isinstance(message, dict):
+                content = message.get("content", "")
+                if isinstance(content, str) and content:
+                    prompt_parts.append(content)
+
+        prompt = "\n".join(prompt_parts)
+        if "You MUST answer with a JSON object that matches the JSON schema above." not in prompt:
+            return None
+
+        summary_source = ""
+        if messages:
+            last = messages[-1]
+            if isinstance(last, dict):
+                candidate = last.get("content", "")
+                if isinstance(candidate, str):
+                    summary_source = candidate.strip().splitlines()[0][:120]
+
+        return json.dumps(
+            {
+                "observations": [
+                    summary_source or "bounded phase-0 prompt received",
+                    "custom phase-0 fast stub returned deterministic JSON",
+                ],
+                "interpretations": [
+                    "bounded structured decision generation is available in the deployment cell"
+                ],
+                "action": {
+                    "type": "reflect",
+                    "summary": "keep the phase-0 decision bounded and conservative",
+                },
+                "episode": {
+                    "summary": "bounded phase-0 decision completed",
+                    "importance": 0.4,
+                },
+                "developmentHints": [
+                    "preserve the reactive-first boundary",
+                    "avoid implicit executive expansion",
+                ],
+            }
+        )
+
     def do_GET(self):
         if self.path == "/health":
             self._json(200, {"ok": True, "model": MODEL_ID})
@@ -45,8 +89,8 @@ class Handler(BaseHTTPRequestHandler):
             body = self.rfile.read(length) if length > 0 else b"{}"
             request = json.loads(body.decode("utf-8"))
             messages = request.get("messages", [])
-            content = ""
-            if messages:
+            content = self._structured_decision_content(messages)
+            if content is None and messages:
                 last = messages[-1]
                 if isinstance(last, dict):
                     content = f"phase-0 stub response for: {last.get('content', '')}"

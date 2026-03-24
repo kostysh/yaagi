@@ -29,6 +29,7 @@ export {
   type RuntimeDbExecutor,
   type RuntimeEpisodeRow,
   type RuntimeMode,
+  type RuntimeRecentEpisodesInput,
   type RuntimeTickRow,
   type RuntimeTickStore,
   type RuntimeTimelineEventInput,

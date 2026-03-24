@@ -553,13 +553,18 @@ export function createPerceptionController(options: ControllerOptions): Percepti
         group.stimulusIds.every((stimulusId) => claimedIds.has(stimulusId)),
       );
       const items = claimedGroups.map(toBatchItem);
-      const claim: PerceptionBatch = {
+      const claim = {
         tickId,
         items,
         sourceKinds: [...new Set(items.map((item) => item.source))],
         claimedStimulusIds: items.flatMap((item) => item.stimulusIds),
         requiresImmediateTick: items.some((item) => item.requiresImmediateTick),
         highestPriority: items[0]?.priority ?? null,
+        truncated: partiallyClaimedIds.length > 0,
+        conflictMarkers: partiallyClaimedIds.length > 0 ? ['perception_partial_claim'] : [],
+      } satisfies PerceptionBatch & {
+        truncated: boolean;
+        conflictMarkers: string[];
       };
 
       await options.store.attachTickPerceptionClaim({

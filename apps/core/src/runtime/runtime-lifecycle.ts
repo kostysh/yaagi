@@ -1,9 +1,11 @@
 import path from 'node:path';
 import type { Client } from 'pg';
 import { DEPENDENCY } from '@yaagi/contracts/boot';
+import type { DecisionMode, DecisionResult } from '@yaagi/contracts/cognition';
 import {
   DEFAULT_PERCEPTION_HEALTH,
   type HttpIngestStimulusInput,
+  type PerceptionBatch,
   type PerceptionHealthSnapshot,
 } from '@yaagi/contracts/perception';
 import {
@@ -14,14 +16,27 @@ import {
   createTickRuntimeStore,
   ensureRuntimeAgentStateRow,
   getRuntimeAgentStateRow,
-  type SubjectStateDelta,
   type RuntimeMode,
+  type RuntimeEpisodeRow,
+  type SubjectStateDelta,
+  type SubjectStateSnapshot,
+  type SubjectStateSnapshotInput,
 } from '@yaagi/db';
 import type { SystemEvent } from '@yaagi/contracts/boot';
 import { TICK_STATUS, type TickTerminalResult } from '@yaagi/contracts/runtime';
 import { ConstitutionalBootService } from '../boot/index.ts';
+import {
+  createDecisionHarness,
+  DECISION_CONTEXT_LIMITS,
+  type DecisionAgentInvoker,
+} from '../cognition/index.ts';
 import { createPerceptionController, type StimulusIngestResult } from '../perception/index.ts';
 import type { CoreRuntimeConfig } from '../platform/core-config.ts';
+import {
+  createPhase0DecisionInvoker,
+  createPhase0Mastra,
+  PHASE0_AGENT_KEY,
+} from '../platform/phase0-mastra.ts';
 import {
   createPhase0ModelRouter,
   type BaselineModelProfileDiagnostic,
@@ -59,7 +74,7 @@ type RuntimeLifecycle = {
   }): Promise<BaselineModelProfileDiagnostic[]>;
 };
 
-const buildPhase0SubjectStateDelta = (input: FinishTickInput): SubjectStateDelta => {
+export const buildPhase0SubjectStateDelta = (input: FinishTickInput): SubjectStateDelta => {
   if (input.terminal.status !== TICK_STATUS.COMPLETED) {
     return {};
   }
@@ -69,7 +84,6 @@ const buildPhase0SubjectStateDelta = (input: FinishTickInput): SubjectStateDelta
       psmJson: {
         lastCompletedTickId: input.tickId,
         lastCompletedSummary: input.terminal.summary ?? null,
-        lastCompletedResult: input.terminal.result ?? {},
       },
     },
   };
@@ -394,15 +408,28 @@ export const createPhase0TickExecution =
       modelProfileId: string;
       selectionReasonJson: Record<string, unknown>;
     }) => Promise<void>;
-    prepareReactiveTick: (tickId: string) => Promise<{
-      claimedStimulusIds: string[];
-      highestPriority: string | null;
-      items: Array<{
-        primaryStimulusId: string;
-        source: string;
-      }>;
-      sourceKinds: string[];
-    }>;
+    prepareReactiveTick: (tickId: string) => Promise<PerceptionBatch>;
+    loadSubjectStateSnapshot: (input: SubjectStateSnapshotInput) => Promise<SubjectStateSnapshot>;
+    listRecentEpisodes: (input: { limit: number }) => Promise<RuntimeEpisodeRow[]>;
+    runDecision: (input: {
+      tickId: string;
+      decisionMode: DecisionMode;
+      selectedProfile: {
+        modelProfileId: string;
+        role: 'reflex' | 'deliberation' | 'reflection';
+        endpoint: string;
+        adapterOf: string | null;
+        eligibility?: 'eligible' | 'profile_unavailable' | 'profile_unhealthy';
+      };
+      subjectStateSnapshot: SubjectStateSnapshot;
+      recentEpisodes: RuntimeEpisodeRow[];
+      perceptionBatch?: PerceptionBatch;
+    }) => Promise<DecisionResult>;
+    resolveSelectedProfileEligibility?: (input: {
+      modelProfileId: string;
+      role: 'reflex' | 'deliberation' | 'reflection';
+      requiredCapabilities: string[];
+    }) => Promise<'eligible' | 'profile_unavailable' | 'profile_unhealthy'>;
   }) =>
   async (context: StartedTick): Promise<TickTerminalResult> => {
     if (context.kind === 'wake') {
@@ -416,7 +443,9 @@ export const createPhase0TickExecution =
       };
     }
 
-    const selection = await dependencies.selectProfile(buildRoutingInputFromTick(context));
+    const decisionMode = context.kind as DecisionMode;
+    const routingInput = buildRoutingInputFromTick(context);
+    const selection = await dependencies.selectProfile(routingInput);
     if (!selection.accepted) {
       return {
         status: TICK_STATUS.FAILED,
@@ -454,14 +483,86 @@ export const createPhase0TickExecution =
             highestPriority: null,
             items: [],
             sourceKinds: [],
+            requiresImmediateTick: false,
+            tickId: context.tickId,
           };
+
+    const [subjectStateSnapshot, recentEpisodes] = await Promise.all([
+      dependencies.loadSubjectStateSnapshot({
+        goalLimit: DECISION_CONTEXT_LIMITS.goalLimit,
+        beliefLimit: DECISION_CONTEXT_LIMITS.beliefLimit,
+        entityLimit: DECISION_CONTEXT_LIMITS.entityLimit,
+        relationshipLimit: DECISION_CONTEXT_LIMITS.relationshipLimit,
+      }),
+      dependencies.listRecentEpisodes({
+        limit: DECISION_CONTEXT_LIMITS.recentEpisodeLimit,
+      }),
+    ]);
+    const selectedProfileEligibility = dependencies.resolveSelectedProfileEligibility
+      ? await dependencies.resolveSelectedProfileEligibility({
+          modelProfileId: selection.modelProfileId,
+          role: selection.role,
+          requiredCapabilities: routingInput.requiredCapabilities ?? [],
+        })
+      : 'eligible';
+    const decision = await dependencies.runDecision({
+      tickId: context.tickId,
+      decisionMode,
+      selectedProfile: {
+        modelProfileId: selection.modelProfileId,
+        role: selection.role,
+        endpoint: selection.endpoint,
+        adapterOf: selection.adapterOf,
+        eligibility: selectedProfileEligibility,
+      },
+      subjectStateSnapshot,
+      recentEpisodes,
+      perceptionBatch,
+    });
+    const decisionTrace = {
+      decisionMode,
+      subjectStateSchemaVersion: subjectStateSnapshot.subjectStateSchemaVersion,
+      recentEpisodeIds: recentEpisodes.map((episode) => episode.episodeId),
+      perceptualSourceIds: perceptionBatch.claimedStimulusIds,
+      validation: decision.accepted
+        ? { accepted: true, schema: 'TickDecisionV1' }
+        : {
+            accepted: false,
+            reason: decision.reason,
+            detail: decision.detail,
+          },
+    };
+
+    if (!decision.accepted) {
+      return {
+        status: TICK_STATUS.FAILED,
+        summary: `${context.kind} tick refused before structured decision handoff`,
+        failureDetail: `decision harness rejected: ${decision.reason}`,
+        continuityFlags: {
+          selectedModelProfileId: selection.modelProfileId,
+          decisionRejected: {
+            reason: decision.reason,
+            detail: decision.detail,
+          },
+        },
+        result: {
+          kind: context.kind,
+          trigger: context.trigger,
+          requestId: context.requestId,
+          payload: context.payload,
+          selectedModelProfileId: selection.modelProfileId,
+          selectedRole: selection.role,
+          modelEndpoint: selection.endpoint,
+          selectionReason: selection.selectionReason,
+          perceptionBatch,
+          decisionTrace,
+        },
+      };
+    }
 
     return {
       status: TICK_STATUS.COMPLETED,
-      summary:
-        context.kind === 'reactive'
-          ? 'Phase-0 reactive tick completed'
-          : 'Phase-0 baseline routed tick completed',
+      summary: decision.decision.episode.summary,
       result: {
         kind: context.kind,
         trigger: context.trigger,
@@ -472,6 +573,8 @@ export const createPhase0TickExecution =
         modelEndpoint: selection.endpoint,
         selectionReason: selection.selectionReason,
         perceptionBatch,
+        decision: decision.decision,
+        decisionTrace,
       },
       continuityFlags: {
         selectedModelProfileId: selection.modelProfileId,
@@ -640,7 +743,12 @@ const createNoopModelRegistry = () => ({
   },
 });
 
-export function createPhase0RuntimeLifecycle(config: CoreRuntimeConfig): RuntimeLifecycle {
+export function createPhase0RuntimeLifecycle(
+  config: CoreRuntimeConfig,
+  options: {
+    invokeDecision?: DecisionAgentInvoker;
+  } = {},
+): RuntimeLifecycle {
   let tickRuntime: TickRuntime | null = null;
   const fastModelHealthProbe = createFastModelHealthProbe(config);
   const resolveBaselineHealth = async (): Promise<
@@ -659,6 +767,13 @@ export function createPhase0RuntimeLifecycle(config: CoreRuntimeConfig): Runtime
     fastModelBaseUrl: config.fastModelBaseUrl,
     store: modelProfileStore,
     resolveBaselineHealth,
+  });
+  const invokeDecision =
+    options.invokeDecision ??
+    createPhase0DecisionInvoker(createPhase0Mastra(config).getAgent(PHASE0_AGENT_KEY));
+  const decisionHarness = createDecisionHarness({
+    invokeAgent: invokeDecision,
+    limits: DECISION_CONTEXT_LIMITS,
   });
   const perceptionController = createPerceptionController({
     config,
@@ -687,6 +802,46 @@ export function createPhase0RuntimeLifecycle(config: CoreRuntimeConfig): Runtime
         await modelProfileStore.persistTickModelSelection(input);
       },
       prepareReactiveTick: (tickId) => perceptionController.prepareReactiveTick(tickId),
+      loadSubjectStateSnapshot: (input) =>
+        withRuntimeClient(config.postgresUrl, async (client) => {
+          const store = createTickRuntimeStore(client);
+          return await store.loadSubjectStateSnapshot(input);
+        }),
+      listRecentEpisodes: (input) =>
+        withRuntimeClient(config.postgresUrl, async (client) => {
+          const store = createTickRuntimeStore(client);
+          return await store.listRecentEpisodes(input);
+        }),
+      runDecision: (input) => decisionHarness.run(input),
+      resolveSelectedProfileEligibility: async (input) => {
+        const profiles = await modelProfileStore.listModelProfiles({
+          roles: [input.role],
+        });
+        const selectedProfile = profiles.find(
+          (profile) => profile.modelProfileId === input.modelProfileId,
+        );
+
+        if (!selectedProfile) {
+          return 'profile_unavailable';
+        }
+
+        if (selectedProfile.status === 'disabled') {
+          return 'profile_unavailable';
+        }
+
+        if (
+          input.requiredCapabilities.some(
+            (capability) => !selectedProfile.capabilitiesJson.includes(capability),
+          )
+        ) {
+          return 'profile_unavailable';
+        }
+
+        const organHealth = await resolveBaselineHealth();
+        const healthSummary = organHealth[input.role];
+
+        return healthSummary?.healthy === false ? 'profile_unhealthy' : 'eligible';
+      },
     }),
   });
 

@@ -13,7 +13,11 @@ import {
 } from '@yaagi/contracts/perception';
 import { checkPostgresConnectivity, ensureDatabaseReady } from '@yaagi/db/bootstrap';
 import { type CoreRuntimeConfig, loadCoreRuntimeConfig } from './core-config.ts';
-import { createPhase0Mastra } from './phase0-mastra.ts';
+import {
+  createPhase0DecisionInvoker,
+  createPhase0Mastra,
+  PHASE0_AGENT_KEY,
+} from './phase0-mastra.ts';
 import { materializeRuntimeSeed } from './runtime-seed.ts';
 import { createPhase0RuntimeLifecycle } from '../runtime/runtime-lifecycle.ts';
 import type {
@@ -190,7 +194,10 @@ export function createCoreRuntime(
   const probePostgres = dependencies.probePostgres ?? createPostgresProbe(config);
   const probeFastModel = dependencies.probeFastModel ?? createFastModelProbe(config);
   const runtimeLifecycle =
-    dependencies.createRuntimeLifecycle?.(config) ?? createPhase0RuntimeLifecycle(config);
+    dependencies.createRuntimeLifecycle?.(config) ??
+    createPhase0RuntimeLifecycle(config, {
+      invokeDecision: createPhase0DecisionInvoker(mastra.getAgent(PHASE0_AGENT_KEY)),
+    });
 
   const health = async (): Promise<CoreRuntimeHealth> => {
     const [configuration, postgres, fastModel] = await Promise.all([

@@ -1,7 +1,7 @@
 ---
 id: F-0009
 title: Context Builder и structured decision harness
-status: shaped
+status: done
 owners: ["@codex"]
 area: cognition
 depends_on: [F-0003, F-0004, F-0005, F-0008]
@@ -288,14 +288,14 @@ Tasks:
 
 ## 9. Test plan & Coverage map
 
-| AC ID | Planned verification reference | Status |
+| AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0009-01 | `apps/core/test/cognition/context-builder.integration.test.ts` → `test("AC-F0009-01 builds canonical bounded decision context from delivered owner surfaces")` | planned |
-| AC-F0009-02 | `apps/core/test/cognition/context-builder.contract.test.ts` → `test("AC-F0009-02 carries explicit version, truncation and conflict markers for bounded context sections")` | planned |
-| AC-F0009-03 | `apps/core/test/cognition/decision-harness.contract.test.ts` → `test("AC-F0009-03 returns a validated TickDecisionV1 envelope from the bounded Mastra decision harness")` | planned |
-| AC-F0009-04 | `apps/core/test/cognition/decision-harness.contract.test.ts` → `test("AC-F0009-04 refuses invalid decision output before downstream handoff")` | planned |
-| AC-F0009-05 | `apps/core/test/cognition/decision-harness.integration.test.ts` → `test("AC-F0009-05 consumes the selected baseline profile without rerouting or expanding admission ownership")` | planned |
-| AC-F0009-06 | `apps/core/test/runtime/reactive-decision-handoff.integration.test.ts` → `test("AC-F0009-06 keeps the harness reactive-first without silently expanding deliberative or contemplative admission")`; smoke in `infra/docker/deployment-cell.smoke.ts` | planned |
+| AC-F0009-01 | `apps/core/test/cognition/context-builder.integration.test.ts` → `test("AC-F0009-01 builds canonical bounded decision context from delivered owner surfaces")`; `packages/db/test/runtime-store.contract.test.ts` → `test("AC-F0009-01 normalizes recent episode timestamps to ISO strings at the db boundary")` | done |
+| AC-F0009-02 | `apps/core/test/cognition/context-builder.contract.test.ts` → `test("AC-F0009-02 carries explicit version, truncation and conflict markers for bounded context sections")` | done |
+| AC-F0009-03 | `apps/core/test/cognition/decision-harness.contract.test.ts` → `test("AC-F0009-03 returns a validated TickDecisionV1 envelope from the bounded Mastra decision harness")` | done |
+| AC-F0009-04 | `apps/core/test/cognition/decision-harness.contract.test.ts` → `test("AC-F0009-04 refuses invalid decision output before downstream handoff")`; `apps/core/test/runtime/subject-state-delta.contract.test.ts` → `test("AC-F0009-04 does not mirror structured decision artifacts into subject-state persistence on completed ticks")` | done |
+| AC-F0009-05 | `apps/core/test/cognition/decision-harness.integration.test.ts` → `test("AC-F0009-05 consumes the selected baseline profile without rerouting or expanding admission ownership")`; `apps/core/test/runtime/reactive-decision-refusal.integration.test.ts` → `test("AC-F0009-05 rejects a reactive runtime handoff when the selected profile drifts ineligible, without durable side effects or silent rerouting")` | done |
+| AC-F0009-06 | `apps/core/test/runtime/reactive-decision-handoff.integration.test.ts` → `test("AC-F0009-06 keeps the harness reactive-first without silently expanding deliberative or contemplative admission")`; `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0009-06 executes one bounded reactive decision path inside the deployment cell without new public API or durable history tables")` | done |
 
 План верификации:
 
@@ -315,15 +315,48 @@ Tasks:
 
 ## 11. Progress & links
 
-- Status: `proposed` → `shaped`; `plan-slice` completed with a justified alternative status retention, because repo coverage policy makes `planned` dossiers blocking until AC-linked tests exist.
+- Status: `proposed` -> `shaped` -> `done`
 - Issue: -
 - PRs:
   - -
 - Code:
-  - Not started. Intake + `spec-compact` + `plan-slice` only.
+  - `apps/core/src/cognition/context-builder.ts`
+  - `apps/core/src/cognition/decision-harness.ts`
+  - `apps/core/src/perception/controller.ts`
+  - `apps/core/src/platform/core-runtime.ts`
+  - `apps/core/src/platform/phase0-mastra.ts`
+  - `apps/core/src/runtime/runtime-lifecycle.ts`
+  - `apps/core/test/cognition/context-builder.contract.test.ts`
+  - `apps/core/test/cognition/context-builder.integration.test.ts`
+  - `apps/core/test/cognition/decision-harness.contract.test.ts`
+  - `apps/core/test/cognition/decision-harness.integration.test.ts`
+  - `apps/core/test/runtime/reactive-decision-refusal.integration.test.ts`
+  - `apps/core/test/runtime/reactive-decision-handoff.integration.test.ts`
+  - `apps/core/test/runtime/subject-state-delta.contract.test.ts`
+  - `apps/core/test/runtime/tick-model-selection.integration.test.ts`
+  - `infra/docker/deployment-cell.smoke.ts`
+  - `infra/docker/vllm-fast/server.py`
+  - `packages/contracts/src/cognition.ts`
+  - `packages/db/src/index.ts`
+  - `packages/db/src/runtime.ts`
+  - `packages/db/test/runtime-store.contract.test.ts`
+  - `packages/db/testing/subject-state-db-harness.ts`
+- Verification:
+  - `pnpm format`
+  - `pnpm typecheck`
+  - `pnpm lint`
+  - `pnpm test`
+  - `pnpm smoke:cell`
+  - `node scripts/sync-index.mjs`
+  - `node scripts/lint-dossiers.mjs`
+  - `node scripts/coverage-audit.mjs --dossier docs/features/F-0009-context-builder-and-structured-decision-harness.md`
+  - `pnpm debt:audit:changed`
+  - `pnpm debt:audit`
 
 ## 12. Change log
 
 - **v1.0 (2026-03-24):** Initial dossier created from candidate `CF-017`; intake fixed canonical dependencies on delivered runtime/state/perception/router seams and isolated the feature as a bounded cognitive harness rather than executive, narrative or state-ownership expansion.
 - **v1.1 (2026-03-24):** `spec-compact` completed: acceptance criteria were tightened into testable context/decision/refusal contracts, the first delivered version was fixed as reactive-first with no new durable decision-history table, a feature-local ADR captured the phase boundary, and the dossier advanced to `shaped`.
 - **v1.2 (2026-03-24):** `plan-slice` decomposed `F-0009` into four delivery slices covering bounded context assembly, structured decision validation, selected-profile reactive handoff and deployment-cell verification closure; the dossier intentionally remains `shaped` as a justified alternative because the repo coverage policy treats `planned` dossiers as blocking until AC-linked tests exist.
+- **v1.3 (2026-03-24):** Completed `implementation`: delivered the canonical cognition contracts plus bounded context builder, added the Mastra-backed decision harness and reactive runtime handoff on top of the selected baseline profile, surfaced validated `decision` / `decisionTrace` artifacts through the existing tick biography, normalized recent-episode timestamps at the DB boundary for container parity, and closed both fast-path and deployment-cell verification without adding a new public API or durable decision-history table.
+- **v1.4 (2026-03-24):** Hardened the final implementation after independent review: perception partiality now propagates into `perceptualMeta`, runtime re-validates selected-profile eligibility drift before agent invocation, completed ticks no longer mirror structured decision artifacts into `psm_json`, and AC-linked runtime regressions now prove refusal/no-side-effects semantics on the reactive handoff.

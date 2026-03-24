@@ -2176,7 +2176,7 @@ Homeostat должен иметь не только метрики, но и де
 | Subject-state kernel and versioned bounded snapshot | `F-0004` | `done` | Canonical subject-state store now exposes `subjectStateSchemaVersion` in the bounded snapshot API for downstream compatibility checks. |
 | Perception buffer and baseline adapters | `F-0005` | `done` | Baseline stimulus intake is delivered; richer policies and adapters remain future-owned. |
 | Baseline model router and profile continuity | `F-0008` | `done` | Baseline router invariants are delivered; expanded model ecology and specialist organs remain future seams. |
-| Context Builder and structured decision harness | `F-0009` | `shaped` | Canonical owner and compact spec now exist; slicing and delivery remain pending. |
+| Context Builder and structured decision harness | `F-0009` | `done` | The bounded cognition harness is delivered: context assembly, validated Mastra-backed decisions and reactive-first runtime wiring now run inside the canonical deployment cell without a new public API or durable decision-history table. |
 | Executive center and bounded action layer | `CF-007` | `confirmed` | Backlog owner exists; action boundary is not yet delivered. |
 | Narrative and memetic cognition | `CF-005` | `confirmed` | Backlog owner exists; durable narrative/memetic surfaces are still deferred to that future seam. |
 | Homeostat and operational guardrails | `CF-008` | `candidate` | Early safety reactions are described architecturally but not yet intaken. |

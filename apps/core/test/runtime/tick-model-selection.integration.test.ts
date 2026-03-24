@@ -31,6 +31,23 @@ const startedReactiveTick = {
   updatedAt: '2026-03-24T00:00:00.000Z',
 };
 
+const acceptedDecision = {
+  accepted: true as const,
+  decision: {
+    observations: ['reactive input received'],
+    interpretations: ['baseline routing selected the reflex profile'],
+    action: {
+      type: 'reflect' as const,
+      summary: 'keep the reactive decision bounded',
+    },
+    episode: {
+      summary: 'bounded reactive decision completed',
+      importance: 0.4,
+    },
+    developmentHints: ['keep the phase-0 decision surface compact'],
+  },
+};
+
 void test('AC-F0008-04 persists selected_model_profile_id and current_model_profile_id for the active tick', async () => {
   const harness = createSubjectStateDbHarness({
     seed: {
@@ -68,9 +85,29 @@ void test('AC-F0008-04 persists selected_model_profile_id and current_model_prof
       Promise.resolve({
         claimedStimulusIds: ['stimulus-1'],
         highestPriority: 'high',
-        items: [{ primaryStimulusId: 'stimulus-1', source: 'system' }],
+        items: [
+          {
+            stimulusIds: ['stimulus-1'],
+            primaryStimulusId: 'stimulus-1',
+            source: 'system',
+            signalType: 'system.notice',
+            occurredAt: '2026-03-24T00:00:00.000Z',
+            priority: 'high',
+            requiresImmediateTick: true,
+            threadId: null,
+            entityRefs: [],
+            payload: {},
+            dedupeKey: null,
+            coalescedCount: 1,
+          },
+        ],
         sourceKinds: ['system'],
+        requiresImmediateTick: true,
+        tickId: startedReactiveTick.tickId,
       }),
+    loadSubjectStateSnapshot: (input) => tickStore.loadSubjectStateSnapshot(input),
+    listRecentEpisodes: (input) => tickStore.listRecentEpisodes(input),
+    runDecision: () => Promise.resolve(acceptedDecision),
   });
 
   await router.ensureBaselineProfiles();

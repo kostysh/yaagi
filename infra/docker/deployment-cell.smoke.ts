@@ -893,6 +893,63 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
         );
       },
     );
+
+    await prepareFreshRuntimeScenario();
+    await t.test(
+      'AC-F0009-06 executes one bounded reactive decision path inside the deployment cell without new public API or durable history tables',
+      async () => {
+        const ingestResponse = await fetch(`${coreBaseUrl()}/ingest`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            signalType: 'http.operator.decision',
+            priority: 'critical',
+            requiresImmediateTick: true,
+            threadId: 'operator-decision',
+            payload: {
+              text: 'summarize and decide conservatively',
+            },
+          }),
+        });
+
+        assert.equal(ingestResponse.status, 202);
+
+        await waitForPostgresValue(
+          "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' and result_json ? 'decision';",
+          '1',
+        );
+        await waitForPostgresValue(
+          "select count(*)::text from polyphony_runtime.episodes where result_json ? 'decision';",
+          '1',
+        );
+
+        const actionType = await queryPostgres(
+          "select result_json -> 'decision' -> 'action' ->> 'type' from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' order by created_at desc limit 1;",
+        );
+        assert.match(actionType, /^(none|tool_call|reflect|schedule_job)$/);
+
+        const expectedSubjectStateSchemaVersion = await queryPostgres(
+          'select schema_version from platform_bootstrap.schema_state where id = 1;',
+        );
+        assert.equal(
+          await queryPostgres(
+            "select result_json -> 'decisionTrace' ->> 'subjectStateSchemaVersion' from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' order by created_at desc limit 1;",
+          ),
+          expectedSubjectStateSchemaVersion,
+        );
+        assert.equal(
+          await queryPostgres(
+            "select count(*)::text from information_schema.tables where table_schema = 'polyphony_runtime' and table_name in ('decision_contexts', 'decision_history');",
+          ),
+          '0',
+        );
+
+        const missingRouteResponse = await fetch(`${coreBaseUrl()}/decision`);
+        assert.equal(missingRouteResponse.status, 404);
+      },
+    );
   } finally {
     if (started) {
       await tearDownStartedSmokeFamily({ rejectOnNonZeroExitCode: false });
@@ -988,13 +1045,13 @@ void test('AC-F0007-01 reuses suite-scoped compose families instead of per-test 
   assert.equal(smokeLifecycleMetrics.baseFamilyTeardowns, 1);
   assert.equal(smokeLifecycleMetrics.telegramFamilyStarts, 1);
   assert.equal(smokeLifecycleMetrics.telegramFamilyTeardowns, 1);
-  assert.equal(smokeLifecycleMetrics.runtimeResets, 6);
+  assert.equal(smokeLifecycleMetrics.runtimeResets, 7);
 });
 
 void test('AC-F0007-02 restores clean post-bootstrap runtime state through deterministic resets between suite-scoped smoke scenarios', {
   concurrency: false,
 }, () => {
-  assert.equal(smokeLifecycleMetrics.runtimeResets, 6);
+  assert.equal(smokeLifecycleMetrics.runtimeResets, 7);
 });
 
 void test('AC-F0007-05 tears down suite-scoped smoke projects without orphaned docker resources', {

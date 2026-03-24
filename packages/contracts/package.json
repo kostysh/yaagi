@@ -11,6 +11,10 @@
       "types": "./src/perception.ts",
       "default": "./src/perception.ts"
     },
+    "./cognition": {
+      "types": "./src/cognition.ts",
+      "default": "./src/cognition.ts"
+    },
     "./runtime": {
       "types": "./src/runtime.ts",
       "default": "./src/runtime.ts"

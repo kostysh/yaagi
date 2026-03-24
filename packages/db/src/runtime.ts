@@ -162,12 +162,17 @@ export type RuntimeTimelineEventInput = {
   eventId?: string;
 };
 
+export type RuntimeRecentEpisodesInput = {
+  limit?: number;
+};
+
 export type RuntimeTickStore = SubjectStateStore & {
   ensureAgentStateRow(agentId?: string): Promise<RuntimeAgentStateRow>;
   getAgentState(agentId?: string): Promise<RuntimeAgentStateRow | null>;
   setBootState(input: BootStateBridge, agentId?: string): Promise<RuntimeAgentStateRow>;
   setCurrentTick(tickId: string | null, agentId?: string): Promise<RuntimeAgentStateRow>;
   setDevelopmentFreeze(developmentFreeze: boolean, agentId?: string): Promise<RuntimeAgentStateRow>;
+  listRecentEpisodes(input?: RuntimeRecentEpisodesInput): Promise<RuntimeEpisodeRow[]>;
   requestTick(input: TickRequestInput): Promise<TickAdmissionResult>;
   completeTick(input: TickFinalizationInput): Promise<{
     tick: RuntimeTickRow;
@@ -205,6 +210,28 @@ const transaction = async <T>(db: RuntimeDbExecutor, run: () => Promise<T>): Pro
 };
 
 const runtimeSchemaTable = (table: string): string => `${RUNTIME_SCHEMA}.${table}`;
+const asUtcIso = (column: string, alias: string): string =>
+  `to_char(${column} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "${alias}"`;
+
+const normalizeTimestamp = (value: unknown, field: string): string => {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  throw new Error(`runtime row field ${field} must be a string or Date timestamp`);
+};
+
+const normalizeNullableTimestamp = (value: unknown, field: string): string | null => {
+  if (value == null) {
+    return null;
+  }
+
+  return normalizeTimestamp(value, field);
+};
 
 const agentStateColumns = `
   id,
@@ -218,7 +245,7 @@ const agentStateColumns = `
   psm_json as "psmJson",
   resource_posture_json as "resourcePostureJson",
   development_freeze as "developmentFreeze",
-  updated_at as "updatedAt"
+  ${asUtcIso('updated_at', 'updatedAt')}
 `;
 
 const tickColumns = `
@@ -228,11 +255,11 @@ const tickColumns = `
   tick_kind as "tickKind",
   trigger_kind as "triggerKind",
   status,
-  queued_at as "queuedAt",
-  started_at as "startedAt",
-  ended_at as "endedAt",
+  ${asUtcIso('queued_at', 'queuedAt')},
+  ${asUtcIso('started_at', 'startedAt')},
+  ${asUtcIso('ended_at', 'endedAt')},
   lease_owner as "leaseOwner",
-  lease_expires_at as "leaseExpiresAt",
+  ${asUtcIso('lease_expires_at', 'leaseExpiresAt')},
   request_json as "requestJson",
   result_json as "resultJson",
   failure_json as "failureJson",
@@ -240,8 +267,8 @@ const tickColumns = `
   selected_coalition_id as "selectedCoalitionId",
   selected_model_profile_id as "selectedModelProfileId",
   action_id as "actionId",
-  created_at as "createdAt",
-  updated_at as "updatedAt"
+  ${asUtcIso('created_at', 'createdAt')},
+  ${asUtcIso('updated_at', 'updatedAt')}
 `;
 
 const episodeColumns = `
@@ -249,17 +276,17 @@ const episodeColumns = `
   tick_id as "tickId",
   summary,
   result_json as "resultJson",
-  created_at as "createdAt"
+  ${asUtcIso('created_at', 'createdAt')}
 `;
 
 const timelineEventColumns = `
   sequence_id::text as "sequenceId",
   event_id as "eventId",
   event_type as "eventType",
-  occurred_at as "occurredAt",
+  ${asUtcIso('occurred_at', 'occurredAt')},
   subject_ref as "subjectRef",
   payload_json as "payloadJson",
-  created_at as "createdAt"
+  ${asUtcIso('created_at', 'createdAt')}
 `;
 
 const agentStateTable = runtimeSchemaTable('agent_state');
@@ -267,16 +294,31 @@ const tickTable = runtimeSchemaTable('ticks');
 const episodeTable = runtimeSchemaTable('episodes');
 const timelineEventTable = runtimeSchemaTable('timeline_events');
 
-const normalizeAgentStateRow = (row: QueryResultRow): RuntimeAgentStateRow =>
-  row as unknown as RuntimeAgentStateRow;
+const normalizeAgentStateRow = (row: QueryResultRow): RuntimeAgentStateRow => ({
+  ...(row as unknown as RuntimeAgentStateRow),
+  updatedAt: normalizeTimestamp(row['updatedAt'], 'agent_state.updatedAt'),
+});
 
-const normalizeTickRow = (row: QueryResultRow): RuntimeTickRow => row as unknown as RuntimeTickRow;
+const normalizeTickRow = (row: QueryResultRow): RuntimeTickRow => ({
+  ...(row as unknown as RuntimeTickRow),
+  queuedAt: normalizeTimestamp(row['queuedAt'], 'ticks.queuedAt'),
+  startedAt: normalizeTimestamp(row['startedAt'], 'ticks.startedAt'),
+  endedAt: normalizeNullableTimestamp(row['endedAt'], 'ticks.endedAt'),
+  leaseExpiresAt: normalizeTimestamp(row['leaseExpiresAt'], 'ticks.leaseExpiresAt'),
+  createdAt: normalizeTimestamp(row['createdAt'], 'ticks.createdAt'),
+  updatedAt: normalizeTimestamp(row['updatedAt'], 'ticks.updatedAt'),
+});
 
-const normalizeEpisodeRow = (row: QueryResultRow): RuntimeEpisodeRow =>
-  row as unknown as RuntimeEpisodeRow;
+const normalizeEpisodeRow = (row: QueryResultRow): RuntimeEpisodeRow => ({
+  ...(row as unknown as RuntimeEpisodeRow),
+  createdAt: normalizeTimestamp(row['createdAt'], 'episodes.createdAt'),
+});
 
-const normalizeTimelineEventRow = (row: QueryResultRow): RuntimeTimelineEventRow =>
-  row as unknown as RuntimeTimelineEventRow;
+const normalizeTimelineEventRow = (row: QueryResultRow): RuntimeTimelineEventRow => ({
+  ...(row as unknown as RuntimeTimelineEventRow),
+  occurredAt: normalizeTimestamp(row['occurredAt'], 'timeline_events.occurredAt'),
+  createdAt: normalizeTimestamp(row['createdAt'], 'timeline_events.createdAt'),
+});
 
 const ensureAgentStateSeed = async (db: RuntimeDbExecutor, agentId: string): Promise<void> => {
   await db.query(
@@ -344,6 +386,22 @@ const loadTickById = async (
   );
 
   return result.rows[0] ? normalizeTickRow(result.rows[0]) : null;
+};
+
+const listRecentEpisodesInternal = async (
+  db: RuntimeDbExecutor,
+  input: RuntimeRecentEpisodesInput = {},
+): Promise<RuntimeEpisodeRow[]> => {
+  const limit = input.limit ?? 5;
+  const result = await db.query<RuntimeEpisodeRow>(
+    `select ${episodeColumns}
+     from ${episodeTable}
+     order by created_at desc, episode_id desc
+     limit $1`,
+    [limit],
+  );
+
+  return result.rows.map((row) => normalizeEpisodeRow(row));
 };
 
 const loadActiveTick = async (
@@ -784,6 +842,10 @@ export function createTickRuntimeStore(
     ): Promise<RuntimeAgentStateRow> {
       await ensureAgentStateSeed(db, nextAgentId);
       return await updateAgentDevelopmentFreeze(db, developmentFreeze);
+    },
+
+    listRecentEpisodes(input?: RuntimeRecentEpisodesInput): Promise<RuntimeEpisodeRow[]> {
+      return listRecentEpisodesInternal(db, input);
     },
 
     async requestTick(input: TickRequestInput): Promise<TickAdmissionResult> {
