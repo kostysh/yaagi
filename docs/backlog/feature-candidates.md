@@ -41,36 +41,6 @@
 | CF-021 | Актуализация базовых зависимостей и выравнивание инструментального стека | платформа | intaken | CF-001, CF-002, CF-003, CF-004, CF-020 | Общерепозиторный поток работ по актуализации зависимостей для `root/apps/packages` образует отдельный шов сопровождения: версии прямых зависимостей, `pnpm-lock.yaml`, совместимость исполнения и инструментального стека, а также контейнерный путь `pnpm smoke:cell` должны иметь явного владельца, иначе начинает копиться дрейф между реестром пакетов и уже поставленным базовым контуром. | [F-0006](../features/F-0006-baseline-dependency-refresh-and-toolchain-alignment.md) |
 | CF-022 | Детерминированный smoke harness и suite-scoped lifecycle deployment cell | платформа | intaken | CF-020, CF-021 | `pnpm smoke:cell` превратился в самостоятельный verification seam: repeated full `compose down/up`, readiness polling и cleanup races делают container smoke слишком медленным и хрупким. Нужен отдельный владелец, который сохранит канонический containerized path, но переведёт harness на suite-scoped lifecycle и deterministic reset/readiness barriers. | [F-0007](../features/F-0007-deterministic-smoke-harness-and-suite-scoped-cell-lifecycle.md) |
 
-## Архитектурный аудит покрытия (`2026-03-23`)
-
-- Разделы `3.1`, `5.1`, `6`, `14.2`-`14.5` раньше не имели явного владельца в backlog; этот gap закрыт новым `CF-020`.
-- Ownership map для Phase 0 теперь читается через backbone `CF-020 -> CF-001 -> CF-002 -> CF-003 -> CF-004 -> CF-006 -> CF-017 -> CF-007`, а не только через boot/tick/memory seams.
-- `CF-002` теперь явно фиксирует canonical DB-backed scheduler/worker substrate для последующих physiological job families; новые feature seams должны регистрировать свои job types поверх этого substrate, а не invent-ить второй job runtime.
-- `CF-006` перенастроен на ранний baseline organ routing; late external consultants остаются его phase-6 расширением, а не скрытым prerequisite.
-- `CF-006` теперь явно берёт `reflection`, чтобы contemplative path из phase 1 не остался между кандидатами без владельца.
-- `CF-010` сужен до phase-2 local model ecology; базовый `vllm-fast` и первый organ profile больше не размазаны между несколькими поздними фичами.
-- `CF-007` теперь явно владеет `action_log` и `boundary_check` audit как частью action interface, а не оставляет consequence journal в неявном стыке между runtime и tooling.
-- `CF-013` уточнён как skill lifecycle boundary, а не просто packaging skills: procedural self-improvement остаётся cross-feature цепочкой `governor -> skill boundary -> eval`, но API ownership больше не размыт.
-- `CF-014` сужен до hardening/perimeter scope; базовая container/volume/network substrate больше не спрятана внутри поздней security-фичи.
-- `CF-015` теперь имеет ранний baseline observability/reporting slice для first-working version; richer observability остаётся поздним расширением того же seam.
-- `CF-015` baseline snapshot inventory опирается на уже существующий `stable_snapshots` / boot-recovery evidence surface и поэтому не обязан ждать mature `CF-012`, хотя richer snapshot governance остаётся стыком с body evolution.
-- `CF-016` больше не трактуется как чисто поздний governance seam: minimal governor и baseline `development_ledger` входят в early living backbone, а mature policy/governance остаются фазами `3-6`; ранние ledger schema/write contracts могут появляться раньше полного governance behavior без потери ownership.
-- Volume policy больше не должна смешивать tracked seeds и runtime-generated state: архитектурный baseline теперь предполагает immutable `seed` и materialized writable runtime volumes.
-- `CF-017` теперь явно следует после `CF-006`, потому что `9.2` требует `select model organs` до вызова `Mastra Decision Agent`.
-- `CF-009` интерпретируется как operator-facing API поверх минимального ingress/health, чтобы HTTP surface не конфликтовал с ранним runtime backbone.
-- `CF-018` подтверждён как владелец retention/event/graceful shutdown seam и точки стыка с dataset/eval candidate generation.
-- После этой ревизии обязательные архитектурные области из разделов `3`-`16` читаются без бесхозных seams на уровне owner map только при обновлённых границах `CF-002`, `CF-015` и `CF-016`; это не означает, что все такие seams already delivered. Для already-intaken/delivered dossiers это означает будущие shaping/change-proposal realignment decisions, а не молчаливое расширение уже закрытых scope.
-
-## Рабочие решения после ревью
-
-- `CF-005` на уровне discovery остаётся единым кандидатом; дробление memetics/narrative возможно позже на этапе shaping, если досье начнёт расползаться.
-- `CF-002` остаётся owner-ом canonical scheduler/worker substrate, но не забирает в себя все downstream job families: consolidation, workshop, code-review и governance jobs продолжают принадлежать своим тематическим seams.
-- `CF-014` остаётся отдельной cross-cutting фичей, но теперь покрывает именно hardening/perimeter, а не baseline deployment substrate.
-- `CF-015` должен shaping-ом разделяться на ранний baseline observability/report pack и поздние richer metrics/tracing/reaction slices, чтобы требование first-working diagnostics не потерялось за поздним статусом phase 6.
-- `CF-016` становится owner-ом minimal governor + baseline `development_ledger` в phase 1 и owner-ом mature governance в phases `3-6`; это одна и та же feature line, но с разными maturity slices.
-- `CF-020` становится обязательным ранним владельцем platform scaffold/deployment cell; без него canonical stack и runtime environment начинают размываться уже на первом implementation cycle.
-- Архитектурно корректный backbone minimal living / first-working phase: `CF-020 -> CF-001 -> CF-002 -> CF-003 -> CF-004 -> CF-006 -> CF-017 -> CF-007 -> CF-005 -> CF-008 -> CF-016 -> CF-018 -> CF-015`.
-
 ## Intake watchpoints
 
 - `CF-005`: при `feature-intake` явно решить, остаются ли `memetics + narrative + field journal` в одном dossier, или их нужно разделить до `shaped`.
