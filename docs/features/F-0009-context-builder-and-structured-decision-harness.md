@@ -42,7 +42,7 @@ links:
 
 ### Out of scope
 
-- Исполнение tools, shell/http/git wrappers, постановка jobs и append-only action audit; этим владеет будущий `CF-007`.
+- Исполнение tools, shell/http/git wrappers, постановка jobs и append-only action audit; этим владеет `F-0010`.
 - Narrative/memetic reasoning, coalition formation, field journal и durable promotions; этим владеет будущий `CF-005` и соседние cognition seams.
 - Subject-state schema evolution, direct writes в `psm_json`, goals, beliefs, entities, relationships или model registry.
 - Router policy и organ selection rules beyond consuming already selected baseline profile from `F-0008`.
@@ -82,7 +82,7 @@ links:
   - `F-0004` remains the owner of bounded versioned subject-state snapshots and all identity-bearing writes.
   - `F-0008` remains the owner of profile registration and selection/refusal policy.
   - `F-0003` remains the owner of tick admission, active-tick continuity, episode commit and runtime lifecycle ordering.
-  - `CF-007` remains the future owner of action execution and approval.
+  - `F-0010` remains the owner of action execution and approval.
 - First delivered runtime shape is internal only:
   - no new public HTTP route;
   - no new sidecar/service outside the delivered `core` monolith;
@@ -183,7 +183,7 @@ type DecisionResult =
   - reads `stimulus_inbox`-derived perception context through `F-0005`;
   - reads bounded versioned subject-state via `F-0004`;
   - reads selected profile and routing metadata via `F-0008`;
-  - may hand validated decision payload back to `F-0003` / future `CF-007`, but does not own their writes.
+  - may hand validated decision payload back to `F-0003` / `F-0010`, but does not own their writes.
 
 ### 5.4 Edge cases
 

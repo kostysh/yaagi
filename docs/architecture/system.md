@@ -388,7 +388,7 @@ Later enrichments stay explicit future-owned extensions of the same seam:
 
 - narrative current chapter and field journal excerpts remain future inputs owned by the narrative seam (`CF-005`);
 - active memetic units remain future inputs owned by the same cognition seam, not by `F-0009`;
-- available organs/skills for execution planning remain future inputs owned by the executive/tool boundary (`CF-007`) and later model ecology seams.
+- available organs/skills for execution planning remain future inputs owned by the executive/tool boundary (`F-0010`) and later model ecology seams.
 
 Практически `Context Builder` должен опираться на унифицированный слой сенсорных адаптеров и буфер восприятия.
 
@@ -1207,7 +1207,7 @@ Phase-0 / first-delivery subset (`TickDecisionV1`):
 Possible later enrichments after explicit future seams:
 
 - `winningCoalition`, `affectPatch` and related narrative/memetic outputs remain future cognition-owned enrichments (`CF-005`);
-- `goalOps` and richer consequence/execution payloads remain future runtime/executive/governor-owned enrichments (`CF-007`, `CF-016`).
+- `goalOps` and richer consequence/execution payloads remain future runtime/executive/governor-owned enrichments (`F-0010`, `CF-016`).
 
 ```json
 {
@@ -2177,7 +2177,7 @@ Homeostat должен иметь не только метрики, но и де
 | Perception buffer and baseline adapters | `F-0005` | `done` | Baseline stimulus intake is delivered; richer policies and adapters remain future-owned. |
 | Baseline model router and profile continuity | `F-0008` | `done` | Baseline router invariants are delivered; expanded model ecology and specialist organs remain future seams. |
 | Context Builder and structured decision harness | `F-0009` | `done` | The bounded cognition harness is delivered: context assembly, validated Mastra-backed decisions and reactive-first runtime wiring now run inside the canonical deployment cell without a new public API or durable decision-history table. |
-| Executive center and bounded action layer | `CF-007` | `confirmed` | Backlog owner exists; action boundary is not yet delivered. |
+| Executive center and bounded action layer | `F-0010` | `shaped` | The bounded executive/action contract is now specified; implementation of the executive/tool seam remains undelivered. |
 | Narrative and memetic cognition | `CF-005` | `confirmed` | Backlog owner exists; durable narrative/memetic surfaces are still deferred to that future seam. |
 | Homeostat and operational guardrails | `CF-008` | `candidate` | Early safety reactions are described architecturally but not yet intaken. |
 | Development governor and policy gates | `CF-016` | `candidate` | Minimal governor ownership is defined, but no delivered governor seam exists yet. |

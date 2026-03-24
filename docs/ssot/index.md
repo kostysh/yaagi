@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-03-24T18:05:51.932Z_
+_Last sync: 2026-03-24T18:44:04.198Z_
 
 ## Features
 
@@ -19,6 +19,7 @@ _Last sync: 2026-03-24T18:05:51.932Z_
 | F-0007 | Детерминированный smoke harness и suite-scoped lifecycle deployment cell | done | platform | F-0002, F-0003, F-0004, F-0005, F-0006 | runtime,infra,verification,smoke | `../features/F-0007-deterministic-smoke-harness-and-suite-scoped-cell-lifecycle.md` |
 | F-0008 | Базовый маршрутизатор моделей и профили органов | done | models | F-0002, F-0003 | runtime,db,models,cognition | `../features/F-0008-baseline-model-router-and-organ-profiles.md` |
 | F-0009 | Context Builder и structured decision harness | done | cognition | F-0003, F-0004, F-0005, F-0008 | runtime,db,perception,memory,models,cognition | `../features/F-0009-context-builder-and-structured-decision-harness.md` |
+| F-0010 | Исполнительный центр и ограниченный слой действий | shaped | actions | F-0002, F-0003, F-0005, F-0008, F-0009 | runtime,db,tools,jobs,workspace,network | `../features/F-0010-executive-center-and-bounded-action-layer.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -35,6 +36,7 @@ graph TD
   F0007["F-0007 Детерминированный smoke harness и suite-scoped lifecycle deployment cell"]
   F0008["F-0008 Базовый маршрутизатор моделей и профили органов"]
   F0009["F-0009 Context Builder и structured decision harness"]
+  F0010["F-0010 Исполнительный центр и ограниченный слой действий"]
   F0001 --> F0002
   F0003 --> F0001
   F0003 --> F0002
@@ -60,6 +62,11 @@ graph TD
   F0009 --> F0004
   F0009 --> F0005
   F0009 --> F0008
+  F0010 --> F0002
+  F0010 --> F0003
+  F0010 --> F0005
+  F0010 --> F0008
+  F0010 --> F0009
 ```
 <!-- END GENERATED DEP_GRAPH -->
 
