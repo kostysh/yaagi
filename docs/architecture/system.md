@@ -374,17 +374,21 @@ Tick kinds:
 
 #### 4.2.3 Context Builder
 
-Собирает вход для текущего тика из:
+Собирает вход для текущего тика из bounded owner surfaces.
 
-- stimulus envelope;
-- recent episodes;
-- active goals;
-- relevant beliefs;
-- narrative current chapter;
-- field journal excerpts;
-- active memetic units;
-- available organs/skills;
+Phase-0 / first-delivery boundary (`F-0009`):
+
+- stimulus envelope / perceptual context;
+- bounded versioned subject-state snapshot (`agentState`, active goals, relevant beliefs, entities, relationships);
+- recent episodes / timeline slice;
+- already selected model profile metadata;
 - resource posture.
+
+Later enrichments stay explicit future-owned extensions of the same seam:
+
+- narrative current chapter and field journal excerpts remain future inputs owned by the narrative seam (`CF-005`);
+- active memetic units remain future inputs owned by the same cognition seam, not by `F-0009`;
+- available organs/skills for execution planning remain future inputs owned by the executive/tool boundary (`CF-007`) and later model ecology seams.
 
 Практически `Context Builder` должен опираться на унифицированный слой сенсорных адаптеров и буфер восприятия.
 
@@ -1177,6 +1181,33 @@ Stable snapshot manifests.
 ```
 
 #### `TickDecision`
+
+`TickDecision` is an architecture-level family of decision envelopes, not a claim that every field is delivered in phase 0. First delivered `F-0009` exposes a bounded validated `TickDecisionV1` subset and later seams may enrich it only through explicit follow-on work.
+
+Phase-0 / first-delivery subset (`TickDecisionV1`):
+
+```json
+{
+  "observations": ["..."],
+  "interpretations": ["..."],
+  "action": {
+    "type": "tool_call|none|reflect|schedule_job",
+    "summary": "...",
+    "tool": "optional",
+    "argsJson": {}
+  },
+  "episode": {
+    "summary": "...",
+    "importance": 0.64
+  },
+  "developmentHints": []
+}
+```
+
+Possible later enrichments after explicit future seams:
+
+- `winningCoalition`, `affectPatch` and related narrative/memetic outputs remain future cognition-owned enrichments (`CF-005`);
+- `goalOps` and richer consequence/execution payloads remain future runtime/executive/governor-owned enrichments (`CF-007`, `CF-016`).
 
 ```json
 {
@@ -2145,7 +2176,7 @@ Homeostat должен иметь не только метрики, но и де
 | Subject-state kernel and versioned bounded snapshot | `F-0004` | `done` | Canonical subject-state store now exposes `subjectStateSchemaVersion` in the bounded snapshot API for downstream compatibility checks. |
 | Perception buffer and baseline adapters | `F-0005` | `done` | Baseline stimulus intake is delivered; richer policies and adapters remain future-owned. |
 | Baseline model router and profile continuity | `F-0008` | `done` | Baseline router invariants are delivered; expanded model ecology and specialist organs remain future seams. |
-| Context Builder and structured decision harness | `CF-017` | `confirmed` | Backlog owner exists, but the harness is not intaken or delivered yet. |
+| Context Builder and structured decision harness | `F-0009` | `shaped` | Canonical owner and compact spec now exist; slicing and delivery remain pending. |
 | Executive center and bounded action layer | `CF-007` | `confirmed` | Backlog owner exists; action boundary is not yet delivered. |
 | Narrative and memetic cognition | `CF-005` | `confirmed` | Backlog owner exists; durable narrative/memetic surfaces are still deferred to that future seam. |
 | Homeostat and operational guardrails | `CF-008` | `candidate` | Early safety reactions are described architecturally but not yet intaken. |
