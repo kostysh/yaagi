@@ -7,7 +7,7 @@ area: memory
 depends_on: [F-0001, F-0002, F-0003]
 impacts: [runtime, db, memory, state]
 created: 2026-03-23
-updated: 2026-03-23
+updated: 2026-03-24
 links:
   issue: ""
   pr: []
@@ -54,6 +54,8 @@ links:
 - Subject-state updates должны согласовываться с `F-0003` tick transaction boundaries: failed/cancelled or rolled-back tick не может оставить partial identity drift в durable memory tables.
 - Реализация не должна quietly втянуть в себя ownership над narrative/memetic/perception/cognition seams под предлогом "подготовки памяти".
 - Schema/migration decisions этой фичи должны оставаться совместимыми с delivered `seed -> materialized runtime volumes` platform contract и с recovery/restart loading path.
+- Identity-bearing write authority matrix из `docs/architecture/system.md` закрепляет `SubjectStateStore` как единственную canonical write boundary для `psm_json`, `goals`, `beliefs`, `entities` и `relationships`; обход store через direct SQL from neighbouring seams считается architecture defect.
+- Subject-state schema evolution belongs to this seam: bounded snapshots must expose `subject_state_schema_version`, while boot/runtime consumers may validate compatibility but may not invent ad hoc migrations or alternate self-model schemas.
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
 
@@ -82,6 +84,7 @@ links:
   - `packages/db` владеет SQL-backed `SubjectStateStore`;
   - `apps/core/src/runtime` вызывает snapshot load после boot activation и перед context-building stage;
   - `F-0003` tick terminal path вызывает subject-state delta apply только на `completed` terminal path и внутри того же transaction boundary.
+- Cross-cutting owner map for identity-bearing writes lives in `docs/architecture/system.md`: `F-0004` is the canonical writer for subject-state surfaces, while boot/recovery, runtime, router and future executive/reporting seams may only read snapshots or submit deltas through this store contract.
 - Compact internal contract:
 
 ```ts
@@ -93,6 +96,7 @@ type EvidenceRef = {
 };
 
 type SubjectStateSnapshot = {
+  subjectStateSchemaVersion: string;
   agentState: {
     agentId: string;
     mode: 'inactive' | 'normal' | 'degraded' | 'recovery';
@@ -174,10 +178,18 @@ interface SubjectStateStore {
 - `F-0001` остаётся владельцем boot gate и recovery preconditions.
 - `F-0003` остаётся владельцем tick lifecycle, lease discipline, terminal tick status и episode/timeline ordering.
 - `F-0004` не открывает operator API и не заменяет будущий `Context Builder`; он только даёт канонический subject-memory state-kernel surface, на который эти seams смогут опираться.
+- `SubjectStateSnapshot` is versioned: `subjectStateSchemaVersion` is part of the canonical bounded snapshot contract consumed by boot/recovery, runtime and future cognition seams.
+- Canonical `psm_json` principles:
+  - allowed: bounded singleton self-model data, affect/posture summaries and other per-agent state that must reload atomically with the anchor row and does not require its own relational lifecycle;
+  - forbidden: goals, beliefs, entities, relationships, narrative/memetic history, reports, action logs, model registry payloads and governance/development proposals;
+  - relation to normalized tables: anything with its own row identity, evidence lineage, filtering/order semantics or partial mutation path must remain normalized rather than being mirrored into `psm_json`.
+- `F-0004` owns subject-state schema migration/backfill and the compatibility contract behind `subjectStateSchemaVersion`; neighbouring seams consume the versioned snapshot but do not invent alternative schema policies.
 
 ### 5.2 Data model changes
 
 - Текущий narrow `polyphony_runtime.agent_state` из `F-0003` становится canonical singleton anchor для subject-state, а не дублируется новой singleton-таблицей.
+- `SubjectStateStore` remains the sole canonical write boundary for `agent_state.psm_json`, `goals`, `beliefs`, `entities` and `relationships`; neighbouring seams may orchestrate the transaction timing, but they do not gain permission to bypass the store or write those tables directly.
+- The bounded snapshot contract exposes `subjectStateSchemaVersion` as an architecture-level invariant, even if physical storage reuses the singleton anchor's existing schema metadata field under the hood.
 - `agent_state` schema expansion:
   - добавить `psm_json jsonb not null default '{}'::jsonb`;
   - добавить `resource_posture_json jsonb not null default '{}'::jsonb`;
@@ -361,6 +373,10 @@ Tasks:
 - Fast path: `packages/db/test/*.test.ts` covers state store bootstrap, bounded snapshot assembly, transactional commit/rollback and restart/reload behavior.
 - Smoke path: `infra/docker/deployment-cell.smoke.ts` confirms committed subject-state survives `core` restart inside the canonical deployment cell.
 - Supplemental runtime verification: `apps/core/src/runtime/runtime-lifecycle.ts` keeps the completed-tick coupling with `F-0003` explicit and reloads the subject-state snapshot during runtime initialization.
+- Cross-cutting ownership dependencies:
+  - `Identity-bearing write authority` in `docs/architecture/system.md` treats `F-0004` as the provider contract for subject-state writes and bounded snapshots.
+  - Future cognitive seams (`CF-005`, `CF-017`, `CF-018`) consume subject-state only through this canonical store boundary and do not inherit direct write ownership over the underlying tables.
+  - `subject_state_schema_version` is part of the bounded snapshot contract consumed by `F-0001`, `F-0003` and future cognition/consolidation seams; compatibility checks live outside the store, but schema ownership stays here.
 
 ## 10. Decision log (ADR blocks)
 
@@ -405,3 +421,5 @@ Tasks:
 - **v1.2 (2026-03-23):** Post-review realignment promoted evidence-reference encoding to a repo-level ADR and made subject-state delta semantics explicit: only `tick.completed` may commit subject-memory changes in this phase.
 - **v1.3 (2026-03-23):** `plan-slice` completed: dossier moved to `planned`, decomposed into five delivery slices, and made the `F-0003` terminal-path realignment plus restart/reload smoke verification explicit.
 - **v1.4 (2026-03-23):** `implementation` completed: subject-state schema/store/runtime wiring shipped, bounded snapshot + delta semantics landed in `packages/db`, the completed-tick path now commits subject-state atomically with episodes, restart/reload proof was added to fast tests and deployment-cell smoke, the beliefs snapshot index was realigned to the delivered query contract, and architecture terminology was updated to the delivered evidence-ref and subject-state contracts.
+- **v1.5 (2026-03-24):** `change-proposal`: aligned `F-0004` with the repo-level identity-bearing write-authority matrix by making `SubjectStateStore` the explicit sole writer for `psm_json`, `goals`, `beliefs`, `entities` and `relationships`, while keeping narrative/memetic and other future cognition surfaces outside this delivered subject-state scope.
+- **v1.6 (2026-03-24):** `change-proposal`: added the missing schema-evolution layer to the delivered subject-state contract. The dossier now treats bounded snapshots as versioned via `subject_state_schema_version`, fixes the JSON-vs-normalized decision rule and makes `F-0004` the explicit owner of compatibility, migration and backfill semantics for subject-state surfaces.

@@ -48,6 +48,7 @@ links:
 - Operator-facing `/models`, control routes, richer introspection API и human-governed consultant policies.
 - Training/eval/dataset/promotion flow и любые workshop/governance decisions поверх model profiles.
 - Изменение tick admission matrix из `F-0003`: router shape не должен сам по себе превращать недоставленные tick kinds в end-to-end исполняемый runtime path.
+- Generic cognition ownership or direct writes into `psm_json`, goals/beliefs, narrative/memetic surfaces or governor-owned proposal tables.
 
 ### Constraints
 
@@ -56,6 +57,7 @@ links:
 - Router selection должна быть детерминированной и объяснимой; скрытые fallback paths запрещены, кроме явно зафиксированного reflection-as-adapter-over-deliberation варианта.
 - Unsupported roles и unavailable/unhealthy profiles должны давать explicit structured refusal, а не remap в другой organ "по умолчанию".
 - Seam не должен quietly втянуть в себя ownership над Context Builder, narrative/memetic reasoning или operator API под предлогом "чтобы роутинг работал".
+- Identity-bearing write authority matrix в `docs/architecture/system.md` ограничивает `F-0008` baseline profile and continuity surfaces: router may register profiles and commit active-profile continuity only through the `F-0003` transaction boundary, but it may not bypass runtime admission or mutate subject-state/core identity tables.
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
 
@@ -82,6 +84,8 @@ links:
 - `F-0002` остаётся владельцем delivered local model substrate и env/deployment contract.
 - `F-0003` остаётся владельцем tick lifecycle, lease discipline и terminal cleanup; `F-0008` даёт ему только organ/profile selection boundary и continuity metadata.
 - `CF-017` позже станет главным caller-ом router contract для full cognitive harness, но baseline runtime должен уметь вызывать router и без зрелого Context Builder.
+- Cross-cutting owner map for identity-bearing writes lives in `docs/architecture/system.md`: `F-0008` owns baseline profile registration plus profile-specific continuity metadata, while runtime admission stays in `F-0003`, platform health stays in `F-0002`, and subject-state ownership remains in `F-0004`.
+- Repo-level router invariants now live in subsection `Baseline Router Invariants` in `docs/architecture/system.md`. They elevate only the delivered baseline facts: roles `reflex` / `deliberation` / `reflection`, explicit-only reflection path, separation of selection from admission, structured refusal and health-surface enrichment.
 - Current shaped runtime boundary deliberately separates `selection` from `admission`:
   - `reactive` is the first end-to-end caller in the early runtime;
   - `deliberative` / `contemplative` selection must be callable and testable now, but their full tick execution path remains gated by later cognition seams and by explicit realignment of `F-0003`.
@@ -151,6 +155,9 @@ interface ModelRouter {
   - `reactive` routes to `reflex`;
   - `deliberative` routes to `deliberation`;
   - `contemplative` routes to `reflection` or to an explicit adapter-over-deliberation profile, if and only if such mapping is recorded in the profile store.
+- Repo-level vs feature-local contract:
+  - repo-level: baseline roles, explicit reflection rule, structured refusal, separation `selection != admission`, router diagnostics enrich the existing health surface;
+  - feature-local: deterministic selection matrix details, continuity persistence mechanics, health-summary reuse rules and the exact fast/smoke verification map for the delivered baseline router.
 - Router input может обогащаться по мере появления `CF-017`, `CF-005` и `CF-010`, но baseline contract не должен ломать already persisted routing evidence.
 
 ### 5.2 Data model changes
@@ -171,6 +178,11 @@ interface ModelRouter {
   - `model_registry_status_idx` on `(status, model_profile_id)`.
 - `ticks.selected_model_profile_id` перестаёт быть всегда `null` и начинает заполняться после успешного router selection.
 - `agent_state.current_model_profile_id` остаётся canonical active pointer для текущего тика и обновляется через тот же transactional boundary, в котором runtime фиксирует active tick ownership.
+- Permitted writes for this seam are limited to baseline profile registration (`model_registry`) and model-profile continuity metadata (`ticks.selected_model_profile_id`, `agent_state.current_model_profile_id`) committed through the runtime continuity boundary.
+- Forbidden writes for this seam:
+  - tick admission, lease ownership and terminal lifecycle fields outside the `F-0003` runtime boundary;
+  - `psm_json`, goals/beliefs, entities/relationships and future narrative/memetic surfaces;
+  - governor- or executive-owned proposal and action surfaces.
 - Если structured selection reason нужно сохранять durably, baseline implementation должна использовать существующее tick continuity payload/metadata поле, а не вводить operator-facing shadow store.
 
 ### 5.3 UI changes (if any)
@@ -289,6 +301,10 @@ Tasks:
 - Integration tests для registry seed/load, active tick continuity и health diagnostics.
 - Boot/runtime regression tests, подтверждающие отсутствие расширения required dependency set beyond constitution manifest.
 - Containerized smoke path against the canonical local deployment cell, чтобы проверить router/profile seam на реальном substrate, а не только в in-memory harness.
+- Cross-cutting ownership dependencies:
+  - `F-0008` consumes the `F-0003` runtime continuity boundary to persist `selected_model_profile_id` and `current_model_profile_id` without inheriting runtime admission ownership.
+  - `F-0008` consumes the platform health surface from `F-0002` and only enriches it with router diagnostics; it does not become the owner of `GET /health`.
+  - `Baseline Router Invariants` in `docs/architecture/system.md` now carry the minimal repo-level contract, while the detailed routing policy and proofs remain feature-local to `F-0008`.
 
 ## 10. Decision log (ADR blocks)
 
@@ -349,3 +365,5 @@ Tasks:
 - **v1.4 (2026-03-24):** Tightened the same implementation step after independent review: baseline profile seeding is now transactional, and `AC-F0008-01` additionally proves rollback on partial seed failure so bootstrap cannot leave a partial baseline registry behind.
 - **v1.5 (2026-03-24):** Eliminated the remaining review-derived health-path debt inside the same implementation step: `GET /health` now reuses the already-computed `model-fast` verdict when assembling routing diagnostics instead of probing the same dependency twice per request.
 - **v1.6 (2026-03-24):** Final review tightening: `ModelRouter` no longer resolves baseline health when the caller already provided the needed organ-health override, and `AC-F0008-06` now pins that no-reprobe invariant directly in fast-path tests.
+- **v1.7 (2026-03-24):** `change-proposal`: aligned the dossier with the repo-level identity-bearing write-authority matrix. `F-0008` now states explicitly that router ownership is limited to baseline profile registration plus model-profile continuity metadata, while runtime admission, subject-state writes and future cognition/governor surfaces remain outside the router write boundary.
+- **v1.8 (2026-03-24):** `change-proposal`: aligned `F-0008` with the new architecture-level baseline router invariants. The architecture now carries only the minimal delivered router contract, while deterministic selection details, continuity persistence and fast/smoke proofs remain explicitly feature-local to this dossier.

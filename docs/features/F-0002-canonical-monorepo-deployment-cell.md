@@ -7,7 +7,7 @@ area: platform
 depends_on: []
 impacts: [runtime, infra, db, models, workspace]
 created: 2026-03-19
-updated: 2026-03-22
+updated: 2026-03-24
 links:
   issue: ""
   pr: []
@@ -147,6 +147,7 @@ interface CoreRuntimeApp {
 - HTTP surface в phase 0 ограничивается:
   - `GET /health`
 - `GET /health` используется для container readiness/smoke и не подменяет будущую operator API из `CF-009`.
+- Platform health surface remains owned by `F-0002`: later seams may enrich `GET /health` with their diagnostics, but they do not inherit authority over readiness semantics, startup dependency policy or the public boundary itself.
 - Materialization contract для reopened change:
   - `/seed` mounts tracked initialization content in read-only mode;
   - writable `/workspace`, `/models` и `/data` are created or attached separately from `seed`;
@@ -301,6 +302,8 @@ Tasks:
 - Dossier change verification для `F-0001` realignment как часть feature completion.
 - Platform verification for the `seed -> materialized runtime` handoff, including repo ignore policy and non-overwrite semantics.
 - Root-level config/tests для quality/style commands, GitHub Actions workflow triggers и gate order contract.
+- Consumed cross-cutting invariants:
+  - `Baseline Router Invariants` in `docs/architecture/system.md` treats router diagnostics as an enrichment of the existing platform-owned health surface, not as a separate readiness authority or public API boundary.
 
 ## 10. Decision log (ADR blocks)
 
@@ -411,3 +414,4 @@ Tasks:
 - **v1.10 (2026-03-21):** Removed the fixed `pnpm` version pin from `.github/workflows/test.yml` so the minimum CI workflow keeps using the canonical repo-level `pnpm` contract without coupling the workflow to a hard-coded package-manager version.
 - **v1.11 (2026-03-22):** Applied a controlled platform change proposal that replaces mixed tracked/runtime volume ownership with a `seed -> materialized runtime volumes` boundary: architecture and backlog now treat `seed/*` as the only tracked initialization source, while `workspace/*`, `models/*` and `data/*` become generated runtime state; `F-0002` status returned to `planned` pending implementation.
 - **v1.12 (2026-03-22):** Implemented `SL-F0002-07` by moving tracked initialization content to `seed/*`, rewiring the deployment cell to mount read-only `/seed` plus writable named runtime volumes, materializing runtime body/skills/models/data before active boot handoff, aligning `F-0001` and the phase-0 deployment ADR to the new boundary, and enforcing repo hygiene by ignoring all non-seed runtime volumes; status advanced back to `done`.
+- **v1.13 (2026-03-24):** `change-proposal`: aligned `F-0002` with the architecture-level baseline router invariants by making the platform-owned health boundary explicit. `GET /health` remains the readiness and diagnostics surface owned by the platform seam, while router-provided profile diagnostics only enrich that payload and do not create a second platform authority.

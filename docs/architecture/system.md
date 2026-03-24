@@ -1044,6 +1044,53 @@ Append-only журнал выполненных действий и опасны
 
 Практическое правило: runtime-пользователь агента **не должен иметь прав на `UPDATE`/`DELETE` для `action_log`**. Это важный источник послетикового аудита и recovery-разбора.
 
+### 7.2.1 Identity-bearing write authority
+
+Identity-bearing surfaces допускают чтение из нескольких seams, но канонический writer у каждой такой surface только один. Любая попытка helper-worker, runtime convenience layer или позднего feature seam писать в такую surface в обход canonical owner считается архитектурным дефектом, а не "временной интеграцией".
+
+| Surface | Canonical writer | Allowed callers | Forbidden writers | Notes on transaction boundary |
+|---|---|---|---|---|
+| Boot/recovery continuity fields (`agent_state.mode`, `last_stable_snapshot_id`, recovery incidents, stable-snapshot rollback refs) | Constitutional boot/recovery boundary (`F-0001`) | `F-0002` platform bootstrap supplies constitution/health substrate; `F-0003` reads the post-activation state; `F-0004` and `F-0008` consume resulting pointers read-only | Tick runtime outside boot handoff, `SubjectStateStore`, router, executive/tool workers, reporting jobs | Written only during preflight/recovery activation before new tick admission starts. Later seams may read this boundary but may not back-write it. |
+| Active tick / continuity bridge (`ticks` lifecycle rows, `agent_state.current_tick`, active-tick continuity metadata) | Tick runtime lifecycle (`F-0003`) | `F-0001` activates runtime; `F-0008` may attach selected-profile metadata through the same continuity transaction; `F-0004` may commit completed-tick state deltas only through the completed terminal path | Boot/recovery after activation, router acting alone, executive/tool workers, reporting/homeostat jobs | Admission, lifecycle ordering and terminal cleanup belong to one active-tick transaction. Neighbouring seams may attach their own metadata only through that boundary, not via side writes. |
+| Subject-state singleton and normalized tables (`psm_json`, `goals`, `beliefs`, `entities`, `relationships`) | `SubjectStateStore` (`F-0004`) | `F-0003` completed-tick path invokes the store; future cognitive seams consume bounded snapshots and submit deltas through canonical store contracts | Boot/recovery logic, router, executive/tool gateway, reporting/homeostat workers, direct SQL from future seams | Writes are valid only through the canonical store contract and only on the allowed completed-tick commit path or explicit schema migration/backfill owned by the same seam. |
+| Model-profile continuity surfaces (`model_registry`, `ticks.selected_model_profile_id`, `agent_state.current_model_profile_id`) | Baseline model-routing seam (`F-0008`) via the `F-0003` continuity transaction | Runtime and future decision harness request selection; platform health surface reads diagnostics; boot/recovery reads the active profile pointer during restart/reclaim | Boot/preflight changing profile selection, `SubjectStateStore`, executive/governor/reporting workers writing profile choices directly | Profile registration is router-owned; active profile pointers become durable only when committed through the runtime continuity boundary. |
+| Future narrative and memetic surfaces (`memetic_units`, `memetic_edges`, `coalitions`, `narrative_spine_versions`, `field_journal_entries`) | Future cognition/consolidation seams (`CF-005` with `CF-018` for allowed durable transitions) | Tick runtime may pass bounded candidates; context builder and reporting may consume read models | Boot/runtime/router/executive writing durable narrative or memetic state directly | Durable transitions must use explicit promotion/compaction paths. No other seam receives generic write authority over these surfaces. |
+| Development/governance proposal surfaces (`development_ledger`, model/code/policy proposals) | Future governor/workshop/code-evolution seams (`CF-016`, `CF-011`, `CF-012`) | Runtime, recovery, workshop and human override may submit evidence or incidents through governor-owned gates | Boot/runtime/router/subject-state seams writing arbitrary proposal rows directly | Proposal and ledger writes must flow through policy gates and preserve evidence plus rollback links. |
+| Read-only reporting surfaces (identity continuity reports, model health reports, stable-snapshot inventories) | Derived observability/reporting seam (`CF-015`) | All canonical writers above provide source state; homeostat and human audit consume reports | Reporting workers back-writing identity-bearing source tables | Reports are materialized from committed source state and may not mutate the business or identity-bearing surfaces they summarize. |
+
+### 7.2.2 Non-identity workers
+
+- Health/readiness checks, reporting jobs, context assembly, model diagnostics and other helper workers may read identity-bearing state only through canonical contracts.
+- Такие workers не получают generic write authority только потому, что работают "внутри core" или "в рамках того же тика"; helper execution context не меняет ownership matrix.
+- Нарушение этой matrix считается architecture defect и должно устраняться через realignment canonical owner-а, а не нормализоваться как удобный shortcut.
+
+### 7.2.3 Subject State Schema and Evolution
+
+`F-0004` остаётся owner-ом full subject-state snapshot contract, но repo-level compatibility rules должны быть явными и не восстанавливаться по нескольким delivered dossiers.
+
+Canonical principles:
+
+- `psm_json` хранит только bounded singleton self-model data, которая принадлежит одному субъектному anchor и не требует собственного row-identity или реляционных query patterns.
+- `goals`, `beliefs`, `entities` и `relationships` обязаны жить в нормализованных таблицах, потому что у них есть собственная identity, evidence lineage, ordering/filtering semantics и частичные mutation paths.
+- Narrative/memetic history, timeline/episodes, action logs, reporting payloads, model registries и governance/development proposals не принадлежат `psm_json` и не должны прятаться туда как "временный JSON".
+- Continuity pointers (`current_tick`, `current_model_profile_id`, snapshot refs) могут жить рядом с subject-state anchor, но не считаются заменой versioned subject-state contract.
+
+Architecture-level invariant:
+
+- Каждый bounded subject-state snapshot обязан нести `subject_state_schema_version`. Физическое хранение может переиспользовать существующее schema metadata field, но compatibility contract выражается именно как versioned subject-state surface, а не как implicit JSON shape.
+
+Compatibility rules:
+
+- Supported version: boot/recovery и runtime consumers могут загружать snapshot без дополнительных миграций.
+- Unsupported version: `F-0001` обязан fail-closed или войти в recovery policy before active runtime handoff; `F-0003` и другие consumers не имеют права silently coercе-ить snapshot в "примерно подходящую" форму.
+- Migration/backfill для subject-state schema принадлежат `F-0004` и его явным follow-on realignments. Boot/runtime/reporting seams могут проверять совместимость, но не становятся schema owners.
+- Derived traces, exports и retention flows обязаны сохранять linkage к canonical `subject_state_schema_version`, если строятся поверх bounded snapshot contract.
+
+Decision rule `JSON vs normalized table`:
+
+- Использовать JSON только для bounded per-agent state, который должен reload-иться целиком, не имеет собственной row-identity и не требует independent query/filter/order semantics.
+- Использовать нормализованную таблицу для любых данных с самостоятельной identity, evidence/audit lineage, ссылками между rows, bounded collection queries или частичными mutation paths.
+
 ### 7.3 Файловые области
 
 #### `/seed/body`
@@ -1488,6 +1535,15 @@ Router использует простое правило выбора:
   last_eval_score
 )
 ```
+
+#### Baseline Router Invariants
+
+- Delivered baseline roles для router-owned phase-0/1 surface фиксируются как `reflex`, `deliberation` и `reflection`; richer roles (`code`, `embedding`, `reranker`, `classifier`, `safety`, external consultants) остаются future-owned seams.
+- `reflection` допустим только как explicit profile или explicit adapter-over-deliberation mapping. Hidden fallback from contemplative routing to plain `deliberation` without such explicit record запрещён.
+- `selection` и `admission` — разные этапы: router выбирает eligible organ/profile или возвращает refusal, а runtime решает, допускается ли конкретный tick/execution path на текущей фазе.
+- Unsupported or unhealthy routing outcome должен приводить к structured refusal, а не к silent remap или "best effort" implicit fallback.
+- Router diagnostics enrich existing health/introspection baseline, но не заменяют platform-owned `GET /health` и не открывают отдельную authority over readiness or startup dependencies.
+- Детальные decision tables, continuity persistence и test matrix для delivered baseline router остаются feature-local contract `F-0008`; architecture фиксирует только этот minimal invariant set.
 
 ### 10.4 Файнтюнинг generative organs
 
@@ -2077,6 +2133,33 @@ Homeostat должен иметь не только метрики, но и де
 
 Эти ADR не заменяют feature dossiers, а фиксируют cross-cutting engineering contract для следующих feature seams.
 
+### 17.7 Architecture Coverage Map
+
+Эта карта отделяет concept coverage от delivery status. Наличие архитектурного описания или backlog owner-а не означает, что seam уже поставлен; delivery claim появляется только у real dossier со статусом `done`.
+
+| Architecture area | Canonical owner | Status | Note on missing work |
+|---|---|---|---|
+| Boot/recovery boundary | `F-0001` | `done` | Constitutional boot/recovery delivered; richer incident/governance reactions remain future-owned. |
+| Platform substrate, deployment cell and verification baseline | `F-0002`, `F-0006`, `F-0007` | `done` | Phase-0 cell, quality gates and deterministic smoke are delivered; mature hardening and richer CI/CD remain separate future seams. |
+| Tick runtime and continuity bridge | `F-0003` | `done` | Wake/reactive baseline is delivered; richer tick families and downstream lifecycle owners remain backlog-owned. |
+| Subject-state kernel and versioned bounded snapshot | `F-0004` | `done` | Canonical subject-state store is delivered; narrative/memetic and richer cognition surfaces remain outside this seam. |
+| Perception buffer and baseline adapters | `F-0005` | `done` | Baseline stimulus intake is delivered; richer policies and adapters remain future-owned. |
+| Baseline model router and profile continuity | `F-0008` | `done` | Baseline router invariants are delivered; expanded model ecology and specialist organs remain future seams. |
+| Context Builder and structured decision harness | `CF-017` | `confirmed` | Backlog owner exists, but the harness is not intaken or delivered yet. |
+| Executive center and bounded action layer | `CF-007` | `confirmed` | Backlog owner exists; action boundary is not yet delivered. |
+| Narrative and memetic cognition | `CF-005` | `confirmed` | Backlog owner exists; durable narrative/memetic surfaces are still deferred to that future seam. |
+| Homeostat and operational guardrails | `CF-008` | `candidate` | Early safety reactions are described architecturally but not yet intaken. |
+| Development governor and policy gates | `CF-016` | `candidate` | Minimal governor ownership is defined, but no delivered governor seam exists yet. |
+| Consolidation, event envelope and graceful shutdown | `CF-018` | `candidate` | Retention/compaction and graceful shutdown biography remain backlog-owned future work. |
+| Observability and reporting | `CF-015` | `candidate` | Baseline health exists, but dedicated reports, metrics, tracing and richer reactions are still deferred. |
+| Operator API and introspection | `CF-009` | `candidate` | Public operator/control API beyond health remains deferred to backlog owner. |
+| Expanded model ecology and registry health | `CF-010` | `candidate` | Additional organs, richer registry health and fallback policy remain future-owned. |
+| Workshop training/eval/promotion pipeline | `CF-011` | `candidate` | Workshop lifecycle is architectural only; no intake or delivery yet. |
+| Controlled body evolution | `CF-012` | `candidate` | Stable-snapshot consumption exists, but controlled worktree/code-evolution flow remains future-owned. |
+| Skills lifecycle boundary | `CF-013` | `candidate` | Skill lifecycle ownership exists only in backlog at this point. |
+| Security/perimeter hardening | `CF-014` | `candidate` | Baseline platform posture is delivered, but mature safety/perimeter controls are deferred. |
+| Specialist organ rollout/retirement | `CF-019` | `candidate` | Specialist lifecycle is described conceptually, not delivered. |
+
 ---
 
 ## 18. Самопроверка по стандарту качества
@@ -2085,32 +2168,22 @@ Homeostat должен иметь не только метрики, но и де
 
 Проверка:
 
-- temporal core описан — **да**;
-- PSM описан — **да**;
-- memory stack описан — **да**;
-- memetic field описан — **да**;
-- narrative continuity описана — **да**;
-- local model subsystem описана — **да**;
-- fine-tuning pipeline описан — **да**;
-- specialized model creation описано — **да**;
-- Git-governed code evolution описан — **да**;
-- safety/isolation описаны — **да**;
-- phased plan описан — **да**.
+- все обязательные области концепции описаны как минимум на уровне owner map — **да**;
+- delivered phase-0/early phase-1 backbone явно отделён от future seams через `done` vs backlog statuses — **да**;
+- у narrative/memetic, executive, governor, observability и workshop seams есть owner в backlog, а не бесхозные обещания — **да**;
+- документ больше не притворяется, что backlog-owned seams уже operationally closed, только потому что они описаны — **да**.
 
-Вывод: по полноте архитектура закрывает все обязательные части концепции.
+Вывод: по полноте архитектура закрывает обязательные области как ownership map, но честно различает delivered backbone и deferred future seams.
 
 ### 18.2 Реализуемость
 
 Проверка:
 
-- для core определены модули — **да**;
-- для organs определены process boundaries — **да**;
-- для хранения определены таблицы и файловые области — **да**;
-- для коммуникации определены протоколы — **да**;
-- для развития определены pipeline и rollout policy — **да**;
-- для Git определён рабочий flow — **да**.
+- для delivered seams определены concrete runtime/storage/process boundaries — **да**;
+- для confirmed/candidate seams указаны backlog owners, так что следующий intake может опираться на явные cross-cutting contracts — **да**;
+- self-check больше не смешивает "описано" и "поставлено", поэтому инженер видит, где нужен новый dossier, а где уже есть delivered foundation — **да**.
 
-Вывод: инженер может начать реализацию по этому документу без изобретения базовой структуры с нуля.
+Вывод: инженер может продолжать реализацию по этому документу без изобретения структуры с нуля и без ложного ощущения, что все описанные seams уже поставлены.
 
 ### 18.3 Согласованность
 
@@ -2119,10 +2192,10 @@ Homeostat должен иметь не только метрики, но и де
 - second subject не вводится — **да**;
 - identity не живёт в модели — **да**;
 - background jobs не получают волю — **да**;
-- development подчинён governor — **да**;
-- code evolution не обходит Git/review — **да**.
+- development подчинён governor как architectural target, но сам governor ещё backlog-owned — **да**;
+- code evolution не обходит Git/review как invariant, хотя mature somatic evolution ещё future-owned — **да**.
 
-Вывод: архитектура согласована с концептуальными инвариантами.
+Вывод: архитектура согласована с концептуальными инвариантами и теперь явно показывает, какие из них уже operationally enforced, а какие пока закреплены только как future-owned contracts.
 
 ### 18.4 Обоснованность
 
@@ -2131,8 +2204,9 @@ Homeostat должен иметь не только метрики, но и де
 - решения по Postgres, vLLM, workshop, Git и modular monolith объяснены — **да**;
 - объяснено, почему не брать OM как core memory — **да**;
 - объяснено, почему не делать multi-agent core — **да**.
+- coverage map делает видимой разницу между уже реализованными решениями и теми, что пока только backlog-owned — **да**.
 
-Вывод: архитектурные решения мотивированы, а не просто перечислены.
+Вывод: архитектурные решения мотивированы, а статусы покрытия больше не создают ложную картину полной operational delivery.
 
 ### 18.5 Масштабируемость
 
@@ -2142,8 +2216,9 @@ Homeostat должен иметь не только метрики, но и де
 - локальный стек допускает рост — **да**;
 - model ecology допускает добавление органов без смены онтологии — **да**;
 - development pipeline вводится поэтапно — **да**.
+- coverage map показывает, какие шаги already delivered, а какие ещё надо intake/shaping before implementation — **да**.
 
-Вывод: архитектура масштабируема без концептуального перелома.
+Вывод: архитектура масштабируема без концептуального перелома и при этом не скрывает, какие стадии роста ещё только backlog-owned, а не delivered.
 
 ---
 

@@ -7,7 +7,7 @@ area: runtime
 depends_on: [F-0002]
 impacts: [runtime, db, models, storage]
 created: 2026-03-19
-updated: 2026-03-22
+updated: 2026-03-24
 links:
   issue: ""
   pr: []
@@ -40,6 +40,7 @@ links:
 - Создание, promotion и inventory stable snapshot как отдельный governance/workshop-процесс.
 - Детальная оркестрация organ registry, model routing и policy для external consultants.
 - Operator-facing HTTP endpoints и UI-интроспекция.
+- Прямые записи в `psm_json`, `goals`, `beliefs`, `entities`, `relationships`, narrative/memetic surfaces и governance proposal tables вне boot/recovery continuity boundary.
 
 ### Constraints
 
@@ -47,6 +48,8 @@ links:
 - Rollback targetом считается только stable snapshot, а не отдельный commit или model adapter.
 - При невозможности безопасного восстановления система должна fail-closed и не запускать новые тики.
 - Набор реально проверяемых зависимостей должен определяться текущим platform substrate/constitution manifest, а не предположением о наличии органов, которые ещё не поставлены.
+- Cross-cutting ownership для identity-bearing writes задаётся architecture matrix в `docs/architecture/system.md`: `F-0001` владеет только boot/recovery continuity writes и не получает общего права мутировать subject-state, narrative/memetic или governance surfaces.
+- Совместимость с versioned subject-state contract проверяется, но не мигрируется этим seam: boot/recovery обязан реагировать на unsupported `subject_state_schema_version`, не становясь owner-ом schema evolution or backfill.
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
 
@@ -106,6 +109,8 @@ interface ConstitutionalBootService {
 
 - Реально исполняемый dependency set определяется `constitution.yaml` через `requiredDependencies`.
 - После `F-0002` baseline phase-0 substrate объявляет только `postgres` и `model-fast` как обязательные preflight dependencies; `model-deep` и `model-pool` остаются частью расширяемого контракта для следующих feature seams, но не считаются delivered предпосылкой текущей deployment cell.
+- Cross-cutting owner map для identity-bearing writes задаётся subsection `Identity-bearing write authority` в `docs/architecture/system.md`: boot/recovery пишет только свои continuity fields (`agent_state.mode`, rollback/snapshot refs и incident metadata), а все остальные identity-bearing surfaces читает либо валидирует без прямого write ownership.
+- Subject-state compatibility policy comes from subsection `Subject State Schema and Evolution` in `docs/architecture/system.md`: boot/recovery validates `subject_state_schema_version` before active handoff, but migrations/backfills remain owned by `F-0004`.
 
 - Boot publishes two system events into the timeline/event sink:
   - `system.boot.completed`
@@ -141,10 +146,16 @@ interface ConstitutionalBootService {
   - `stable_snapshots` как единственный источник rollback target (`snapshot_id`, `git_tag`, `model_profile_map_json`, `schema_version`, `health_summary_json`, `created_at`).
   - `model_registry.health_json` для health-статуса обязательных model services.
   - `agent_state.last_stable_snapshot_id` как быстрый указатель на preferred rollback target.
+  - versioned subject-state compatibility metadata (`subject_state_schema_version` through the canonical schema metadata contract owned by `F-0004`) для решения `supported` / `unsupported` до handoff в активный runtime.
 - Запись:
   - timeline/event sink для `system.boot.completed` и `system.recovery.completed`.
   - `development_ledger` при recovery incidents с `entry_kind` из rollback/code/model incident family.
   - `agent_state.mode`, `agent_state.current_model_profile_id` и `agent_state.last_stable_snapshot_id` после успешного boot/recovery.
+- Forbidden writes:
+  - `psm_json`, `goals`, `beliefs`, `entities`, `relationships`, narrative/memetic tables и future governor-owned proposal surfaces не входят в boot/recovery write authority и не могут мутироваться этим seam напрямую.
+- Compatibility rule:
+  - supported `subject_state_schema_version` lets boot/recovery continue with the delivered handoff policy;
+  - unsupported `subject_state_schema_version` forces recovery or fail-closed startup according to the architecture contract, but `F-0001` still does not own schema migration or backfill.
 - Миграции в рамках фичи не требуются, если перечисленные таблицы уже вводятся базовым schema bootstrap. Если к моменту реализации их ещё нет, эта фича должна зависеть от минимального schema slice, но не расширять доменную модель сверх перечисленных полей.
 
 ### 5.3 UI changes (if any)
@@ -233,6 +244,9 @@ Tasks:
 - Отдельные fixtures для `constitution.yaml`, corrupted volumes manifest и `stable_snapshots` entries.
 - Явные assertions на отсутствие вызова `scheduler.start()` и `tickEngine.start()` в fail-closed ветках.
 - Supplemental platform verification через containerized boot/smoke path подтверждает boot assumptions against `seed -> materialized runtime` substrate, а не только against local in-memory fixtures.
+- Consumed cross-cutting invariants:
+  - `Identity-bearing write authority` из `docs/architecture/system.md` ограничивает `F-0001` boot/recovery continuity writes и запрещает трактовать boot boundary как generic writer для других identity-bearing surfaces.
+  - `Subject State Schema and Evolution` в `docs/architecture/system.md` задаёт policy для `subject_state_schema_version`: `F-0001` only validates compatibility and reacts to mismatch, while schema ownership remains in `F-0004`.
 
 ## 10. Decision log (ADR blocks)
 
@@ -268,3 +282,5 @@ Tasks:
 - **v1.5 (2026-03-19):** Removed `tsx` from test execution and switched the repo to native `node --experimental-strip-types` with `.ts` import specifiers.
 - **v1.6 (2026-03-19):** Realigned boot assumptions to `F-0002`: `depends_on` now points to delivered platform substrate, constitution manifests declare the active dependency set, and supplemental containerized verification covers the phase-0 deployment cell path (`postgres + model-fast`).
 - **v1.7 (2026-03-22):** Realigned the constitutional boot contract to the delivered `seed -> materialized runtime` platform boundary: the constitution manifest now lives under `seed/constitution`, required volume checks cover both tracked seed inputs and writable runtime volumes, and the verification plan explicitly includes the containerized seed/materialization startup path.
+- **v1.8 (2026-03-24):** `change-proposal`: aligned `F-0001` with the repo-level identity-bearing write-authority matrix so boot/recovery now states its narrow ownership explicitly: it writes only startup continuity fields and recovery incidents, while subject-state, router-owned profile continuity and future cognition/governance surfaces remain outside boot write authority.
+- **v1.9 (2026-03-24):** `change-proposal`: aligned boot/recovery with the versioned subject-state contract. `F-0001` now states explicitly that it validates `subject_state_schema_version` compatibility during preflight/recovery and reacts with recovery or fail-closed startup on mismatch, while schema migration/backfill ownership remains in `F-0004`.

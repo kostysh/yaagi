@@ -7,7 +7,7 @@ area: runtime
 depends_on: [F-0001, F-0002]
 impacts: [runtime, db, timeline, jobs]
 created: 2026-03-21
-updated: 2026-03-23
+updated: 2026-03-24
 links:
   issue: ""
   pr: []
@@ -48,6 +48,7 @@ links:
 - Context Builder, narrative/memetic arena, organ selection, structured decision validation и другие когнитивные стадии основного тика.
 - Executive center, bounded tools, action execution и side effects outside runtime bookkeeping.
 - Полноценные consolidation/developmental cycles, retention/compaction policy, shutdown episode и graceful shutdown biography.
+- Generic mutation of identity-bearing surfaces outside the active-tick continuity bridge; runtime may orchestrate neighbouring writes only through their canonical owners, not by inheriting blanket write authority.
 
 ### Constraints
 
@@ -57,6 +58,8 @@ links:
 - Источником истины для tick/episode/timeline state остаётся PostgreSQL state kernel; логи, Mastra memory и process-local queues не могут подменять durable state.
 - `F-0003` обязан явно определить и держать только узкий runtime bridge к уже существующему `agent_state`: чтение singleton row после boot handoff, ведение `current_tick` во время активного тика и освобождение этого pointer-а на terminal transition; richer subject-state semantics остаются за следующим memory seam.
 - Реализация этого shaped scope не должна протаскивать в себя ownership соседних seams под предлогом "завершения тика"; любое расширение за пределы зафиксированного bridge к `agent_state`, baseline `wake/reactive` и runtime bookkeeping должно оформляться как follow-on shaping against the next memory/perception/cognition seams.
+- Cross-cutting ownership для identity-bearing writes задаётся architecture matrix в `docs/architecture/system.md`: `F-0003` владеет только active-tick continuity bridge и lifecycle ordering, а subject-state, router policy и future narrative/governor surfaces остаются у своих canonical owners.
+- Runtime consumes versioned bounded subject-state snapshots from `F-0004`: unsupported `subject_state_schema_version` must stop admission/handoff rather than trigger ad hoc schema coercion inside the tick runtime.
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
 
@@ -121,6 +124,9 @@ interface TickRuntime {
 
 - `F-0001` остаётся владельцем handoff в `TickRuntime.start()`.
 - `F-0002` остаётся владельцем process/container substrate, env contract и `pg-boss` readiness.
+- Cross-cutting owner map для identity-bearing writes задаётся subsection `Identity-bearing write authority` в `docs/architecture/system.md`: runtime owns admission, lease discipline, `ticks` lifecycle ordering and the active-tick continuity bridge, but it does not receive generic write authority over subject-state, narrative/memetic or governance surfaces.
+- Subject-state compatibility policy comes from subsection `Subject State Schema and Evolution` in `docs/architecture/system.md`: runtime consumes bounded snapshots that carry `subject_state_schema_version` and must treat version mismatch as an incompatible input contract, not as a signal to improvise its own schema evolution rules.
+- Baseline organ-routing constraints come from subsection `Baseline Router Invariants` in `docs/architecture/system.md`: runtime consumes router output, but selection is not the same as runtime admission and may legitimately end in structured refusal without becoming a scheduler fault.
 - Baseline support этой фичи фиксируется явно:
   - обязательный первый tick после успешного boot handoff: `wake` с `trigger = boot`;
   - первый scheduler-admissible post-boot path: `reactive` через явный `system` или `scheduler` request;
@@ -139,7 +145,13 @@ interface TickRuntime {
 - Этот shaped scope также закрепляет узкий bridge к уже существующему `agent_state`: runtime загружает singleton row после boot handoff, выставляет `current_tick` при активации тика и очищает или заменяет его на terminal transition; дополнительные active-tick continuity pointers, такие как `current_model_profile_id`, могут позже присоединяться к той же transactional boundary, не меняя ownership над `psm_json`, goals или beliefs.
 - Timeline/event sink переиспользуется как существующий lifecycle/audit surface для `tick.started`, `tick.completed`, `tick.failed` и `tick.cancelled`, используя единый event envelope с `eventId`, `eventType`, `occurredAt`, `subjectRef = tick_id` и structured `payload`.
 - Scheduler foundation должен опираться на PostgreSQL/`pg-boss` и/или узкий DB-backed lease layer, а не на in-memory timers как canonical source of truth.
-- Ownership полного `agent_state`, `psm_json`, goals и beliefs остаётся вне этой фичи и будет уточняться в следующем dossier memory seam.
+- Ownership полного `agent_state`, `psm_json`, goals и beliefs остаётся вне этой фичи и закреплён за `F-0004` as canonical writer for subject-state surfaces; `F-0003` может only orchestrate those writes through the neighbouring store contract on the completed-tick path.
+- Runtime-facing snapshot assumption:
+  - `F-0003` consumes a bounded, versioned subject-state snapshot;
+  - if `subject_state_schema_version` is unsupported, runtime must refuse admission/activation and hand control back to the boot/recovery compatibility policy instead of partially loading state.
+- Router-facing admission assumption:
+  - router selection happens before or alongside runtime admission, but the final decision to create/continue a tick still belongs to the runtime boundary;
+  - structured router refusal (`unsupported_role`, `profile_unavailable`, `profile_unhealthy`) is a valid pre-admission outcome and must not be collapsed into silent fallback or hidden scheduler repair logic.
 
 ### 5.3 UI changes (if any)
 
@@ -258,6 +270,11 @@ Tasks:
 
 - Быстрый путь реализации: `pnpm test`.
 - Containerized smoke path для runtime/startup seam: `pnpm smoke:cell`.
+- Consumed cross-cutting invariants:
+  - `Identity-bearing write authority` из `docs/architecture/system.md` фиксирует `F-0003` как owner active-tick continuity bridge, но не owner subject-state or future cognition/governance tables.
+  - `F-0004` remains the canonical writer for subject-state surfaces; runtime touches that state only through the neighbouring store contract on completed ticks.
+  - `Subject State Schema and Evolution` задаёт versioned snapshot contract: `F-0003` consumes `subject_state_schema_version` as an input invariant and does not become the owner of schema migration/backfill policy.
+  - `Baseline Router Invariants` фиксирует, что `selection` и `admission` остаются разными этапами, а structured routing refusal is a valid runtime outcome rather than an implicit request to remap or continue anyway.
 
 ## 9. Decision log (ADR blocks)
 
@@ -312,3 +329,6 @@ Tasks:
 - **v1.4 (2026-03-21):** Implementation completed: added the `polyphony_runtime` PostgreSQL substrate and runtime contracts, wired `core` through constitutional boot into a DB-backed phase-0 tick lifecycle, delivered AC-linked integration tests plus deployment-cell smoke for wake/reclaim, and fixed boot-specific seams around authoritative DB `tick_id`, dependency probes, container volume root resolution and per-boot wake request deduplication.
 - **v1.5 (2026-03-23):** `F-0007` realigned smoke ownership: lease-discipline proof for `AC-F0003-02` was removed from container smoke and закреплён только за fast integration surface, while deployment-cell smoke remained owner for boot-to-wake and stale-tick reclaim behavior.
 - **v1.6 (2026-03-23):** `change-proposal`: clarified that `F-0003` owns the active-tick continuity boundary, so later delivered seams may attach `selected_model_profile_id` / `current_model_profile_id` to the same transaction without expanding the phase-0 tick admission matrix or transferring organ-routing ownership into this dossier.
+- **v1.7 (2026-03-24):** `change-proposal`: aligned the dossier with the repo-level identity-bearing write-authority matrix. `F-0003` now states explicitly that it owns admission, lease discipline and the active-tick continuity bridge only, while subject-state writes stay behind `F-0004` and later cognition/governor surfaces do not inherit generic runtime write authority.
+- **v1.8 (2026-03-24):** `change-proposal`: aligned the runtime dossier with the versioned subject-state contract. `F-0003` now states explicitly that it consumes bounded snapshots carrying `subject_state_schema_version`, refuses incompatible versions instead of improvising schema coercion, and keeps schema ownership plus migration/backfill policy in `F-0004`.
+- **v1.9 (2026-03-24):** `change-proposal`: aligned `F-0003` with the architecture-level baseline router invariants. The dossier now states explicitly that runtime consumes router selection but remains the owner of admission/execution, and that structured routing refusal is a valid pre-admission runtime outcome rather than a hidden fallback path.
