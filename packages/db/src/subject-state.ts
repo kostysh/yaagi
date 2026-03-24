@@ -115,6 +115,7 @@ export type SubjectStateRelationshipSnapshot = {
 };
 
 export type SubjectStateSnapshot = {
+  subjectStateSchemaVersion: string;
   agentState: SubjectStateAgentStateSnapshot;
   goals: SubjectStateGoalSnapshot[];
   beliefs: SubjectStateBeliefSnapshot[];
@@ -204,6 +205,7 @@ export type ApplyTickStateDeltaInput = {
 };
 
 type AgentStateSubjectRow = {
+  subjectStateSchemaVersion: string | null;
   agentId: string;
   mode: SubjectStateAgentStateSnapshot['mode'];
   currentTickId: string | null;
@@ -254,6 +256,7 @@ type RelationshipRow = {
 };
 
 const agentStateSnapshotColumns = `
+  schema_version as "subjectStateSchemaVersion",
   agent_id as "agentId",
   mode,
   current_tick_id as "currentTickId",
@@ -407,9 +410,9 @@ const normalizeRelationshipRow = (row: QueryResultRow): SubjectStateRelationship
   };
 };
 
-const loadAgentStateSnapshot = async (
+const loadAgentStateSnapshotRow = async (
   db: SubjectStateDbExecutor,
-): Promise<SubjectStateAgentStateSnapshot> => {
+): Promise<AgentStateSubjectRow> => {
   const result = await db.query<AgentStateSubjectRow>(
     `select ${agentStateSnapshotColumns}
      from ${agentStateTable}
@@ -421,14 +424,28 @@ const loadAgentStateSnapshot = async (
     throw new Error('agent_state singleton row is missing');
   }
 
+  return row;
+};
+
+const toSubjectStateAgentSnapshot = (
+  row: AgentStateSubjectRow,
+): SubjectStateAgentStateSnapshot => ({
+  agentId: row.agentId,
+  mode: row.mode,
+  currentTickId: row.currentTickId,
+  currentModelProfileId: row.currentModelProfileId,
+  lastStableSnapshotId: row.lastStableSnapshotId,
+  psmJson: toRecord(row.psmJson),
+  resourcePostureJson: toRecord(row.resourcePostureJson),
+});
+
+const loadAgentStateSnapshot = async (
+  db: SubjectStateDbExecutor,
+): Promise<SubjectStateAgentStateSnapshot> => {
+  const row = await loadAgentStateSnapshotRow(db);
+
   return {
-    agentId: row.agentId,
-    mode: row.mode,
-    currentTickId: row.currentTickId,
-    currentModelProfileId: row.currentModelProfileId,
-    lastStableSnapshotId: row.lastStableSnapshotId,
-    psmJson: toRecord(row.psmJson),
-    resourcePostureJson: toRecord(row.resourcePostureJson),
+    ...toSubjectStateAgentSnapshot(row),
   };
 };
 
@@ -773,7 +790,12 @@ export async function loadSubjectStateSnapshot(
   const relationshipLimit = input.relationshipLimit ?? DEFAULT_RELATIONSHIP_LIMIT;
   void input.tickId;
 
-  const agentState = await loadAgentStateSnapshot(db);
+  const agentStateRow = await loadAgentStateSnapshotRow(db);
+  const subjectStateSchemaVersion = agentStateRow.subjectStateSchemaVersion;
+  if (!subjectStateSchemaVersion) {
+    throw new Error('agent_state.subject_state_schema_version is missing');
+  }
+  const agentState = toSubjectStateAgentSnapshot(agentStateRow);
   const goals = await loadGoalSnapshots(db, goalLimit);
   const beliefs = await loadBeliefSnapshots(db, beliefLimit);
   const entities = await loadEntitySnapshots(db, entityLimit);
@@ -784,6 +806,7 @@ export async function loadSubjectStateSnapshot(
   );
 
   return {
+    subjectStateSchemaVersion,
     agentState,
     goals,
     beliefs,

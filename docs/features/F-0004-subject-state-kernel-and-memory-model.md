@@ -65,6 +65,7 @@ links:
 - **AC-F0004-04:** `loadSubjectStateSnapshot(...)` возвращает bounded snapshot без narrative/memetic prerequisites: singleton `agent_state`, non-terminal goals в deterministic order `priority DESC, updated_at DESC`, beliefs в deterministic order `confidence DESC, updated_at DESC`, entities в bounded slice по canonical identity / recency и relationships только для возвращённых entities.
 - **AC-F0004-05:** Goal transitions и belief revisions сохраняют явные `status` / `priority` / `confidence` semantics на текущей canonical row и хранят `evidence_refs_json` с ссылками на `episode_id` и/или `tick_id`; shaped implementation не удаляет silently goal/belief identity при обычном update-path.
 - **AC-F0004-06:** После process restart или constitutional recovery runtime до следующего tick start reload-ит последнее committed subject-state из PostgreSQL и может заново собрать тот же bounded subjective snapshot без process-local reconstruction и без обращения к non-canonical memory layers.
+- **AC-F0004-07:** `loadSubjectStateSnapshot(...)` exposes canonical compatibility metadata as `subjectStateSchemaVersion`, sourced from the singleton anchor schema metadata contract, so boot/recovery, runtime and future cognition seams can validate subject-state compatibility without re-reading raw row internals or inventing alternate version surfaces.
 
 ## 4. Non-functional requirements (NFR)
 
@@ -268,6 +269,7 @@ interface SubjectStateStore {
 - Fast path:
   - integration tests для schema/bootstrap of `agent_state` expansion and normalized tables;
   - integration tests для `loadSubjectStateSnapshot(...)` ordering, bounds and relationship filtering;
+  - integration tests для versioned bounded snapshot surfacing through `subjectStateSchemaVersion`;
   - integration tests для terminal tick transaction coupling and rollback semantics;
   - integration tests для goal/belief evidence refs and status/priority/confidence updates;
   - restart-focused integration tests, которые поднимают новый DB client / runtime store и подтверждают reload without process-local cache.
@@ -350,6 +352,21 @@ Tasks:
 - **T-F0004-09:** Wire post-boot/runtime reload to read the committed subject-state anchor and bounded snapshot before the next tick stage depends on it. Covers: AC-F0004-02, AC-F0004-06.
 - **T-F0004-10:** Add integration and deployment-cell smoke coverage for restart/recovery reload of committed subject-state. Covers: AC-F0004-06.
 
+### Slice SL-F0004-06: Versioned bounded snapshot surfacing
+Delivers: the canonical `subjectStateSchemaVersion` field on every bounded subject-state snapshot, sourced from the singleton anchor metadata and proven across cold load and restart paths.
+Covers: AC-F0004-07
+Verification: `integration`
+Exit criteria:
+- `SubjectStateSnapshot` includes `subjectStateSchemaVersion` on every load path.
+- The surfaced version comes from canonical singleton schema metadata rather than an ad hoc constant or consumer-owned fallback.
+- Fast tests prove the versioned snapshot contract on both fresh loads and restart/recovery reload.
+Dependencies:
+- This slice is the prerequisite for `SL-F0001-05` and `SL-F0003-06`.
+- Containerized startup/smoke ownership for this versioned field remains downstream in `F-0001` and `F-0003`, because `SL-F0004-06` only surfaces the provider-side bounded snapshot contract inside the subject-state store.
+Tasks:
+- **T-F0004-11:** Extend the bounded snapshot/store contract so `loadSubjectStateSnapshot(...)` surfaces `subjectStateSchemaVersion` from the canonical singleton schema metadata field. Covers: AC-F0004-07.
+- **T-F0004-12:** Add AC-linked store and restart tests that prove `subjectStateSchemaVersion` is returned consistently on fresh load and restart/recovery reload. Covers: AC-F0004-07.
+
 ## 8. Suggested issue titles
 
 - `F-0004 / SL-F0004-01 Subject-state schema expansion and singleton anchor` → [SL-F0004-01](#slice-sl-f0004-01-subject-state-schema-expansion-and-singleton-anchor)
@@ -357,6 +374,7 @@ Tasks:
 - `F-0004 / SL-F0004-03 Goal, belief, entity, and relationship mutation semantics` → [SL-F0004-03](#slice-sl-f0004-03-goal-belief-entity-and-relationship-mutation-semantics)
 - `F-0004 / SL-F0004-04 Completed-tick delta commit and F-0003 terminal-path realignment` → [SL-F0004-04](#slice-sl-f0004-04-completed-tick-delta-commit-and-f-0003-terminal-path-realignment)
 - `F-0004 / SL-F0004-05 Restart/recovery reload and deployment-cell verification` → [SL-F0004-05](#slice-sl-f0004-05-restartrecovery-reload-and-deployment-cell-verification)
+- `F-0004 / SL-F0004-06 Versioned bounded snapshot surfacing` → [SL-F0004-06](#slice-sl-f0004-06-versioned-bounded-snapshot-surfacing)
 ## 9. Test plan & Coverage map
 
 | AC ID | Planned test reference | Status |
@@ -367,11 +385,13 @@ Tasks:
 | AC-F0004-04 | `packages/db/test/subject-state-store.integration.test.ts` → `test("AC-F0004-04 assembles a bounded subjective snapshot without narrative or memetic prerequisites")` | done |
 | AC-F0004-05 | `packages/db/test/belief-goal-revision.integration.test.ts` → `test("AC-F0004-05 preserves goal and belief traceability through status and evidence refs")` | done |
 | AC-F0004-06 | `packages/db/test/subject-state-restart.integration.test.ts` → `test("AC-F0004-06 reloads the last committed subject-state after restart without process-local reconstruction")`; smoke in `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0004-06 reloads the last committed subject-state after restart without process-local reconstruction")` | done |
+| AC-F0004-07 | `packages/db/test/subject-state-store.integration.test.ts` → `test("AC-F0004-07 surfaces subjectStateSchemaVersion in the bounded snapshot contract")`; `packages/db/test/subject-state-restart.integration.test.ts` → `test("AC-F0004-07 preserves subjectStateSchemaVersion across restart reload")` | done |
 
 План верификации:
 
 - Fast path: `packages/db/test/*.test.ts` covers state store bootstrap, bounded snapshot assembly, transactional commit/rollback and restart/reload behavior.
 - Smoke path: `infra/docker/deployment-cell.smoke.ts` confirms committed subject-state survives `core` restart inside the canonical deployment cell.
+- `AC-F0004-07` keeps provider-side verification on the fast store/restart surface; startup-affecting smoke proof for the same field is owned downstream by `F-0001` and `F-0003`, where the versioned snapshot is consumed during boot/runtime activation.
 - Supplemental runtime verification: `apps/core/src/runtime/runtime-lifecycle.ts` keeps the completed-tick coupling with `F-0003` explicit and reloads the subject-state snapshot during runtime initialization.
 - Cross-cutting ownership dependencies:
   - `Identity-bearing write authority` in `docs/architecture/system.md` treats `F-0004` as the provider contract for subject-state writes and bounded snapshots.
@@ -396,10 +416,12 @@ Tasks:
 
 ## 11. Progress & links
 
-- Status: `proposed` → `shaped` → `planned` → `done`
+- Status: `proposed` → `shaped` → `planned` → `done` → `shaped` → `done`
 - Issue: -
 - PRs:
   - -
+- Follow-up:
+  - Closed on 2026-03-24 by `AC-F0004-07` / `SL-F0004-06` implementation and verification.
 - Code:
   - `apps/core/src/runtime/runtime-lifecycle.ts`
   - `docs/architecture/system.md`
@@ -423,3 +445,5 @@ Tasks:
 - **v1.4 (2026-03-23):** `implementation` completed: subject-state schema/store/runtime wiring shipped, bounded snapshot + delta semantics landed in `packages/db`, the completed-tick path now commits subject-state atomically with episodes, restart/reload proof was added to fast tests and deployment-cell smoke, the beliefs snapshot index was realigned to the delivered query contract, and architecture terminology was updated to the delivered evidence-ref and subject-state contracts.
 - **v1.5 (2026-03-24):** `change-proposal`: aligned `F-0004` with the repo-level identity-bearing write-authority matrix by making `SubjectStateStore` the explicit sole writer for `psm_json`, `goals`, `beliefs`, `entities` and `relationships`, while keeping narrative/memetic and other future cognition surfaces outside this delivered subject-state scope.
 - **v1.6 (2026-03-24):** `change-proposal`: added the missing schema-evolution layer to the delivered subject-state contract. The dossier now treats bounded snapshots as versioned via `subject_state_schema_version`, fixes the JSON-vs-normalized decision rule and makes `F-0004` the explicit owner of compatibility, migration and backfill semantics for subject-state surfaces.
+- **v1.7 (2026-03-24):** User-approved follow-up after debt audit: the versioned subject-state contract added in `v1.6` is not fully implemented yet. `F-0004` now carries explicit acceptance criterion `AC-F0004-07`, follow-up slice `SL-F0004-06`, AC-linked planned tests, and returns to `shaped` until `subjectStateSchemaVersion` is surfaced in the bounded snapshot API for downstream consumers.
+- **v1.8 (2026-03-24):** Implemented `SL-F0004-06`: `loadSubjectStateSnapshot(...)` now surfaces canonical `subjectStateSchemaVersion` from the singleton anchor, provider-side store/restart verification closes `AC-F0004-07`, and downstream boot/runtime consumers use the bounded versioned contract without raw row re-reads; status advanced back to `done`.

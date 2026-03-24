@@ -280,9 +280,15 @@ const normalizeTimelineEventRow = (row: QueryResultRow): RuntimeTimelineEventRow
 
 const ensureAgentStateSeed = async (db: RuntimeDbExecutor, agentId: string): Promise<void> => {
   await db.query(
-    `insert into ${agentStateTable} (id, agent_id)
-     values (1, $1)
-     on conflict (id) do nothing`,
+    `insert into ${agentStateTable} (id, agent_id, schema_version)
+     values (
+       1,
+       $1,
+       (select schema_version from platform_bootstrap.schema_state where id = 1)
+     )
+     on conflict (id) do update
+     set agent_id = excluded.agent_id,
+         schema_version = coalesce(${agentStateTable}.schema_version, excluded.schema_version)`,
     [agentId],
   );
 };

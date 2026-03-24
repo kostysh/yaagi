@@ -62,7 +62,14 @@ const defaultAgentState = (): RuntimeAgentStateRow => ({
 });
 
 const toAgentStateRow = (state: HarnessState): RuntimeAgentStateRow[] =>
-  state.agentState ? [structuredClone(state.agentState)] : [];
+  state.agentState
+    ? [
+        {
+          ...structuredClone(state.agentState),
+          subjectStateSchemaVersion: state.agentState.schemaVersion,
+        } as RuntimeAgentStateRow,
+      ]
+    : [];
 
 const sortGoals = (goals: SubjectGoal[]): SubjectGoal[] =>
   [...goals].sort((left, right) => {
@@ -192,11 +199,13 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
       return { rows: [] };
     }
 
-    if (sql.includes('insert into polyphony_runtime.agent_state (id, agent_id)')) {
+    if (sql.includes('insert into polyphony_runtime.agent_state')) {
       if (!state.agentState) {
         state.agentState = defaultAgentState();
         const maybeAgentId = typeof params[0] === 'string' ? params[0] : 'polyphony-core';
         state.agentState.agentId = maybeAgentId;
+      } else if (!state.agentState.schemaVersion) {
+        state.agentState.schemaVersion = defaultAgentState().schemaVersion;
       }
       return { rows: [] };
     }

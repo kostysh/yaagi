@@ -44,10 +44,10 @@ type LifecycleController = {
 };
 type AgentStateStore = {
   getLastStableSnapshotId(): Promise<string | null>;
+  getSubjectStateSchemaVersion(): Promise<string | null>;
   setBootState(nextValue: BootCompletedPayload): Promise<void>;
   setDevelopmentFreeze(nextValue: boolean): Promise<void>;
   setLastStableSnapshotId(nextValue: string): Promise<void>;
-  setSchemaVersion(nextValue: string): Promise<void>;
 };
 type SnapshotStore = {
   getLatestValidSnapshotId(preferredSnapshotId: string | null): Promise<string | null>;
@@ -113,9 +113,9 @@ const DEFAULT_AGENT_STATE: AgentStateStore = {
     'setBootState',
     'setDevelopmentFreeze',
     'setLastStableSnapshotId',
-    'setSchemaVersion',
   ]) as unknown as Omit<AgentStateStore, 'getLastStableSnapshotId'>),
   getLastStableSnapshotId: () => Promise.resolve(null),
+  getSubjectStateSchemaVersion: () => Promise.resolve(null),
 };
 const DEFAULT_SNAPSHOT_STORE: SnapshotStore = {
   getLatestValidSnapshotId: () => Promise.resolve(null),
@@ -147,6 +147,11 @@ const summarizeDependencyResults = (
     requiredForNormal: result.requiredForNormal,
     ...(result.detail ? { detail: result.detail } : {}),
   }));
+
+const isSupportedSubjectStateSchemaVersion = (
+  subjectStateSchemaVersion: string | null,
+  expectedSchemaVersion: string,
+): boolean => subjectStateSchemaVersion === expectedSchemaVersion;
 
 export class ConstitutionalBootService {
   readonly expectedSchemaVersion: string;
@@ -244,10 +249,18 @@ export class ConstitutionalBootService {
       dependencyProbes: this.dependencyProbes,
       dependencyOrder: constitution.requiredDependencies,
     });
-    const { selectedMode, degradedDependencies } = selectStartupMode({
+    let { selectedMode, degradedDependencies } = selectStartupMode({
       dependencyResults,
       allowedDegradedDependencies: constitution.allowedDegradedDependencies,
     });
+
+    const subjectStateSchemaVersion = await this.agentState.getSubjectStateSchemaVersion();
+    if (
+      !isSupportedSubjectStateSchemaVersion(subjectStateSchemaVersion, this.expectedSchemaVersion)
+    ) {
+      selectedMode = STARTUP_MODE.RECOVERY;
+      degradedDependencies = [...degradedDependencies];
+    }
 
     const preferredSnapshotId = await this.agentState.getLastStableSnapshotId();
     const rollbackSnapshotId =
@@ -277,6 +290,16 @@ export class ConstitutionalBootService {
 
     await this.agentState.setDevelopmentFreeze(true);
 
+    const subjectStateSchemaVersion = await this.agentState.getSubjectStateSchemaVersion();
+    if (
+      !isSupportedSubjectStateSchemaVersion(subjectStateSchemaVersion, this.expectedSchemaVersion)
+    ) {
+      return this.failRecovery(
+        'subject-state compatibility recovery is unavailable without a canonical restore/backfill contract',
+        preflight.rollbackSnapshotId,
+      );
+    }
+
     if (!preflight.rollbackSnapshotId) {
       return this.failRecovery('no valid stable snapshot available for recovery', null);
     }
@@ -294,7 +317,6 @@ export class ConstitutionalBootService {
       await this.bodyGateway.restoreGitTag(snapshot.gitTag);
       await this.modelRegistry.restoreProfileMap(snapshot.modelProfileMapJson);
       await this.agentState.setLastStableSnapshotId(snapshot.snapshotId);
-      await this.agentState.setSchemaVersion(snapshot.schemaVersion);
 
       const recoveryResult: RecoveryResult = {
         attempted: true,

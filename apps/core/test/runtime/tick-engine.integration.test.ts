@@ -75,3 +75,38 @@ void test('AC-F0003-01 keeps runtime fail-closed when stale-tick reclaim fails d
   await assert.rejects(runtime.start(), /reclaim failed/);
   assert.equal(reclaimAttempts, 2);
 });
+
+void test('AC-F0003-08 does not create wake or reactive ticks from an unsupported subject-state snapshot', async () => {
+  let startTickCalls = 0;
+
+  const store: TickRuntimeStore = {
+    initialize: () =>
+      Promise.reject(
+        new Error('unsupported subject-state schema version 2026-03-01; expected 2026-03-24'),
+      ),
+    startTick: () => {
+      startTickCalls += 1;
+      return Promise.resolve({ accepted: true, tickId: 'tick-should-not-exist' });
+    },
+    finishTick: () => Promise.resolve(),
+    reclaimStaleTicks: () => Promise.resolve(0),
+  };
+
+  const runtime = createTickRuntime({ store });
+
+  await assert.rejects(runtime.start(), /unsupported subject-state schema version/);
+
+  const afterFailedStart = await runtime.requestTick({
+    requestId: 'reactive-blocked-after-subject-state-mismatch',
+    kind: TICK_KIND.REACTIVE,
+    trigger: TICK_TRIGGER.SYSTEM,
+    requestedAt: '2026-03-24T00:00:01Z',
+    payload: {},
+  });
+
+  assert.deepEqual(afterFailedStart, {
+    accepted: false,
+    reason: 'boot_inactive',
+  });
+  assert.equal(startTickCalls, 0);
+});

@@ -37,6 +37,7 @@ type HarnessOptions = {
   constitutionVersion?: string;
   constitutionSchemaVersion?: string;
   expectedSchemaVersion?: string;
+  subjectStateSchemaVersion?: string | null;
   requiredDependencies?: DependencyId[];
   allowedDegradedDependencies?: string[];
   dependencyResults?: Partial<Record<DependencyId, DependencyProbeResult | Error>>;
@@ -63,9 +64,9 @@ type Harness = {
     lastStableSnapshotId: string;
     snapshotId?: string | null;
     getLastStableSnapshotId(): Promise<string | null>;
+    getSubjectStateSchemaVersion(): Promise<string | null>;
     setDevelopmentFreeze(nextValue: boolean): Promise<void>;
     setLastStableSnapshotId(nextValue: string): Promise<void>;
-    setSchemaVersion(nextValue: string): Promise<void>;
     setBootState(nextValue: BootCompletedPayload): Promise<void>;
   };
   restoredTags: string[];
@@ -162,7 +163,8 @@ export async function createBootHarness(options: HarnessOptions = {}): Promise<H
 
   const agentState = {
     mode: null as string | null,
-    schemaVersion: null as string | null,
+    schemaVersion:
+      options.subjectStateSchemaVersion ?? options.expectedSchemaVersion ?? DEFAULT_SCHEMA_VERSION,
     degradedDependencies: [] as DependencyId[],
     dependencyResults: [] as BootCompletedPayload['dependencyResults'],
     developmentFreeze: false,
@@ -171,16 +173,15 @@ export async function createBootHarness(options: HarnessOptions = {}): Promise<H
     getLastStableSnapshotId() {
       return resolved(this.lastStableSnapshotId);
     },
+    getSubjectStateSchemaVersion() {
+      return resolved(this.schemaVersion);
+    },
     setDevelopmentFreeze(nextValue: boolean) {
       this.developmentFreeze = nextValue;
       return resolvedVoid();
     },
     setLastStableSnapshotId(nextValue: string) {
       this.lastStableSnapshotId = nextValue;
-      return resolvedVoid();
-    },
-    setSchemaVersion(nextValue: string) {
-      this.schemaVersion = nextValue;
       return resolvedVoid();
     },
     setBootState(nextValue: BootCompletedPayload) {

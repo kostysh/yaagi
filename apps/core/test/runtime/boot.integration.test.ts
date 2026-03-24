@@ -79,3 +79,23 @@ void test('AC-F0001-05 allows degraded boot only for policy-approved dependency 
     await harness.cleanup();
   }
 });
+
+void test('AC-F0001-06 refuses activation when subject-state schema version is unsupported', async () => {
+  const harness = await createBootHarness({
+    subjectStateSchemaVersion: '2026-03-01',
+    snapshots: [],
+  });
+
+  try {
+    const result = await harness.service.boot();
+
+    assert.equal(result.ok, false);
+    assert.equal(harness.lifecycle.state, 'inactive');
+    assert.equal(harness.scheduler.startCalls, 0);
+    assert.equal(harness.tickEngine.startCalls, 0);
+    assert.equal(harness.sensorAdapter.startCalls, 0);
+    assert.equal(harness.events.some(isBootEvent), false);
+  } finally {
+    await harness.cleanup();
+  }
+});

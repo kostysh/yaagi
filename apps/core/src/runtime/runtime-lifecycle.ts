@@ -209,7 +209,13 @@ const createDbBackedTickRuntimeStore = (
     withRuntimeClient(config.postgresUrl, async (client) => {
       const store = createTickRuntimeStore(client);
       await ensureRuntimeAgentStateRow(client);
-      await store.loadSubjectStateSnapshot();
+      const snapshot = await store.loadSubjectStateSnapshot();
+      const expectedSchemaVersion = await readSchemaVersion(client);
+      if (snapshot.subjectStateSchemaVersion !== expectedSchemaVersion) {
+        throw new Error(
+          `unsupported subject-state schema version ${snapshot.subjectStateSchemaVersion}; expected ${expectedSchemaVersion}`,
+        );
+      }
       if (options.ensureBaselineProfiles) {
         await options.ensureBaselineProfiles();
       }
@@ -557,6 +563,19 @@ const createAgentStatePort = (config: CoreRuntimeConfig) => ({
     });
   },
 
+  async getSubjectStateSchemaVersion(): Promise<string | null> {
+    return await withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createTickRuntimeStore(client);
+      const snapshot = await store.loadSubjectStateSnapshot({
+        goalLimit: 0,
+        beliefLimit: 0,
+        entityLimit: 0,
+        relationshipLimit: 0,
+      });
+      return snapshot.subjectStateSchemaVersion;
+    });
+  },
+
   async setBootState(nextValue: {
     mode: RuntimeMode;
     schemaVersion: string;
@@ -593,18 +612,6 @@ const createAgentStatePort = (config: CoreRuntimeConfig) => ({
       await client.query(
         `update polyphony_runtime.agent_state
          set last_stable_snapshot_id = $1,
-             updated_at = now()
-         where id = 1`,
-        [nextValue],
-      );
-    });
-  },
-
-  async setSchemaVersion(nextValue: string): Promise<void> {
-    await withRuntimeClient(config.postgresUrl, async (client) => {
-      await client.query(
-        `update polyphony_runtime.agent_state
-         set schema_version = $1,
              updated_at = now()
          where id = 1`,
         [nextValue],

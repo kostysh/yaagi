@@ -15,6 +15,7 @@ links:
     - "docs/architecture/system.md"
     - "docs/features/F-0001-constitutional-boot-recovery.md"
     - "docs/features/F-0002-canonical-monorepo-deployment-cell.md"
+    - "docs/features/F-0004-subject-state-kernel-and-memory-model.md"
     - "docs/features/F-0008-baseline-model-router-and-organ-profiles.md"
     - "docs/adr/ADR-2026-03-19-boot-dependency-contract.md"
     - "docs/adr/ADR-2026-03-19-canonical-runtime-toolchain.md"
@@ -70,6 +71,7 @@ links:
 - **AC-F0003-05:** Если тик завершился ошибкой или bounded cancel, runtime помечает его terminal state, освобождает активный lease, записывает failure context в timeline/event sink и оставляет scheduler способным поставить следующий eligible tick без ручного ремонта БД.
 - **AC-F0003-06:** Runtime фиксирует канонический contract для tick kinds `reactive`, `deliberative`, `contemplative`, `consolidation`, `developmental` и `wake`; в scope этой фичи минимально delivered set обязателен как `wake` после boot handoff и `reactive` для явных `system` / `scheduler` requests, а запрос любого другого kind до поставки его prerequisite seam должен завершаться явным `unsupported_tick_kind` результатом без создания active tick или episode.
 - **AC-F0003-07:** Если `core` падает после lease acquisition или после записи `started`, но до terminal outcome, runtime при следующем старте выполняет bounded stale-tick reclaim pass: переводит такой tick в terminal failure state, очищает `agent_state.current_tick`, пишет failure event envelope и разблокирует постановку следующего eligible tick без ручного вмешательства.
+- **AC-F0003-08:** Runtime initialization/admission consumes the versioned bounded subject-state snapshot from `F-0004` and refuses startup/admission on unsupported `subjectStateSchemaVersion`, returning control to boot/recovery without partially loading state or creating/continuing active ticks.
 
 ## 4. Non-functional requirements (NFR)
 
@@ -254,6 +256,20 @@ Tasks:
 - **T-F0003-10:** Implement `reclaimStaleTicks()` to fail unfinished ticks, clear `agent_state.current_tick` and release blocked admission after restart. Covers: AC-F0003-07.
 - **T-F0003-11:** Add deployment-cell smoke scenarios for boot-to-wake startup and stale-tick reclaim after forced restart. Covers: AC-F0003-07.
 
+### Slice SL-F0003-06: Versioned snapshot admission guard
+Delivers: runtime-side refusal of unsupported subject-state snapshot versions before startup/admission can create or continue active ticks.
+Covers: AC-F0003-08
+Verification: `integration`, `smoke`
+Exit criteria:
+- Runtime initialization validates `subjectStateSchemaVersion` before active tick admission.
+- Unsupported versions block startup/admission without creating ticks or episodes.
+- Supported versions preserve the delivered wake/reactive baseline without introducing schema ownership into the runtime seam.
+Dependencies:
+- This slice depends on `SL-F0004-06` surfacing `subjectStateSchemaVersion`; it must be kept aligned with `SL-F0001-05` so boot/recovery remains the first compatibility gate.
+Tasks:
+- **T-F0003-12:** Extend runtime initialization/admission to validate `subjectStateSchemaVersion` from the canonical bounded snapshot and refuse activation/admission on unsupported versions. Covers: AC-F0003-08.
+- **T-F0003-13:** Add AC-linked integration and deployment-cell verification that unsupported `subjectStateSchemaVersion` blocks runtime activation/admission without creating ticks or episodes. Covers: AC-F0003-08.
+
 ## 8. Test plan & Coverage map
 
 | AC ID | Test reference | Status |
@@ -265,6 +281,7 @@ Tasks:
 | AC-F0003-05 | `apps/core/test/runtime/tick-failure.integration.test.ts` → `test("AC-F0003-05 releases the active lease and records failure context after a failed tick")` | done |
 | AC-F0003-06 | `apps/core/test/runtime/tick-kinds.contract.test.ts` → `test("AC-F0003-06 delivers wake and reactive as the phase-0 supported tick kinds and rejects the rest explicitly")` | done |
 | AC-F0003-07 | `apps/core/test/runtime/stale-tick-reclaim.integration.test.ts` → `test("AC-F0003-07 reclaims stale active ticks after restart and clears agent_state.current_tick")`; smoke in `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0003-07 reclaims stale active ticks after restart and clears agent_state.current_tick")` | done |
+| AC-F0003-08 | `apps/core/test/runtime/agent-state-handoff.integration.test.ts` → `test("AC-F0003-08 refuses runtime activation when subject-state schema version is unsupported")`; `apps/core/test/runtime/tick-engine.integration.test.ts` → `test("AC-F0003-08 does not create wake or reactive ticks from an unsupported subject-state snapshot")`; shared startup fail-closed smoke proof in `infra/docker/deployment-cell.smoke.ts` | done |
 
 План верификации:
 
@@ -294,10 +311,12 @@ Tasks:
 
 ## 10. Progress & links
 
-- Status: `proposed` → `shaped` → `planned` → `done`
+- Status: `proposed` → `shaped` → `planned` → `done` → `shaped` → `done`
 - Issue: -
 - PRs:
   - -
+- Follow-up:
+  - Closed on 2026-03-24 by `AC-F0003-08` / `SL-F0003-06` implementation and verification.
 - Code:
   - `apps/core/src/platform/core-runtime.ts`
   - `apps/core/src/runtime/index.ts`
@@ -332,3 +351,5 @@ Tasks:
 - **v1.7 (2026-03-24):** `change-proposal`: aligned the dossier with the repo-level identity-bearing write-authority matrix. `F-0003` now states explicitly that it owns admission, lease discipline and the active-tick continuity bridge only, while subject-state writes stay behind `F-0004` and later cognition/governor surfaces do not inherit generic runtime write authority.
 - **v1.8 (2026-03-24):** `change-proposal`: aligned the runtime dossier with the versioned subject-state contract. `F-0003` now states explicitly that it consumes bounded snapshots carrying `subject_state_schema_version`, refuses incompatible versions instead of improvising schema coercion, and keeps schema ownership plus migration/backfill policy in `F-0004`.
 - **v1.9 (2026-03-24):** `change-proposal`: aligned `F-0003` with the architecture-level baseline router invariants. The dossier now states explicitly that runtime consumes router selection but remains the owner of admission/execution, and that structured routing refusal is a valid pre-admission runtime outcome rather than a hidden fallback path.
+- **v1.10 (2026-03-24):** User-approved follow-up after debt audit: the versioned subject-state admission guard promised in `v1.8` is not implemented yet. `F-0003` now carries explicit acceptance criterion `AC-F0003-08`, follow-up slice `SL-F0003-06`, AC-linked planned verification and returns to `shaped` until runtime rejects unsupported subject-state snapshot versions before activation/admission.
+- **v1.11 (2026-03-24):** Implemented `SL-F0003-06`: runtime initialization now rejects unsupported bounded subject-state versions before wake/reactive admission, no active ticks are created on mismatch, and AC-linked integration plus deployment-cell smoke verification closes `AC-F0003-08`; status advanced back to `done`.

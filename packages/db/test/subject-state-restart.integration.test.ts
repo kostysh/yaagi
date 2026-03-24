@@ -88,3 +88,37 @@ void test('AC-F0004-06 reloads the last committed subject-state after restart wi
     ['goal-restart'],
   );
 });
+
+void test('AC-F0004-07 preserves subjectStateSchemaVersion across restart reload', async () => {
+  const firstProcess = createSubjectStateDbHarness({
+    seed: {
+      agentState: {
+        id: 1,
+        agentId: 'polyphony-core',
+        mode: 'normal',
+        schemaVersion: '2026-03-24',
+        bootStateJson: {},
+        currentTickId: null,
+        currentModelProfileId: null,
+        lastStableSnapshotId: null,
+        psmJson: {},
+        resourcePostureJson: {},
+        developmentFreeze: false,
+        updatedAt: '2026-03-24T00:00:00.000Z',
+      },
+    },
+  });
+  const secondProcess = createSubjectStateDbHarness({
+    seed: structuredClone(firstProcess.state),
+  });
+  const secondStore = createTickRuntimeStore(secondProcess.db);
+
+  const snapshot = await secondStore.loadSubjectStateSnapshot({
+    goalLimit: 0,
+    beliefLimit: 0,
+    entityLimit: 0,
+    relationshipLimit: 0,
+  });
+
+  assert.equal(snapshot.subjectStateSchemaVersion, '2026-03-24');
+});

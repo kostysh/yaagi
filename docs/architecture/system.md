@@ -2139,10 +2139,10 @@ Homeostat должен иметь не только метрики, но и де
 
 | Architecture area | Canonical owner | Status | Note on missing work |
 |---|---|---|---|
-| Boot/recovery boundary | `F-0001` | `done` | Constitutional boot/recovery delivered; richer incident/governance reactions remain future-owned. |
+| Boot/recovery boundary | `F-0001` | `done` | Constitutional boot/recovery now enforces bounded subject-state compatibility before active handoff and stays fail-closed until a future canonical subject-state restore/backfill contract exists. |
 | Platform substrate, deployment cell and verification baseline | `F-0002`, `F-0006`, `F-0007` | `done` | Phase-0 cell, quality gates and deterministic smoke are delivered; mature hardening and richer CI/CD remain separate future seams. |
-| Tick runtime and continuity bridge | `F-0003` | `done` | Wake/reactive baseline is delivered; richer tick families and downstream lifecycle owners remain backlog-owned. |
-| Subject-state kernel and versioned bounded snapshot | `F-0004` | `done` | Canonical subject-state store is delivered; narrative/memetic and richer cognition surfaces remain outside this seam. |
+| Tick runtime and continuity bridge | `F-0003` | `done` | Runtime admission/startup now rejects unsupported bounded subject-state versions before wake/reactive activation, keeping continuity fail-closed on mismatch. |
+| Subject-state kernel and versioned bounded snapshot | `F-0004` | `done` | Canonical subject-state store now exposes `subjectStateSchemaVersion` in the bounded snapshot API for downstream compatibility checks. |
 | Perception buffer and baseline adapters | `F-0005` | `done` | Baseline stimulus intake is delivered; richer policies and adapters remain future-owned. |
 | Baseline model router and profile continuity | `F-0008` | `done` | Baseline router invariants are delivered; expanded model ecology and specialist organs remain future seams. |
 | Context Builder and structured decision harness | `CF-017` | `confirmed` | Backlog owner exists, but the harness is not intaken or delivered yet. |

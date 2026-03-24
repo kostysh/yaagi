@@ -14,6 +14,7 @@ links:
   docs:
     - "docs/architecture/system.md"
     - "docs/features/F-0002-canonical-monorepo-deployment-cell.md"
+    - "docs/features/F-0004-subject-state-kernel-and-memory-model.md"
 ---
 
 # F-0001 Конституционный контур запуска и восстановления
@@ -55,9 +56,10 @@ links:
 
 - **AC-F0001-01:** Boot sequence загружает `constitution.yaml` из read-only `seed` boundary, валидирует schema version и проверяет целостность both tracked `seed/*` inputs and materialized writable runtime volumes до инициализации scheduler, tick engine или sensor adapters; при провале любой из этих проверок переход к активному runtime запрещён.
 - **AC-F0001-02:** Boot sequence выполняет health checks PostgreSQL и model services, объявленных текущим platform substrate/constitution manifest, вычисляет startup mode по policy-таблице (`normal`, `degraded`, `recovery`) и записывает boot event в timeline с полями `mode`, `dependency_results`, `schema_version` и `snapshot_id|null`.
-- **AC-F0001-03:** Если policy требует `recovery`, runtime до старта новых тиков выставляет developmental freeze, восстанавливает `git_tag`, `model_profile_map_json` и `schema_version` из последнего валидного `stable_snapshots` entry и публикует recovery result event с итогом `recovered`.
+- **AC-F0001-03:** Если policy требует `recovery`, runtime до старта новых тиков выставляет developmental freeze, восстанавливает `git_tag` и `model_profile_map_json` из последнего валидного `stable_snapshots` entry, фиксирует использованный snapshot pointer и публикует recovery result event с итогом `recovered`; `schema_version` в snapshot manifest остаётся compatibility metadata for validation, not a boot-owned write target.
 - **AC-F0001-04:** Если recovery обязателен, но подходящий stable snapshot отсутствует, не проходит manifest validation или rollback завершается ошибкой, runtime остаётся в неактивном lifecycle-state, не запускает scheduler/tick engine и публикует recovery result event с итогом `failed`.
 - **AC-F0001-05:** При режиме `degraded` runtime может продолжить старт только если PostgreSQL доступен, schema/version/volumes валидны и policy явно разрешает отсутствие части model services без rollback; в boot event и текущем lifecycle state фиксируется список деградировавших зависимостей.
+- **AC-F0001-06:** До handoff в активный runtime boot/recovery читает canonical `subjectStateSchemaVersion` from the bounded subject-state contract owned by `F-0004` and validates it as `supported` / `unsupported`; unsupported version must either trigger the documented recovery path against a compatible snapshot or keep startup fail-closed without partial activation.
 
 ## 4. Non-functional requirements (NFR)
 
@@ -221,12 +223,27 @@ Tasks:
 - **T-F0001-08:** Реализовать `recover()` с developmental freeze, rollback на snapshot refs и публикацией `system.recovery.completed`. Covers: AC-F0001-03.
 - **T-F0001-09:** Добавить fail-closed guard и incident logging в `development_ledger` для missing/invalid snapshot и rollback failure. Covers: AC-F0001-04.
 
+### Slice SL-F0001-05: Subject-state compatibility gate before active handoff
+Delivers: explicit preflight/recovery validation of the versioned bounded subject-state contract before boot hands control to the active runtime.
+Covers: AC-F0001-06
+Verification: `integration`, `smoke`
+Exit criteria:
+- Boot/recovery reads canonical subject-state compatibility metadata before runtime activation.
+- Unsupported `subjectStateSchemaVersion` never reaches active handoff or partial runtime activation.
+- Compatible versions continue through the delivered startup/recovery policy without changing schema ownership.
+Dependencies:
+- This slice depends on `SL-F0004-06` surfacing `subjectStateSchemaVersion` in the bounded snapshot contract.
+Tasks:
+- **T-F0001-10:** Extend preflight/recovery validation to consume canonical `subjectStateSchemaVersion` and classify it as `supported` / `unsupported` before active handoff. Covers: AC-F0001-06.
+- **T-F0001-11:** Add AC-linked integration and containerized startup verification for supported versus unsupported `subjectStateSchemaVersion`, including fail-closed startup when no compatible recovery target exists. Covers: AC-F0001-06.
+
 ## 8. Suggested issue titles
 
 - `F-0001 / SL-F0001-01 Constitutional preflight skeleton` → [SL-F0001-01](#slice-sl-f0001-01-constitutional-preflight-skeleton)
 - `F-0001 / SL-F0001-02 Dependency probes and startup mode policy` → [SL-F0001-02](#slice-sl-f0001-02-dependency-probes-and-startup-mode-policy)
 - `F-0001 / SL-F0001-03 Boot event publication and activation handoff` → [SL-F0001-03](#slice-sl-f0001-03-boot-event-publication-and-activation-handoff)
 - `F-0001 / SL-F0001-04 Recovery rollback and fail-closed startup` → [SL-F0001-04](#slice-sl-f0001-04-recovery-rollback-and-fail-closed-startup)
+- `F-0001 / SL-F0001-05 Subject-state compatibility gate before active handoff` → [SL-F0001-05](#slice-sl-f0001-05-subject-state-compatibility-gate-before-active-handoff)
 
 ## 9. Test plan & Coverage map
 
@@ -237,6 +254,7 @@ Tasks:
 | AC-F0001-03 | `apps/core/test/runtime/recovery.integration.test.ts` → `test("AC-F0001-03 restores git and model pointers from the last valid stable snapshot before activation")` | done |
 | AC-F0001-04 | `apps/core/test/runtime/recovery.integration.test.ts` → `test("AC-F0001-04 leaves runtime inactive when recovery target is missing or invalid")` | done |
 | AC-F0001-05 | `apps/core/test/runtime/boot.integration.test.ts` → `test("AC-F0001-05 allows degraded boot only for policy-approved dependency loss")` | done |
+| AC-F0001-06 | `apps/core/test/runtime/boot.integration.test.ts` → `test("AC-F0001-06 refuses activation when subject-state schema version is unsupported")`; `apps/core/test/runtime/recovery.integration.test.ts` → `test("AC-F0001-06 keeps runtime fail-closed when subject-state compatibility cannot be restored by boot recovery alone")`; `apps/core/test/platform/containerized-boot.integration.test.ts` → `test("AC-F0001-06 preserves boot fail-closed behavior for unsupported subject-state schema version inside the containerized startup path")`; shared startup fail-closed smoke proof in `infra/docker/deployment-cell.smoke.ts` | done |
 
 План тестов:
 
@@ -259,17 +277,21 @@ Tasks:
 
 ## 11. Progress & links
 
-- Status: `done`
+- Status: `done` → `shaped` → `done`
 - Issue: -
 - PRs:
   - -
+- Follow-up:
+  - Closed on 2026-03-24 by `AC-F0001-06` / `SL-F0001-05` implementation and verification.
 - Code:
   - `apps/core/src/boot/constitutional-boot-service.ts`
   - `apps/core/src/boot/constitution-loader.ts`
+  - `apps/core/src/runtime/runtime-lifecycle.ts`
   - `apps/core/testing/boot-harness.ts`
   - `apps/core/test/runtime/boot.integration.test.ts`
   - `apps/core/test/runtime/recovery.integration.test.ts`
   - `apps/core/test/platform/containerized-boot.integration.test.ts`
+  - `infra/docker/deployment-cell.smoke.ts`
   - `seed/constitution/constitution.yaml`
 
 ## 12. Change log
@@ -284,3 +306,5 @@ Tasks:
 - **v1.7 (2026-03-22):** Realigned the constitutional boot contract to the delivered `seed -> materialized runtime` platform boundary: the constitution manifest now lives under `seed/constitution`, required volume checks cover both tracked seed inputs and writable runtime volumes, and the verification plan explicitly includes the containerized seed/materialization startup path.
 - **v1.8 (2026-03-24):** `change-proposal`: aligned `F-0001` with the repo-level identity-bearing write-authority matrix so boot/recovery now states its narrow ownership explicitly: it writes only startup continuity fields and recovery incidents, while subject-state, router-owned profile continuity and future cognition/governance surfaces remain outside boot write authority.
 - **v1.9 (2026-03-24):** `change-proposal`: aligned boot/recovery with the versioned subject-state contract. `F-0001` now states explicitly that it validates `subject_state_schema_version` compatibility during preflight/recovery and reacts with recovery or fail-closed startup on mismatch, while schema migration/backfill ownership remains in `F-0004`.
+- **v1.10 (2026-03-24):** User-approved follow-up after debt audit: the compatibility gate promised in `v1.9` is not implemented yet. `F-0001` now carries explicit acceptance criterion `AC-F0001-06`, follow-up slice `SL-F0001-05`, AC-linked planned verification and returns to `shaped` until boot/recovery enforces versioned subject-state compatibility before active handoff.
+- **v1.11 (2026-03-24):** Implemented `SL-F0001-05`: boot preflight now reads the canonical bounded `subjectStateSchemaVersion`, unsupported versions stay fail-closed before active handoff unless a future canonical subject-state restore/backfill contract exists, and AC-linked boot/recovery/containerized-boot plus deployment-cell smoke verification closes `AC-F0001-06`; status advanced back to `done`.

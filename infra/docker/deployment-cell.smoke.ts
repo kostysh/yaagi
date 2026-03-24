@@ -50,19 +50,46 @@ truncate table
   polyphony_runtime.ticks
 restart identity cascade;
 
-update polyphony_runtime.agent_state
-set agent_id = 'polyphony-core',
-    mode = 'inactive',
-    schema_version = (select schema_version from platform_bootstrap.schema_state where id = 1),
-    boot_state_json = '{}'::jsonb,
-    current_tick_id = null,
-    current_model_profile_id = null,
-    last_stable_snapshot_id = null,
-    psm_json = '{}'::jsonb,
-    resource_posture_json = '{}'::jsonb,
-    development_freeze = false,
-    updated_at = now()
-where id = 1;
+insert into polyphony_runtime.agent_state (
+  id,
+  agent_id,
+  mode,
+  schema_version,
+  boot_state_json,
+  current_tick_id,
+  current_model_profile_id,
+  last_stable_snapshot_id,
+  psm_json,
+  resource_posture_json,
+  development_freeze,
+  updated_at
+)
+values (
+  1,
+  'polyphony-core',
+  'inactive',
+  (select schema_version from platform_bootstrap.schema_state where id = 1),
+  '{}'::jsonb,
+  null,
+  null,
+  null,
+  '{}'::jsonb,
+  '{}'::jsonb,
+  false,
+  now()
+)
+on conflict (id) do update
+set agent_id = excluded.agent_id,
+    mode = excluded.mode,
+    schema_version = excluded.schema_version,
+    boot_state_json = excluded.boot_state_json,
+    current_tick_id = excluded.current_tick_id,
+    current_model_profile_id = excluded.current_model_profile_id,
+    last_stable_snapshot_id = excluded.last_stable_snapshot_id,
+    psm_json = excluded.psm_json,
+    resource_posture_json = excluded.resource_posture_json,
+    development_freeze = excluded.development_freeze,
+    updated_at = excluded.updated_at;
 `;
 
 async function compose(args: string[], options: ComposeOptions = {}) {
@@ -541,6 +568,37 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
 
     await prepareFreshRuntimeScenario();
     await t.test(
+      'AC-F0001-06 / AC-F0003-08 keeps deployment-cell startup fail-closed on unsupported subject-state schema version',
+      async () => {
+        await compose(['stop', 'core']);
+        await waitForPortToClose(defaultCoreHostPort);
+        await queryPostgres(runtimeResetSql);
+
+        await queryPostgres(`
+          update polyphony_runtime.agent_state
+          set schema_version = '2026-03-01',
+              updated_at = now()
+          where id = 1;
+        `);
+
+        await compose(['start', 'core']);
+        await assert.rejects(waitForHttp(coreHealthUrl(), 5_000, 250), /timeout waiting/);
+
+        assert.equal(
+          await queryPostgres(
+            "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'wake' and trigger_kind = 'boot';",
+          ),
+          '0',
+        );
+        assert.equal(
+          await queryPostgres('select mode from polyphony_runtime.agent_state where id = 1;'),
+          'inactive',
+        );
+      },
+    );
+
+    await prepareFreshRuntimeScenario();
+    await t.test(
       'AC-F0003-01 starts the mandatory wake tick only after constitutional activation',
       async () => {
         assert.equal(
@@ -930,13 +988,13 @@ void test('AC-F0007-01 reuses suite-scoped compose families instead of per-test 
   assert.equal(smokeLifecycleMetrics.baseFamilyTeardowns, 1);
   assert.equal(smokeLifecycleMetrics.telegramFamilyStarts, 1);
   assert.equal(smokeLifecycleMetrics.telegramFamilyTeardowns, 1);
-  assert.equal(smokeLifecycleMetrics.runtimeResets, 5);
+  assert.equal(smokeLifecycleMetrics.runtimeResets, 6);
 });
 
 void test('AC-F0007-02 restores clean post-bootstrap runtime state through deterministic resets between suite-scoped smoke scenarios', {
   concurrency: false,
 }, () => {
-  assert.equal(smokeLifecycleMetrics.runtimeResets, 5);
+  assert.equal(smokeLifecycleMetrics.runtimeResets, 6);
 });
 
 void test('AC-F0007-05 tears down suite-scoped smoke projects without orphaned docker resources', {

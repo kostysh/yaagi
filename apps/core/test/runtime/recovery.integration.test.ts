@@ -76,3 +76,30 @@ void test('AC-F0001-04 leaves runtime inactive when recovery target is missing o
     await harness.cleanup();
   }
 });
+
+void test('AC-F0001-06 keeps runtime fail-closed when subject-state compatibility cannot be restored by boot recovery alone', async () => {
+  const harness = await createBootHarness({
+    subjectStateSchemaVersion: '2026-03-01',
+  });
+
+  try {
+    const result = await harness.service.boot();
+
+    assert.equal(result.ok, false);
+    assert.equal(harness.agentState.developmentFreeze, true);
+    assert.deepEqual(harness.restoredTags, []);
+    assert.equal(harness.restoredProfileMaps.length, 0);
+    assert.equal(harness.scheduler.startCalls, 0);
+    assert.equal(harness.tickEngine.startCalls, 0);
+    assert.equal(harness.lifecycle.state, 'inactive');
+
+    const recoveryEvent = harness.events.find(isRecoveryEvent);
+    assert.ok(recoveryEvent);
+    assert.equal(recoveryEvent.payload.outcome, 'failed');
+
+    const bootEvent = harness.events.find(isBootEvent);
+    assert.equal(bootEvent, undefined);
+  } finally {
+    await harness.cleanup();
+  }
+});

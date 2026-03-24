@@ -70,6 +70,7 @@ void test('AC-F0004-01 uses PostgreSQL as the canonical subject-memory state ker
 
   const snapshot = await store.loadSubjectStateSnapshot();
 
+  assert.equal(snapshot.subjectStateSchemaVersion, '2026-03-23');
   assert.equal(snapshot.agentState.agentId, 'polyphony-core');
   assert.equal(snapshot.agentState.currentModelProfileId, 'model-fast@stable');
   assert.equal(snapshot.agentState.lastStableSnapshotId, 'snapshot-42');
@@ -111,6 +112,37 @@ void test('AC-F0004-02 reloads the singleton agent_state with identity-bearing f
   assert.equal(anchor.lastStableSnapshotId, 'snapshot-99');
   assert.deepEqual(anchor.psmJson, {});
   assert.deepEqual(anchor.resourcePostureJson, {});
+});
+
+void test('AC-F0004-07 surfaces subjectStateSchemaVersion in the bounded snapshot contract', async () => {
+  const harness = createSubjectStateDbHarness({
+    seed: {
+      agentState: {
+        id: 1,
+        agentId: 'polyphony-core',
+        mode: 'normal',
+        schemaVersion: '2026-03-24',
+        bootStateJson: {},
+        currentTickId: null,
+        currentModelProfileId: null,
+        lastStableSnapshotId: null,
+        psmJson: {},
+        resourcePostureJson: {},
+        developmentFreeze: false,
+        updatedAt: '2026-03-24T00:00:00.000Z',
+      },
+    },
+  });
+  const store = createTickRuntimeStore(harness.db);
+
+  const snapshot = await store.loadSubjectStateSnapshot({
+    goalLimit: 0,
+    beliefLimit: 0,
+    entityLimit: 0,
+    relationshipLimit: 0,
+  });
+
+  assert.equal(snapshot.subjectStateSchemaVersion, '2026-03-24');
 });
 
 void test('AC-F0004-04 assembles a bounded subjective snapshot without narrative or memetic prerequisites', async () => {
