@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-03-25T18:58:26.749Z",
+  "feature_id": "F-0012",
+  "dossier": "docs/features/F-0012-homeostat-and-operational-guardrails.md",
+  "step": "spec-compact",
+  "dossier_status": "shaped",
+  "current_commit": "be613cd0eff34b7e147918bd1f1791ff28192d75",
+  "verification_artifact": ".dossier/verification/F-0012/spec-compact-be613cd0eff3.json",
+  "review_artifact": ".dossier/reviews/F-0012/spec-compact-be613cd0eff3.json",
+  "review_fresh_for_commit": true,
+  "process_complete": true,
+  "blockers": [],
+  "next_step": "plan-slice"
+}

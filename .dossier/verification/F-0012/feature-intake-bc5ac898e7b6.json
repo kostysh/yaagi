@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "created_at": "2026-03-25T17:40:23.456Z",
+  "step": "feature-intake",
+  "feature_id": "F-0012",
+  "dossier": "docs/features/F-0012-homeostat-and-operational-guardrails.md",
+  "current_commit": "bc5ac898e7b6762a626691b087cae190b7436368",
+  "status": "pass",
+  "checks": [
+    {
+      "name": "sync-index",
+      "command": "node scripts/sync-index.mjs --root .",
+      "exit_code": 0,
+      "stdout": "[sync-index] docs/ssot/index.md already up to date (12 dossier(s)).\n",
+      "stderr": "",
+      "duration_ms": 37,
+      "status": "pass"
+    },
+    {
+      "name": "lint-dossiers",
+      "command": "node scripts/lint-dossiers.mjs --root .",
+      "exit_code": 0,
+      "stdout": "Found 0 error(s), 0 warning(s) across 12 dossier(s).\n",
+      "stderr": "",
+      "duration_ms": 36,
+      "status": "pass"
+    },
+    {
+      "name": "coverage-audit",
+      "command": "node scripts/coverage-audit.mjs --root . --orphans-scope auto --dossier docs/features/F-0012-homeostat-and-operational-guardrails.md",
+      "exit_code": 0,
+      "stdout": "Coverage audit: 1 dossier(s), 56 test file(s) scanned. Blocking missing: 0. Informational missing: 6. Orphans: 0 (scope: dossier).\n\n== docs/features/F-0012-homeostat-and-operational-guardrails.md ==\nStatus: proposed | coverage gate: deferred | AC count: 6\nInformational missing AC reference(s):\n- AC-F0012-01\n- AC-F0012-02\n- AC-F0012-03\n- AC-F0012-04\n- AC-F0012-05\n- AC-F0012-06\n",
+      "stderr": "",
+      "duration_ms": 34,
+      "status": "pass"
+    },
+    {
+      "name": "debt-audit",
+      "command": "node scripts/debt-audit.mjs --root . --changed-only",
+      "exit_code": 0,
+      "stdout": "Marker audit (debt-audit compatibility): 84 file(s) scanned.\nScope: explicit debt markers only; manual debt review is still required.\nNo unresolved debt markers found.\n",
+      "stderr": "",
+      "duration_ms": 68,
+      "status": "pass"
+    },
+    {
+      "name": "git-diff-check",
+      "command": "git diff --check",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_ms": 3,
+      "status": "pass"
+    }
+  ]
+}
