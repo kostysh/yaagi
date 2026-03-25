@@ -1,7 +1,7 @@
 ---
 id: F-0014
 title: Расширенная модельная экология и здоровье реестра
-status: shaped
+status: planned
 coverage_gate: deferred
 owners: ["@codex"]
 area: models
@@ -232,22 +232,38 @@ type ModelOrganHealthReportInput = {
 ### Slice SL-F0014-01: Expanded registry contract and optional organ catalog
 Delivers: canonical richer registry shape for optional organ families, capability metadata and explicit operational status without changing baseline boot requirements.
 Covers: AC-F0014-01, AC-F0014-02, AC-F0014-05
-Verification: `contract`, `db`
+Verification: `packages/contracts/test/models/expanded-registry.contract.test.ts`, `packages/db/test/models/expanded-registry-store.integration.test.ts`, `packages/db/test/models/registry-surface-split.integration.test.ts`
+Exit criteria:
+- Richer non-baseline profiles persist through one canonical contract/store path without introducing a shadow registry or widening baseline writer authority.
+- Optional organ families expose explicit capability, service identity and availability metadata before any runtime consumer attempts to route through them.
+- Registry reads needed by neighbouring seams can distinguish baseline-role rows from richer-role rows through explicit adapter/store boundaries instead of ad hoc role filtering.
 
 ### Slice SL-F0014-02: Source diagnostics for operator projection and reporting input
-Delivers: canonical richer source diagnostics for bounded `/models` projection and explicit report input contract for future `CF-015`, without turning this seam into the reporting owner.
+Delivers: canonical richer source diagnostics for bounded `/models` projection and explicit report input contract for future `CF-015`, plus the linked realignment of the already delivered `F-0013` `/models` boundary onto a bounded `F-0014` source adapter.
 Covers: AC-F0014-01, AC-F0014-03, AC-F0014-06, AC-F0014-07
-Verification: `contract`, `integration`
+Verification: `apps/core/test/models/registry-health.integration.test.ts`, `apps/core/test/models/ownership-boundary.contract.test.ts`, `apps/core/test/platform/operator-models.integration.test.ts`
+Exit criteria:
+- Richer source diagnostics are materialized canonically even when `F-0013` still publishes only a bounded subset of them.
+- The delivered `/models` route in `F-0013` reads richer summaries only through an explicit `F-0014` adapter and never reaches into raw source tables.
+- `F-0012` remains an indirect consumer through `CF-015` report inputs only; this slice does not create a direct Homeostat read path over richer source state.
 
 ### Slice SL-F0014-03: Explicit fallback and quarantine policy
 Delivers: durable fallback/quarantine semantics that extend richer ecology while preserving baseline structured refusal and `selection != admission`.
 Covers: AC-F0014-04, AC-F0014-05, AC-F0014-06, AC-F0014-07
-Verification: `contract`, `integration`
+Verification: `apps/core/test/models/richer-fallback.contract.test.ts`, `apps/core/test/models/ownership-boundary.contract.test.ts`, `apps/core/test/runtime/model-router.integration.test.ts`
+Exit criteria:
+- Fallback and quarantine links are durable, explicit and auditable rather than inferred from incidental runtime heuristics.
+- Baseline router invariants remain unchanged: unsupported richer roles still fail explicitly, and richer fallback cannot silently collapse into baseline remap.
+- The already delivered `F-0008` selection/read path is realigned to coexist with richer rows in one physical registry family without seizing ownership of those richer rows.
 
 ### Slice SL-F0014-04: Runtime/deployment closure for optional organ services
 Delivers: optional service wiring, degraded/unavailable startup semantics and final runtime/smoke closure when richer services affect runtime posture.
 Covers: AC-F0014-02, AC-F0014-03, AC-F0014-05
-Verification: `integration`, `smoke-if-runtime-path-changes`
+Verification: `apps/core/test/models/optional-organs.integration.test.ts`, `apps/core/test/models/registry-health.integration.test.ts`, `infra/docker/deployment-cell.smoke.ts`
+Exit criteria:
+- Optional richer services can be present, absent or degraded without silently joining the required boot dependency set.
+- Runtime wiring and health adapters emit the same richer availability/quarantine shape used by the canonical source-diagnostics contract.
+- If startup/runtime posture changes, deployment-cell smoke proves the richer ecology remains optional and bounded on the canonical container path.
 
 ## 8. Task list
 
@@ -259,6 +275,8 @@ Verification: `integration`, `smoke-if-runtime-path-changes`
 - **T-F0014-06:** Prove baseline invariants and the logical owner split remain intact while richer ecology is introduced in `SL-F0014-03`. Covers: AC-F0014-04, AC-F0014-06, AC-F0014-07.
 - **T-F0014-07:** Wire optional richer services into canonical runtime/deployment paths without making them mandatory in `SL-F0014-04`. Covers: AC-F0014-02, AC-F0014-05.
 - **T-F0014-08:** Add final runtime and conditional smoke verification for richer ecology delivery in `SL-F0014-04`. Covers: AC-F0014-03, AC-F0014-05.
+- **T-F0014-09:** Realign the delivered `F-0013` `/models` publication path and its AC-linked tests onto the bounded `SL-F0014-02` richer source adapter, without transferring route ownership. Covers: AC-F0014-03, AC-F0014-06.
+- **T-F0014-10:** Realign the delivered `F-0008` baseline registry readers and selection assumptions to coexist with the `SL-F0014-03` richer-role slice inside one physical `model_registry` family. Covers: AC-F0014-04, AC-F0014-07.
 
 ## 9. Test plan & Coverage map
 
@@ -304,3 +322,4 @@ Verification: `integration`, `smoke-if-runtime-path-changes`
 
 - **v1.0 (2026-03-25):** Initial dossier created from `CF-010`; intake fixes one canonical owner for expanded model ecology, richer registry health and explicit fallback/quarantine metadata while keeping baseline router invariants with `F-0008`, operator publication with `F-0013`, Homeostat consumption with `F-0012`, workshop lifecycle with `CF-011` and specialist rollout with `CF-019`.
 - **v1.1 (2026-03-25):** `spec-compact`: tightened the seam into a decision-complete shaped spec. `F-0014` now owns richer source state and bounded source diagnostics rather than final reports, baseline-vs-expanded registry ownership is split explicitly, `CF-015` remains the report owner, and `F-0013` future `/models` projection is realigned onto `F-0014` as its richer source seam.
+- **v1.2 (2026-03-25):** `plan-slice`: moved the dossier to `planned`, turned the four delivery slices into implementation-ready waves with explicit verification artifacts and exit criteria, and made the required realignment of delivered `F-0008`/`F-0013` code paths explicit as linked tasks instead of hidden follow-up debt.
