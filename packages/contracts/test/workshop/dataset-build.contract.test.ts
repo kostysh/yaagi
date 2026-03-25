@@ -14,6 +14,7 @@ void test('AC-F0015-03 accepts only bounded dataset-build inputs with reviewed p
       datasetKind: 'sft',
       sourceEpisodeIds: ['episode-1', 'episode-2'],
       sourceEvalRunIds: [],
+      sourceHumanLabelIds: ['label-1'],
       redactionProfile: 'episodes-redacted-v1',
     }),
   );
@@ -27,6 +28,7 @@ void test('AC-F0015-09 rejects raw or source-less dataset requests before they c
         datasetKind: 'sft',
         sourceEpisodeIds: ['episode-1'],
         sourceEvalRunIds: [],
+        sourceHumanLabelIds: [],
         redactionProfile: 'raw',
       }),
     /reviewed redaction profile/,
@@ -39,8 +41,22 @@ void test('AC-F0015-09 rejects raw or source-less dataset requests before they c
         datasetKind: 'eval',
         sourceEpisodeIds: [],
         sourceEvalRunIds: [],
+        sourceHumanLabelIds: [],
         redactionProfile: 'episodes-redacted-v1',
       }),
-    /requires bounded episode or eval sources/,
+    /requires bounded episode, eval, or human-label sources/,
+  );
+});
+
+void test('AC-F0015-03 accepts human-label provenance as a canonical bounded dataset source', () => {
+  assert.doesNotThrow(() =>
+    assertValidDatasetBuildRequest({
+      requestId: 'dataset-build-human-labels',
+      datasetKind: 'specialist',
+      sourceEpisodeIds: [],
+      sourceEvalRunIds: [],
+      sourceHumanLabelIds: ['label-1', 'label-2'],
+      redactionProfile: 'specialist-redacted-v1',
+    }),
   );
 });

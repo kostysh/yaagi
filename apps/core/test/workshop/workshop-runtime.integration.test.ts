@@ -157,9 +157,34 @@ void test('AC-F0015-02 routes canonical workshop envelopes to bounded service ha
       datasetKind: 'sft',
       sourceEpisodeIds: ['episode-1'],
       sourceEvalRunIds: [],
+      sourceHumanLabelIds: [],
       redactionProfile: 'episodes-redacted-v1',
     },
   });
 
   assert.deepEqual(calls, ['dataset:dataset-job-1']);
+});
+
+void test('AC-F0015-02 rejects malformed workshop envelopes instead of silently acknowledging unknown job kinds', async () => {
+  const service: WorkshopService = {
+    buildDataset: () => Promise.reject(new Error('not used')),
+    launchTrainingRun: () => Promise.reject(new Error('not used')),
+    launchEvalRun: () => Promise.reject(new Error('not used')),
+    registerModelCandidate: () => Promise.reject(new Error('not used')),
+    recordCandidateStageTransition: () => Promise.reject(new Error('not used')),
+    preparePromotionPackage: () => Promise.reject(new Error('not used')),
+  };
+
+  await assert.rejects(
+    () =>
+      runWorkshopJobEnvelope(service, {
+        jobKind: 'future_job_kind',
+        requestId: 'bad-envelope-1',
+        requestedAt: '2026-03-26T17:15:00.000Z',
+        payload: {
+          requestId: 'bad-envelope-1',
+        },
+      } as never),
+    /unknown workshop jobKind/,
+  );
 });

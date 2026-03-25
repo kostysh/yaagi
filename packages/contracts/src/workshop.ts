@@ -91,6 +91,7 @@ export type WorkshopDatasetBuildRequest = {
   datasetKind: WorkshopDatasetKind;
   sourceEpisodeIds: string[];
   sourceEvalRunIds: string[];
+  sourceHumanLabelIds: string[];
   redactionProfile: string;
 };
 
@@ -166,6 +167,7 @@ export type WorkshopJobEnvelope<TKind extends WorkshopJobKind = WorkshopJobKind>
 };
 
 const FORBIDDEN_DATASET_REDACTION_PROFILES = new Set(['raw', 'none', 'unreviewed']);
+const VALID_WORKSHOP_JOB_KINDS = new Set<string>(Object.values(WORKSHOP_JOB_KIND));
 
 export const isSafeDatasetRedactionProfile = (value: string): boolean => {
   const normalized = value.trim().toLowerCase();
@@ -173,8 +175,14 @@ export const isSafeDatasetRedactionProfile = (value: string): boolean => {
 };
 
 export const assertValidDatasetBuildRequest = (input: WorkshopDatasetBuildRequest): void => {
-  if (input.sourceEpisodeIds.length === 0 && input.sourceEvalRunIds.length === 0) {
-    throw new Error('workshop dataset build requires bounded episode or eval sources');
+  if (
+    input.sourceEpisodeIds.length === 0 &&
+    input.sourceEvalRunIds.length === 0 &&
+    input.sourceHumanLabelIds.length === 0
+  ) {
+    throw new Error(
+      'workshop dataset build requires bounded episode, eval, or human-label sources',
+    );
   }
 
   if (!isSafeDatasetRedactionProfile(input.redactionProfile)) {
@@ -187,6 +195,10 @@ export const assertValidDatasetBuildRequest = (input: WorkshopDatasetBuildReques
 export const assertValidWorkshopJobEnvelope = <TKind extends WorkshopJobKind>(
   envelope: WorkshopJobEnvelope<TKind>,
 ): void => {
+  if (!VALID_WORKSHOP_JOB_KINDS.has(envelope.jobKind)) {
+    throw new Error(`unknown workshop jobKind ${JSON.stringify(envelope.jobKind)}`);
+  }
+
   if (envelope.requestId.trim().length === 0) {
     throw new Error('workshop job envelope requires requestId');
   }

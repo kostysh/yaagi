@@ -11,6 +11,7 @@ void test('AC-F0015-05 encodes the full staged candidate lifecycle and rejects s
       datasetKind: 'sft',
       sourceEpisodeIds: ['episode-3', 'episode-4'],
       sourceEvalRunIds: [],
+      sourceHumanLabelIds: [],
       redactionProfile: 'episodes-redacted-v1',
     });
     const training = await harness.service.launchTrainingRun({
@@ -102,6 +103,72 @@ void test('AC-F0015-05 encodes the full staged candidate lifecycle and rejects s
     assert.equal(
       harness.state.candidateStageEventsById[rollback.event.eventId]?.requestedByOwner,
       'CF-018',
+    );
+  } finally {
+    await harness.cleanup();
+  }
+});
+
+void test('AC-F0015-05 rejects candidate registration when dataset, training, eval, or artifact lineage is incoherent', async () => {
+  const harness = await createWorkshopServiceHarness();
+
+  try {
+    const dataset = await harness.service.buildDataset({
+      requestId: 'dataset-build-coherence',
+      datasetKind: 'sft',
+      sourceEpisodeIds: ['episode-8'],
+      sourceEvalRunIds: [],
+      sourceHumanLabelIds: ['label-8'],
+      redactionProfile: 'episodes-redacted-v1',
+    });
+    const training = await harness.service.launchTrainingRun({
+      requestId: 'training-run-coherence',
+      targetKind: 'shared_adapter',
+      targetProfileId: 'deliberation.fast@baseline',
+      datasetId: dataset.dataset.datasetId,
+      method: 'lora',
+    });
+    const evaluation = await harness.service.launchEvalRun({
+      requestId: 'eval-run-coherence',
+      subjectKind: 'adapter_candidate',
+      subjectRef: training.trainingRun.runId,
+      suiteName: 'regression-suite',
+    });
+
+    await assert.rejects(
+      () =>
+        harness.service.registerModelCandidate({
+          requestId: 'candidate-register-coherence-kind',
+          candidateKind: 'specialist_candidate',
+          targetProfileId: null,
+          datasetId: dataset.dataset.datasetId,
+          trainingRunId: training.trainingRun.runId,
+          latestEvalRunId: evaluation.evalRun.evalRunId,
+          artifactUri: training.trainingRun.artifactUri,
+          predecessorProfileId: 'specialist.prev@shared',
+          rollbackTarget: 'specialist.prev@shared',
+          requiredEvalSuite: 'regression-suite',
+          lastKnownGoodEvalReportUri: evaluation.evalRun.reportUri,
+        }),
+      /candidate kind must match the training lineage target kind/,
+    );
+
+    await assert.rejects(
+      () =>
+        harness.service.registerModelCandidate({
+          requestId: 'candidate-register-coherence-artifact',
+          candidateKind: 'shared_adapter',
+          targetProfileId: 'deliberation.fast@baseline',
+          datasetId: dataset.dataset.datasetId,
+          trainingRunId: training.trainingRun.runId,
+          latestEvalRunId: evaluation.evalRun.evalRunId,
+          artifactUri: 'file:///tmp/other-artifact.json',
+          predecessorProfileId: 'deliberation.fast@baseline',
+          rollbackTarget: 'deliberation.fast@baseline',
+          requiredEvalSuite: 'different-suite',
+          lastKnownGoodEvalReportUri: evaluation.evalRun.reportUri,
+        }),
+      /required eval suite must match eval evidence/,
     );
   } finally {
     await harness.cleanup();

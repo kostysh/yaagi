@@ -151,10 +151,14 @@ const withRuntimeClient = async <T>(
 };
 
 const createSourceRefs = (
-  input: Pick<WorkshopDatasetBuildRequest, 'sourceEpisodeIds' | 'sourceEvalRunIds'>,
+  input: Pick<
+    WorkshopDatasetBuildRequest,
+    'sourceEpisodeIds' | 'sourceEvalRunIds' | 'sourceHumanLabelIds'
+  >,
 ): string[] => [
   ...input.sourceEpisodeIds.map((episodeId) => `episode:${episodeId}`),
   ...input.sourceEvalRunIds.map((evalRunId) => `eval:${evalRunId}`),
+  ...input.sourceHumanLabelIds.map((labelId) => `human-label:${labelId}`),
 ];
 
 const splitSourceRefs = (
@@ -202,6 +206,31 @@ const writeJsonArtifact = async (
   return toFileUri(filePath);
 };
 
+const describeError = (error: unknown): { name: string; message: string } => {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+    };
+  }
+
+  return {
+    name: 'Error',
+    message: String(error),
+  };
+};
+
+const writeFailureArtifact = async (
+  filePath: string,
+  payload: Record<string, unknown>,
+): Promise<string> => {
+  try {
+    return await writeJsonArtifact(filePath, payload);
+  } catch {
+    return toFileUri(filePath);
+  }
+};
+
 const createDefaultTrainingMetrics = (input: {
   dataset: WorkshopDatasetRow;
   method: WorkshopTrainingRequest['method'];
@@ -228,8 +257,31 @@ const createDefaultEvalMetrics = (input: {
   result: 'bounded_regression_pass',
 });
 
+const createFailureMetrics = (input: {
+  phase: 'dataset_build' | 'training_run' | 'eval_run';
+  error: unknown;
+  extra?: Record<string, unknown>;
+}): Record<string, unknown> => {
+  const failure = describeError(input.error);
+  return {
+    owner: 'F-0015',
+    phase: input.phase,
+    result: 'failed',
+    errorName: failure.name,
+    errorMessage: failure.message,
+    ...input.extra,
+  };
+};
+
 const createStatusReason = (stage: WorkshopCandidateStage, requestedByOwner: string): string =>
   `${stage} recorded via canonical workshop lifecycle gate by ${requestedByOwner}`;
+
+const expectedEvalSubjectKind = (
+  candidateKind: WorkshopCandidateKind,
+): WorkshopEvalRequest['subjectKind'] =>
+  candidateKind === WORKSHOP_CANDIDATE_KIND.SHARED_ADAPTER
+    ? 'adapter_candidate'
+    : 'specialist_candidate';
 
 const assertAllowedStageTransition = (input: {
   currentStage: WorkshopCandidateStage;
@@ -285,135 +337,260 @@ export const createWorkshopService = (options: WorkshopServiceOptions): Workshop
 
   return {
     async buildDataset(input) {
-      assertValidDatasetBuildRequest(input);
-
       const datasetId = createId();
       const requestedAt = now().toISOString();
       const sourceRefs = createSourceRefs(input);
       const splitManifest = splitSourceRefs(sourceRefs);
-      const manifestPayload = {
-        owner: 'F-0015',
-        datasetId,
-        datasetKind: input.datasetKind,
-        sourceRefs,
-        sourceEpisodeIds: input.sourceEpisodeIds,
-        sourceEvalRunIds: input.sourceEvalRunIds,
-        redactionProfile: input.redactionProfile,
-        deduplicated: true,
-        hygiene: {
-          secretsExported: false,
-          unreviewedAutobiographicalProseAllowed: false,
-          reviewedRedactionProfile: input.redactionProfile,
-        },
-        splitManifest,
-        createdAt: requestedAt,
-      };
-      const manifestUri = await writeJsonArtifact(
-        resolveDatasetManifestPath(options.dataPath, datasetId),
-        manifestPayload,
-      );
+      const manifestPath = resolveDatasetManifestPath(options.dataPath, datasetId);
 
-      const dataset = await options.store.persistDataset({
-        datasetId,
-        datasetKind: input.datasetKind,
-        sourceManifestJson: {
+      try {
+        assertValidDatasetBuildRequest(input);
+
+        const manifestPayload = {
           owner: 'F-0015',
-          manifestUri,
+          datasetId,
+          datasetKind: input.datasetKind,
           sourceRefs,
+          sourceEpisodeIds: input.sourceEpisodeIds,
           sourceEvalRunIds: input.sourceEvalRunIds,
+          sourceHumanLabelIds: input.sourceHumanLabelIds,
           redactionProfile: input.redactionProfile,
           deduplicated: true,
-          secretsExported: false,
-          unreviewedAutobiographicalProseAllowed: false,
-        },
-        sourceEpisodeIdsJson: input.sourceEpisodeIds,
-        splitManifestJson: splitManifest,
-        status: 'ready',
-        createdAt: requestedAt,
-      });
+          hygiene: {
+            secretsExported: false,
+            unreviewedAutobiographicalProseAllowed: false,
+            reviewedRedactionProfile: input.redactionProfile,
+          },
+          splitManifest,
+          createdAt: requestedAt,
+        };
+        const manifestUri = await writeJsonArtifact(manifestPath, manifestPayload);
 
-      return {
-        dataset,
-        manifestUri,
-      };
+        const dataset = await options.store.persistDataset({
+          datasetId,
+          datasetKind: input.datasetKind,
+          sourceManifestJson: {
+            owner: 'F-0015',
+            manifestUri,
+            sourceRefs,
+            sourceEvalRunIds: input.sourceEvalRunIds,
+            sourceHumanLabelIds: input.sourceHumanLabelIds,
+            redactionProfile: input.redactionProfile,
+            deduplicated: true,
+            secretsExported: false,
+            unreviewedAutobiographicalProseAllowed: false,
+          },
+          sourceEpisodeIdsJson: input.sourceEpisodeIds,
+          splitManifestJson: splitManifest,
+          status: 'ready',
+          createdAt: requestedAt,
+        });
+
+        return {
+          dataset,
+          manifestUri,
+        };
+      } catch (error) {
+        const failure = describeError(error);
+        const manifestUri = await writeFailureArtifact(manifestPath, {
+          owner: 'F-0015',
+          datasetId,
+          datasetKind: input.datasetKind,
+          sourceRefs,
+          sourceEpisodeIds: input.sourceEpisodeIds,
+          sourceEvalRunIds: input.sourceEvalRunIds,
+          sourceHumanLabelIds: input.sourceHumanLabelIds,
+          redactionProfile: input.redactionProfile,
+          splitManifest,
+          status: 'failed',
+          failure,
+          createdAt: requestedAt,
+        });
+
+        await options.store
+          .persistDataset({
+            datasetId,
+            datasetKind: input.datasetKind,
+            sourceManifestJson: {
+              owner: 'F-0015',
+              manifestUri,
+              sourceRefs,
+              sourceEvalRunIds: input.sourceEvalRunIds,
+              sourceHumanLabelIds: input.sourceHumanLabelIds,
+              redactionProfile: input.redactionProfile,
+              deduplicated: false,
+              secretsExported: false,
+              unreviewedAutobiographicalProseAllowed: false,
+              failure,
+            },
+            sourceEpisodeIdsJson: input.sourceEpisodeIds,
+            splitManifestJson: splitManifest,
+            status: 'failed',
+            createdAt: requestedAt,
+          })
+          .catch(() => {});
+        throw error;
+      }
     },
 
     async launchTrainingRun(input) {
-      const dataset = await options.store.getDataset(input.datasetId);
-      if (!dataset) {
-        throw new Error(`unknown workshop dataset ${input.datasetId}`);
-      }
-
       const runId = createId();
       const startedAt = now().toISOString();
-      const artifactPayload = {
-        owner: 'F-0015',
-        runId,
-        targetKind: input.targetKind,
-        targetProfileId: input.targetProfileId,
-        datasetId: input.datasetId,
-        method: input.method,
-        startedAt,
-      };
-      const artifactUri = await writeJsonArtifact(
-        resolveTrainingArtifactPath(options.modelsPath, input.targetKind, runId),
-        artifactPayload,
-      );
+      const artifactPath = resolveTrainingArtifactPath(options.modelsPath, input.targetKind, runId);
+      let dataset: WorkshopDatasetRow | null = null;
 
-      const trainingRun = await options.store.persistTrainingRun({
-        runId,
-        targetKind: input.targetKind,
-        targetProfileId: input.targetProfileId,
-        datasetId: input.datasetId,
-        method: input.method,
-        hyperparamsJson: {
+      try {
+        dataset = await options.store.getDataset(input.datasetId);
+        if (!dataset) {
+          throw new Error(`unknown workshop dataset ${input.datasetId}`);
+        }
+
+        const artifactPayload = {
           owner: 'F-0015',
-          rank: input.method === 'qlora' ? 32 : 16,
-          adapterStyle: input.targetKind,
-        },
-        metricsJson: createDefaultTrainingMetrics({
-          dataset,
+          runId,
+          targetKind: input.targetKind,
+          targetProfileId: input.targetProfileId,
+          datasetId: input.datasetId,
           method: input.method,
-        }),
-        artifactUri,
-        status: 'completed',
-        startedAt,
-        endedAt: startedAt,
-      });
+          startedAt,
+        };
+        const artifactUri = await writeJsonArtifact(artifactPath, artifactPayload);
 
-      return { trainingRun };
+        const trainingRun = await options.store.persistTrainingRun({
+          runId,
+          targetKind: input.targetKind,
+          targetProfileId: input.targetProfileId,
+          datasetId: input.datasetId,
+          method: input.method,
+          hyperparamsJson: {
+            owner: 'F-0015',
+            rank: input.method === 'qlora' ? 32 : 16,
+            adapterStyle: input.targetKind,
+          },
+          metricsJson: createDefaultTrainingMetrics({
+            dataset,
+            method: input.method,
+          }),
+          artifactUri,
+          status: 'completed',
+          startedAt,
+          endedAt: startedAt,
+        });
+
+        return { trainingRun };
+      } catch (error) {
+        const artifactUri = await writeFailureArtifact(artifactPath, {
+          owner: 'F-0015',
+          runId,
+          targetKind: input.targetKind,
+          targetProfileId: input.targetProfileId,
+          datasetId: input.datasetId,
+          method: input.method,
+          startedAt,
+          status: 'failed',
+          failure: describeError(error),
+        });
+
+        if (dataset) {
+          await options.store
+            .persistTrainingRun({
+              runId,
+              targetKind: input.targetKind,
+              targetProfileId: input.targetProfileId,
+              datasetId: input.datasetId,
+              method: input.method,
+              hyperparamsJson: {
+                owner: 'F-0015',
+                rank: input.method === 'qlora' ? 32 : 16,
+                adapterStyle: input.targetKind,
+              },
+              metricsJson: createFailureMetrics({
+                phase: 'training_run',
+                error,
+                extra: {
+                  datasetStatus: dataset.status,
+                },
+              }),
+              artifactUri,
+              status: 'failed',
+              startedAt,
+              endedAt: startedAt,
+            })
+            .catch(() => {});
+        }
+
+        throw error;
+      }
     },
 
     async launchEvalRun(input) {
       const evalRunId = createId();
       const createdAt = now().toISOString();
-      const reportUri = await writeJsonArtifact(
-        resolveEvalReportPath(options.dataPath, evalRunId),
-        {
+      const reportPath = resolveEvalReportPath(options.dataPath, evalRunId);
+
+      try {
+        if (input.subjectRef.trim().length === 0) {
+          throw new Error('workshop eval run requires a bounded subjectRef');
+        }
+
+        if (input.suiteName.trim().length === 0) {
+          throw new Error('workshop eval run requires a suiteName');
+        }
+
+        const reportUri = await writeJsonArtifact(reportPath, {
           owner: 'F-0015',
           evalRunId,
           subjectKind: input.subjectKind,
           subjectRef: input.subjectRef,
           suiteName: input.suiteName,
           createdAt,
-        },
-      );
+        });
 
-      const evalRun = await options.store.persistEvalRun({
-        evalRunId,
-        subjectKind: input.subjectKind,
-        subjectRef: input.subjectRef,
-        suiteName: input.suiteName,
-        metricsJson: createDefaultEvalMetrics({
+        const evalRun = await options.store.persistEvalRun({
+          evalRunId,
+          subjectKind: input.subjectKind,
           subjectRef: input.subjectRef,
           suiteName: input.suiteName,
-        }),
-        pass: true,
-        reportUri,
-        createdAt,
-      });
+          metricsJson: createDefaultEvalMetrics({
+            subjectRef: input.subjectRef,
+            suiteName: input.suiteName,
+          }),
+          pass: true,
+          reportUri,
+          createdAt,
+        });
 
-      return { evalRun };
+        return { evalRun };
+      } catch (error) {
+        const reportUri = await writeFailureArtifact(reportPath, {
+          owner: 'F-0015',
+          evalRunId,
+          subjectKind: input.subjectKind,
+          subjectRef: input.subjectRef,
+          suiteName: input.suiteName,
+          createdAt,
+          status: 'failed',
+          failure: describeError(error),
+        });
+
+        await options.store
+          .persistEvalRun({
+            evalRunId,
+            subjectKind: input.subjectKind,
+            subjectRef: input.subjectRef,
+            suiteName: input.suiteName,
+            metricsJson: createFailureMetrics({
+              phase: 'eval_run',
+              error,
+            }),
+            pass: false,
+            reportUri,
+            createdAt,
+          })
+          .catch(() => {});
+
+        throw error;
+      }
     },
 
     async registerModelCandidate(input) {
@@ -439,6 +616,34 @@ export const createWorkshopService = (options: WorkshopServiceOptions): Workshop
         throw new Error(
           `workshop candidate requires passing eval evidence for ${input.latestEvalRunId}`,
         );
+      }
+
+      if (trainingRun.datasetId !== dataset.datasetId) {
+        throw new Error('workshop candidate training lineage must reference the canonical dataset');
+      }
+
+      if (trainingRun.targetKind !== input.candidateKind) {
+        throw new Error('workshop candidate kind must match the training lineage target kind');
+      }
+
+      if (trainingRun.targetProfileId !== input.targetProfileId) {
+        throw new Error('workshop candidate target profile must match the training lineage');
+      }
+
+      if (evalRun.subjectKind !== expectedEvalSubjectKind(input.candidateKind)) {
+        throw new Error('workshop candidate eval subject kind must match the candidate kind');
+      }
+
+      if (evalRun.subjectRef !== trainingRun.runId) {
+        throw new Error('workshop candidate eval evidence must reference the training lineage');
+      }
+
+      if (evalRun.suiteName !== input.requiredEvalSuite) {
+        throw new Error('workshop candidate required eval suite must match eval evidence');
+      }
+
+      if (input.artifactUri !== trainingRun.artifactUri) {
+        throw new Error('workshop candidate artifact must match the canonical training artifact');
       }
 
       const createdAt = now().toISOString();
@@ -688,5 +893,7 @@ export const runWorkshopJobEnvelope = async (
         envelope.payload as PrepareWorkshopPromotionPackageRequest,
       );
       return;
+    default:
+      throw new Error(`unknown workshop jobKind ${JSON.stringify(envelope.jobKind)}`);
   }
 };

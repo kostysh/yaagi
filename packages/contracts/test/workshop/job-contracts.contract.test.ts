@@ -41,3 +41,22 @@ void test('AC-F0015-02 wraps bounded workshop requests in one canonical job enve
     method: 'lora',
   });
 });
+
+void test('AC-F0015-02 rejects malformed workshop job kinds instead of silently accepting unknown queue payloads', () => {
+  assert.throws(
+    () =>
+      createWorkshopJobEnvelope({
+        jobKind: 'future_job_kind' as never,
+        requestId: 'bad-job-1',
+        requestedAt: '2026-03-26T15:00:00.000Z',
+        payload: {
+          requestId: 'bad-job-1',
+          targetKind: 'shared_adapter',
+          targetProfileId: 'deliberation.fast@baseline',
+          datasetId: 'dataset-1',
+          method: 'lora',
+        } as never,
+      }),
+    /unknown workshop jobKind/,
+  );
+});

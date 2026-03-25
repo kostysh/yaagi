@@ -11,6 +11,7 @@ void test('AC-F0015-06 assembles a bounded promotion package from lifecycle trut
       datasetKind: 'sft',
       sourceEpisodeIds: ['episode-5'],
       sourceEvalRunIds: [],
+      sourceHumanLabelIds: [],
       redactionProfile: 'episodes-redacted-v1',
     });
     const training = await harness.service.launchTrainingRun({
@@ -71,6 +72,7 @@ void test('AC-F0015-06 refuses to assemble a promotion package before handoff-re
       datasetKind: 'sft',
       sourceEpisodeIds: ['episode-6'],
       sourceEvalRunIds: [],
+      sourceHumanLabelIds: [],
       redactionProfile: 'episodes-redacted-v1',
     });
     const training = await harness.service.launchTrainingRun({

@@ -11,6 +11,7 @@ void test('AC-F0015-07 prepares handoff evidence without seizing baseline, riche
       datasetKind: 'specialist',
       sourceEpisodeIds: ['episode-7'],
       sourceEvalRunIds: [],
+      sourceHumanLabelIds: ['label-7'],
       redactionProfile: 'specialist-redacted-v1',
     });
     const training = await harness.service.launchTrainingRun({
