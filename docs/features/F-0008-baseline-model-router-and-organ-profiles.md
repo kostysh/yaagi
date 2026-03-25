@@ -29,7 +29,7 @@ links:
 - **User problem:** После `F-0002` и `F-0003` у системы есть канонический runtime и первый локальный model dependency, но всё ещё нет явного владельца для organ/profile selection. Если этот seam не оформить отдельно, phase-1 различие `reactive` / `deliberative` / `contemplative` либо скатится в hardcoded model strings внутри runtime, либо начнёт неявно жить внутри будущего Context Builder или decision harness, что противоречит архитектуре.
 - **Goal (what success means):** В репозитории появляется канонический owner для baseline model routing: profiles `reflex`, `deliberation` и `reflection` получают явный локальный runtime contract, router детерминированно выбирает их по bounded input hints, а active tick continuity фиксирует выбранный `model_profile_id` без раннего втягивания phase-2 model ecology и operator API.
 - **Current phase baseline:** На момент `spec-compact` уже delivered `F-0001`-`F-0007`; boot required dependency set по ADR остаётся `postgres + model-fast`, а `F-0003` по-прежнему допускает end-to-end только `wake` и `reactive` ticks. В этой фазе `F-0008` shaped как routing/continuity seam для baseline organs, а не как полная поставка deliberative/contemplative execution path.
-- **Non-goals:** Полный `model_registry` phase 2 с `code` / `embedding` / `reranker` / `classifier` / `safety`, external consultants, `/models` operator API, Context Builder, AI SDK-backed decision harness, training/eval/promotion pipeline и workshop governance не входят в этот intake.
+- **Non-goals:** Полный `model_registry` phase 2 с `code` / `embedding` / `reranker` / `classifier` / `safety`, external consultants, ownership над operator-facing `/models` route, Context Builder, AI SDK-backed decision harness, training/eval/promotion pipeline и workshop governance не входят в этот intake.
 
 ## 2. Scope
 
@@ -40,14 +40,14 @@ links:
 - Детерминированный `ModelRouter` contract, который принимает bounded hints (`tick mode`, `task kind`, `latency budget`, `risk`, `context size`, `required capabilities`, `organ health`, `last eval score`) и выбирает baseline profile либо возвращает structured refusal.
 - Явная policy для `reflection`: либо отдельный active profile, либо explicit adapter-over-deliberation path, зафиксированный в registry/selection contract.
 - Интеграция routing result с текущим tick/runtime continuity contract: запись `selected_model_profile_id` в tick lifecycle и синхронизация `agent_state.current_model_profile_id` для active tick.
-- Baseline diagnostics/eligibility surface для локальных profiles через internal runtime contract и существующий health payload без открытия нового operator API.
+- Baseline diagnostics/eligibility surface для локальных profiles через internal runtime contract и существующий health payload; если later `F-0013` публикует operator-facing `/models`, он должен только потреблять эти canonical diagnostics, не меняя ownership этой фичи.
 
 ### Out of scope
 
 - Расширенная local model ecology (`vllm-deep`, `vllm-pool`, embeddings, reranking, classifier/safety, richer health checks organs); этим владеет `CF-010`.
 - Context Builder, AI SDK-backed decision harness, structured decision validation и end-to-end deliberative/contemplative cognition; этим владеет `CF-017` и последующие cognitive seams.
 - Executive/tool gateway, review requests, action execution и job dispatch.
-- Operator-facing `/models`, control routes, richer introspection API и human-governed consultant policies.
+- Ownership над operator-facing `/models`, control routes, richer introspection API и human-governed consultant policies.
 - Training/eval/dataset/promotion flow и любые workshop/governance decisions поверх model profiles.
 - Изменение tick admission matrix из `F-0003`: router shape не должен сам по себе превращать недоставленные tick kinds в end-to-end исполняемый runtime path.
 - Generic cognition ownership or direct writes into `psm_json`, goals/beliefs, narrative/memetic surfaces or governor-owned proposal tables.
@@ -68,12 +68,12 @@ links:
 - **AC-F0008-03:** `ModelRouter.selectProfile(...)` принимает bounded routing input для canonical modes `reactive`, `deliberative` и `contemplative`, детерминированно учитывает `task_kind`, `latency_budget`, `risk_level`, `context_size`, `required_capabilities`, baseline `organ_health` и optional `last_eval_score`, и возвращает selection result с `model_profile_id`, `role` и `selection_reason`; router contract не расширяет сам по себе tick admission matrix из `F-0003`.
 - **AC-F0008-04:** Когда runtime или bounded cognitive harness запрашивает organ selection для активного тика, выбранный `model_profile_id` сохраняется в owning tick row и синхронизируется в `agent_state.current_model_profile_id` на время active tick, так что restart/reclaim path может восстановить, какой baseline organ был выбран последним.
 - **AC-F0008-05:** Запрос роли вне delivered baseline set (`code`, `embedding`, `reranker`, `classifier`, `safety`, `external_consultant`) или выбор unavailable/unhealthy profile завершается structured refusal (`unsupported_role`, `profile_unavailable` или `profile_unhealthy`) без silent remap; единственное допустимое исключение из этого правила описано в `AC-F0008-02` для explicit reflection adapter path.
-- **AC-F0008-06:** Baseline model routing surface публикует internal diagnostics и обогащает существующий health payload данными о локально зарегистрированных baseline profiles (`model_profile_id`, `role`, `status`, `eligibility/health summary`), не открывая отдельный `/models` API и не меняя required boot dependencies beyond constitution manifest.
+- **AC-F0008-06:** Baseline model routing surface публикует internal diagnostics и обогащает существующий health payload данными о локально зарегистрированных baseline profiles (`model_profile_id`, `role`, `status`, `eligibility/health summary`) без изменения required boot dependencies beyond constitution manifest; если later operator-facing `/models` route delivered by `F-0013` consumes these diagnostics, `F-0008` remains the owner of the underlying baseline routing data, not of the operator route itself.
 
 ## 4. Non-functional requirements (NFR)
 
 - **Determinism:** Один и тот же routing input и одинаковое состояние baseline profiles должны приводить к одному и тому же selection result.
-- **Phase discipline:** Baseline router не должен маскировать недоставленную phase-2 model ecology, workshop pipeline или operator API.
+- **Phase discipline:** Baseline router не должен маскировать недоставленную phase-2 model ecology, workshop pipeline или превращаться в owner operator API.
 - **Recoverability:** После restart/reclaim runtime должен иметь durable след о выбранном `model_profile_id`, а не полагаться на process-local state.
 - **Observability:** По health/diagnostic surface должно быть видно, какие baseline organs зарегистрированы, доступны и почему router их выбрал или отклонил.
 - **Extensibility:** Baseline contract должен расширяться до richer `model_registry`/health/eval semantics без переписывания уже delivered runtime boundary.
@@ -82,7 +82,7 @@ links:
 
 ### 5.1 Runtime surface
 
-- Публичная HTTP surface этой фичи не расширяется; допускается только enrichment существующего `GET /health`, а не новый operator-facing `/models`.
+- Эта фича не владеет публичной `/models` route surface; допускается enrichment существующего `GET /health` и reusable internal diagnostics contract, который later может быть опубликован через `F-0013` without changing `F-0008` ownership.
 - `F-0002` остаётся владельцем delivered local model substrate и env/deployment contract.
 - `F-0003` остаётся владельцем tick lifecycle, lease discipline и terminal cleanup; `F-0008` даёт ему только organ/profile selection boundary и continuity metadata.
 - `CF-017` позже станет главным caller-ом router contract для full cognitive harness, но baseline runtime должен уметь вызывать router и без зрелого Context Builder.
@@ -217,10 +217,10 @@ interface ModelRouter {
   - boot/runtime integration tests, подтверждающие, что required dependency set не расширяется beyond constitution manifest.
 - Containerized smoke path:
   - canonical local deployment cell должен стартовать с baseline routing surface внутри `core + postgres + local model service`;
-  - smoke должен подтверждать, что `GET /health` показывает baseline profile diagnostics без нового `/models` API;
+  - smoke должен подтверждать, что `GET /health` показывает baseline profile diagnostics без изменения boot dependency set; ownership будущей `/models` route, если она появится позже, остаётся вне `F-0008`;
   - smoke должен подтверждать, что runtime может сделать baseline `reflex` selection against delivered local model substrate без drift between in-memory and container paths.
 - Manual/operator surface:
-  - inspection через `GET /health`, logs и `model_registry` rows достаточна до поставки `CF-009`.
+  - inspection через `GET /health`, logs и `model_registry` rows достаточна для самой `F-0008`; later operator `/models` publication belongs to `F-0013`.
 
 ## 6. Definition of Done
 
@@ -295,7 +295,7 @@ Tasks:
 | AC-F0008-03 | `apps/core/test/models/model-router.contract.test.ts` -> `test("AC-F0008-03 selects baseline profiles deterministically for reactive, deliberative and contemplative modes")` | done |
 | AC-F0008-04 | `apps/core/test/runtime/tick-model-selection.integration.test.ts` -> `test("AC-F0008-04 persists selected_model_profile_id and current_model_profile_id for the active tick")` | done |
 | AC-F0008-05 | `apps/core/test/models/model-router.contract.test.ts` -> `test("AC-F0008-05 rejects unsupported or unavailable roles without silent fallback")` | done |
-| AC-F0008-06 | `apps/core/test/models/model-router.contract.test.ts` -> `test("AC-F0008-06 reuses caller-provided health summaries without re-probing baseline dependencies")`; `apps/core/test/runtime/health.integration.test.ts` -> `test("AC-F0008-06 surfaces baseline profile diagnostics without opening a models API")`; supplemental deployment check in `infra/docker/deployment-cell.smoke.ts` -> `test("AC-F0008-06 surfaces baseline model-routing diagnostics without opening a /models API in the deployment cell")` | done |
+| AC-F0008-06 | `apps/core/test/models/model-router.contract.test.ts` -> `test("AC-F0008-06 reuses caller-provided health summaries without re-probing baseline dependencies")`; `apps/core/test/runtime/health.integration.test.ts` -> `test("AC-F0008-06 surfaces baseline profile diagnostics on the health boundary")`; supplemental deployment check in `infra/docker/deployment-cell.smoke.ts` -> `test("AC-F0008-06 surfaces baseline model-routing diagnostics in the deployment cell without dependency creep")` | done |
 
 План тестов:
 
@@ -317,12 +317,12 @@ Tasks:
 - Alternatives: Всегда требовать отдельный reflection profile; всегда silently reuse `deliberation`.
 - Consequences: Contemplative routing получает предсказуемую и наблюдаемую semantics уже в baseline phase; позднее можно заменить adapter path на отдельный profile без переписывания caller contracts.
 
-### ADR-F0008-02: Baseline routing seam не расширяет boot dependency set и не открывает `/models` API
+### ADR-F0008-02: Baseline routing seam не расширяет boot dependency set и не владеет operator `/models`
 - Status: Accepted
-- Context: После `F-0002` и `F-0003` легко сделать router "настоящим" за счёт преждевременного требования `model-deep`/`model-pool` или открытия operator `/models`, но это нарушает текущие phase-0 ADR boundaries.
-- Decision: `F-0008` работает только поверх уже delivered local model substrate и constitution-driven boot dependencies; он может enrich-ить существующий `GET /health`, но не вводит новый operator-facing API. Расширение dependency set и public model management surface остаётся за `CF-009`/`CF-010`.
-- Alternatives: Сразу добавить `/models` и richer local ecology; оставить router полностью внутренним без diagnostics.
-- Consequences: Intake остаётся совместимым с текущим deployment cell и не ломает порядок backbone delivery, но всё ещё даёт оператору минимальную наблюдаемость за baseline organs.
+- Context: После `F-0002` и `F-0003` легко сделать router "настоящим" за счёт преждевременного требования `model-deep`/`model-pool` или за счёт того, что сам routing seam начнёт владеть operator `/models`, но это нарушает phase-0 ADR boundaries и размывает owner map между routing и HTTP API seams.
+- Decision: `F-0008` работает только поверх уже delivered local model substrate и constitution-driven boot dependencies; он enrich-ит существующий `GET /health` и публикует reusable internal diagnostics, но ownership operator-facing `/models` route остаётся outside this seam and later belongs to `F-0013`.
+- Alternatives: Сразу отдать `/models` самому routing seam; оставить router полностью внутренним без diagnostics.
+- Consequences: Delivered router сохраняет совместимость с deployment cell и owner boundaries, while a later HTTP seam can consume the same canonical diagnostics without reopening model-router ownership.
 
 ## 11. Progress & links
 
@@ -370,3 +370,4 @@ Tasks:
 - **v1.7 (2026-03-24):** `change-proposal`: aligned the dossier with the repo-level identity-bearing write-authority matrix. `F-0008` now states explicitly that router ownership is limited to baseline profile registration plus model-profile continuity metadata, while runtime admission, subject-state writes and future cognition/governor surfaces remain outside the router write boundary.
 - **v1.8 (2026-03-24):** `change-proposal`: aligned `F-0008` with the new architecture-level baseline router invariants. The architecture now carries only the minimal delivered router contract, while deterministic selection details, continuity persistence and fast/smoke proofs remain explicitly feature-local to this dossier.
 - **v1.9 (2026-03-25):** `change-proposal`: realigned router wording to the repo-level AI SDK substrate. `F-0008` remains `done` because baseline routing and profile continuity stay framework-neutral, but the old Mastra-specific cognition references were retired in favor of the AI SDK-backed harness owned by `F-0009`.
+- **v1.10 (2026-03-25):** `change-proposal`: realigned `F-0008` with planned `F-0013` operator API delivery. The dossier no longer claims that a future `/models` route is forbidden; instead it fixes that `F-0008` owns baseline routing diagnostics while any later operator `/models` publication remains owned by `F-0013` and must not change boot dependencies or routing ownership.
