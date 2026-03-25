@@ -22,6 +22,7 @@ links:
     - "docs/adr/ADR-2026-03-19-canonical-runtime-toolchain.md"
     - "docs/adr/ADR-2026-03-19-phase0-deployment-cell.md"
     - "docs/adr/ADR-2026-03-19-phase0-runtime-boundary.md"
+    - "docs/adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md"
 ---
 
 # F-0003 Тиковый runtime, scheduler и эпизодическая линия времени
@@ -30,7 +31,7 @@ links:
 
 - **User problem:** После `F-0001` и `F-0002` система умеет безопасно стартовать в реальной phase-0 deployment cell, но у неё ещё нет канонического owner для жизни после boot handoff: отсутствуют durable ticks, DB-backed scheduler/lease discipline, episodic biography и единая субъективная линия времени. Пока этого нет, runtime либо остаётся "живым" только на уровне health boundary, либо скатывается в неканонические in-memory loops, которые архитектура прямо запрещает.
 - **Goal (what success means):** После успешного constitutional handoff runtime запускает tick engine и scheduler на canonical Postgres/`pg-boss` substrate, создаёт не-overlapping ticks, фиксирует их lifecycle в state kernel и пишет связанные episodes/timeline records так, чтобы у агента появилась одна субъективная линия времени уже до поставки следующих memory/perception/cognition seams.
-- **Non-goals:** Полный perception buffer и sensor adapters, PSM/goals/beliefs model, Context Builder, organ routing, Mastra Decision Agent, executive actions, а также полный consolidation/developmental/graceful-shutdown lifecycle beyond the baseline tick backbone не входят в этот intake.
+- **Non-goals:** Полный perception buffer и sensor adapters, PSM/goals/beliefs model, Context Builder, AI SDK-backed decision harness, executive actions, а также полный consolidation/developmental/graceful-shutdown lifecycle beyond the baseline tick backbone не входят в этот intake.
 
 ## 2. Scope
 
@@ -55,9 +56,9 @@ links:
 ### Constraints
 
 - Tick runtime не имеет права стартовать, если `F-0001` оставил систему в fail-closed состоянии; boot/recovery остаётся единственным gate входа в активный runtime.
-- Реализация должна идти по уже зафиксированному каноническому пути `Node 22 + TypeScript + Mastra + Hono + pnpm + PostgreSQL + pg-boss + Docker Compose`, без альтернативного scheduler/runtime path.
+- Реализация должна идти по уже зафиксированному каноническому пути `Node 22 + TypeScript + AI SDK + Hono + pnpm + PostgreSQL + pg-boss + Docker Compose`, без альтернативного scheduler/runtime path.
 - One-subject invariant обязателен: в каждый момент времени у агента может быть не более одного активного tick lease и не более одного executing tick.
-- Источником истины для tick/episode/timeline state остаётся PostgreSQL state kernel; логи, Mastra memory и process-local queues не могут подменять durable state.
+- Источником истины для tick/episode/timeline state остаётся PostgreSQL state kernel; логи, framework memory layers и process-local queues не могут подменять durable state.
 - `F-0003` обязан явно определить и держать только узкий runtime bridge к уже существующему `agent_state`: чтение singleton row после boot handoff, ведение `current_tick` во время активного тика и освобождение этого pointer-а на terminal transition; richer subject-state semantics остаются за следующим memory seam.
 - Реализация этого shaped scope не должна протаскивать в себя ownership соседних seams под предлогом "завершения тика"; любое расширение за пределы зафиксированного bridge к `agent_state`, baseline `wake/reactive` и runtime bookkeeping должно оформляться как follow-on shaping against the next memory/perception/cognition seams.
 - Cross-cutting ownership для identity-bearing writes задаётся architecture matrix в `docs/architecture/system.md`: `F-0003` владеет только active-tick continuity bridge и lifecycle ordering, а subject-state, router policy и future narrative/governor surfaces остаются у своих canonical owners.
@@ -85,7 +86,7 @@ links:
 
 ### 5.1 Runtime surface
 
-- Публичная operator API этой фичей не открывается; контракт остаётся внутренним runtime boundary поверх уже delivered `Mastra + Hono` substrate.
+- Публичная operator API этой фичей не открывается; контракт остаётся внутренним runtime boundary поверх уже delivered `AI SDK + Hono` substrate.
 - В phase 0 scheduler поставляется как in-process worker внутри `core`, но использует только DB-backed primitives (`pg-boss`, advisory locks / row locks, PostgreSQL transactions). Отдельный `jobs` service остаётся дальнейшим расширением topology, а не prerequisite этого shaped scope.
 - Предлагаемый internal contract:
 
@@ -355,3 +356,4 @@ Tasks:
 - **v1.10 (2026-03-24):** User-approved follow-up after debt audit: the versioned subject-state admission guard promised in `v1.8` is not implemented yet. `F-0003` now carries explicit acceptance criterion `AC-F0003-08`, follow-up slice `SL-F0003-06`, AC-linked planned verification and returns to `shaped` until runtime rejects unsupported subject-state snapshot versions before activation/admission.
 - **v1.11 (2026-03-24):** Implemented `SL-F0003-06`: runtime initialization now rejects unsupported bounded subject-state versions before wake/reactive admission, no active ticks are created on mismatch, and AC-linked integration plus deployment-cell smoke verification closes `AC-F0003-08`; status advanced back to `done`.
 - **v1.12 (2026-03-24):** `F-0010` realignment completed: the earlier phase-0 assumption that `ticks.action_id` stays `null` is retired. `action_id` remains part of the `F-0003` continuity boundary, but it may now be materialized on terminal tick commit by the delivered executive seam through the same runtime-owned transaction path.
+- **v1.13 (2026-03-25):** `change-proposal`: realigned the runtime dossier to the repo-level AI SDK substrate. `F-0003` remains `done` because its scheduler/continuity ownership is framework-neutral, but references to the old Mastra runtime path were retired in favor of `AI SDK + Hono` and generic framework-memory wording.

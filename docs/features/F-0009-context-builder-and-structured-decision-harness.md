@@ -1,7 +1,7 @@
 ---
 id: F-0009
 title: Context Builder и structured decision harness
-status: done
+status: planned
 coverage_gate: strict
 owners: ["@codex"]
 area: cognition
@@ -20,6 +20,7 @@ links:
     - "docs/features/F-0008-baseline-model-router-and-organ-profiles.md"
     - "docs/adr/ADR-2026-03-19-canonical-runtime-toolchain.md"
     - "docs/adr/ADR-2026-03-19-phase0-runtime-boundary.md"
+    - "docs/adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md"
 ---
 
 # F-0009 Context Builder и structured decision harness
@@ -27,7 +28,7 @@ links:
 ## 1. Context & Goal
 
 - **User problem:** После `F-0003`, `F-0004`, `F-0005` и `F-0008` у системы уже есть канонический tick runtime, versioned subject-state snapshot, perception intake и baseline organ selection, но всё ещё нет явного owner-а для bounded cognitive handoff между этими delivered seams и будущим action boundary. Без этого следующий этап либо начнёт собирать prompt/context ad hoc прямо внутри runtime или executive path, либо quietly размазает ownership между router, memory и будущими narrative/tool seams.
-- **Goal (what success means):** В репозитории появляется отдельный canonical owner для `Context Builder` и одного bounded `Mastra Decision Agent`, который собирает decision input только из уже delivered canonical surfaces, вызывает model-backed reasoning через уже выбранный organ/profile и возвращает строго структурированное решение для downstream runtime/executive seams без захвата ownership над action execution, narrative/memetic reasoning или subject-state writes.
+- **Goal (what success means):** В репозитории появляется отдельный canonical owner для `Context Builder` и одного bounded AI SDK-backed decision harness, который собирает decision input только из уже delivered canonical surfaces, вызывает model-backed reasoning через уже выбранный organ/profile и возвращает строго структурированное решение для downstream runtime/executive seams без захвата ownership над action execution, narrative/memetic reasoning или subject-state writes.
 - **Current phase baseline:** На момент intake уже delivered `F-0001`-`F-0008`. Runtime lifecycle, bounded versioned subject-state snapshot, perception buffer/intake и baseline router считаются обязательным substrate этого feature; executive center, tool gateway, narrative/memetic cognition, governor, homeostat и richer model ecology ещё не delivered и не могут quietly прилипнуть к этому seam.
 - **Non-goals:** Executive/tool execution, action approval/audit, direct state mutation, narrative spine, field journal, memetic arena, operator-facing introspection API, richer model ecology, workshop/governor logic и отдельная parallel self-model schema не входят в этот intake.
 
@@ -36,7 +37,7 @@ links:
 ### In scope
 
 - Канонический `Context Builder`, который собирает bounded decision input из delivered runtime/perception/state/router surfaces.
-- Один bounded `Mastra Decision Agent`, работающий как cognitive harness текущего тика, а не как owner личности или памяти.
+- Один bounded AI SDK-backed decision harness, работающий как cognitive harness текущего тика, а не как owner личности или памяти.
 - Канонический schema contract для structured decision envelope и validator, который отсекает invalid/free-form model output до downstream handoff.
 - Явный ownership boundary между context assembly, model-backed decision, runtime admission и future executive execution.
 - Передача version/conflict/truncation markers в decision input, чтобы downstream reasoning не получал silently ambiguous or partial context.
@@ -51,7 +52,8 @@ links:
 
 ### Constraints
 
-- Feature строится только на already delivered canonical stack/path: `TypeScript + Mastra + Hono + PostgreSQL` внутри existing `core` runtime.
+- Feature строится только на already delivered canonical stack/path: `TypeScript + AI SDK + Hono + PostgreSQL` внутри existing `core` runtime.
+- Feature использует AI SDK только как structured-generation/provider layer и не имеет права reintroduce framework-owned memory, server API или workflow ownership внутрь cognition seam.
 - Canonical input surfaces ограничены delivered owners: `F-0005` perception batch/intake, `F-0004` bounded versioned subject-state snapshot, `F-0003` active tick + recent episodes/timeline context, `F-0008` selected organ/profile and routing metadata.
 - Feature не получает blanket write authority: он не может bypass-ить runtime admission, subject-state store, router continuity contract или future executive/governor boundaries.
 - Structured decision должен быть machine-validated; свободный текст как единственный output contract запрещён.
@@ -61,7 +63,7 @@ links:
 
 - **AC-F0009-01:** `ContextBuilder.build(...)` собирает один canonical bounded decision context только из delivered owner surfaces: `PerceptualContext` / current trigger from `F-0005`, bounded versioned `SubjectStateSnapshot` from `F-0004`, bounded recent episode/timeline slice from `F-0003`, selected baseline profile metadata from `F-0008` и current resource posture from the singleton subject-state anchor; feature не вводит parallel self-model schema, shadow prompt store или ad hoc context source вне этих owners.
 - **AC-F0009-02:** Canonical decision context carries explicit source metadata for each bounded section: `subjectStateSchemaVersion` where applicable, `truncated: boolean`, stable `sourceIds` / references, and `conflictMarkers` / compatibility markers when input is partial, stale or incompatible; required-context incompatibility returns structured `context_incompatible` refusal before any agent call instead of silently dropping the problematic slice.
-- **AC-F0009-03:** Один bounded `Mastra Decision Agent` получает canonical decision context и возвращает ровно один JSON decision envelope conforming to the delivered `TickDecisionV1` schema with at least `observations[]`, `interpretations[]`, declarative `action`, `episode.summary`, `episode.importance` and `developmentHints[]`; свободный prose-only model response не считается delivered decision surface.
+- **AC-F0009-03:** Один bounded AI SDK-backed decision harness получает canonical decision context и возвращает ровно один JSON decision envelope conforming to the delivered `TickDecisionV1` schema with at least `observations[]`, `interpretations[]`, declarative `action`, `episode.summary`, `episode.importance` and `developmentHints[]`; свободный prose-only model response не считается delivered decision surface.
 - **AC-F0009-04:** Decision envelope проходит обязательную schema validation before downstream handoff; invalid JSON, missing required fields, unsupported enum values or schema-breaking model output завершается explicit structured failure/refusal and validation evidence, without direct action execution, job dispatch, router mutation or subject-state writes.
 - **AC-F0009-05:** Decision harness потребляет уже selected baseline profile from `F-0008` и не становится owner-ом model routing или tick admission: отсутствие compatible selected profile, profile eligibility drift или unsupported decision mode завершают flow как structured refusal before agent call вместо silent re-routing, hidden fallback или runtime admission expansion.
 - **AC-F0009-06:** Первая delivered версия harness-а остаётся reactive-first bounded seam: end-to-end runtime wiring обязательна для `reactive` path, тогда как `deliberative` / `contemplative` context assembly and decision validation may be callable and contract-testable but не расширяют сами по себе `F-0003` admission matrix, executive execution scope or public API surface.
@@ -77,7 +79,7 @@ links:
 
 ### 5.1 Runtime and deployment surface
 
-- Архитектурный backbone остаётся explicit: `Build context -> Select model organs -> Call Mastra Decision Agent -> Validate structured decision -> Execute one action or conscious inaction`.
+- Архитектурный backbone остаётся explicit: `Build context -> Select model organs -> Call AI SDK decision harness -> Validate structured decision -> Execute one action or conscious inaction`.
 - Эта фича intentionally sits between already delivered router/runtime/state/perception seams and the future executive boundary:
   - `F-0005` remains the owner of signal normalization, `StimulusEnvelope` persistence and `PerceptualContext` assembly.
   - `F-0004` remains the owner of bounded versioned subject-state snapshots and all identity-bearing writes.
@@ -225,7 +227,7 @@ type DecisionResult =
 
 ## 6. Definition of Done
 
-- `F-0009` is `shaped` with explicit reactive-first phase boundary and no hidden ownership grab over executive, narrative/memetic, router or subject-state seams.
+- `F-0009` delivers a reactive-first bounded seam with no hidden ownership grab over executive, narrative/memetic, router or subject-state seams.
 - Compact design fixes the internal `DecisionContext` and `TickDecisionV1` contracts, refusal boundaries and the absence of a new durable decision-history table in the first delivery.
 - Verification plan explicitly includes fast contract/integration coverage and a required deployment-cell smoke path for the eventual implementation.
 - `docs/backlog/feature-candidates.md`, `docs/ssot/index.md` and architecture coverage map stay aligned on this feature’s owner and status.
@@ -244,8 +246,8 @@ Tasks:
 - **T-F0009-01:** Materialize the canonical cognition contract module for `DecisionContext`, section metadata and refusal/result types at the runtime boundary. Covers: AC-F0009-01, AC-F0009-02.
 - **T-F0009-02:** Implement bounded context assembly from delivered perception, subject-state, recent-episode and selected-profile provider surfaces, including compatibility checks and section metadata. Covers: AC-F0009-01, AC-F0009-02.
 
-### Slice SL-F0009-02: Structured decision agent and validation harness
-Delivers: one bounded Mastra-backed decision call that yields only validated `TickDecisionV1` or explicit structured refusal.
+### Slice SL-F0009-02: Structured decision harness and validation layer
+Delivers: one bounded AI SDK-backed decision call that yields only validated `TickDecisionV1` or explicit structured refusal.
 Covers: AC-F0009-03, AC-F0009-04
 Verification: `contract`, `integration`
 Exit criteria:
@@ -254,7 +256,7 @@ Exit criteria:
 - The harness performs no direct action execution, job enqueue or state mutation.
 Tasks:
 - **T-F0009-03:** Implement schema validation/parsing for `TickDecisionV1` and the explicit `decision_schema_invalid` refusal path. Covers: AC-F0009-03, AC-F0009-04.
-- **T-F0009-04:** Wire the bounded Mastra agent invocation so it consumes `DecisionContext` and surfaces validated `DecisionResult` objects without side effects. Covers: AC-F0009-03, AC-F0009-04.
+- **T-F0009-04:** Wire the bounded AI SDK structured-generation invocation so it consumes `DecisionContext` and surfaces validated `DecisionResult` objects without side effects. Covers: AC-F0009-03, AC-F0009-04.
 
 ### Slice SL-F0009-03: Selected-profile consumption and reactive runtime handoff
 Delivers: end-to-end reactive runtime wiring that consumes the already selected baseline profile and hands validated decisions back to the existing runtime path without rerouting.
@@ -265,7 +267,7 @@ Exit criteria:
 - Missing/ineligible selected profiles and unsupported decision modes refuse before agent call without silent reroute or admission expansion.
 - `deliberative` / `contemplative` remain callable contract surfaces but do not become runtime-admissible as part of this slice.
 Tasks:
-- **T-F0009-05:** Wire `runtime-lifecycle` and the phase-0 Mastra boundary so the harness consumes `selected_model_profile_id` from the existing continuity path instead of performing hidden rerouting. Covers: AC-F0009-05, AC-F0009-06.
+- **T-F0009-05:** Wire `runtime-lifecycle` and the phase-0 AI SDK boundary so the harness consumes `selected_model_profile_id` from the existing continuity path instead of performing hidden rerouting. Covers: AC-F0009-05, AC-F0009-06.
 - **T-F0009-06:** Add runtime integration tests proving reactive selected-profile handoff and refusal behavior for missing/ineligible profiles and unsupported decision modes. Covers: AC-F0009-05, AC-F0009-06.
 
 ### Slice SL-F0009-04: Phase-boundary verification and deployment-cell closure
@@ -283,7 +285,7 @@ Tasks:
 ## 8. Suggested issue titles
 
 - `F-0009 / SL-F0009-01 Bounded context assembly substrate` -> [SL-F0009-01](#slice-sl-f0009-01-bounded-context-assembly-substrate)
-- `F-0009 / SL-F0009-02 Structured decision agent and validation harness` -> [SL-F0009-02](#slice-sl-f0009-02-structured-decision-agent-and-validation-harness)
+- `F-0009 / SL-F0009-02 Structured decision harness and validation layer` -> [SL-F0009-02](#slice-sl-f0009-02-structured-decision-harness-and-validation-layer)
 - `F-0009 / SL-F0009-03 Selected-profile consumption and reactive runtime handoff` -> [SL-F0009-03](#slice-sl-f0009-03-selected-profile-consumption-and-reactive-runtime-handoff)
 - `F-0009 / SL-F0009-04 Phase-boundary verification and deployment-cell closure` -> [SL-F0009-04](#slice-sl-f0009-04-phase-boundary-verification-and-deployment-cell-closure)
 
@@ -291,12 +293,12 @@ Tasks:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0009-01 | `apps/core/test/cognition/context-builder.integration.test.ts` → `test("AC-F0009-01 builds canonical bounded decision context from delivered owner surfaces")`; `packages/db/test/runtime-store.contract.test.ts` → `test("AC-F0009-01 normalizes recent episode timestamps to ISO strings at the db boundary")` | done |
-| AC-F0009-02 | `apps/core/test/cognition/context-builder.contract.test.ts` → `test("AC-F0009-02 carries explicit version, truncation and conflict markers for bounded context sections")` | done |
-| AC-F0009-03 | `apps/core/test/cognition/decision-harness.contract.test.ts` → `test("AC-F0009-03 returns a validated TickDecisionV1 envelope from the bounded Mastra decision harness")` | done |
-| AC-F0009-04 | `apps/core/test/cognition/decision-harness.contract.test.ts` → `test("AC-F0009-04 refuses invalid decision output before downstream handoff")`; `apps/core/test/runtime/subject-state-delta.contract.test.ts` → `test("AC-F0009-04 does not mirror structured decision artifacts into subject-state persistence on completed ticks")` | done |
-| AC-F0009-05 | `apps/core/test/cognition/decision-harness.integration.test.ts` → `test("AC-F0009-05 consumes the selected baseline profile without rerouting or expanding admission ownership")`; `apps/core/test/runtime/reactive-decision-refusal.integration.test.ts` → `test("AC-F0009-05 rejects a reactive runtime handoff when the selected profile drifts ineligible, without durable side effects or silent rerouting")` | done |
-| AC-F0009-06 | `apps/core/test/runtime/reactive-decision-handoff.integration.test.ts` → `test("AC-F0009-06 keeps the harness reactive-first without silently expanding deliberative or contemplative admission")`; `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0009-06 executes one bounded reactive decision path inside the deployment cell without new public API or durable history tables")` | done |
+| AC-F0009-01 | `apps/core/test/cognition/context-builder.integration.test.ts` → `test("AC-F0009-01 builds canonical bounded decision context from delivered owner surfaces")`; `packages/db/test/runtime-store.contract.test.ts` → `test("AC-F0009-01 normalizes recent episode timestamps to ISO strings at the db boundary")` | planned |
+| AC-F0009-02 | `apps/core/test/cognition/context-builder.contract.test.ts` → `test("AC-F0009-02 carries explicit version, truncation and conflict markers for bounded context sections")` | planned |
+| AC-F0009-03 | `apps/core/test/cognition/decision-harness.contract.test.ts` → `test("AC-F0009-03 returns a validated TickDecisionV1 envelope from the bounded AI SDK decision harness")` | planned |
+| AC-F0009-04 | `apps/core/test/cognition/decision-harness.contract.test.ts` → `test("AC-F0009-04 refuses invalid decision output before downstream handoff")`; `apps/core/test/runtime/subject-state-delta.contract.test.ts` → `test("AC-F0009-04 does not mirror structured decision artifacts into subject-state persistence on completed ticks")` | planned |
+| AC-F0009-05 | `apps/core/test/cognition/decision-harness.integration.test.ts` → `test("AC-F0009-05 consumes the selected baseline profile without rerouting or expanding admission ownership")`; `apps/core/test/runtime/reactive-decision-refusal.integration.test.ts` → `test("AC-F0009-05 rejects a reactive runtime handoff when the selected profile drifts ineligible, without durable side effects or silent rerouting")` | planned |
+| AC-F0009-06 | `apps/core/test/runtime/reactive-decision-handoff.integration.test.ts` → `test("AC-F0009-06 keeps the harness reactive-first without silently expanding deliberative or contemplative admission")`; `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0009-06 executes one bounded reactive decision path inside the deployment cell without new public API or durable history tables")` | planned |
 
 План верификации:
 
@@ -307,16 +309,16 @@ Tasks:
 
 ## 10. Decision log (ADR blocks)
 
-### ADR-F0009-01: First delivered decision harness is reactive-first and does not create a new durable decision-history table
+### ADR-F0009-01: First delivered AI SDK decision harness is reactive-first and does not create a new durable decision-history table
 - Status: Accepted
-- Context: Архитектура already defines `Context Builder`, `Mastra Decision Agent` and `TickDecision`, but the delivered runtime still admits only `wake`/`reactive`, while executive, narrative/memetic and governor seams are not yet delivered. Без явной границы feature либо попытается рано выполнить весь cognitive loop, либо создаст parallel durable store для prompts/decisions, который начнёт конкурировать с existing tick/episode biography.
+- Context: Архитектура already defines `Context Builder`, AI SDK-backed decision harness and `TickDecision`, but the delivered runtime still admits only `wake`/`reactive`, while executive, narrative/memetic and governor seams are not yet delivered. Без явной границы feature либо попытается рано выполнить весь cognitive loop, либо создаст parallel durable store для prompts/decisions, который начнёт конкурировать с existing tick/episode biography.
 - Decision: First delivered `F-0009` stays reactive-first for end-to-end runtime wiring, keeps `deliberative` / `contemplative` as callable contract surfaces only, and does not create a new permanent `decision_contexts` / `decision_history` table. The feature returns a validated declarative `TickDecisionV1` handoff payload and relies on existing canonical owners for all durable writes and execution.
 - Alternatives: Wait until executive and narrative seams are delivered before intaking the harness; expand runtime admission to all decision modes immediately; create a dedicated persistent prompt/decision store in this feature.
 - Consequences: The repository gets an implementable bounded cognitive harness on top of already delivered seams without widening runtime or state ownership prematurely. Future seams may enrich the decision envelope or add durable trace surfaces, but only through explicit follow-on work.
 
 ## 11. Progress & links
 
-- Status: `proposed` -> `shaped` -> `done`
+- Status: `proposed` -> `shaped` -> `done` -> `planned`
 - Issue: -
 - PRs:
   - -
@@ -325,6 +327,7 @@ Tasks:
   - `apps/core/src/cognition/decision-harness.ts`
   - `apps/core/src/perception/controller.ts`
   - `apps/core/src/platform/core-runtime.ts`
+  - `docs/adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md`
   - `apps/core/src/platform/phase0-mastra.ts`
   - `apps/core/src/runtime/runtime-lifecycle.ts`
   - `apps/core/test/cognition/context-builder.contract.test.ts`
@@ -361,3 +364,4 @@ Tasks:
 - **v1.2 (2026-03-24):** `plan-slice` decomposed `F-0009` into four delivery slices covering bounded context assembly, structured decision validation, selected-profile reactive handoff and deployment-cell verification closure; the dossier intentionally remains `shaped` as a justified alternative because the repo coverage policy treats `planned` dossiers as blocking until AC-linked tests exist.
 - **v1.3 (2026-03-24):** Completed `implementation`: delivered the canonical cognition contracts plus bounded context builder, added the Mastra-backed decision harness and reactive runtime handoff on top of the selected baseline profile, surfaced validated `decision` / `decisionTrace` artifacts through the existing tick biography, normalized recent-episode timestamps at the DB boundary for container parity, and closed both fast-path and deployment-cell verification without adding a new public API or durable decision-history table.
 - **v1.4 (2026-03-24):** Hardened the final implementation after independent review: perception partiality now propagates into `perceptualMeta`, runtime re-validates selected-profile eligibility drift before agent invocation, completed ticks no longer mirror structured decision artifacts into `psm_json`, and AC-linked runtime regressions now prove refusal/no-side-effects semantics on the reactive handoff.
+- **v1.5 (2026-03-25):** `change-proposal`: realigned `F-0009` to the repo-level `AI SDK` substrate. The bounded cognition harness remains reactive-first and schema-validated, but all ACs now require refactoring from the delivered Mastra-backed implementation to an AI SDK-backed structured-generation boundary before the dossier can return to `done`.

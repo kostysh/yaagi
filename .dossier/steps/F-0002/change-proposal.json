@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-03-25T17:06:40.611Z",
+  "feature_id": "F-0002",
+  "dossier": "docs/features/F-0002-canonical-monorepo-deployment-cell.md",
+  "step": "change-proposal",
+  "dossier_status": "planned",
+  "current_commit": "324e28a9b9e9b794014ac431f31426c8222c5d18",
+  "verification_artifact": ".dossier/verification/F-0002/change-proposal-324e28a9b9e9.json",
+  "review_artifact": ".dossier/reviews/F-0002/change-proposal-324e28a9b9e9.json",
+  "review_fresh_for_commit": true,
+  "process_complete": true,
+  "blockers": [],
+  "next_step": "implementation"
+}

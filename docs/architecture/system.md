@@ -17,16 +17,16 @@
 - живёт тиками;
 - хранит identity-bearing state вне модели;
 - мыслит через локальную модельную экологию;
-- использует Mastra как когнитивный каркас, но не отдаёт ему власть над identity continuity;
+- использует AI SDK как тонкий reasoning/model-integration слой, но не отдаёт ему власть над identity continuity;
 - развивается через контролируемые контуры fine-tuning, специализированных моделей и Git-governed code evolution.
 
 ### 1.2 Ключевое архитектурное решение
 
-**Полифония не должна быть «чисто Mastra-проектом» и не должна быть «чисто LLM server orchestration».**
+**Полифония не должна быть ни "толстым framework-owned agent platform", ни "чисто LLM server orchestration".**
 
 Правильное разбиение такое:
 
-- **Mastra** отвечает за agent-level reasoning, tools, skills, server API и bounded workflows.
+- **AI SDK** отвечает только за model/provider integration, structured generation, validated output parsing, bounded tool-loop primitives и streaming helpers.
 - **Polyphony Runtime** отвечает за всё, что является концептуальным инвариантом:
   - тики;
   - PSM;
@@ -34,7 +34,11 @@
   - narrative continuity;
   - development governor;
   - homeostasis;
-  - identity-bearing memory.
+  - identity-bearing memory;
+  - workflow orchestration;
+  - skills lifecycle;
+  - action governance.
+- **Hono/API boundary** отвечает за HTTP ingress и operator-facing routes, когда они будут delivered.
 - **Local model services** отвечают за вычислительные органы, но не за личность.
 - **Workshop** отвечает за тренировку, оценку и выпуск моделей/адаптеров.
 - **Git governance** отвечает за дисциплину изменений тела.
@@ -121,9 +125,9 @@
 - один markdown-summary;
 - состояние какого-либо локального model server.
 
-### 2.3 Почему personality state нельзя держать в Mastra memory как в единственном хранилище
+### 2.3 Почему personality state нельзя держать во framework memory как в единственном хранилище
 
-Mastra memory полезна как вспомогательный слой для thread-oriented interaction и bounded context retention, но **не должна** быть источником истины для identity-bearing памяти Полифонии.
+Framework-provided memory полезна как вспомогательный слой для thread-oriented interaction и bounded context retention, но **не должна** быть источником истины для identity-bearing памяти Полифонии.
 
 Причины:
 
@@ -133,13 +137,15 @@ Mastra memory полезна как вспомогательный слой дл
 - требуется строгий контроль над тем, что происходит между тиками;
 - необходимо жёсткое разделение между биографией, developmental memory и procedural interaction memory.
 
-### 2.4 Почему не использовать Mastra Observational Memory как ядро личности
+Конкретно это означает, что ни `Mastra Memory`, ни future `AI SDK` memory providers не могут становиться canonical self-memory layer.
 
-Mastra Observational Memory концептуально полезна, но в текущей концепции она не должна быть identity core memory, потому что использует отдельные background agents для Observer/Reflector-процессов, а Полифония запрещает появление второго субъекта на фоне.
+### 2.4 Почему не использовать framework-managed observational/self-memory как ядро личности
+
+Framework-managed observational/self-memory концептуально полезна, но в текущей концепции она не должна быть identity core memory, потому что обычно вводит отдельные background agents, observer/reflection loops или framework-owned summarization semantics, а Полифония запрещает появление второго субъекта на фоне.
 
 Решение:
 
-- **не использовать OM как core self-memory**;
+- **не использовать framework observational/self-memory как core self-memory**;
 - при желании использовать обычную message history / working memory только для узких thread-local UI use-cases;
 - всё identity-bearing и development-bearing хранить в Polyphony State Kernel.
 
@@ -178,7 +184,7 @@ flowchart LR
     subgraph cell[Polyphony Deployment Cell]
         subgraph control[Identity-bearing Control Plane]
             boot[Constitutional Shell / Boot]
-            core[Polyphony Core Runtime\nTypeScript + Mastra]
+            core[Polyphony Core Runtime\nTypeScript + AI SDK + Hono]
             jobs[Physiology Scheduler / Job Workers]
         end
 
@@ -318,7 +324,7 @@ flowchart TD
     context --> memory[State Kernel Access]
     context --> memetics[Memetic Arena]
     context --> router[Model Router]
-    router --> agent[Mastra Decision Agent]
+    router --> agent[AI SDK Decision Harness]
     memetics --> agent
     memory --> agent
     agent --> decision[Structured Decision]
@@ -421,7 +427,7 @@ interface SensorAdapter {
 
 Минимальный обязательный набор адаптеров первой delivered версии:
 
-- `http-ingress-adapter` — принимает внешние стимулы через Mastra/custom HTTP routes;
+- `http-ingress-adapter` — принимает внешние стимулы через Hono/custom HTTP routes;
 - `filesystem-adapter` — отслеживает allowlisted директории через `chokidar`;
 - `scheduler-adapter` — переводит существующие runtime/scheduler hooks в сенсорные сигналы; в phase-0 это lifecycle/activation hooks планировщика, а не синтетический heartbeat loop, с последующим расширением до событий `pg-boss`;
 - `resource-adapter` — публикует сигналы давления CPU/RAM/GPU/диска;
@@ -508,9 +514,9 @@ interface SensorAdapter {
 - organ health;
 - recent evaluation score.
 
-#### 4.2.8 Mastra Decision Agent
+#### 4.2.8 AI SDK Decision Harness
 
-Это один Mastra `Agent`, который работает как **bounded cognitive harness**.
+Это один AI SDK-backed decision harness, который работает как **bounded cognitive harness**.
 
 Он не хранит личность, а решает текущий тик на основе уже подготовленного контекста.
 
@@ -587,7 +593,8 @@ interface SensorAdapter {
 
 - **Node.js 22 LTS**
 - **TypeScript 5.x**
-- **Mastra** для agent/tools/skills/server/workflows
+- **AI SDK** для model/provider integration, structured generation и bounded tool-loop primitives
+- **Hono** для HTTP ingress и operator/API boundary
 - **Zod** для контрактов входа/выхода и structured decisions
 - **node:test** для smoke и invariant tests
 
@@ -634,7 +641,7 @@ interface SensorAdapter {
 
 ### 5.2 Почему именно такой стек
 
-- TypeScript + Mastra соответствуют исходной рамке и ускоряют построение bounded agent logic.
+- TypeScript + AI SDK дают тонкий и replaceable слой для bounded model-backed reasoning без framework ownership над memory/workflows/skills.
 - PostgreSQL закрывает одновременно state, jobs и сложные запросы.
 - vLLM даёт один унифицированный стек для generative и pooling tasks.
 - TRL + PEFT дают практичный путь к supervised specialization без полного retraining.
@@ -673,7 +680,7 @@ polyphony/
         tools/
         git/
         jobs/
-        mastra/
+        ai/
     workshop/
       src/
         datasets/
@@ -1333,7 +1340,7 @@ Possible later enrichments after explicit future seams:
 
 ### 8.1 Внешние API
 
-Mastra Server используется как HTTP ingress с custom routes.
+`Hono` используется как HTTP ingress с custom routes.
 
 Минимальный набор API:
 
@@ -1441,7 +1448,7 @@ Mastra Server используется как HTTP ingress с custom routes.
 3. Build context
 4. Activate memetic arena
 5. Select model organs
-6. Call Mastra Decision Agent
+6. Call AI SDK Decision Harness
 7. Validate structured decision
 8. Execute one action or conscious inaction
 9. Encode episode
@@ -1820,7 +1827,7 @@ Skills — это процедурный слой между голым reasonin
 
 ### 12.2 Практическая реализация
 
-Использовать **Mastra Workspace Skills** как каноническую форму skill packaging.
+Использовать repo-owned versioned skill packages как каноническую форму skill packaging.
 
 Каждый skill хранится как папка с:
 
@@ -1828,6 +1835,8 @@ Skills — это процедурный слой между голым reasonin
 - `references/`
 - `scripts/`
 - `assets/`
+
+Runtime может адаптировать такие skills в AI SDK-compatible prompt/tool surfaces, но lifecycle и packaging skills не принадлежат framework.
 
 ### 12.3 Какие skills нужны в первой версии
 
@@ -2061,7 +2070,7 @@ Homeostat должен иметь не только метрики, но и де
 - `polyphony-core`
 - PostgreSQL
 - один `vllm-fast`
-- базовый Mastra Agent
+- базовый AI SDK decision harness
 - minimal boot shell
 - ticks + episodes + PSM
 - basic tools
@@ -2164,7 +2173,7 @@ Homeostat должен иметь не только метрики, но и де
 
 ## 17. Главные инженерные решения и обоснования
 
-### 17.1 Почему core memory custom, а не только Mastra memory
+### 17.1 Почему core memory custom, а не только framework memory
 
 Потому что Полифонии нужны custom ontological invariants: PSM, memetics, narrative continuity, development ledger, homeostasis.
 
@@ -2199,7 +2208,8 @@ Homeostat должен иметь не только метрики, но и де
 После реализации первых двух фич некоторые решения подняты из feature-local ADR на уровень репозитория, потому что они влияют почти на каждую следующую поставку:
 
 - канонический toolchain: [ADR-2026-03-19 Canonical Runtime Toolchain](../adr/ADR-2026-03-19-canonical-runtime-toolchain.md);
-- phase-0 runtime boundary (`TypeScript + Mastra + Hono`, но health-only public surface): [ADR-2026-03-19 Phase-0 Runtime Boundary](../adr/ADR-2026-03-19-phase0-runtime-boundary.md);
+- reasoning/model-integration substrate (`AI SDK + Hono`, health-only public surface in phase 0): [ADR-2026-03-25 AI SDK Runtime Substrate](../adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md);
+- historical phase-0 runtime boundary before the substrate migration: [ADR-2026-03-19 Phase-0 Runtime Boundary](../adr/ADR-2026-03-19-phase0-runtime-boundary.md);
 - обязательная phase-0 deployment cell и baseline container posture: [ADR-2026-03-19 Phase-0 Deployment Cell](../adr/ADR-2026-03-19-phase0-deployment-cell.md);
 - constitution-driven boot dependency set и связь boot с delivered substrate: [ADR-2026-03-19 Boot Dependency Contract](../adr/ADR-2026-03-19-boot-dependency-contract.md);
 - canonical quality/style gate ordering и единый formatter/linter contract для source и tests: [ADR-2026-03-19 Quality Gate Sequence](../adr/ADR-2026-03-19-quality-gate-sequence.md).
@@ -2213,12 +2223,12 @@ Homeostat должен иметь не только метрики, но и де
 | Architecture area | Canonical owner | Status | Note on missing work |
 |---|---|---|---|
 | Boot/recovery boundary | `F-0001` | `done` | Constitutional boot/recovery now enforces bounded subject-state compatibility before active handoff and stays fail-closed until a future canonical subject-state restore/backfill contract exists. |
-| Platform substrate, deployment cell and verification baseline | `F-0002`, `F-0006`, `F-0007` | `done` | Phase-0 cell, quality gates and deterministic smoke are delivered; mature hardening and richer CI/CD remain separate future seams. |
+| Platform substrate, deployment cell and verification baseline | `F-0002`, `F-0006`, `F-0007` | `planned` | Phase-0 cell, quality gates and deterministic smoke remain delivered, but the canonical runtime substrate and dependency baseline now require a Mastra-to-AI-SDK migration before this area can return to `done`. |
 | Tick runtime and continuity bridge | `F-0003` | `done` | Runtime admission/startup now rejects unsupported bounded subject-state versions before wake/reactive activation, keeping continuity fail-closed on mismatch. |
 | Subject-state kernel and versioned bounded snapshot | `F-0004` | `done` | Canonical subject-state store now exposes `subjectStateSchemaVersion` in the bounded snapshot API for downstream compatibility checks. |
 | Perception buffer and baseline adapters | `F-0005` | `done` | Baseline stimulus intake is delivered; richer policies and adapters remain future-owned. |
 | Baseline model router and profile continuity | `F-0008` | `done` | Baseline router invariants are delivered; expanded model ecology and specialist organs remain future seams. |
-| Context Builder and structured decision harness | `F-0009` | `done` | The bounded cognition harness is delivered: context assembly, validated Mastra-backed decisions and reactive-first runtime wiring now run inside the canonical deployment cell without a new public API or durable decision-history table. |
+| Context Builder and structured decision harness | `F-0009` | `planned` | The bounded cognition harness remains the canonical owner, but the delivered Mastra-backed implementation now requires refactoring to an AI SDK-backed harness before this area can return to `done`. |
 | Executive center and bounded action layer | `F-0010` | `done` | The bounded executive/action seam is now delivered: validated decisions flow through one canonical executive boundary, append-only `action_log` audit exists, and first-wave bounded wrappers plus `ticks.action_id` continuity are implemented without new public API surface. |
 | Narrative and memetic cognition | `F-0011` | `done` | Narrative/memetic runtime delivery is now live: wake/bootstrap seeding, bounded candidate assembly, ordinary existing-unit updates, coalition/narrative/journal persistence and downstream read-model handoff are implemented, while durable promotion/compaction paths remain explicitly deferred to `CF-018`. |
 | Homeostat and operational guardrails | `CF-008` | `candidate` | Early safety reactions are described architecturally but not yet intaken. |

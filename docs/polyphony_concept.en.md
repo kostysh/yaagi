@@ -1807,6 +1807,26 @@ Practical Polyphony must rely on local models for:
 - local code reasoning;
 - gradual growth of specialization.
 
+### 16.2.1 The framework layer must stay thin and replaceable
+
+The practical implementation must not bind identity-bearing loops to a "thick" agent framework as the owner of memory, workflow logic, or the procedural layer.
+
+Only a thin layer is needed for:
+
+- model/provider integration;
+- structured generation;
+- bounded tool-loop primitives;
+- stream and transport helpers.
+
+Everything else must remain inside Polyphony-owned seams:
+
+- memory and subject state;
+- ticks and lifecycle orchestration;
+- skills and procedural packaging;
+- action and governance boundaries.
+
+Because of that, changing the framework substrate is acceptable and even desirable when it reduces architectural coupling and better preserves the organism's conceptual invariants.
+
 ### 16.3 A Bounded World Is Better Than an Infinite World
 
 Basic Polyphony should live in a sandboxed environment:

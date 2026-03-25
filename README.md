@@ -7,7 +7,7 @@ Yet Another AGI
 
 - Concept document: [English translation](docs/polyphony_concept.en.md), [canonical Russian original](docs/polyphony_concept.md)
 - The agent lives through ticks, keeps a single timeline, and stores durable state in a PostgreSQL-based state kernel.
-- Mastra is used as the reasoning and tooling substrate, while Polyphony Runtime keeps ownership of identity, memory, temporal continuity, and execution discipline.
+- AI SDK is used as the thin reasoning and model-integration substrate, while Polyphony Runtime keeps ownership of identity, memory, temporal continuity, execution discipline, skills, and workflows.
 - Local model services act as cognitive organs, not as separate personalities.
 - The workspace, skills, and code body are Git-governed, while constitutional constraints define boot, recovery, and operating boundaries.
 - The system is designed to grow in phases: from a local deployment cell, to a richer runtime, to workshop-driven model evolution and controlled body change.
@@ -46,6 +46,7 @@ Canonical engineering decisions for the repo:
 
 Repo-level ADRs:
 - `docs/adr/ADR-2026-03-19-canonical-runtime-toolchain.md`
+- `docs/adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md`
 - `docs/adr/ADR-2026-03-19-phase0-runtime-boundary.md`
 - `docs/adr/ADR-2026-03-19-phase0-deployment-cell.md`
 - `docs/adr/ADR-2026-03-19-boot-dependency-contract.md`

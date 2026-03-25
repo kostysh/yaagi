@@ -20,13 +20,14 @@ links:
     - "docs/adr/ADR-2026-03-23-subject-state-evidence-refs.md"
     - "docs/adr/ADR-2026-03-19-canonical-runtime-toolchain.md"
     - "docs/adr/ADR-2026-03-19-phase0-runtime-boundary.md"
+    - "docs/adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md"
 ---
 
 # F-0004 Ядро субъектного состояния и модель памяти
 
 ## 1. Context & Goal
 
-- **User problem:** После `F-0001`, `F-0002` и `F-0003` система умеет безопасно стартовать и вести канонический tick lifecycle, но identity-bearing state всё ещё не имеет собственного владельца. Сейчас delivered runtime держит только узкий singleton `agent_state` для boot/tick handoff, а PSM, goals, beliefs, entities и relationships остаются архитектурой без выделенного feature owner. Без этого следующая реализация начинает либо размазывать память по ad hoc JSON/document fields и logs, либо подменять ядро личности `Mastra` memory, что архитектура прямо запрещает.
+- **User problem:** После `F-0001`, `F-0002` и `F-0003` система умеет безопасно стартовать и вести канонический tick lifecycle, но identity-bearing state всё ещё не имеет собственного владельца. Сейчас delivered runtime держит только узкий singleton `agent_state` для boot/tick handoff, а PSM, goals, beliefs, entities и relationships остаются архитектурой без выделенного feature owner. Без этого следующая реализация начинает либо размазывать память по ad hoc JSON/document fields и logs, либо подменять ядро личности framework memory layer, что архитектура прямо запрещает.
 - **Goal (what success means):** Появляется канонический owner для PostgreSQL state-kernel слоя памяти: singleton `agent_state` расширяется до субъективного ядра, а `goals`, `beliefs`, `entities` и `relationships` получают явный durable contract, согласованный с boot/recovery и tick lifecycle. Следующие seams получают один внутренний путь для загрузки subject-state snapshot и применения tick-scoped state deltas без обращения к неканоническим caches.
 - **Non-goals:** Narrative spine, field journal, memetic units/edges, perception buffer, Context Builder, operator-facing state API, workshop snapshot governance и full homeostat/governor semantics не входят в этот intake.
 
@@ -44,13 +45,13 @@ links:
 
 - `memetic_units`, `memetic_edges`, narrative spine, field journal и другие narrative/memetic surfaces; ими владеет следующий cognition seam.
 - Perception buffer, stimulus normalization, sensor adapters и intake backlog from external channels.
-- Context Builder, model routing, Mastra Decision Agent и structured decision validation.
+- Context Builder, model routing, AI SDK-backed decision harness и structured decision validation.
 - Operator-facing HTTP API для чтения или управления state kernel.
 - Dataset/export/training/eval pipelines, stable snapshot promotion и developmental governance.
 
 ### Constraints
 
-- PostgreSQL state kernel остаётся единственным source of truth для identity-bearing memory; `Mastra` memory и message history не могут становиться каноническим self-memory.
+- PostgreSQL state kernel остаётся единственным source of truth для identity-bearing memory; framework memory layers и message history не могут становиться каноническим self-memory.
 - В системе должен остаться ровно один singleton `agent_state`; фича не имеет права создать второй identity-core anchor рядом с уже delivered boot/tick row.
 - Subject-state updates должны согласовываться с `F-0003` tick transaction boundaries: failed/cancelled or rolled-back tick не может оставить partial identity drift в durable memory tables.
 - Реализация не должна quietly втянуть в себя ownership над narrative/memetic/perception/cognition seams под предлогом "подготовки памяти".
@@ -285,7 +286,7 @@ interface SubjectStateStore {
 
 - Все AC-F0004-* покрыты automated tests с явными ссылками на AC IDs.
 - Singleton `agent_state` больше не остаётся narrow boot/tick pointer only и согласованно удерживает identity-bearing state alongside runtime pointers без второго core anchor.
-- Subject-state snapshot и tick-scoped state delta contracts работают через PostgreSQL state kernel, а не через `Mastra` memory или ad hoc caches.
+- Subject-state snapshot и tick-scoped state delta contracts работают через PostgreSQL state kernel, а не через framework memory layers или ad hoc caches.
 - Реализация явно связывает subject-state delta с terminal tick transaction boundary из `F-0003`.
 - Restart/recovery path подтверждает reload последнего committed subject-state без manual reconstruction и без process-local bootstrap hacks.
 - Для runtime-affecting поведения подтверждены и fast integration path, и containerized smoke path.
@@ -448,3 +449,4 @@ Tasks:
 - **v1.6 (2026-03-24):** `change-proposal`: added the missing schema-evolution layer to the delivered subject-state contract. The dossier now treats bounded snapshots as versioned via `subject_state_schema_version`, fixes the JSON-vs-normalized decision rule and makes `F-0004` the explicit owner of compatibility, migration and backfill semantics for subject-state surfaces.
 - **v1.7 (2026-03-24):** User-approved follow-up after debt audit: the versioned subject-state contract added in `v1.6` is not fully implemented yet. `F-0004` now carries explicit acceptance criterion `AC-F0004-07`, follow-up slice `SL-F0004-06`, AC-linked planned tests, and returns to `shaped` until `subjectStateSchemaVersion` is surfaced in the bounded snapshot API for downstream consumers.
 - **v1.8 (2026-03-24):** Implemented `SL-F0004-06`: `loadSubjectStateSnapshot(...)` now surfaces canonical `subjectStateSchemaVersion` from the singleton anchor, provider-side store/restart verification closes `AC-F0004-07`, and downstream boot/runtime consumers use the bounded versioned contract without raw row re-reads; status advanced back to `done`.
+- **v1.9 (2026-03-25):** `change-proposal`: generalized the memory dossier from Mastra-specific wording to framework-neutral ownership after the repo-level move to AI SDK. `F-0004` remains `done` because its canonical guarantee was already "PostgreSQL over framework memory", and that guarantee still holds unchanged.

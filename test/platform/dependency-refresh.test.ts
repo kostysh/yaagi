@@ -20,11 +20,19 @@ const readJson = async <T>(relativePath: string): Promise<T> =>
   JSON.parse(await readFile(path.join(repoRoot, relativePath), 'utf8')) as T;
 
 // Covers: AC-F0006-01, AC-F0006-02, AC-F0006-06
-void test('AC-F0006-01 фиксирует полный direct dependency verdict и держит target versions без исключений', async () => {
+void test('AC-F0006-01 фиксирует полный direct dependency verdict и explicit Mastra-to-AI-SDK migration target', async () => {
   const rootPackageJson = await readJson<PackageJson>('package.json');
   const corePackageJson = await readJson<PackageJson>('apps/core/package.json');
   const contractsPackageJson = await readJson<PackageJson>('packages/contracts/package.json');
   const dbPackageJson = await readJson<PackageJson>('packages/db/package.json');
+  const coreDependencies: Record<string, string | undefined> = corePackageJson.dependencies ?? {};
+  const dossier = await readFile(
+    path.join(
+      repoRoot,
+      'docs/features/F-0006-baseline-dependency-refresh-and-toolchain-alignment.md',
+    ),
+    'utf8',
+  );
 
   assert.deepEqual(rootPackageJson.devDependencies, {
     '@biomejs/biome': '^2.4.8',
@@ -38,7 +46,7 @@ void test('AC-F0006-01 фиксирует полный direct dependency verdict
     typescript: '^5.9.3',
   });
 
-  assert.deepEqual(corePackageJson.dependencies, {
+  assert.deepEqual(coreDependencies, {
     '@mastra/core': '^1.15.0',
     '@yaagi/contracts': 'workspace:*',
     '@yaagi/db': 'workspace:*',
@@ -46,6 +54,8 @@ void test('AC-F0006-01 фиксирует полный direct dependency verdict
     hono: '^4.12.9',
     zod: '^4.3.6',
   });
+  assert.equal(Object.hasOwn(coreDependencies, 'ai'), false);
+  assert.equal(Object.hasOwn(coreDependencies, '@ai-sdk/openai-compatible'), false);
 
   assert.deepEqual(contractsPackageJson.dependencies, {
     zod: '^4.3.6',
@@ -56,10 +66,34 @@ void test('AC-F0006-01 фиксирует полный direct dependency verdict
     pg: '^8.20.0',
     'pg-boss': '^12.14.0',
   });
+
+  assert.match(
+    dossier,
+    /\| `@mastra\/core` \| `apps\/core` dependency \| `1\.15\.0` \| `1\.15\.0` \| `remove` \| high \|/,
+  );
+  assert.match(
+    dossier,
+    /\| `ai` \| `apps\/core` dependency \| `not installed` \| `6\.0\.138` \| `6\.0\.138` \| medium \|/,
+  );
+  assert.match(
+    dossier,
+    /\| `@ai-sdk\/openai-compatible` \| `apps\/core` dependency \| `not installed` \| `2\.0\.37` \| `2\.0\.37` \| medium \|/,
+  );
+  assert.match(
+    dossier,
+    /direct dependency set for `apps\/core` must move from `@mastra\/core` to `ai` \+ `@ai-sdk\/openai-compatible`/,
+  );
 });
 
 // Covers: AC-F0006-03
-void test('AC-F0006-03 сохраняет совместимость latest surfaces для zod 4, Mastra 1.15 и chokidar 5', async () => {
+void test('AC-F0006-03 keeps the historical runtime surfaces green while the AI SDK compatibility target is explicitly recorded', async () => {
+  const dossier = await readFile(
+    path.join(
+      repoRoot,
+      'docs/features/F-0006-baseline-dependency-refresh-and-toolchain-alignment.md',
+    ),
+    'utf8',
+  );
   const parsedSignal = sensorSignalSchema.parse({
     source: 'http',
     signalType: 'dependency.refresh.probe',
@@ -95,14 +129,25 @@ void test('AC-F0006-03 сохраняет совместимость latest surf
   } finally {
     await rm(tempRoot, { force: true, recursive: true });
   }
+
+  assert.match(dossier, /`ai 6\.0\.138` считается обязательной целевой версией/);
+  assert.match(
+    dossier,
+    /`@ai-sdk\/openai-compatible 2\.0\.37` считается обязательной целевой версией/,
+  );
+  assert.match(dossier, /`@mastra\/core 1\.15\.0` больше не является допустимым target dependency/);
 });
 
 // Covers: AC-F0006-04, AC-F0006-05
-void test('AC-F0006-04 сохраняет канонический verification contract, а AC-F0006-05 фиксирует итоговый repo-level verdict в документации', async () => {
+void test('AC-F0006-04 сохраняет канонический verification contract, а AC-F0006-05 фиксирует AI SDK runtime verdict в документации', async () => {
   const rootPackageJson = await readJson<PackageJson>('package.json');
   const readme = await readFile(path.join(repoRoot, 'README.md'), 'utf8');
   const runtimeAdr = await readFile(
     path.join(repoRoot, 'docs/adr/ADR-2026-03-19-canonical-runtime-toolchain.md'),
+    'utf8',
+  );
+  const substrateAdr = await readFile(
+    path.join(repoRoot, 'docs/adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md'),
     'utf8',
   );
   const dossier = await readFile(
@@ -127,14 +172,26 @@ void test('AC-F0006-04 сохраняет канонический verification 
   );
 
   assert.match(readme, /runtime baseline: `Node\.js 22 \+ TypeScript`/);
+  assert.match(readme, /AI SDK is used as the thin reasoning and model-integration substrate/);
   assert.match(readme, /canonical automation gate: `pnpm quality:check`/);
   assert.match(readme, /containerized phase-0 smoke verification: `pnpm smoke:cell`/);
   assert.match(runtimeAdr, /runtime: `Node\.js 22`/);
   assert.match(runtimeAdr, /package manager: `pnpm`/);
+  assert.match(substrateAdr, /Status: Accepted/);
+  assert.match(
+    substrateAdr,
+    /Канонический reasoning\/model-integration substrate репозитория меняется с `Mastra` на `AI SDK`/,
+  );
 
-  assert.match(dossier, /status: done/);
+  assert.match(dossier, /status: planned/);
   assert.match(dossier, /AC-F0006-04/);
   assert.match(dossier, /AC-F0006-05/);
-  assert.match(dossier, /ADR-F0006-04 External transitive peer-warning seam/);
-  assert.match(dossier, /README\.md.*не потребовали изменения/);
+  assert.match(
+    dossier,
+    /ADR-F0006-04 Runtime substrate migration is part of the dependency baseline/,
+  );
+  assert.match(
+    dossier,
+    /README\.md.*ADR-2026-03-25-ai-sdk-runtime-substrate\.md.*выровнены по новому repo-level runtime contract/,
+  );
 });

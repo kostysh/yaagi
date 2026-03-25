@@ -21,6 +21,7 @@ links:
     - "docs/adr/ADR-2026-03-23-perception-intake-contract.md"
     - "docs/adr/ADR-2026-03-19-canonical-runtime-toolchain.md"
     - "docs/adr/ADR-2026-03-19-phase0-runtime-boundary.md"
+    - "docs/adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md"
 ---
 
 # F-0005 Буфер восприятия и сенсорные адаптеры
@@ -29,7 +30,7 @@ links:
 
 - **User problem:** После `F-0001`, `F-0002` и `F-0003` у системы есть boot gate, deployment cell и канонический tick runtime, но всё ещё нет явного владельца входного слоя между внешними/внутренними сигналами и decision loop. Сейчас runtime умеет принимать только узкие tick requests, а архитектура уже требует unified sensor adapters, perception buffer и нормализованный intake contract; без этого следующий этап либо начнёт подавать raw events напрямую в когнитивный цикл, либо размазывать ingress по ad hoc hooks.
 - **Goal (what success means):** Появляется канонический owner для perception ingress: нормализованные сигналы из `http`, `file`, `scheduler`, `resource`, `system` и рабочего `telegram` sensor-а проходят через единый adapter contract, bounded perception buffer и durable `stimulus_inbox`, а urgent signals могут законно инициировать `reactive` tick через уже delivered runtime path из `F-0003`.
-- **Non-goals:** Context Builder, Mastra Decision Agent, organ selection, narrative/memetic interpretation, operator-facing introspection API, action execution и full homeostat semantics не входят в этот intake. Эта фича также не берёт ownership над субъектной memory-моделью из `F-0004`, кроме стыка с perception aggregates и runtime handoff.
+- **Non-goals:** Context Builder, AI SDK-backed decision harness, organ selection, narrative/memetic interpretation, operator-facing introspection API, action execution и full homeostat semantics не входят в этот intake. Эта фича также не берёт ownership над субъектной memory-моделью из `F-0004`, кроме стыка с perception aggregates и runtime handoff.
 
 ## 2. Scope
 
@@ -371,3 +372,4 @@ Tasks:
 - **v1.5 (2026-03-23):** После полного независимого ревью verification surface был усилен без сужения scope: добавлены реальные adapter-path tests для `filesystem`, `scheduler` и `resource`, lifecycle-тест теперь доказывает stop/restart без dangling watchers/pollers, а `resource-adapter` сбрасывает internal severity state на stop/restart для корректного recovery поведения.
 - **v1.6 (2026-03-23):** После повторного full-scope review устранены скрытые implementation gaps: queued urgent duplicate теперь повторно использует canonical reactive handoff, local `.env.local` Telegram contract реально прокинут в compose-based runtime path, а `scheduler-adapter` переведён с synthetic heartbeat на existing runtime scheduler hook seam.
 - **v1.7 (2026-03-23):** `F-0007` realigned verification ownership: container smoke retained только HTTP/Telegram ingest and reactive handoff inside the deployment cell, а restart-safe queued/claimed stimulus behavior был явно закреплён за fast integration surface (`packages/db/test/perception-store.integration.test.ts`).
+- **v1.8 (2026-03-25):** `change-proposal`: aligned the perception dossier with the repo-level AI SDK substrate by replacing the old Mastra-specific cognition reference in scope boundaries. `F-0005` remains `done`, because its ingress/buffer ownership and verification surface are otherwise unchanged.

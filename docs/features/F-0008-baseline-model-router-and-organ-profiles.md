@@ -19,6 +19,7 @@ links:
     - "docs/features/F-0003-tick-runtime-scheduler-episodic-timeline.md"
     - "docs/adr/ADR-2026-03-19-boot-dependency-contract.md"
     - "docs/adr/ADR-2026-03-19-phase0-runtime-boundary.md"
+    - "docs/adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md"
 ---
 
 # F-0008 Базовый маршрутизатор моделей и профили органов
@@ -28,7 +29,7 @@ links:
 - **User problem:** После `F-0002` и `F-0003` у системы есть канонический runtime и первый локальный model dependency, но всё ещё нет явного владельца для organ/profile selection. Если этот seam не оформить отдельно, phase-1 различие `reactive` / `deliberative` / `contemplative` либо скатится в hardcoded model strings внутри runtime, либо начнёт неявно жить внутри будущего Context Builder или decision harness, что противоречит архитектуре.
 - **Goal (what success means):** В репозитории появляется канонический owner для baseline model routing: profiles `reflex`, `deliberation` и `reflection` получают явный локальный runtime contract, router детерминированно выбирает их по bounded input hints, а active tick continuity фиксирует выбранный `model_profile_id` без раннего втягивания phase-2 model ecology и operator API.
 - **Current phase baseline:** На момент `spec-compact` уже delivered `F-0001`-`F-0007`; boot required dependency set по ADR остаётся `postgres + model-fast`, а `F-0003` по-прежнему допускает end-to-end только `wake` и `reactive` ticks. В этой фазе `F-0008` shaped как routing/continuity seam для baseline organs, а не как полная поставка deliberative/contemplative execution path.
-- **Non-goals:** Полный `model_registry` phase 2 с `code` / `embedding` / `reranker` / `classifier` / `safety`, external consultants, `/models` operator API, Context Builder, Mastra Decision Agent, training/eval/promotion pipeline и workshop governance не входят в этот intake.
+- **Non-goals:** Полный `model_registry` phase 2 с `code` / `embedding` / `reranker` / `classifier` / `safety`, external consultants, `/models` operator API, Context Builder, AI SDK-backed decision harness, training/eval/promotion pipeline и workshop governance не входят в этот intake.
 
 ## 2. Scope
 
@@ -44,7 +45,7 @@ links:
 ### Out of scope
 
 - Расширенная local model ecology (`vllm-deep`, `vllm-pool`, embeddings, reranking, classifier/safety, richer health checks organs); этим владеет `CF-010`.
-- Context Builder, Mastra Decision Agent, structured decision validation и end-to-end deliberative/contemplative cognition; этим владеет `CF-017` и последующие cognitive seams.
+- Context Builder, AI SDK-backed decision harness, structured decision validation и end-to-end deliberative/contemplative cognition; этим владеет `CF-017` и последующие cognitive seams.
 - Executive/tool gateway, review requests, action execution и job dispatch.
 - Operator-facing `/models`, control routes, richer introspection API и human-governed consultant policies.
 - Training/eval/dataset/promotion flow и любые workshop/governance decisions поверх model profiles.
@@ -53,7 +54,7 @@ links:
 
 ### Constraints
 
-- Реализация должна оставаться на canonical phase-0/1 substrate `TypeScript + Mastra + Hono + PostgreSQL + local model services`; никакой альтернативный routing runtime или отдельный model broker не допускается.
+- Реализация должна оставаться на canonical phase-0/1 substrate `TypeScript + AI SDK + Hono + PostgreSQL + local model services`; никакой альтернативный routing runtime или отдельный model broker не допускается.
 - `constitution.yaml` и boot preflight остаются единственным источником истины для required startup dependencies; `F-0008` не имеет права молча сделать `model-deep` или `model-pool` обязательным до отдельных platform/model seams.
 - Router selection должна быть детерминированной и объяснимой; скрытые fallback paths запрещены, кроме явно зафиксированного reflection-as-adapter-over-deliberation варианта.
 - Unsupported roles и unavailable/unhealthy profiles должны давать explicit structured refusal, а не remap в другой organ "по умолчанию".
@@ -368,3 +369,4 @@ Tasks:
 - **v1.6 (2026-03-24):** Final review tightening: `ModelRouter` no longer resolves baseline health when the caller already provided the needed organ-health override, and `AC-F0008-06` now pins that no-reprobe invariant directly in fast-path tests.
 - **v1.7 (2026-03-24):** `change-proposal`: aligned the dossier with the repo-level identity-bearing write-authority matrix. `F-0008` now states explicitly that router ownership is limited to baseline profile registration plus model-profile continuity metadata, while runtime admission, subject-state writes and future cognition/governor surfaces remain outside the router write boundary.
 - **v1.8 (2026-03-24):** `change-proposal`: aligned `F-0008` with the new architecture-level baseline router invariants. The architecture now carries only the minimal delivered router contract, while deterministic selection details, continuity persistence and fast/smoke proofs remain explicitly feature-local to this dossier.
+- **v1.9 (2026-03-25):** `change-proposal`: realigned router wording to the repo-level AI SDK substrate. `F-0008` remains `done` because baseline routing and profile continuity stay framework-neutral, but the old Mastra-specific cognition references were retired in favor of the AI SDK-backed harness owned by `F-0009`.

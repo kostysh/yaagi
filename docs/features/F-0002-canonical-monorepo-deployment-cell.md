@@ -1,7 +1,7 @@
 ---
 id: F-0002
 title: Канонический scaffold монорепы и deployment cell
-status: done
+status: planned
 coverage_gate: strict
 owners: ["@codex"]
 area: platform
@@ -16,6 +16,7 @@ links:
     - "docs/architecture/system.md"
     - "docs/features/F-0001-constitutional-boot-recovery.md"
     - "docs/adr/ADR-2026-03-19-quality-gate-sequence.md"
+    - "docs/adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md"
 ---
 
 # F-0002 Канонический scaffold монорепы и deployment cell
@@ -23,7 +24,7 @@ links:
 ## 1. Context & Goal
 
 - **User problem:** Без явного владельца для platform substrate реализация начинает расходиться с архитектурой уже на первом цикле: стек и package manager фиксируются неявно, runtime живёт вне канонической deployment cell, отсутствуют реальные PostgreSQL/vLLM/Compose контракты, boot/recovery продолжает опираться на предположения, не подтверждённые реальной средой запуска, tracked seed content смешивается с runtime-generated state, а quality/style gates для кода и тестов остаются неформализованными.
-- **Goal (what success means):** Репозиторий получает канонический phase-0 scaffold под `pnpm` monorepo и `TypeScript + Mastra`, минимальную deployment cell для локального/dev запуска (`core`, `postgres`, `vllm-fast`), baseline networks/volumes/container posture, immutable `seed` initialization boundary, materialized writable runtime volumes, bootstrap для PostgreSQL/`pg-boss` readiness, controlled realignment `F-0001` с фактическим runtime substrate и единый root-level quality/style gate contract для application и test code.
+- **Goal (what success means):** Репозиторий получает канонический phase-0 scaffold под `pnpm` monorepo и `TypeScript + AI SDK + Hono`, минимальную deployment cell для локального/dev запуска (`core`, `postgres`, `vllm-fast`), baseline networks/volumes/container posture, immutable `seed` initialization boundary, materialized writable runtime volumes, bootstrap для PostgreSQL/`pg-boss` readiness, controlled realignment `F-0001` с фактическим runtime substrate и единый root-level quality/style gate contract для application и test code.
 - **Non-goals:** Реализация tick engine, PSM/narrative/memetics, полноценной operator API, workshop/training pipeline, `vllm-deep`/`vllm-pool`, mature security hardening и code self-modification не входят в этот intake.
 
 ## 2. Scope
@@ -32,7 +33,7 @@ links:
 
 - Нормализация корневого `pnpm` monorepo scaffold и package/workspace layout до архитектурно согласованного baseline.
 - Seed-first layout contract: tracked initialization content lives under `seed/*`, while writable runtime state is materialized outside that tracked seed boundary.
-- Явный process entrypoint для `polyphony-core` на каноническом стеке `Node 22 + TypeScript + Mastra`.
+- Явный process entrypoint для `polyphony-core` на каноническом стеке `Node 22 + TypeScript + AI SDK + Hono`.
 - Docker Compose deployment cell для phase 0 с сервисами `core`, `postgres` и `vllm-fast`.
 - Baseline networks, volume mounts и минимальная container posture, нужные для корректного локального запуска без скрытых инфраструктурных допущений.
 - Deterministic materialization of writable runtime body/skills/data/model areas from read-only `seed` inputs before active runtime handoff.
@@ -49,7 +50,7 @@ links:
 
 ### Constraints
 
-- Стек должен соответствовать архитектуре: `Node.js 22`, `TypeScript 5.x`, `Mastra`, `node:test`, `pnpm`, `Docker Compose`.
+- Стек должен соответствовать архитектуре: `Node.js 22`, `TypeScript 5.x`, `AI SDK`, `Hono`, `node:test`, `pnpm`, `Docker Compose`.
 - `CF-020` должен закрепить platform substrate, но не поглотить соседние feature seams (`CF-002`, `CF-006`, `CF-009`, `CF-014`).
 - Любое осознанное отклонение от repo layout, deployment topology или container posture должно быть явно задокументировано в ADR блока фичи.
 - Пересмотр `F-0001` должен быть behavior-preserving для already implemented boot logic, если новое platform substrate не требует изменения самих boot invariants.
@@ -60,7 +61,7 @@ links:
 ## 3. Requirements & Acceptance Criteria (SSoT)
 
 - **AC-F0002-01:** Репозиторий предоставляет канонический `pnpm` monorepo scaffold с root-level package manager lock, TypeScript base config, workspace manifests для `apps/*` и `packages/*`, а также baseline layout для `apps/core`, `apps/workshop`, `packages/contracts|domain|db|evals|skills|testkits`, `seed/*`, runtime `workspace/*`, `models/*`, `data/*` и `infra/*`; tracked initialization content lives under `seed/*`, while mutable runtime state is materialized outside that seed boundary; root checks запускаются единообразно через `pnpm` без альтернативного package/runtime path.
-- **AC-F0002-02:** `polyphony-core` получает явный phase-0 entrypoint на `Node 22 + TypeScript + Mastra`, который читает env/config для PostgreSQL, `vllm-fast`, read-only `seed` paths and materialized runtime `workspace/data/model` paths, materializes the writable runtime body before active handoff, и предоставляет минимальную health/readiness boundary, не расширяясь до operator API beyond health.
+- **AC-F0002-02:** `polyphony-core` получает явный phase-0 entrypoint на `Node 22 + TypeScript + AI SDK + Hono`, который читает env/config для PostgreSQL, `vllm-fast`, read-only `seed` paths and materialized runtime `workspace/data/model` paths, materializes the writable runtime body before active handoff, держит AI SDK внутри internal reasoning boundary и предоставляет минимальную health/readiness surface, не расширяясь до operator API beyond health.
 - **AC-F0002-03:** Локальная/dev deployment cell поднимается через Docker Compose с сервисами `core`, `postgres` и `vllm-fast`, именованными internal networks (`core_net`, `models_net`, `db_net`) и сервисными адресами, согласованными с архитектурой; `core` получает read-only `seed` mount отдельно от writable runtime volumes и может reach PostgreSQL и `http://vllm-fast:8000/v1` только через объявленную cell wiring.
 - **AC-F0002-04:** Container manifests и runtime wiring фиксируют baseline platform posture: non-root execution, отсутствие `privileged` и `docker.sock`, read-only mount `/seed`, отдельные writable runtime surfaces для `/workspace`, `/models` и `/data`, а также явные временные пути/resource surfaces; если phase-0 не может соблюсти часть posture, отклонение фиксируется в ADR, а не скрывается в конфиге.
 - **AC-F0002-05:** Platform bootstrap неинтерактивно подготавливает PostgreSQL connectivity, migration/schema-version readiness и `pg-boss` readiness для phase-0 cell, materializes writable runtime body/skills/bootstrap data from `seed`, а smoke/invariant suite подтверждает, что `core` стартует в containerized режиме только после успешного доступа к Postgres, `seed` boundary и `vllm-fast`.
@@ -196,7 +197,7 @@ interface CoreRuntimeApp {
 - Root quality/style gates для source и tests поставлены как единый contract с порядком `format -> typecheck -> lint`.
 - `docs/ssot/index.md` синхронизирован, dossier lint проходит без ошибок и предупреждений.
 
-## 7. Slicing plan (2–6 increments)
+## 7. Slicing plan (2–8 increments)
 
 ### Slice SL-F0002-01: Monorepo scaffold normalization
 Delivers: root/platform scaffold, который делает repo shape и package boundaries явными и каноническими.
@@ -216,7 +217,7 @@ Exit criteria:
 - Health boundary не расползается в полноценную operator API.
 Tasks:
 - **T-F0002-03:** Добавить `polyphony-core` runtime entrypoint и config loading для PostgreSQL, `vllm-fast` и volume paths. Covers: AC-F0002-02.
-- **T-F0002-04:** Встроить минимальную Mastra/server boundary и `GET /health` без выхода в поздний API scope. Covers: AC-F0002-02.
+- **T-F0002-04:** Встроить минимальную AI SDK-backed reasoning boundary за `Hono` и `GET /health` без выхода в поздний API scope. Covers: AC-F0002-02.
 
 ### Slice SL-F0002-03: Deployment cell and baseline container posture
 Delivers: compose-managed phase-0 cell с явными сервисами, сетями, mounts и baseline posture.
@@ -272,6 +273,17 @@ Tasks:
 - **T-F0002-16:** Implement deterministic materialization of writable runtime body/skills/bootstrap files from `seed` before active boot handoff, without silent overwrite of live runtime state. Covers: AC-F0002-02, AC-F0002-05.
 - **T-F0002-17:** Realign `F-0001`, ignore policy and platform verification so boot/recovery and repo hygiene follow the new `seed` boundary. Covers: AC-F0002-06.
 
+### Slice SL-F0002-08: AI SDK substrate realignment
+Delivers: platform-level replacement of the historical Mastra runtime substrate with `AI SDK + Hono`, keeping the same deployment cell, health-only public boundary and seed/materialized-runtime contract.
+Covers: AC-F0002-01, AC-F0002-02
+Exit criteria:
+- `apps/core` no longer depends on `@mastra/core` for phase-0 runtime startup.
+- The canonical phase-0 entrypoint uses AI SDK provider wiring for local OpenAI-compatible model services and keeps `GET /health` as the only public route.
+- Platform docs and runtime naming no longer encode Mastra as the canonical substrate.
+Tasks:
+- **T-F0002-18:** Replace the historical `phase0-mastra` bootstrap with an AI SDK-backed runtime boundary and align file/module naming with the new substrate. Covers: AC-F0002-01, AC-F0002-02.
+- **T-F0002-19:** Keep `Hono` as the sole HTTP ingress and prove that the phase-0 public surface remains health-only after the substrate migration. Covers: AC-F0002-02.
+
 ## 8. Suggested issue titles
 
 - `F-0002 / SL-F0002-01 Monorepo scaffold normalization` → [SL-F0002-01](#slice-sl-f0002-01-monorepo-scaffold-normalization)
@@ -281,13 +293,14 @@ Tasks:
 - `F-0002 / SL-F0002-05 F-0001 realignment to the delivered cell` → [SL-F0002-05](#slice-sl-f0002-05-f-0001-realignment-to-the-delivered-cell)
 - `F-0002 / SL-F0002-06 Root quality gates and GitHub Actions test automation` → [SL-F0002-06](#slice-sl-f0002-06-root-quality-gates-and-github-actions-test-automation)
 - `F-0002 / SL-F0002-07 Seed initialization boundary and materialized runtime volumes` → [SL-F0002-07](#slice-sl-f0002-07-seed-initialization-boundary-and-materialized-runtime-volumes)
+- `F-0002 / SL-F0002-08 AI SDK substrate realignment` → [SL-F0002-08](#slice-sl-f0002-08-ai-sdk-substrate-realignment)
 
 ## 9. Test plan & Coverage map
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0002-01 | `test/platform/monorepo-scaffold.test.ts` → `test("AC-F0002-01 exposes the canonical pnpm monorepo scaffold and workspace layout")`; `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-01 loads the phase-0 runtime config from env and repo defaults")` | done |
-| AC-F0002-02 | `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-02 serves a minimal GET /health boundary with readiness state")`; `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-02 materializes writable runtime paths from seed before startup handoff")`; `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-02 keeps the phase-0 boundary health-only and surfaces dependency loss after startup")` | done |
+| AC-F0002-01 | `test/platform/monorepo-scaffold.test.ts` → `test("AC-F0002-01 exposes the canonical pnpm monorepo scaffold and workspace layout")`; `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-01 loads the phase-0 runtime config from env and repo defaults")` | planned |
+| AC-F0002-02 | `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-02 serves a minimal GET /health boundary with readiness state")`; `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-02 materializes writable runtime paths from seed before startup handoff")`; `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-02 keeps the phase-0 boundary health-only and surfaces dependency loss after startup")` | planned |
 | AC-F0002-03 | `infra/docker/test/compose-config.test.ts` → `test("AC-F0002-03 renders the canonical compose cell with phase-0 service wiring")` | done |
 | AC-F0002-04 | `infra/docker/test/container-posture.test.ts` → `test("AC-F0002-04 enforces baseline container posture and declared mounts")`; `apps/core/test/platform/runtime-seed.test.ts` → `test("AC-F0002-04 rejects runtime paths that collapse back under the tracked seed boundary")` | done |
 | AC-F0002-05 | `apps/core/test/platform/runtime-seed.test.ts` → `test("AC-F0002-05 materializes empty runtime volumes from seed and preserves live runtime state on reuse")`; `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0002-05 initializes postgres and pgboss readiness before core reports ready")` | done |
@@ -322,12 +335,12 @@ Tasks:
 - Alternatives: Сразу поднимать всю canonical cell; делать `core` без какого-либо model service и откладывать first organ ещё дальше.
 - Consequences: Phase-0 remains implementable; early cell stays faithful to architecture without prematurely absorbing later-phase components.
 
-### ADR-F0002-03: Phase-0 ingress остаётся health-only, хотя runtime уже построен на Mastra
+### ADR-F0002-03: Phase-0 ingress остаётся health-only, хотя runtime уже построен на AI SDK + Hono
 - Status: Accepted
-- Context: Архитектура в зрелом виде использует Mastra Server как HTTP ingress с richer custom routes, но ранний platform substrate не должен преждевременно открывать operator/control API до `CF-009`.
-- Decision: `core` поставляется как `TypeScript + Mastra + Hono` runtime с зарегистрированным phase-0 Mastra agent, но публичная HTTP surface на этом шаге намеренно ограничена `GET /health`; richer MastraServer-managed routes будут введены отдельной API feature.
-- Alternatives: Сразу публиковать MastraServer default routes; полностью отказаться от Mastra до более поздней фазы.
-- Consequences: Стек и runtime substrate уже канонические, но HTTP perimeter остаётся минимальным и не конфликтует с backlog seam для operator API.
+- Context: После ADR `2026-03-25` архитектура использует `AI SDK` только как internal reasoning/model-integration слой, а canonical HTTP ingress должен оставаться repo-owned через `Hono`; ранний platform substrate всё ещё не должен преждевременно открывать operator/control API до `CF-009`.
+- Decision: `core` поставляется как `TypeScript + AI SDK + Hono` runtime, где AI SDK живёт за internal reasoning boundary, а публичная HTTP surface на этом шаге намеренно ограничена `GET /health`; richer operator routes будут введены отдельной API feature.
+- Alternatives: Дать framework-owned server layer стать каноническим ingress; сохранить `Mastra` как phase-0 substrate несмотря на новое repo-level ADR.
+- Consequences: Stack и runtime substrate остаются каноническими, но HTTP perimeter по-прежнему минимален и не конфликтует с backlog seam для operator API.
 
 ### ADR-F0002-04: `vllm-fast` в phase 0 поставляется как OpenAI-compatible stub service
 - Status: Accepted
@@ -359,7 +372,7 @@ Tasks:
 
 ## 11. Progress & links
 
-- Status: `proposed` → `shaped` → `planned` → `done` → `planned` → `done` → `planned` → `done` → `planned` → `done`
+- Status: `proposed` → `shaped` → `planned` → `done` → `planned` → `done` → `planned` → `done` → `planned` → `done` → `planned`
 - Issue: -
 - PRs:
   - -
@@ -396,6 +409,7 @@ Tasks:
   - `.gitignore`
   - `docs/architecture/system.md`
   - `docs/backlog/feature-candidates.md`
+  - `docs/adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md`
   - `docs/adr/ADR-2026-03-19-phase0-deployment-cell.md`
   - `docs/features/F-0001-constitutional-boot-recovery.md`
   - `seed/constitution/constitution.yaml`
@@ -416,3 +430,4 @@ Tasks:
 - **v1.11 (2026-03-22):** Applied a controlled platform change proposal that replaces mixed tracked/runtime volume ownership with a `seed -> materialized runtime volumes` boundary: architecture and backlog now treat `seed/*` as the only tracked initialization source, while `workspace/*`, `models/*` and `data/*` become generated runtime state; `F-0002` status returned to `planned` pending implementation.
 - **v1.12 (2026-03-22):** Implemented `SL-F0002-07` by moving tracked initialization content to `seed/*`, rewiring the deployment cell to mount read-only `/seed` plus writable named runtime volumes, materializing runtime body/skills/models/data before active boot handoff, aligning `F-0001` and the phase-0 deployment ADR to the new boundary, and enforcing repo hygiene by ignoring all non-seed runtime volumes; status advanced back to `done`.
 - **v1.13 (2026-03-24):** `change-proposal`: aligned `F-0002` with the architecture-level baseline router invariants by making the platform-owned health boundary explicit. `GET /health` remains the readiness and diagnostics surface owned by the platform seam, while router-provided profile diagnostics only enrich that payload and do not create a second platform authority.
+- **v1.14 (2026-03-25):** `change-proposal`: applied the repo-level runtime-substrate migration from `Mastra` to `AI SDK`. `F-0002` now defines the canonical phase-0 platform as `TypeScript + AI SDK + Hono`, adds an explicit platform refactor slice for replacing the historical `phase0-mastra` boundary, and returns to `planned` until the delivered runtime entrypoint and dependency baseline are physically migrated.
