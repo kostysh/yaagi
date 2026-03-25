@@ -58,7 +58,7 @@ links:
 - Reopening already delivered baseline router invariants from `F-0008`, including explicit `reflection` policy, structured refusal and separation of `selection` from tick `admission`.
 - Ownership of operator HTTP routes such as `GET /models`; that remains `F-0013`.
 - Ownership of derived read-only `model organ health report` / `profile-health report`; that remains `CF-015`.
-- Workshop datasets/training/eval/promotion and candidate-model lifecycle; those remain `CF-011`.
+- Workshop datasets/training/eval/promotion and candidate-model lifecycle; those remain `F-0015`.
 - Specialist organ rollout, staged promotion, retirement policy and specialist birth governance; those remain `CF-019`.
 - Governor policy writes, freeze/development proposals or direct human-override logic; those remain `CF-016` and later safety/governance seams.
 - Silent promotion of new boot-required dependencies beyond the constitution/platform owners.
@@ -79,7 +79,7 @@ links:
 - **AC-F0014-03:** `F-0014` defines one canonical richer source-diagnostics contract that downstream seams may consume without inventing shadow state: it exposes machine-readable availability, degradation/quarantine state, error-rate/latency posture and fallback readiness per richer organ/profile for bounded operator projection in `F-0013` and for derived report materialization in `CF-015`; `F-0012` does not read this source state directly.
 - **AC-F0014-04:** Expanded fallback and quarantine semantics extend, but do not reopen, the baseline router invariants: explicit `reflection` handling, structured refusal for unsupported roles/capabilities and the separation between model selection and tick admission remain intact; richer ecology may add declared fallback chains and quarantine evidence, but it may not introduce hidden silent fallback or hidden best-effort remap.
 - **AC-F0014-05:** Optional phase-2 organ services degrade gracefully when absent or unhealthy: missing `vllm-deep`, `vllm-pool`, `embedding` or `reranker` surfaces must appear as explicit unavailable/degraded/quarantined source state rather than startup-critical hidden dependencies or fabricated healthy profiles.
-- **AC-F0014-06:** Ownership boundaries remain explicit after shaping: `F-0014` owns richer model-registry source rows and companion health/fallback source surfaces, `F-0013` stays owner of operator HTTP publication, `CF-015` stays owner of derived read-only `model organ health reports`, `CF-011` stays owner of workshop/promotion, and `CF-019` stays owner of specialist lifecycle policy.
+- **AC-F0014-06:** Ownership boundaries remain explicit after shaping: `F-0014` owns richer model-registry source rows and companion health/fallback source surfaces, `F-0013` stays owner of operator HTTP publication, `CF-015` stays owner of derived read-only `model organ health reports`, `F-0015` stays owner of workshop/promotion preparation, and `CF-019` stays owner of specialist lifecycle policy.
 - **AC-F0014-07:** The feature extends the existing `model_registry` family without creating a shadow registry: baseline rows and continuity pointers remain `F-0008`, while richer-role rows plus explicit companion health/fallback source surfaces become `F-0014`-owned and machine-readable enough for later implementation without relying on untyped JSON conventions alone.
 
 ## 4. Non-functional requirements (NFR)
@@ -222,7 +222,7 @@ type ModelOrganHealthReportInput = {
 
 - `F-0014` is the canonical owner of richer model ecology source state, bounded source diagnostics and explicit fallback/quarantine metadata beyond the baseline router slice.
 - Additional organ families are represented in canonical registry/health surfaces without silently changing the required boot dependency set.
-- `F-0013`, `CF-015`, `F-0012`, `CF-011` and `CF-019` boundaries remain explicit and aligned.
+- `F-0013`, `CF-015`, `F-0012`, `F-0015` and `CF-019` boundaries remain explicit and aligned.
 - The baseline router invariants from `F-0008` stay intact and are not reopened by richer ecology delivery.
 - The existing `model_registry` family is extended through an explicit logical owner split and companion source surfaces rather than a second shadow registry or under-specified JSON drift.
 - Architecture, backlog and SSOT index all point to this dossier as the canonical owner of expanded model ecology and registry health.
