@@ -144,6 +144,35 @@ void test('AC-F0015-04 durably records failed dataset, training, and eval attemp
     assert.equal(failedTraining?.datasetId, readyDataset.dataset.datasetId);
     assert.equal(failedTraining?.metricsJson['result'], 'failed');
 
+    const missingDatasetService = createWorkshopService({
+      store,
+      dataPath: path.join(root, 'data-ok'),
+      modelsPath: path.join(root, 'models-ok'),
+      createId: (() => {
+        let index = 250;
+        return () => `training-${++index}`;
+      })(),
+      now: () => new Date('2026-03-26T17:12:30.000Z'),
+    });
+    await assert.rejects(
+      () =>
+        missingDatasetService.launchTrainingRun({
+          requestId: 'training-build-missing-dataset',
+          targetKind: 'shared_adapter',
+          targetProfileId: 'reflex.fast@baseline',
+          datasetId: 'missing-dataset',
+          method: 'lora',
+        }),
+      /unknown workshop dataset/,
+    );
+
+    const missingDatasetFailure = Object.values(harness.state.trainingRunsById).find(
+      (row) => row.metricsJson['requestedDatasetId'] === 'missing-dataset',
+    );
+    assert.equal(missingDatasetFailure?.datasetId, null);
+    assert.equal(missingDatasetFailure?.status, 'failed');
+    assert.equal(missingDatasetFailure?.metricsJson['datasetResolved'], false);
+
     const evalFailureService = createWorkshopService({
       store,
       dataPath: dataBlocker,

@@ -12,7 +12,7 @@ create table if not exists polyphony_runtime.training_runs (
   run_id text primary key,
   target_kind text not null check (target_kind in ('shared_adapter', 'specialist_candidate')),
   target_profile_id text null,
-  dataset_id text not null references polyphony_runtime.datasets(dataset_id) on delete restrict,
+  dataset_id text null references polyphony_runtime.datasets(dataset_id) on delete restrict,
   method text not null check (method in ('lora', 'qlora', 'other_bounded_method')),
   hyperparams_json jsonb not null default '{}'::jsonb,
   metrics_json jsonb not null default '{}'::jsonb,

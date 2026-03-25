@@ -491,33 +491,33 @@ export const createWorkshopService = (options: WorkshopServiceOptions): Workshop
           failure: describeError(error),
         });
 
-        if (dataset) {
-          await options.store
-            .persistTrainingRun({
-              runId,
-              targetKind: input.targetKind,
-              targetProfileId: input.targetProfileId,
-              datasetId: input.datasetId,
-              method: input.method,
-              hyperparamsJson: {
-                owner: 'F-0015',
-                rank: input.method === 'qlora' ? 32 : 16,
-                adapterStyle: input.targetKind,
+        await options.store
+          .persistTrainingRun({
+            runId,
+            targetKind: input.targetKind,
+            targetProfileId: input.targetProfileId,
+            datasetId: dataset?.datasetId ?? null,
+            method: input.method,
+            hyperparamsJson: {
+              owner: 'F-0015',
+              rank: input.method === 'qlora' ? 32 : 16,
+              adapterStyle: input.targetKind,
+            },
+            metricsJson: createFailureMetrics({
+              phase: 'training_run',
+              error,
+              extra: {
+                requestedDatasetId: input.datasetId,
+                datasetResolved: dataset !== null,
+                datasetStatus: dataset?.status ?? null,
               },
-              metricsJson: createFailureMetrics({
-                phase: 'training_run',
-                error,
-                extra: {
-                  datasetStatus: dataset.status,
-                },
-              }),
-              artifactUri,
-              status: 'failed',
-              startedAt,
-              endedAt: startedAt,
-            })
-            .catch(() => {});
-        }
+            }),
+            artifactUri,
+            status: 'failed',
+            startedAt,
+            endedAt: startedAt,
+          })
+          .catch(() => {});
 
         throw error;
       }

@@ -103,8 +103,8 @@ export function createWorkshopDbHarness(options: WorkshopHarnessOptions = {}): {
     }
 
     if (sql.includes('insert into polyphony_runtime.training_runs')) {
-      const datasetId = String(params[3]);
-      if (!state.datasetsById[datasetId]) {
+      const datasetId = (params[3] as string | null) ?? null;
+      if (datasetId && !state.datasetsById[datasetId]) {
         throw new Error(`unknown dataset ${datasetId}`);
       }
 

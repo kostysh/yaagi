@@ -90,7 +90,7 @@ export type WorkshopTrainingRunRow = {
   runId: string;
   targetKind: WorkshopCandidateKind;
   targetProfileId: string | null;
-  datasetId: string;
+  datasetId: string | null;
   method: WorkshopTrainingMethod;
   hyperparamsJson: Record<string, unknown>;
   metricsJson: Record<string, unknown>;
@@ -280,7 +280,7 @@ const normalizeTrainingRunRow = (row: QueryResultRow): WorkshopTrainingRunRow =>
   runId: String(row['runId']),
   targetKind: row['targetKind'] as WorkshopCandidateKind,
   targetProfileId: (row['targetProfileId'] as string | null) ?? null,
-  datasetId: String(row['datasetId']),
+  datasetId: (row['datasetId'] as string | null) ?? null,
   method: row['method'] as WorkshopTrainingMethod,
   hyperparamsJson: toRecord(row['hyperparamsJson']),
   metricsJson: toRecord(row['metricsJson']),
