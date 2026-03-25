@@ -2,12 +2,13 @@
 id: F-0008
 title: Базовый маршрутизатор моделей и профили органов
 status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: models
 depends_on: [F-0002, F-0003]
 impacts: [runtime, db, models, cognition]
 created: 2026-03-23
-updated: 2026-03-24
+updated: 2026-03-25
 links:
   issue: ""
   pr: []

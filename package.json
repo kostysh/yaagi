@@ -20,10 +20,16 @@
     "smoke:cell:local": "node --env-file=.env.local --experimental-strip-types --test infra/docker/deployment-cell.smoke.ts",
     "debt:audit": "node scripts/debt-audit.mjs",
     "debt:audit:changed": "node scripts/debt-audit.mjs --changed-only",
+    "index:refresh": "node scripts/index-refresh.mjs",
     "sync:index": "node scripts/sync-index.mjs",
     "lint:dossiers": "node scripts/lint-dossiers.mjs",
     "coverage:audit": "node scripts/coverage-audit.mjs",
-    "dependency:graph": "node scripts/dependency-graph.mjs"
+    "dependency:graph": "node scripts/dependency-graph.mjs",
+    "next:step": "node scripts/next-step.mjs",
+    "dossier:verify": "node scripts/dossier-verify.mjs",
+    "review:artifact": "node scripts/review-artifact.mjs",
+    "dossier:step:close": "node scripts/dossier-step-close.mjs",
+    "contract:drift:audit": "node scripts/contract-drift-audit.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.8",

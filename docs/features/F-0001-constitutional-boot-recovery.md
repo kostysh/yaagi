@@ -2,12 +2,13 @@
 id: F-0001
 title: Конституционный контур запуска и восстановления
 status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: runtime
 depends_on: [F-0002]
 impacts: [runtime, db, models, storage]
 created: 2026-03-19
-updated: 2026-03-24
+updated: 2026-03-25
 links:
   issue: ""
   pr: []

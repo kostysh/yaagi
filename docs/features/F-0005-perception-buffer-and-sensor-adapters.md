@@ -2,12 +2,13 @@
 id: F-0005
 title: Буфер восприятия и сенсорные адаптеры
 status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: perception
 depends_on: [F-0001, F-0002, F-0003]
 impacts: [runtime, db, ingress, perception]
 created: 2026-03-23
-updated: 2026-03-23
+updated: 2026-03-25
 links:
   issue: ""
   pr: []

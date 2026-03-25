@@ -2,12 +2,13 @@
 id: F-0002
 title: Канонический scaffold монорепы и deployment cell
 status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: platform
 depends_on: []
 impacts: [runtime, infra, db, models, workspace]
 created: 2026-03-19
-updated: 2026-03-24
+updated: 2026-03-25
 links:
   issue: ""
   pr: []

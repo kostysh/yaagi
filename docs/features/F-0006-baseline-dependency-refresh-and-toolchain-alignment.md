@@ -2,12 +2,13 @@
 id: F-0006
 title: Актуализация базовых зависимостей и выравнивание инструментального стека
 status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: platform
 depends_on: [F-0001, F-0002, F-0003, F-0004, F-0005]
 impacts: [runtime, infra, toolchain, dependencies]
 created: 2026-03-23
-updated: 2026-03-23
+updated: 2026-03-25
 links:
   issue: ""
   pr: []

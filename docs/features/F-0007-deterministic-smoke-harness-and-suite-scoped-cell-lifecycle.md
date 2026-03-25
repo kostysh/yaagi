@@ -2,12 +2,13 @@
 id: F-0007
 title: Детерминированный smoke harness и suite-scoped lifecycle deployment cell
 status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: platform
 depends_on: [F-0002, F-0003, F-0004, F-0005, F-0006]
 impacts: [runtime, infra, verification, smoke]
 created: 2026-03-23
-updated: 2026-03-23
+updated: 2026-03-25
 links:
   issue: ""
   pr: []

@@ -2,12 +2,13 @@
 id: F-0003
 title: Тиковый runtime, scheduler и эпизодическая линия времени
 status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: runtime
 depends_on: [F-0001, F-0002]
 impacts: [runtime, db, timeline, jobs]
 created: 2026-03-21
-updated: 2026-03-24
+updated: 2026-03-25
 links:
   issue: ""
   pr: []

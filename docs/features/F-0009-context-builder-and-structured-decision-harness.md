@@ -2,12 +2,13 @@
 id: F-0009
 title: Context Builder и structured decision harness
 status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: cognition
 depends_on: [F-0003, F-0004, F-0005, F-0008]
 impacts: [runtime, db, perception, memory, models, cognition]
 created: 2026-03-24
-updated: 2026-03-24
+updated: 2026-03-25
 links:
   issue: ""
   pr: []

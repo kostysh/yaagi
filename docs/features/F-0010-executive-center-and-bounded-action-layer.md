@@ -2,12 +2,13 @@
 id: F-0010
 title: Исполнительный центр и ограниченный слой действий
 status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: actions
 depends_on: [F-0002, F-0003, F-0005, F-0008, F-0009]
 impacts: [runtime, db, tools, jobs, workspace, network]
 created: 2026-03-24
-updated: 2026-03-24
+updated: 2026-03-25
 links:
   issue: ""
   pr: []

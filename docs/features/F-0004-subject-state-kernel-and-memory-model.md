@@ -2,12 +2,13 @@
 id: F-0004
 title: Ядро субъектного состояния и модель памяти
 status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: memory
 depends_on: [F-0001, F-0002, F-0003]
 impacts: [runtime, db, memory, state]
 created: 2026-03-23
-updated: 2026-03-24
+updated: 2026-03-25
 links:
   issue: ""
   pr: []
