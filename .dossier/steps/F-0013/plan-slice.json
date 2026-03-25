@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-03-25T20:48:02.096Z",
+  "feature_id": "F-0013",
+  "dossier": "docs/features/F-0013-operator-http-api-and-introspection.md",
+  "step": "plan-slice",
+  "dossier_status": "planned",
+  "current_commit": "b20db14b66e615f1c7fa008be7371fafcd007d64",
+  "verification_artifact": ".dossier/verification/F-0013/plan-slice-b20db14b66e6.json",
+  "review_artifact": ".dossier/reviews/F-0013/plan-slice-b20db14b66e6.json",
+  "review_fresh_for_commit": true,
+  "process_complete": true,
+  "blockers": [],
+  "next_step": "implementation"
+}
