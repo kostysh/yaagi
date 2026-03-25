@@ -24,8 +24,11 @@ import {
   createTickRuntimeStore,
   ensureRuntimeAgentStateRow,
   getRuntimeAgentStateRow,
+  type RuntimeEpisodePageInput,
   type RuntimeMode,
   type RuntimeEpisodeRow,
+  type RuntimeTimelineEventPageInput,
+  type RuntimeTimelineEventRow,
   type SubjectStateDelta,
   type SubjectStateSnapshot,
   type SubjectStateSnapshotInput,
@@ -83,6 +86,9 @@ type RuntimeLifecycle = {
   }>;
   ingestHttpStimulus(input: HttpIngestStimulusInput): Promise<StimulusIngestResult>;
   health(): Promise<PerceptionHealthSnapshot>;
+  getSubjectStateSnapshot(input?: SubjectStateSnapshotInput): Promise<SubjectStateSnapshot>;
+  listTimelineEvents(input?: RuntimeTimelineEventPageInput): Promise<RuntimeTimelineEventRow[]>;
+  listEpisodes(input?: RuntimeEpisodePageInput): Promise<RuntimeEpisodeRow[]>;
   getModelRoutingDiagnostics(input?: {
     reflex?: ModelHealthSummary;
     deliberation?: ModelHealthSummary;
@@ -1279,6 +1285,27 @@ export function createPhase0RuntimeLifecycle(
       } catch {
         return DEFAULT_PERCEPTION_HEALTH;
       }
+    },
+
+    getSubjectStateSnapshot(input?: SubjectStateSnapshotInput): Promise<SubjectStateSnapshot> {
+      return withRuntimeClient(config.postgresUrl, async (client) => {
+        const store = createTickRuntimeStore(client);
+        return await store.loadSubjectStateSnapshot(input);
+      });
+    },
+
+    listTimelineEvents(input?: RuntimeTimelineEventPageInput): Promise<RuntimeTimelineEventRow[]> {
+      return withRuntimeClient(config.postgresUrl, async (client) => {
+        const store = createTickRuntimeStore(client);
+        return await store.listTimelineEventsPage(input);
+      });
+    },
+
+    listEpisodes(input?: RuntimeEpisodePageInput): Promise<RuntimeEpisodeRow[]> {
+      return withRuntimeClient(config.postgresUrl, async (client) => {
+        const store = createTickRuntimeStore(client);
+        return await store.listEpisodesPage(input);
+      });
     },
 
     getModelRoutingDiagnostics(input?: {

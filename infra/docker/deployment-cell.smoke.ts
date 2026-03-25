@@ -23,7 +23,7 @@ const smokeLifecycleMetrics = {
   telegramFamilyTeardowns: 0,
   runtimeResets: 0,
 };
-const expectedRuntimeResets = 9;
+const expectedRuntimeResets = 10;
 
 function coreBaseUrl(port = defaultCoreHostPort): string {
   return `http://127.0.0.1:${port}`;
@@ -520,7 +520,7 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
 
     await prepareFreshRuntimeScenario();
     await t.test(
-      'AC-F0008-06 surfaces baseline model-routing diagnostics without opening a /models API in the deployment cell',
+      'AC-F0008-06 surfaces baseline model-routing diagnostics through health and the bounded operator /models API in the deployment cell',
       async () => {
         const healthResponse = await waitForHttp(coreHealthUrl());
         const healthPayload = (await healthResponse.json()) as {
@@ -568,7 +568,65 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
         );
 
         const modelsResponse = await fetch(`${coreBaseUrl()}/models`);
-        assert.equal(modelsResponse.status, 404);
+        assert.equal(modelsResponse.status, 200);
+        const modelsPayload = (await modelsResponse.json()) as {
+          baselineProfiles: Array<{
+            modelProfileId: string;
+            role: string;
+            status: string;
+            adapterOf: string | null;
+            baseModel: string;
+            healthSummary: {
+              healthy: boolean;
+            };
+          }>;
+          richerRegistryHealth: {
+            available: boolean;
+            owner: string;
+            reason: string;
+          };
+        };
+        assert.deepEqual(
+          modelsPayload.baselineProfiles.map((profile) => ({
+            modelProfileId: profile.modelProfileId,
+            role: profile.role,
+            status: profile.status,
+            adapterOf: profile.adapterOf,
+            baseModel: profile.baseModel,
+            healthy: profile.healthSummary.healthy,
+          })),
+          [
+            {
+              modelProfileId: 'deliberation.fast@baseline',
+              role: 'deliberation',
+              status: 'active',
+              adapterOf: null,
+              baseModel: 'model-fast',
+              healthy: true,
+            },
+            {
+              modelProfileId: 'reflex.fast@baseline',
+              role: 'reflex',
+              status: 'active',
+              adapterOf: null,
+              baseModel: 'model-fast',
+              healthy: true,
+            },
+            {
+              modelProfileId: 'reflection.fast@baseline',
+              role: 'reflection',
+              status: 'active',
+              adapterOf: 'deliberation.fast@baseline',
+              baseModel: 'model-fast',
+              healthy: true,
+            },
+          ],
+        );
+        assert.deepEqual(modelsPayload.richerRegistryHealth, {
+          available: false,
+          owner: 'CF-010',
+          reason: 'future_owned',
+        });
 
         assert.equal(
           await queryPostgres(
@@ -576,6 +634,65 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
           ),
           '3',
         );
+      },
+    );
+
+    await prepareFreshRuntimeScenario();
+    // Covers: AC-F0013-08
+    await t.test(
+      'AC-F0013-08 exposes bounded operator state and explicit governor gating in the deployment cell',
+      async () => {
+        const expectedSubjectStateSchemaVersion = await queryPostgres(
+          'select schema_version from platform_bootstrap.schema_state where id = 1;',
+        );
+        const stateResponse = await fetch(`${coreBaseUrl()}/state`);
+        assert.equal(stateResponse.status, 200);
+        const statePayload = (await stateResponse.json()) as {
+          snapshot: {
+            subjectStateSchemaVersion: string;
+            agentState: {
+              agentId: string;
+              mode: string;
+            };
+            goals: unknown[];
+            beliefs: unknown[];
+            entities: unknown[];
+            relationships: unknown[];
+          };
+          bounds: {
+            goalLimit: number;
+            beliefLimit: number;
+            entityLimit: number;
+            relationshipLimit: number;
+          };
+        };
+        assert.equal(
+          statePayload.snapshot.subjectStateSchemaVersion,
+          expectedSubjectStateSchemaVersion,
+        );
+        assert.equal(statePayload.snapshot.agentState.agentId, 'polyphony-core');
+        assert.equal(statePayload.snapshot.agentState.mode, 'normal');
+        assert.deepEqual(statePayload.bounds, {
+          goalLimit: 25,
+          beliefLimit: 25,
+          entityLimit: 25,
+          relationshipLimit: 50,
+        });
+        assert.ok(Array.isArray(statePayload.snapshot.goals));
+        assert.ok(Array.isArray(statePayload.snapshot.beliefs));
+        assert.ok(Array.isArray(statePayload.snapshot.entities));
+        assert.ok(Array.isArray(statePayload.snapshot.relationships));
+
+        const freezeResponse = await fetch(`${coreBaseUrl()}/control/freeze-development`, {
+          method: 'POST',
+        });
+        assert.equal(freezeResponse.status, 501);
+        assert.deepEqual(await freezeResponse.json(), {
+          available: false,
+          action: 'freeze-development',
+          owner: 'CF-016',
+          reason: 'future_owned',
+        });
       },
     );
 

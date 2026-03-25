@@ -22,6 +22,10 @@
     "./runtime": {
       "types": "./src/runtime.ts",
       "default": "./src/runtime.ts"
+    },
+    "./operator-api": {
+      "types": "./src/operator-api.ts",
+      "default": "./src/operator-api.ts"
     }
   },
   "dependencies": {

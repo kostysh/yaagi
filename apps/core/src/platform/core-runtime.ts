@@ -13,6 +13,7 @@ import {
 import { checkPostgresConnectivity, ensureDatabaseReady } from '@yaagi/db/bootstrap';
 import { type CoreRuntimeConfig, loadCoreRuntimeConfig } from './core-config.ts';
 import { createPhase0DecisionInvoker, PHASE0_AGENT_KEYS } from './phase0-ai.ts';
+import { registerOperatorApiRoutes, type OperatorRuntimeLifecycle } from './operator-api.ts';
 import { materializeRuntimeSeed } from './runtime-seed.ts';
 import { createPhase0RuntimeLifecycle } from '../runtime/runtime-lifecycle.ts';
 import type {
@@ -45,7 +46,7 @@ export type CoreRuntimeDependencies = {
   probeConfiguration?: () => Promise<boolean>;
   probePostgres?: () => Promise<boolean>;
   probeFastModel?: () => Promise<boolean>;
-  createRuntimeLifecycle?: (config: CoreRuntimeConfig) => {
+  createRuntimeLifecycle?: (config: CoreRuntimeConfig) => OperatorRuntimeLifecycle & {
     start(): Promise<void>;
     stop(): Promise<void>;
     health?(): Promise<PerceptionHealthSnapshot>;
@@ -58,6 +59,16 @@ export type CoreRuntimeDependencies = {
       stimulusId: string;
       deduplicated: boolean;
       tickAdmission?: { accepted: boolean; reason?: string };
+    }>;
+    requestTick?(input: {
+      requestId: string;
+      kind: 'reactive' | 'deliberative' | 'contemplative' | 'consolidation' | 'developmental';
+      trigger: 'system';
+      requestedAt: string;
+      payload: Record<string, unknown>;
+    }): Promise<{
+      accepted: boolean;
+      reason?: 'boot_inactive' | 'lease_busy' | 'unsupported_tick_kind';
     }>;
   };
 };
@@ -306,6 +317,8 @@ export function createCoreRuntime(
       );
     }
   });
+
+  registerOperatorApiRoutes(app, runtimeLifecycle);
 
   const waitForDependencies = async (): Promise<void> => {
     const deadline = Date.now() + config.bootTimeoutMs;

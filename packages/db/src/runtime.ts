@@ -171,6 +171,26 @@ export type RuntimeRecentEpisodesInput = {
   limit?: number;
 };
 
+export type RuntimeEpisodePageCursor = {
+  createdAt: string;
+  episodeId: string;
+};
+
+export type RuntimeEpisodePageInput = {
+  limit?: number;
+  after?: RuntimeEpisodePageCursor | null;
+};
+
+export type RuntimeTimelineEventPageCursor = {
+  occurredAt: string;
+  sequenceId: string;
+};
+
+export type RuntimeTimelineEventPageInput = {
+  limit?: number;
+  after?: RuntimeTimelineEventPageCursor | null;
+};
+
 export type RuntimeTickStore = SubjectStateStore & {
   ensureAgentStateRow(agentId?: string): Promise<RuntimeAgentStateRow>;
   getAgentState(agentId?: string): Promise<RuntimeAgentStateRow | null>;
@@ -179,6 +199,8 @@ export type RuntimeTickStore = SubjectStateStore & {
   setTickActionId(input: { tickId: string; actionId: string }): Promise<RuntimeTickRow>;
   setDevelopmentFreeze(developmentFreeze: boolean, agentId?: string): Promise<RuntimeAgentStateRow>;
   listRecentEpisodes(input?: RuntimeRecentEpisodesInput): Promise<RuntimeEpisodeRow[]>;
+  listEpisodesPage(input?: RuntimeEpisodePageInput): Promise<RuntimeEpisodeRow[]>;
+  listTimelineEventsPage(input?: RuntimeTimelineEventPageInput): Promise<RuntimeTimelineEventRow[]>;
   requestTick(input: TickRequestInput): Promise<TickAdmissionResult>;
   completeTick(input: TickFinalizationInput): Promise<{
     tick: RuntimeTickRow;
@@ -408,6 +430,52 @@ const listRecentEpisodesInternal = async (
   );
 
   return result.rows.map((row) => normalizeEpisodeRow(row));
+};
+
+const listEpisodePageInternal = async (
+  db: RuntimeDbExecutor,
+  input: RuntimeEpisodePageInput = {},
+): Promise<RuntimeEpisodeRow[]> => {
+  const limit = input.limit ?? 20;
+  const afterCreatedAt = input.after?.createdAt ?? null;
+  const afterEpisodeId = input.after?.episodeId ?? null;
+  const result = await db.query<RuntimeEpisodeRow>(
+    `select ${episodeColumns}
+     from ${episodeTable}
+     where (
+       $2::timestamptz is null
+       or $3::text is null
+       or (created_at, episode_id) < ($2::timestamptz, $3::text)
+     )
+     order by created_at desc, episode_id desc
+     limit $1`,
+    [limit, afterCreatedAt, afterEpisodeId],
+  );
+
+  return result.rows.map((row) => normalizeEpisodeRow(row));
+};
+
+const listTimelineEventPageInternal = async (
+  db: RuntimeDbExecutor,
+  input: RuntimeTimelineEventPageInput = {},
+): Promise<RuntimeTimelineEventRow[]> => {
+  const limit = input.limit ?? 20;
+  const afterOccurredAt = input.after?.occurredAt ?? null;
+  const afterSequenceId = input.after?.sequenceId ?? null;
+  const result = await db.query<RuntimeTimelineEventRow>(
+    `select ${timelineEventColumns}
+     from ${timelineEventTable}
+     where (
+       $2::timestamptz is null
+       or $3::bigint is null
+       or (occurred_at, sequence_id) < ($2::timestamptz, $3::bigint)
+     )
+     order by occurred_at desc, sequence_id desc
+     limit $1`,
+    [limit, afterOccurredAt, afterSequenceId],
+  );
+
+  return result.rows.map((row) => normalizeTimelineEventRow(row));
 };
 
 const loadActiveTick = async (
@@ -875,6 +943,16 @@ export function createTickRuntimeStore(
 
     listRecentEpisodes(input?: RuntimeRecentEpisodesInput): Promise<RuntimeEpisodeRow[]> {
       return listRecentEpisodesInternal(db, input);
+    },
+
+    listEpisodesPage(input?: RuntimeEpisodePageInput): Promise<RuntimeEpisodeRow[]> {
+      return listEpisodePageInternal(db, input);
+    },
+
+    listTimelineEventsPage(
+      input?: RuntimeTimelineEventPageInput,
+    ): Promise<RuntimeTimelineEventRow[]> {
+      return listTimelineEventPageInternal(db, input);
     },
 
     async requestTick(input: TickRequestInput): Promise<TickAdmissionResult> {

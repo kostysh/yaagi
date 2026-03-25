@@ -1,8 +1,8 @@
 ---
 id: F-0013
 title: HTTP API управления и интроспекции
-status: planned
-coverage_gate: deferred
+status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: api
 depends_on: [F-0001, F-0003, F-0004, F-0005, F-0008]
@@ -381,14 +381,14 @@ Tasks:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0013-01 | `apps/core/test/platform/operator-api-boundary.contract.test.ts` → operator route family ownership and route registration `// Covers: AC-F0013-01` | planned |
-| AC-F0013-02 | `apps/core/test/platform/operator-state.integration.test.ts` → bounded `GET /state` snapshot projection `// Covers: AC-F0013-02` | planned |
-| AC-F0013-03 | `apps/core/test/platform/operator-history.integration.test.ts` → `GET /timeline` / `GET /episodes` stable pagination and cursor semantics `// Covers: AC-F0013-03` | planned |
-| AC-F0013-04 | `apps/core/test/platform/operator-models.integration.test.ts` → bounded baseline model diagnostics and explicit `CF-010` future-gap contract `// Covers: AC-F0013-04` | planned |
-| AC-F0013-05 | `apps/core/test/platform/operator-control.integration.test.ts` → `POST /control/tick` required-requestId validation, accepted/rejected mapping and request-id idempotency `// Covers: AC-F0013-05` | planned |
-| AC-F0013-06 | `apps/core/test/platform/operator-governor-gating.contract.test.ts` → `POST /control/freeze-development` explicit unavailable contract before `CF-016` `// Covers: AC-F0013-06` | planned |
-| AC-F0013-07 | `apps/core/test/platform/operator-api-boundary.contract.test.ts` → no foreign write authority and no `/health` ownership grab `// Covers: AC-F0013-07` | planned |
-| AC-F0013-08 | `infra/docker/deployment-cell.smoke.ts` → operator boundary smoke when public route wiring materially changes `// Covers: AC-F0013-08` | planned |
+| AC-F0013-01 | `apps/core/test/platform/operator-api-boundary.contract.test.ts` → operator route family ownership and route registration `// Covers: AC-F0013-01` | done |
+| AC-F0013-02 | `apps/core/test/platform/operator-state.integration.test.ts` → bounded `GET /state` snapshot projection `// Covers: AC-F0013-02` | done |
+| AC-F0013-03 | `apps/core/test/platform/operator-history.integration.test.ts`, `packages/db/test/runtime-store.contract.test.ts` → `GET /timeline` / `GET /episodes` stable pagination, cursor semantics and db-boundary timestamp normalization `// Covers: AC-F0013-03` | done |
+| AC-F0013-04 | `apps/core/test/platform/operator-models.integration.test.ts` → bounded baseline model diagnostics and explicit `CF-010` future-gap contract `// Covers: AC-F0013-04` | done |
+| AC-F0013-05 | `apps/core/test/platform/operator-control.integration.test.ts` → `POST /control/tick` required-requestId validation, accepted/rejected mapping and request-id idempotency `// Covers: AC-F0013-05` | done |
+| AC-F0013-06 | `apps/core/test/platform/operator-governor-gating.contract.test.ts` → `POST /control/freeze-development` explicit unavailable contract before `CF-016` `// Covers: AC-F0013-06` | done |
+| AC-F0013-07 | `apps/core/test/platform/operator-api-boundary.contract.test.ts` → no foreign write authority and no `/health` ownership grab `// Covers: AC-F0013-07` | done |
+| AC-F0013-08 | `apps/core/test/platform/operator-api-boundary.contract.test.ts`, `infra/docker/deployment-cell.smoke.ts` → operator route wiring stays on the canonical runtime boundary and deployment-cell smoke covers the live public surface `// Covers: AC-F0013-08` | done |
 
 ## 10. Decision log (ADR blocks)
 
@@ -430,17 +430,34 @@ Tasks:
 - Candidate source: `CF-009`
 - Delivered prerequisites: `F-0001`, `F-0003`, `F-0004`, `F-0005`, `F-0008`
 - Code:
-  - None yet; implementation targets are expected in `apps/core/src/platform` Hono route surfaces plus operator-facing contract/integration tests.
+  - `apps/core/src/platform/core-runtime.ts`
+  - `apps/core/src/platform/operator-api.ts`
+  - `apps/core/src/runtime/runtime-lifecycle.ts`
+  - `apps/core/testing/platform-test-fixture.ts`
+  - `apps/core/test/platform/operator-api-boundary.contract.test.ts`
+  - `apps/core/test/platform/operator-state.integration.test.ts`
+  - `apps/core/test/platform/operator-history.integration.test.ts`
+  - `apps/core/test/platform/operator-models.integration.test.ts`
+  - `apps/core/test/platform/operator-control.integration.test.ts`
+  - `apps/core/test/platform/operator-governor-gating.contract.test.ts`
+  - `packages/contracts/src/operator-api.ts`
+  - `packages/db/src/runtime.ts`
+  - `packages/db/test/runtime-store.contract.test.ts`
+  - `infra/docker/deployment-cell.smoke.ts`
 - Verification:
+  - `pnpm quality:fix`
+  - `pnpm test`
+  - `pnpm smoke:cell`
   - `node scripts/index-refresh.mjs`
   - `node scripts/contract-drift-audit.mjs --dossier docs/features/F-0013-operator-http-api-and-introspection.md --base HEAD~1`
   - `node scripts/lint-dossiers.mjs`
   - `node scripts/coverage-audit.mjs --dossier docs/features/F-0013-operator-http-api-and-introspection.md --orphans-scope=dossier`
   - `pnpm debt:audit:changed`
-  - `node scripts/dossier-verify.mjs --dossier docs/features/F-0013-operator-http-api-and-introspection.md --step plan-slice`
+  - `node scripts/dossier-verify.mjs --dossier docs/features/F-0013-operator-http-api-and-introspection.md --step implementation`
 
 ## 12. Change log
 
 - **v1.0 (2026-03-25):** Initial feature-intake dossier created from `CF-009`; intake fixed one canonical owner for operator-facing HTTP introspection and bounded control routes, while explicitly keeping richer model ecology with `CF-010`, governance-sensitive controls with `CF-016`, and baseline health ownership outside this seam.
 - **v1.1 (2026-03-25):** `spec-compact` shaped the operator API into implementation-grade route contracts: bounded DTOs, pagination/cursor rules, explicit control rejection mapping, operator provenance over the existing `system` trigger, and an explicit unavailable contract for pre-`CF-016` `freeze-development`.
 - **v1.2 (2026-03-25):** `plan-slice` translated the shaped operator boundary into delivery-ordered slices with explicit verification targets and made the required `F-0008` `/models` realignment a first-class planned task instead of a hidden follow-up.
+- **v1.3 (2026-03-25):** `implementation` delivered the bounded operator API end-to-end on the canonical Hono/runtime path: `GET /state`, `GET /timeline`, `GET /episodes`, `GET /models`, `POST /control/tick` and explicit `501` `POST /control/freeze-development` are now live, timeline/episode pagination uses explicit owner adapters, `F-0008` `/models` assumptions are realigned, and deployment-cell smoke now covers the public operator boundary.

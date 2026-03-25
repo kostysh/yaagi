@@ -65,7 +65,7 @@ const createConfigEnv = (root: string): NodeJS.ProcessEnv => ({
   YAAGI_HOST: '127.0.0.1',
 });
 
-void test('AC-F0008-06 surfaces baseline profile diagnostics without opening a models API', async () => {
+void test('AC-F0008-06 surfaces baseline profile diagnostics through health and the bounded operator /models projection', async () => {
   const root = await createTempWorkspace();
 
   try {
@@ -156,7 +156,44 @@ void test('AC-F0008-06 surfaces baseline profile diagnostics without opening a m
       );
 
       const modelsResponse = await fetch(`${started.url}/models`);
-      assert.equal(modelsResponse.status, 404);
+      assert.equal(modelsResponse.status, 200);
+
+      const modelsPayload = (await modelsResponse.json()) as {
+        baselineProfiles: Array<{
+          modelProfileId: string;
+          role: string;
+          status: string;
+          adapterOf: string | null;
+          baseModel: string;
+          healthSummary: {
+            healthy: boolean;
+            detail?: string;
+          };
+        }>;
+        richerRegistryHealth: {
+          available: boolean;
+          owner: string;
+          reason: string;
+        };
+      };
+      assert.deepEqual(modelsPayload.baselineProfiles, [
+        {
+          modelProfileId: PHASE0_BASELINE_PROFILE_ID.REFLEX,
+          role: 'reflex',
+          status: 'active',
+          adapterOf: null,
+          baseModel: 'model-fast',
+          healthSummary: {
+            healthy: true,
+            detail: 'model-fast dependency is reachable',
+          },
+        },
+      ]);
+      assert.deepEqual(modelsPayload.richerRegistryHealth, {
+        available: false,
+        owner: 'CF-010',
+        reason: 'future_owned',
+      });
     } finally {
       await runtime.stop();
     }
