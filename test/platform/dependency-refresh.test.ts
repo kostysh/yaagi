@@ -4,7 +4,11 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { createPhase0Mastra, loadCoreRuntimeConfig } from '../../apps/core/src/platform/index.ts';
+import {
+  createPhase0DecisionInvoker,
+  PHASE0_AGENT_KEYS,
+  PHASE0_MODEL_ID,
+} from '../../apps/core/src/platform/index.ts';
 import { createFilesystemAdapter } from '../../apps/core/src/perception/filesystem-adapter.ts';
 import { sensorSignalSchema } from '../../packages/contracts/src/perception.ts';
 
@@ -20,7 +24,7 @@ const readJson = async <T>(relativePath: string): Promise<T> =>
   JSON.parse(await readFile(path.join(repoRoot, relativePath), 'utf8')) as T;
 
 // Covers: AC-F0006-01, AC-F0006-02, AC-F0006-06
-void test('AC-F0006-01 фиксирует полный direct dependency verdict и explicit Mastra-to-AI-SDK migration target', async () => {
+void test('AC-F0006-01 фиксирует полный direct dependency verdict и delivered AI SDK substrate baseline', async () => {
   const rootPackageJson = await readJson<PackageJson>('package.json');
   const corePackageJson = await readJson<PackageJson>('apps/core/package.json');
   const contractsPackageJson = await readJson<PackageJson>('packages/contracts/package.json');
@@ -35,27 +39,27 @@ void test('AC-F0006-01 фиксирует полный direct dependency verdict
   );
 
   assert.deepEqual(rootPackageJson.devDependencies, {
-    '@biomejs/biome': '^2.4.8',
+    '@biomejs/biome': '^2.4.9',
     '@eslint/js': '^10.0.1',
     '@types/node': '^25.5.0',
     '@types/pg': '^8.20.0',
-    '@typescript-eslint/eslint-plugin': '^8.57.1',
-    '@typescript-eslint/parser': '^8.57.1',
+    '@typescript-eslint/eslint-plugin': '^8.57.2',
+    '@typescript-eslint/parser': '^8.57.2',
     eslint: '^10.1.0',
     globals: '^17.4.0',
     typescript: '^5.9.3',
   });
 
   assert.deepEqual(coreDependencies, {
-    '@mastra/core': '^1.15.0',
+    '@ai-sdk/openai-compatible': '2.0.37',
     '@yaagi/contracts': 'workspace:*',
     '@yaagi/db': 'workspace:*',
+    ai: '6.0.138',
     chokidar: '^5.0.0',
     hono: '^4.12.9',
     zod: '^4.3.6',
   });
-  assert.equal(Object.hasOwn(coreDependencies, 'ai'), false);
-  assert.equal(Object.hasOwn(coreDependencies, '@ai-sdk/openai-compatible'), false);
+  assert.equal(Object.hasOwn(coreDependencies, '@mastra/core'), false);
 
   assert.deepEqual(contractsPackageJson.dependencies, {
     zod: '^4.3.6',
@@ -69,24 +73,22 @@ void test('AC-F0006-01 фиксирует полный direct dependency verdict
 
   assert.match(
     dossier,
-    /\| `@mastra\/core` \| `apps\/core` dependency \| `1\.15\.0` \| `1\.15\.0` \| `remove` \| high \|/,
+    /\| `ai` \| `apps\/core` dependency \| `6\.0\.138` \| `6\.0\.138` \| `6\.0\.138` \| medium \|/,
   );
   assert.match(
     dossier,
-    /\| `ai` \| `apps\/core` dependency \| `not installed` \| `6\.0\.138` \| `6\.0\.138` \| medium \|/,
-  );
-  assert.match(
-    dossier,
-    /\| `@ai-sdk\/openai-compatible` \| `apps\/core` dependency \| `not installed` \| `2\.0\.37` \| `2\.0\.37` \| medium \|/,
+    /\| `@ai-sdk\/openai-compatible` \| `apps\/core` dependency \| `2\.0\.37` \| `2\.0\.37` \| `2\.0\.37` \| medium \|/,
   );
   assert.match(
     dossier,
     /direct dependency set for `apps\/core` must move from `@mastra\/core` to `ai` \+ `@ai-sdk\/openai-compatible`/,
   );
+  assert.match(dossier, /`typescript 6\.0\.2` зафиксирован как explicit blocker record/);
+  assert.match(dossier, /Accepted target version: `5\.9\.3`\./);
 });
 
 // Covers: AC-F0006-03
-void test('AC-F0006-03 keeps the historical runtime surfaces green while the AI SDK compatibility target is explicitly recorded', async () => {
+void test('AC-F0006-03 keeps the canonical runtime surfaces green on the AI SDK baseline', async () => {
   const dossier = await readFile(
     path.join(
       repoRoot,
@@ -102,11 +104,9 @@ void test('AC-F0006-03 keeps the historical runtime surfaces green while the AI 
 
   assert.equal(parsedSignal.source, 'http');
 
-  const config = loadCoreRuntimeConfig({
-    YAAGI_TELEGRAM_ENABLED: 'false',
-  });
-  const mastra = createPhase0Mastra(config);
-  assert.equal(Object.keys(mastra.listAgents()).includes('phase0DecisionAgent'), true);
+  assert.deepEqual(PHASE0_AGENT_KEYS, ['phase0DecisionAgent']);
+  assert.equal(PHASE0_MODEL_ID, 'phase-0-fast');
+  assert.equal(typeof createPhase0DecisionInvoker(), 'function');
 
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'yaagi-f0006-'));
   const statuses: string[] = [];
@@ -135,7 +135,7 @@ void test('AC-F0006-03 keeps the historical runtime surfaces green while the AI 
     dossier,
     /`@ai-sdk\/openai-compatible 2\.0\.37` считается обязательной целевой версией/,
   );
-  assert.match(dossier, /`@mastra\/core 1\.15\.0` больше не является допустимым target dependency/);
+  assert.match(dossier, /status: done/);
 });
 
 // Covers: AC-F0006-04, AC-F0006-05
@@ -183,7 +183,7 @@ void test('AC-F0006-04 сохраняет канонический verification 
     /Канонический reasoning\/model-integration substrate репозитория меняется с `Mastra` на `AI SDK`/,
   );
 
-  assert.match(dossier, /status: planned/);
+  assert.match(dossier, /status: done/);
   assert.match(dossier, /AC-F0006-04/);
   assert.match(dossier, /AC-F0006-05/);
   assert.match(

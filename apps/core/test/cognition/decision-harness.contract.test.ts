@@ -57,7 +57,7 @@ const baseInput = {
   },
 };
 
-void test('AC-F0009-03 returns a validated TickDecisionV1 envelope from the bounded Mastra decision harness', async () => {
+void test('AC-F0009-03 returns a validated TickDecisionV1 envelope from the bounded decision harness contract', async () => {
   const harness = createDecisionHarness({
     invokeAgent: () =>
       Promise.resolve({

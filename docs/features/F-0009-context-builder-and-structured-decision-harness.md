@@ -1,7 +1,7 @@
 ---
 id: F-0009
 title: Context Builder и structured decision harness
-status: planned
+status: done
 coverage_gate: strict
 owners: ["@codex"]
 area: cognition
@@ -293,12 +293,12 @@ Tasks:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0009-01 | `apps/core/test/cognition/context-builder.integration.test.ts` → `test("AC-F0009-01 builds canonical bounded decision context from delivered owner surfaces")`; `packages/db/test/runtime-store.contract.test.ts` → `test("AC-F0009-01 normalizes recent episode timestamps to ISO strings at the db boundary")` | planned |
-| AC-F0009-02 | `apps/core/test/cognition/context-builder.contract.test.ts` → `test("AC-F0009-02 carries explicit version, truncation and conflict markers for bounded context sections")` | planned |
-| AC-F0009-03 | `apps/core/test/cognition/decision-harness.contract.test.ts` → `test("AC-F0009-03 returns a validated TickDecisionV1 envelope from the bounded AI SDK decision harness")` | planned |
-| AC-F0009-04 | `apps/core/test/cognition/decision-harness.contract.test.ts` → `test("AC-F0009-04 refuses invalid decision output before downstream handoff")`; `apps/core/test/runtime/subject-state-delta.contract.test.ts` → `test("AC-F0009-04 does not mirror structured decision artifacts into subject-state persistence on completed ticks")` | planned |
-| AC-F0009-05 | `apps/core/test/cognition/decision-harness.integration.test.ts` → `test("AC-F0009-05 consumes the selected baseline profile without rerouting or expanding admission ownership")`; `apps/core/test/runtime/reactive-decision-refusal.integration.test.ts` → `test("AC-F0009-05 rejects a reactive runtime handoff when the selected profile drifts ineligible, without durable side effects or silent rerouting")` | planned |
-| AC-F0009-06 | `apps/core/test/runtime/reactive-decision-handoff.integration.test.ts` → `test("AC-F0009-06 keeps the harness reactive-first without silently expanding deliberative or contemplative admission")`; `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0009-06 executes one bounded reactive decision path inside the deployment cell without new public API or durable history tables")` | planned |
+| AC-F0009-01 | `apps/core/test/cognition/context-builder.integration.test.ts` → `test("AC-F0009-01 builds canonical bounded decision context from delivered owner surfaces")`; `packages/db/test/runtime-store.contract.test.ts` → `test("AC-F0009-01 normalizes recent episode timestamps to ISO strings at the db boundary")` | done |
+| AC-F0009-02 | `apps/core/test/cognition/context-builder.contract.test.ts` → `test("AC-F0009-02 carries explicit version, truncation and conflict markers for bounded context sections")` | done |
+| AC-F0009-03 | `apps/core/test/cognition/decision-harness.contract.test.ts` → `test("AC-F0009-03 returns a validated TickDecisionV1 envelope from the bounded decision harness contract")`; [phase0-ai.integration.test.ts](/code/projects/yaagi/apps/core/test/platform/phase0-ai.integration.test.ts) → `test("AC-F0009-03 returns a validated TickDecisionV1 envelope from the bounded AI SDK decision harness")` | done |
+| AC-F0009-04 | `apps/core/test/cognition/decision-harness.contract.test.ts` → `test("AC-F0009-04 refuses invalid decision output before downstream handoff")`; [phase0-ai.integration.test.ts](/code/projects/yaagi/apps/core/test/platform/phase0-ai.integration.test.ts) → `test("AC-F0009-04 refuses invalid AI SDK decision output before downstream handoff")`; `apps/core/test/runtime/subject-state-delta.contract.test.ts` → `test("AC-F0009-04 does not mirror structured decision artifacts into subject-state persistence on completed ticks")` | done |
+| AC-F0009-05 | `apps/core/test/cognition/decision-harness.integration.test.ts` → `test("AC-F0009-05 consumes the selected baseline profile without rerouting or expanding admission ownership")`; `apps/core/test/runtime/reactive-decision-refusal.integration.test.ts` → `test("AC-F0009-05 rejects a reactive runtime handoff when the selected profile drifts ineligible, without durable side effects or silent rerouting")` | done |
+| AC-F0009-06 | `apps/core/test/runtime/reactive-decision-handoff.integration.test.ts` → `test("AC-F0009-06 keeps the harness reactive-first without silently expanding deliberative or contemplative admission")`; `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0009-06 executes one bounded reactive decision path inside the deployment cell without new public API or durable history tables")` | done |
 
 План верификации:
 
@@ -318,7 +318,7 @@ Tasks:
 
 ## 11. Progress & links
 
-- Status: `proposed` -> `shaped` -> `done` -> `planned`
+- Status: `proposed` -> `shaped` -> `done` -> `planned` -> `done`
 - Issue: -
 - PRs:
   - -
@@ -328,12 +328,13 @@ Tasks:
   - `apps/core/src/perception/controller.ts`
   - `apps/core/src/platform/core-runtime.ts`
   - `docs/adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md`
-  - `apps/core/src/platform/phase0-mastra.ts`
+  - `apps/core/src/platform/phase0-ai.ts`
   - `apps/core/src/runtime/runtime-lifecycle.ts`
   - `apps/core/test/cognition/context-builder.contract.test.ts`
   - `apps/core/test/cognition/context-builder.integration.test.ts`
   - `apps/core/test/cognition/decision-harness.contract.test.ts`
   - `apps/core/test/cognition/decision-harness.integration.test.ts`
+  - `apps/core/test/platform/phase0-ai.integration.test.ts`
   - `apps/core/test/runtime/reactive-decision-refusal.integration.test.ts`
   - `apps/core/test/runtime/reactive-decision-handoff.integration.test.ts`
   - `apps/core/test/runtime/subject-state-delta.contract.test.ts`
@@ -365,3 +366,4 @@ Tasks:
 - **v1.3 (2026-03-24):** Completed `implementation`: delivered the canonical cognition contracts plus bounded context builder, added the Mastra-backed decision harness and reactive runtime handoff on top of the selected baseline profile, surfaced validated `decision` / `decisionTrace` artifacts through the existing tick biography, normalized recent-episode timestamps at the DB boundary for container parity, and closed both fast-path and deployment-cell verification without adding a new public API or durable decision-history table.
 - **v1.4 (2026-03-24):** Hardened the final implementation after independent review: perception partiality now propagates into `perceptualMeta`, runtime re-validates selected-profile eligibility drift before agent invocation, completed ticks no longer mirror structured decision artifacts into `psm_json`, and AC-linked runtime regressions now prove refusal/no-side-effects semantics on the reactive handoff.
 - **v1.5 (2026-03-25):** `change-proposal`: realigned `F-0009` to the repo-level `AI SDK` substrate. The bounded cognition harness remains reactive-first and schema-validated, but all ACs now require refactoring from the delivered Mastra-backed implementation to an AI SDK-backed structured-generation boundary before the dossier can return to `done`.
+- **v1.6 (2026-03-25):** Completed the AI SDK refactor: the bounded harness now invokes the selected profile endpoint through the repo-owned `phase0-ai` adapter, AI SDK output parsing is covered directly in fast integration tests, runtime handoff remains reactive-first with the same refusal/no-side-effects guarantees, and the deployment-cell smoke continues to prove one bounded reactive decision path without any new public API or durable decision-history tables.

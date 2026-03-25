@@ -46,11 +46,7 @@ import {
 } from '../cognition/index.ts';
 import { createPerceptionController, type StimulusIngestResult } from '../perception/index.ts';
 import type { CoreRuntimeConfig } from '../platform/core-config.ts';
-import {
-  createPhase0DecisionInvoker,
-  createPhase0Mastra,
-  PHASE0_AGENT_KEY,
-} from '../platform/phase0-mastra.ts';
+import { createPhase0DecisionInvoker } from '../platform/phase0-ai.ts';
 import {
   createPhase0ModelRouter,
   type BaselineModelProfileDiagnostic,
@@ -963,9 +959,7 @@ export function createPhase0RuntimeLifecycle(
     store: modelProfileStore,
     resolveBaselineHealth,
   });
-  const invokeDecision =
-    options.invokeDecision ??
-    createPhase0DecisionInvoker(createPhase0Mastra(config).getAgent(PHASE0_AGENT_KEY));
+  const invokeDecision = options.invokeDecision ?? createPhase0DecisionInvoker();
   const decisionHarness = createDecisionHarness({
     invokeAgent: invokeDecision,
     limits: DECISION_CONTEXT_LIMITS,

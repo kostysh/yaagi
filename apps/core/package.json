@@ -21,9 +21,10 @@
     "smoke": "node --experimental-strip-types src/main.ts"
   },
   "dependencies": {
-    "@mastra/core": "^1.15.0",
+    "@ai-sdk/openai-compatible": "2.0.37",
     "@yaagi/contracts": "workspace:*",
     "@yaagi/db": "workspace:*",
+    "ai": "6.0.138",
     "chokidar": "^5.0.0",
     "hono": "^4.12.9",
     "zod": "^4.3.6"

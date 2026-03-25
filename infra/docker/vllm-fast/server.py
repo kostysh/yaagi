@@ -16,7 +16,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    def _structured_decision_content(self, messages):
+    def _structured_decision_content(self, request, messages):
         prompt_parts = []
         for message in messages:
             if isinstance(message, dict):
@@ -25,7 +25,11 @@ class Handler(BaseHTTPRequestHandler):
                     prompt_parts.append(content)
 
         prompt = "\n".join(prompt_parts)
-        if "You MUST answer with a JSON object that matches the JSON schema above." not in prompt:
+        response_format = request.get("response_format", {})
+        if not (
+            "You MUST answer with a JSON object that matches the JSON schema above." in prompt
+            or response_format.get("type") in ("json_object", "json_schema")
+        ):
             return None
 
         summary_source = ""
@@ -89,7 +93,7 @@ class Handler(BaseHTTPRequestHandler):
             body = self.rfile.read(length) if length > 0 else b"{}"
             request = json.loads(body.decode("utf-8"))
             messages = request.get("messages", [])
-            content = self._structured_decision_content(messages)
+            content = self._structured_decision_content(request, messages)
             if content is None and messages:
                 last = messages[-1]
                 if isinstance(last, dict):

@@ -32,12 +32,12 @@
     "contract:drift:audit": "node scripts/contract-drift-audit.mjs"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.8",
+    "@biomejs/biome": "^2.4.9",
     "@eslint/js": "^10.0.1",
     "@types/node": "^25.5.0",
     "@types/pg": "^8.20.0",
-    "@typescript-eslint/eslint-plugin": "^8.57.1",
-    "@typescript-eslint/parser": "^8.57.1",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/parser": "^8.57.2",
     "eslint": "^10.1.0",
     "globals": "^17.4.0",
     "typescript": "^5.9.3"

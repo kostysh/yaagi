@@ -2,7 +2,6 @@ import { createServer, type Server } from 'node:http';
 import { access } from 'node:fs/promises';
 import { setTimeout as sleep } from 'node:timers/promises';
 import net from 'node:net';
-import type { Mastra } from '@mastra/core';
 import { Hono } from 'hono';
 import { ZodError } from 'zod';
 import {
@@ -13,11 +12,7 @@ import {
 } from '@yaagi/contracts/perception';
 import { checkPostgresConnectivity, ensureDatabaseReady } from '@yaagi/db/bootstrap';
 import { type CoreRuntimeConfig, loadCoreRuntimeConfig } from './core-config.ts';
-import {
-  createPhase0DecisionInvoker,
-  createPhase0Mastra,
-  PHASE0_AGENT_KEY,
-} from './phase0-mastra.ts';
+import { createPhase0DecisionInvoker, PHASE0_AGENT_KEYS } from './phase0-ai.ts';
 import { materializeRuntimeSeed } from './runtime-seed.ts';
 import { createPhase0RuntimeLifecycle } from '../runtime/runtime-lifecycle.ts';
 import type {
@@ -70,7 +65,7 @@ export type CoreRuntimeDependencies = {
 export type CoreRuntime = {
   readonly config: CoreRuntimeConfig;
   readonly app: Hono;
-  readonly mastra: Mastra;
+  readonly reasoningAgents: readonly string[];
   health(): Promise<CoreRuntimeHealth>;
   start(): Promise<{ url: string }>;
   stop(): Promise<void>;
@@ -182,7 +177,6 @@ export function createCoreRuntime(
   config: CoreRuntimeConfig = loadCoreRuntimeConfig(),
   dependencies: CoreRuntimeDependencies = {},
 ): CoreRuntime {
-  const mastra = createPhase0Mastra(config);
   const app = new Hono();
   let server: Server | null = null;
   let listeningUrl: string | null = null;
@@ -193,10 +187,11 @@ export function createCoreRuntime(
   const probeConfiguration = dependencies.probeConfiguration ?? createFileSystemProbe(config);
   const probePostgres = dependencies.probePostgres ?? createPostgresProbe(config);
   const probeFastModel = dependencies.probeFastModel ?? createFastModelProbe(config);
+  const reasoningAgents = [...PHASE0_AGENT_KEYS];
   const runtimeLifecycle =
     dependencies.createRuntimeLifecycle?.(config) ??
     createPhase0RuntimeLifecycle(config, {
-      invokeDecision: createPhase0DecisionInvoker(mastra.getAgent(PHASE0_AGENT_KEY)),
+      invokeDecision: createPhase0DecisionInvoker(),
     });
 
   const health = async (): Promise<CoreRuntimeHealth> => {
@@ -240,7 +235,7 @@ export function createCoreRuntime(
       configuration,
       postgres,
       fastModel,
-      agents: Object.keys(mastra.listAgents()),
+      agents: reasoningAgents,
       perception,
       modelRouting: {
         profiles: modelRoutingProfiles,
@@ -448,7 +443,7 @@ export function createCoreRuntime(
   return {
     config,
     app,
-    mastra,
+    reasoningAgents,
     health,
     start,
     stop,

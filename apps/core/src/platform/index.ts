@@ -8,4 +8,9 @@ export {
   type CoreRuntimeDependencies,
   type CoreRuntimeHealth,
 } from './core-runtime.ts';
-export { createPhase0Mastra, PHASE0_AGENT_KEY } from './phase0-mastra.ts';
+export {
+  createPhase0DecisionInvoker,
+  PHASE0_AGENT_KEY,
+  PHASE0_AGENT_KEYS,
+  PHASE0_MODEL_ID,
+} from './phase0-ai.ts';

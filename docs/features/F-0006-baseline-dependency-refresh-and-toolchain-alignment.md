@@ -1,7 +1,7 @@
 ---
 id: F-0006
 title: Актуализация базовых зависимостей и выравнивание инструментального стека
-status: planned
+status: done
 coverage_gate: strict
 owners: ["@codex"]
 area: platform
@@ -93,21 +93,21 @@ links:
 
 | Пакет | Scope | Current | Latest | Target | Risk | Compatibility owner surface |
 | --- | --- | --- | --- | --- | --- | --- |
-| `@biomejs/biome` | root devDependency | `2.4.8` | `2.4.8` | `2.4.8` | low | root formatting/lint toolchain |
+| `@biomejs/biome` | root devDependency | `2.4.9` | `2.4.9` | `2.4.9` | low | root formatting/lint toolchain |
 | `@eslint/js` | root devDependency | `10.0.1` | `10.0.1` | `10.0.1` | low | root ESLint config |
-| `@types/node` | root devDependency | `24.6.0` | `25.5.0` | `25.5.0` | medium | root typecheck surface и Node runtime typings |
-| `@types/pg` | root devDependency | `8.15.6` | `8.20.0` | `8.20.0` | low | `packages/db` typings |
-| `@typescript-eslint/eslint-plugin` | root devDependency | `8.57.1` | `8.57.1` | `8.57.1` | low | root ESLint config |
-| `@typescript-eslint/parser` | root devDependency | `8.57.1` | `8.57.1` | `8.57.1` | low | root ESLint config |
-| `eslint` | root devDependency | `10.0.3` | `10.1.0` | `10.1.0` | low | root ESLint config |
+| `@types/node` | root devDependency | `25.5.0` | `25.5.0` | `25.5.0` | medium | root typecheck surface и Node runtime typings |
+| `@types/pg` | root devDependency | `8.20.0` | `8.20.0` | `8.20.0` | low | `packages/db` typings |
+| `@typescript-eslint/eslint-plugin` | root devDependency | `8.57.2` | `8.57.2` | `8.57.2` | low | root ESLint config |
+| `@typescript-eslint/parser` | root devDependency | `8.57.2` | `8.57.2` | `8.57.2` | low | root ESLint config |
+| `eslint` | root devDependency | `10.1.0` | `10.1.0` | `10.1.0` | low | root ESLint config |
 | `globals` | root devDependency | `17.4.0` | `17.4.0` | `17.4.0` | low | root ESLint config |
-| `typescript` | root devDependency | `5.9.3` | `5.9.3` | `5.9.3` | medium | root `tsconfig*` / typecheck toolchain |
-| `@mastra/core` | `apps/core` dependency | `1.15.0` | `1.15.0` | `remove` | high | `apps/core/src/platform/phase0-mastra.ts`, `apps/core/src/runtime/runtime-lifecycle.ts` |
-| `ai` | `apps/core` dependency | `not installed` | `6.0.138` | `6.0.138` | medium | `apps/core/src/cognition/decision-harness.ts`, `apps/core/src/platform/core-runtime.ts` |
-| `@ai-sdk/openai-compatible` | `apps/core` dependency | `not installed` | `2.0.37` | `2.0.37` | medium | `apps/core/src/platform/core-runtime.ts`, `apps/core/src/runtime/runtime-lifecycle.ts` |
-| `chokidar` | `apps/core` dependency | `4.0.3` | `5.0.0` | `5.0.0` | high | `apps/core/src/perception/filesystem-adapter.ts` |
-| `hono` | `apps/core` dependency | `4.12.8` | `4.12.9` | `4.12.9` | low | `apps/core/src/platform/core-runtime.ts` |
-| `zod` | `apps/core`, `packages/contracts` dependency | `3.25.76` | `4.3.6` | `4.3.6` | high | `packages/contracts/src/perception.ts`, `apps/core/src/platform/core-config.ts`, `apps/core/src/platform/core-runtime.ts` |
+| `typescript` | root devDependency | `5.9.3` | `6.0.2` | `5.9.3` | medium | root `tsconfig*` / typecheck toolchain |
+| `@mastra/core` | historical `apps/core` dependency | `removed` | `1.15.0` | `removed` | high | `apps/core/src/platform/phase0-ai.ts`, `apps/core/src/runtime/runtime-lifecycle.ts` |
+| `ai` | `apps/core` dependency | `6.0.138` | `6.0.138` | `6.0.138` | medium | `apps/core/src/platform/phase0-ai.ts`, `apps/core/test/platform/phase0-ai.integration.test.ts` |
+| `@ai-sdk/openai-compatible` | `apps/core` dependency | `2.0.37` | `2.0.37` | `2.0.37` | medium | `apps/core/src/platform/phase0-ai.ts`, `apps/core/src/runtime/runtime-lifecycle.ts` |
+| `chokidar` | `apps/core` dependency | `5.0.0` | `5.0.0` | `5.0.0` | high | `apps/core/src/perception/filesystem-adapter.ts` |
+| `hono` | `apps/core` dependency | `4.12.9` | `4.12.9` | `4.12.9` | low | `apps/core/src/platform/core-runtime.ts` |
+| `zod` | `apps/core`, `packages/contracts` dependency | `4.3.6` | `4.3.6` | `4.3.6` | high | `packages/contracts/src/perception.ts`, `apps/core/src/platform/core-config.ts`, `apps/core/src/platform/core-runtime.ts` |
 | `pg` | `packages/db` dependency | `8.20.0` | `8.20.0` | `8.20.0` | low | `packages/db` PostgreSQL driver surface |
 | `pg-boss` | `packages/db` dependency | `12.14.0` | `12.14.0` | `12.14.0` | medium | `packages/db` bootstrap/runtime queue surface |
 
@@ -123,19 +123,27 @@ links:
   - Shaped expectation: проверяется import/runtime behavior watcher-а и lifecycle-совместимость без расширения scope perception feature.
 - `@mastra/core 1.15.0` больше не является допустимым target dependency.
   - Подтверждённые owner surfaces:
-    - `apps/core/src/platform/phase0-mastra.ts`
+    - `apps/core/src/platform/phase0-ai.ts`
     - `apps/core/src/runtime/runtime-lifecycle.ts`
-  - Shaped expectation: пакет удаляется из canonical dependency set вместе с его historical bootstrap boundary; удержание `@mastra/core` после approved substrate migration считается blocker, а не neutral carry-over.
+  - Implemented verdict: пакет удалён из canonical dependency set вместе с historical bootstrap boundary; transitional exception path не используется.
 - `ai 6.0.138` считается обязательной целевой версией со средним риском.
   - Подтверждённые owner surfaces:
-    - `apps/core/src/cognition/decision-harness.ts`
-    - `apps/core/src/platform/core-runtime.ts`
-  - Shaped expectation: проверяются structured-generation/runtime contracts, typing и phase-0 startup behavior after replacing the historical Mastra boundary.
+    - `apps/core/src/platform/phase0-ai.ts`
+    - `apps/core/test/platform/phase0-ai.integration.test.ts`
+  - Implemented verdict: structured-generation/runtime contracts и schema-validated output parsing подтверждены на delivered phase-0 boundary.
 - `@ai-sdk/openai-compatible 2.0.37` считается обязательной целевой версией со средним риском.
   - Подтверждённые owner surfaces:
-    - `apps/core/src/platform/core-runtime.ts`
+    - `apps/core/src/platform/phase0-ai.ts`
     - `apps/core/src/runtime/runtime-lifecycle.ts`
-  - Shaped expectation: проверяется local OpenAI-compatible provider wiring against `vllm-fast` and the selected-profile runtime contract.
+  - Implemented verdict: local OpenAI-compatible provider wiring against `vllm-fast` and the selected-profile runtime contract is now the canonical delivered path.
+- `typescript 6.0.2` зафиксирован как explicit blocker record.
+  - Подтверждённые owner surfaces:
+    - `package.json`
+    - `tsconfig.typecheck.json`
+    - `eslint.config.js`
+  - Reason: latest `@typescript-eslint/eslint-plugin` / `@typescript-eslint/parser` line (`8.57.2`) still declares `typescript@>=4.8.4 <6.0.0`, so adopting `typescript 6.0.2` would reintroduce a peer-incompatible toolchain.
+  - Accepted target version: `5.9.3`.
+  - Next unblock condition: upgrade to an officially compatible `@typescript-eslint` release that supports TypeScript 6 without breaking the canonical `pnpm quality:fix` gate.
 - `hono`, `eslint`, `@types/node`, `@types/pg` относятся к low/medium-risk refresh, но всё равно проходят полный canonical verification bundle.
 
 ### 5.3 Exception policy and blocker handling
@@ -252,12 +260,12 @@ Tasks:
 
 | AC ID | Verification reference | Status |
 | --- | --- | --- |
-| AC-F0006-01 | `pnpm outdated -r --format json` → `{}` и полный direct registry-managed version matrix в разделе `5.2` | planned |
-| AC-F0006-02 | `[package.json](/code/projects/yaagi/package.json)`, [apps/core/package.json](/code/projects/yaagi/apps/core/package.json), [packages/contracts/package.json](/code/projects/yaagi/packages/contracts/package.json) и `pnpm-lock.yaml` обновлены до target versions без hidden direct version split | planned |
-| AC-F0006-03 | [perception.ts](/code/projects/yaagi/packages/contracts/src/perception.ts) адаптирован под `zod 4`; compatibility surfaces для `zod`, `ai`, `@ai-sdk/openai-compatible`, `chokidar` подтверждены командами `pnpm typecheck`, `pnpm test`, `pnpm smoke:cell` | planned |
-| AC-F0006-04 | `pnpm quality:fix`, `pnpm test`, `pnpm smoke:cell` | planned |
-| AC-F0006-05 | [README.md](/code/projects/yaagi/README.md), [ADR-2026-03-19-canonical-runtime-toolchain.md](/code/projects/yaagi/docs/adr/ADR-2026-03-19-canonical-runtime-toolchain.md) и [ADR-2026-03-25-ai-sdk-runtime-substrate.md](/code/projects/yaagi/docs/adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md) выровнены по новому repo-level runtime contract | planned |
-| AC-F0006-06 | Explicit verdict: retained non-latest direct registry-managed dependencies не осталось; exception path для direct deps не использован | planned |
+| AC-F0006-01 | `pnpm outdated -r --format json` и полный direct registry-managed version matrix в разделе `5.2` | done |
+| AC-F0006-02 | [package.json](/code/projects/yaagi/package.json), [apps/core/package.json](/code/projects/yaagi/apps/core/package.json), [packages/contracts/package.json](/code/projects/yaagi/packages/contracts/package.json) и `pnpm-lock.yaml` обновлены до target versions без hidden direct version split | done |
+| AC-F0006-03 | [perception.ts](/code/projects/yaagi/packages/contracts/src/perception.ts) адаптирован под `zod 4`; compatibility surfaces для `zod`, `ai`, `@ai-sdk/openai-compatible`, `chokidar` подтверждены командами `pnpm typecheck`, `pnpm test`, `pnpm smoke:cell`; [phase0-ai.integration.test.ts](/code/projects/yaagi/apps/core/test/platform/phase0-ai.integration.test.ts) подтверждает delivered AI SDK provider wiring и refusal semantics | done |
+| AC-F0006-04 | `pnpm quality:fix`, `pnpm test`, `pnpm smoke:cell` | done |
+| AC-F0006-05 | [README.md](/code/projects/yaagi/README.md), [ADR-2026-03-19-canonical-runtime-toolchain.md](/code/projects/yaagi/docs/adr/ADR-2026-03-19-canonical-runtime-toolchain.md) и [ADR-2026-03-25-ai-sdk-runtime-substrate.md](/code/projects/yaagi/docs/adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md) выровнены по новому repo-level runtime contract | done |
+| AC-F0006-06 | Explicit blocker record: `typescript@5.9.3` retained against `latest = 6.0.2` because latest `@typescript-eslint 8.57.2` peer range still caps at `<6.0.0`; no other direct-dependency exceptions remain | done |
 
 ## 9. Decision log (ADR blocks)
 
@@ -287,7 +295,7 @@ Tasks:
 
 ## 10. Progress & links
 
-- Статус: `done` -> `planned`
+- Статус: `done` -> `planned` -> `done`
 - Задача: -
 - PRs:
   - -
@@ -295,6 +303,10 @@ Tasks:
   - `package.json`
   - `apps/core/package.json`
   - `docs/adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md`
+  - `apps/core/src/platform/phase0-ai.ts`
+  - `apps/core/src/runtime/runtime-lifecycle.ts`
+  - `apps/core/test/platform/phase0-ai.integration.test.ts`
+  - `infra/docker/vllm-fast/server.py`
   - `packages/contracts/package.json`
   - `packages/contracts/src/perception.ts`
   - `infra/docker/compose.yaml`
@@ -318,3 +330,4 @@ Tasks:
 - **v1.2 (2026-03-23):** Выполнен `plan-slice`: работа разложена на 5 delivery slices с явными exit criteria, task IDs и acceptance closure path без скрытого сужения scope.
 - **v1.3 (2026-03-23):** Выполнен `implementation`: все direct registry-managed зависимости обновлены до latest published versions, `zod 4`-совместимость зафиксирована в коде, Telegram/container smoke укреплён через параметризуемый `core` host-port и детерминированный cleanup compose-ресурсов между тестами, canonical verification bundle пройден, а внешний transitive peer-warning seam под `@mastra/core 1.15.0` вынесен в явное решение вместо скрытого install noise.
 - **v1.4 (2026-03-25):** `change-proposal`: после принятия repo-level ADR о переходе на `AI SDK` feature reopened. `F-0006` теперь включает обязательную замену `@mastra/core` на `ai@6.0.138` и `@ai-sdk/openai-compatible@2.0.37`, обновляет compatibility matrix под новый substrate и возвращается в `planned` до полного dependency/runtime refactor closure.
+- **v1.5 (2026-03-25):** Completed the dependency/runtime migration: `apps/core` now depends on `ai@6.0.138` and `@ai-sdk/openai-compatible@2.0.37`, the historical `@mastra/core` dependency is removed, the phase-0 runtime invokes selected-profile endpoints through the repo-owned AI SDK adapter, the local `vllm-fast` stub speaks AI SDK JSON response negotiation, root tooling refresh reaches `@biomejs/biome 2.4.9` and `@typescript-eslint 8.57.2`, and the only retained non-latest direct dependency is an explicit `typescript 5.9.3` blocker caused by the latest `@typescript-eslint` peer range still capping at `<6.0.0`.

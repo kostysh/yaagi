@@ -1,7 +1,7 @@
 ---
 id: F-0002
 title: Канонический scaffold монорепы и deployment cell
-status: planned
+status: done
 coverage_gate: strict
 owners: ["@codex"]
 area: platform
@@ -299,8 +299,8 @@ Tasks:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0002-01 | `test/platform/monorepo-scaffold.test.ts` → `test("AC-F0002-01 exposes the canonical pnpm monorepo scaffold and workspace layout")`; `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-01 loads the phase-0 runtime config from env and repo defaults")` | planned |
-| AC-F0002-02 | `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-02 serves a minimal GET /health boundary with readiness state")`; `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-02 materializes writable runtime paths from seed before startup handoff")`; `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-02 keeps the phase-0 boundary health-only and surfaces dependency loss after startup")` | planned |
+| AC-F0002-01 | `test/platform/monorepo-scaffold.test.ts` → `test("AC-F0002-01 exposes the canonical pnpm monorepo scaffold and workspace layout")`; `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-01 loads the phase-0 runtime config from env and repo defaults")` | done |
+| AC-F0002-02 | `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-02 serves a minimal GET /health boundary with readiness state")`; `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-02 materializes writable runtime paths from seed before startup handoff")`; `apps/core/test/platform/core-runtime.test.ts` → `test("AC-F0002-02 keeps the phase-0 boundary health-only and surfaces dependency loss after startup")` | done |
 | AC-F0002-03 | `infra/docker/test/compose-config.test.ts` → `test("AC-F0002-03 renders the canonical compose cell with phase-0 service wiring")` | done |
 | AC-F0002-04 | `infra/docker/test/container-posture.test.ts` → `test("AC-F0002-04 enforces baseline container posture and declared mounts")`; `apps/core/test/platform/runtime-seed.test.ts` → `test("AC-F0002-04 rejects runtime paths that collapse back under the tracked seed boundary")` | done |
 | AC-F0002-05 | `apps/core/test/platform/runtime-seed.test.ts` → `test("AC-F0002-05 materializes empty runtime volumes from seed and preserves live runtime state on reuse")`; `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0002-05 initializes postgres and pgboss readiness before core reports ready")` | done |
@@ -372,7 +372,7 @@ Tasks:
 
 ## 11. Progress & links
 
-- Status: `proposed` → `shaped` → `planned` → `done` → `planned` → `done` → `planned` → `done` → `planned` → `done` → `planned`
+- Status: `proposed` → `shaped` → `planned` → `done` → `planned` → `done` → `planned` → `done` → `planned` → `done` → `planned` → `done`
 - Issue: -
 - PRs:
   - -
@@ -384,7 +384,8 @@ Tasks:
   - `apps/core/src/platform/core-config.ts`
   - `apps/core/src/platform/core-runtime.ts`
   - `apps/core/src/platform/runtime-seed.ts`
-  - `apps/core/src/platform/phase0-mastra.ts`
+  - `apps/core/src/platform/phase0-ai.ts`
+  - `apps/core/test/platform/phase0-ai.integration.test.ts`
   - `apps/core/test/platform/core-runtime.test.ts`
   - `apps/core/test/platform/runtime-seed.test.ts`
   - `apps/core/test/platform/containerized-boot.integration.test.ts`
@@ -431,3 +432,4 @@ Tasks:
 - **v1.12 (2026-03-22):** Implemented `SL-F0002-07` by moving tracked initialization content to `seed/*`, rewiring the deployment cell to mount read-only `/seed` plus writable named runtime volumes, materializing runtime body/skills/models/data before active boot handoff, aligning `F-0001` and the phase-0 deployment ADR to the new boundary, and enforcing repo hygiene by ignoring all non-seed runtime volumes; status advanced back to `done`.
 - **v1.13 (2026-03-24):** `change-proposal`: aligned `F-0002` with the architecture-level baseline router invariants by making the platform-owned health boundary explicit. `GET /health` remains the readiness and diagnostics surface owned by the platform seam, while router-provided profile diagnostics only enrich that payload and do not create a second platform authority.
 - **v1.14 (2026-03-25):** `change-proposal`: applied the repo-level runtime-substrate migration from `Mastra` to `AI SDK`. `F-0002` now defines the canonical phase-0 platform as `TypeScript + AI SDK + Hono`, adds an explicit platform refactor slice for replacing the historical `phase0-mastra` boundary, and returns to `planned` until the delivered runtime entrypoint and dependency baseline are physically migrated.
+- **v1.15 (2026-03-25):** Completed the AI SDK substrate realignment: `apps/core` now boots through the repo-owned `phase0-ai` adapter, the historical `Mastra` bootstrap is removed from the phase-0 runtime path, the local `vllm-fast` stub understands AI SDK JSON response negotiation, and AC-linked platform coverage keeps the health/readiness boundary, seed materialization contract and deployment-cell posture green on the delivered `TypeScript + AI SDK + Hono` baseline.
