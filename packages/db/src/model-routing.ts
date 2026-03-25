@@ -32,6 +32,17 @@ export const BASELINE_MODEL_PROFILE_ROLE = Object.freeze({
 export type BaselineModelProfileRole =
   (typeof BASELINE_MODEL_PROFILE_ROLE)[keyof typeof BASELINE_MODEL_PROFILE_ROLE];
 
+export const RICHER_MODEL_PROFILE_ROLE = Object.freeze({
+  CODE: MODEL_PROFILE_ROLE.CODE,
+  EMBEDDING: MODEL_PROFILE_ROLE.EMBEDDING,
+  RERANKER: MODEL_PROFILE_ROLE.RERANKER,
+  CLASSIFIER: MODEL_PROFILE_ROLE.CLASSIFIER,
+  SAFETY: MODEL_PROFILE_ROLE.SAFETY,
+} as const);
+
+export type RicherModelProfileRole =
+  (typeof RICHER_MODEL_PROFILE_ROLE)[keyof typeof RICHER_MODEL_PROFILE_ROLE];
+
 export const MODEL_PROFILE_STATUS = Object.freeze({
   ACTIVE: 'active',
   DEGRADED: 'degraded',
@@ -45,6 +56,7 @@ export const MODEL_SELECTION_CONTINUITY_KEY = 'modelSelection';
 export type RuntimeModelProfileRow = {
   modelProfileId: string;
   role: ModelProfileRole;
+  serviceId: string;
   endpoint: string;
   artifactUri: string | null;
   baseModel: string;
@@ -60,6 +72,7 @@ export type RuntimeModelProfileRow = {
 export type RuntimeModelProfileSeedInput = {
   modelProfileId: string;
   role: ModelProfileRole;
+  serviceId: string;
   endpoint: string;
   artifactUri?: string | null;
   baseModel: string;
@@ -136,6 +149,7 @@ const toStringArray = (value: unknown): string[] => {
 const modelProfileColumns = `
   model_profile_id as "modelProfileId",
   role,
+  service_id as "serviceId",
   endpoint,
   artifact_uri as "artifactUri",
   base_model as "baseModel",
@@ -195,6 +209,7 @@ async function upsertModelProfile(
     `insert into ${modelRegistryTable} (
       model_profile_id,
       role,
+      service_id,
       endpoint,
       artifact_uri,
       base_model,
@@ -205,10 +220,11 @@ async function upsertModelProfile(
       status,
       updated_at
     ) values (
-      $1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9::jsonb, $10, now()
+      $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::jsonb, $11, now()
     )
     on conflict (model_profile_id) do update
       set role = excluded.role,
+          service_id = excluded.service_id,
           endpoint = excluded.endpoint,
           artifact_uri = excluded.artifact_uri,
           base_model = excluded.base_model,
@@ -222,6 +238,7 @@ async function upsertModelProfile(
     [
       profile.modelProfileId,
       profile.role,
+      profile.serviceId,
       profile.endpoint,
       profile.artifactUri ?? null,
       profile.baseModel,

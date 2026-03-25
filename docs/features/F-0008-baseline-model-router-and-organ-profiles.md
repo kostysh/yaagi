@@ -63,7 +63,7 @@ links:
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
 
-- **AC-F0008-01:** В runtime существует один канонический profile-store/router contract для baseline local organs, а код тикового runtime и cognition seams больше не выбирает модели через hardcoded endpoint/model string; baseline registry slice хранит для каждого delivered profile как минимум `model_profile_id`, `role`, `endpoint`, `base_model`, `adapter_of|null`, `capabilities_json`, `health_json` и `status`.
+- **AC-F0008-01:** В runtime существует один канонический profile-store/router contract для baseline local organs, а код тикового runtime и cognition seams больше не выбирает модели через hardcoded endpoint/model string; baseline registry slice хранит для каждого delivered profile как минимум `model_profile_id`, `role`, `service_id`, `endpoint`, `base_model`, `adapter_of|null`, `capabilities_json`, `health_json` и `status`.
 - **AC-F0008-02:** Delivered baseline profile set включает как минимум один active `reflex` profile и один active `deliberation` profile; `reflection` реализован либо как отдельный active profile, либо как explicit `adapter-over-deliberation` mapping, зафиксированный в profile-store так, чтобы contemplative routing path не зависел от неявного fallback.
 - **AC-F0008-03:** `ModelRouter.selectProfile(...)` принимает bounded routing input для canonical modes `reactive`, `deliberative` и `contemplative`, детерминированно учитывает `task_kind`, `latency_budget`, `risk_level`, `context_size`, `required_capabilities`, baseline `organ_health` и optional `last_eval_score`, и возвращает selection result с `model_profile_id`, `role` и `selection_reason`; router contract не расширяет сам по себе tick admission matrix из `F-0003`.
 - **AC-F0008-04:** Когда runtime или bounded cognitive harness запрашивает organ selection для активного тика, выбранный `model_profile_id` сохраняется в owning tick row и синхронизируется в `agent_state.current_model_profile_id` на время active tick, так что restart/reclaim path может восстановить, какой baseline organ был выбран последним.
@@ -167,6 +167,7 @@ interface ModelRouter {
 - Feature берёт ownership над minimal runtime use of `model_registry` из архитектуры; если baseline bootstrap ещё не materialize-ит эту таблицу, `F-0008` должен ввести минимальный schema slice для:
   - `model_profile_id text primary key`;
   - `role text not null check (role in ('reflex', 'deliberation', 'reflection', 'code', 'embedding', 'reranker', 'classifier', 'safety'))`;
+  - `service_id text not null`;
   - `endpoint text not null`;
   - `artifact_uri text`;
   - `base_model text not null`;
@@ -371,4 +372,5 @@ Tasks:
 - **v1.8 (2026-03-24):** `change-proposal`: aligned `F-0008` with the new architecture-level baseline router invariants. The architecture now carries only the minimal delivered router contract, while deterministic selection details, continuity persistence and fast/smoke proofs remain explicitly feature-local to this dossier.
 - **v1.9 (2026-03-25):** `change-proposal`: realigned router wording to the repo-level AI SDK substrate. `F-0008` remains `done` because baseline routing and profile continuity stay framework-neutral, but the old Mastra-specific cognition references were retired in favor of the AI SDK-backed harness owned by `F-0009`.
 - **v1.10 (2026-03-25):** `change-proposal`: realigned `F-0008` with planned `F-0013` operator API delivery. The dossier no longer claims that a future `/models` route is forbidden; instead it fixes that `F-0008` owns baseline routing diagnostics while any later operator `/models` publication remains owned by `F-0013` and must not change boot dependencies or routing ownership.
+- **v1.11 (2026-03-25):** Realigned the shared `model_registry` family after `F-0014 implementation`: baseline rows now carry explicit `service_id` continuity (`vllm-fast`) alongside the already delivered routing metadata, while baseline ownership and `/models` boundary rules remain unchanged.
 - **v1.11 (2026-03-25):** Realigned future richer-model ownership after `F-0014 spec-compact`: this dossier now treats non-baseline shared-role ecology, richer source diagnostics and fallback/quarantine metadata as `F-0014`-owned, while `F-0008` stays limited to baseline rows, router invariants and continuity pointers.

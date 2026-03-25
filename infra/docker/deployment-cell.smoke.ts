@@ -583,7 +583,17 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
           richerRegistryHealth: {
             available: boolean;
             owner: string;
-            reason: string;
+            generatedAt: string | null;
+            organs: Array<{
+              modelProfileId: string;
+              role: string;
+              serviceId: string;
+              availability: string;
+              quarantineState: string;
+              fallbackTargetProfileId: string | null;
+              errorRate: number | null;
+              latencyMsP95: number | null;
+            }>;
           };
         };
         assert.deepEqual(
@@ -622,11 +632,61 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
             },
           ],
         );
-        assert.deepEqual(modelsPayload.richerRegistryHealth, {
-          available: false,
-          owner: 'CF-010',
-          reason: 'future_owned',
-        });
+        assert.equal(modelsPayload.richerRegistryHealth.available, true);
+        assert.equal(modelsPayload.richerRegistryHealth.owner, 'F-0014');
+        assert.match(modelsPayload.richerRegistryHealth.generatedAt ?? '', /^\d{4}-\d{2}-\d{2}T/);
+        assert.deepEqual(modelsPayload.richerRegistryHealth.organs, [
+          {
+            modelProfileId: 'classifier.pool@shared',
+            role: 'classifier',
+            serviceId: 'vllm-pool',
+            availability: 'unavailable',
+            quarantineState: 'active',
+            fallbackTargetProfileId: null,
+            errorRate: 1,
+            latencyMsP95: null,
+          },
+          {
+            modelProfileId: 'code.deep@shared',
+            role: 'code',
+            serviceId: 'vllm-deep',
+            availability: 'unavailable',
+            quarantineState: 'active',
+            fallbackTargetProfileId: null,
+            errorRate: 1,
+            latencyMsP95: null,
+          },
+          {
+            modelProfileId: 'embedding.pool@shared',
+            role: 'embedding',
+            serviceId: 'vllm-pool',
+            availability: 'unavailable',
+            quarantineState: 'active',
+            fallbackTargetProfileId: null,
+            errorRate: 1,
+            latencyMsP95: null,
+          },
+          {
+            modelProfileId: 'reranker.pool@shared',
+            role: 'reranker',
+            serviceId: 'vllm-pool',
+            availability: 'unavailable',
+            quarantineState: 'active',
+            fallbackTargetProfileId: null,
+            errorRate: 1,
+            latencyMsP95: null,
+          },
+          {
+            modelProfileId: 'safety.deep@shared',
+            role: 'safety',
+            serviceId: 'vllm-deep',
+            availability: 'unavailable',
+            quarantineState: 'active',
+            fallbackTargetProfileId: null,
+            errorRate: 1,
+            latencyMsP95: null,
+          },
+        ]);
 
         assert.equal(
           await queryPostgres(

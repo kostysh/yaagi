@@ -8,6 +8,10 @@ import {
   type DecisionResult,
   type NarrativeMemeticOutputs,
 } from '@yaagi/contracts/cognition';
+import type {
+  ModelOrganHealthReportInput,
+  OperatorRicherRegistryHealthSummary,
+} from '@yaagi/contracts/models';
 import {
   DEFAULT_PERCEPTION_HEALTH,
   type HttpIngestStimulusInput,
@@ -16,6 +20,7 @@ import {
 } from '@yaagi/contracts/perception';
 import {
   appendRuntimeTimelineEvent,
+  createExpandedModelEcologyStore,
   createNarrativeMemeticStore,
   createRuntimeActionLogStore,
   createPerceptionStore,
@@ -70,6 +75,7 @@ import {
   type HomeostatService,
   type PeriodicHomeostatWorker,
 } from './homeostat.ts';
+import { createExpandedModelEcologyService } from './model-ecology.ts';
 
 type RuntimeLifecycle = {
   start(): Promise<void>;
@@ -94,6 +100,8 @@ type RuntimeLifecycle = {
     deliberation?: ModelHealthSummary;
     reflection?: ModelHealthSummary;
   }): Promise<BaselineModelProfileDiagnostic[]>;
+  getRicherModelRegistryHealthSummary(): Promise<OperatorRicherRegistryHealthSummary>;
+  getModelOrganHealthReportInput(): Promise<ModelOrganHealthReportInput>;
 };
 
 export const buildPhase0SubjectStateDelta = (input: FinishTickInput): SubjectStateDelta => {
@@ -378,6 +386,44 @@ const createDbBackedModelProfileStore = (config: CoreRuntimeConfig) => ({
     withRuntimeClient(config.postgresUrl, async (client) => {
       const store = createRuntimeModelProfileStore(client);
       await store.setCurrentModelProfile(modelProfileId);
+    }),
+});
+
+const createDbBackedExpandedModelEcologyStore = (config: CoreRuntimeConfig) => ({
+  upsertProfileHealth: (
+    entries: Parameters<
+      ReturnType<typeof createExpandedModelEcologyStore>['upsertProfileHealth']
+    >[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createExpandedModelEcologyStore(client);
+      return await store.upsertProfileHealth(entries);
+    }),
+
+  replaceFallbackLinks: (
+    entries: Parameters<
+      ReturnType<typeof createExpandedModelEcologyStore>['replaceFallbackLinks']
+    >[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createExpandedModelEcologyStore(client);
+      return await store.replaceFallbackLinks(entries);
+    }),
+
+  listProfileHealth: (
+    input?: Parameters<ReturnType<typeof createExpandedModelEcologyStore>['listProfileHealth']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createExpandedModelEcologyStore(client);
+      return await store.listProfileHealth(input);
+    }),
+
+  listFallbackLinks: (
+    input?: Parameters<ReturnType<typeof createExpandedModelEcologyStore>['listFallbackLinks']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createExpandedModelEcologyStore(client);
+      return await store.listFallbackLinks(input);
     }),
 });
 
@@ -981,11 +1027,18 @@ export function createPhase0RuntimeLifecycle(
     };
   };
   const modelProfileStore = createDbBackedModelProfileStore(config);
+  const expandedModelEcologyStore = createDbBackedExpandedModelEcologyStore(config);
   const actionLogStore = createDbBackedActionLogStore(config);
   const modelRouter = createPhase0ModelRouter({
     fastModelBaseUrl: config.fastModelBaseUrl,
     store: modelProfileStore,
     resolveBaselineHealth,
+  });
+  const expandedModelEcology = createExpandedModelEcologyService({
+    deepModelBaseUrl: config.deepModelBaseUrl,
+    poolModelBaseUrl: config.poolModelBaseUrl,
+    modelProfileStore,
+    store: expandedModelEcologyStore,
   });
   const invokeDecision = options.invokeDecision ?? createPhase0DecisionInvoker();
   const decisionHarness = createDecisionHarness({
@@ -1173,6 +1226,31 @@ export function createPhase0RuntimeLifecycle(
   });
 
   let started = false;
+  const getRicherModelRegistryHealthSummary =
+    async (): Promise<OperatorRicherRegistryHealthSummary> => {
+      const summary = await expandedModelEcology.getOperatorRicherRegistryHealthSummary();
+      if (summary.generatedAt) {
+        return summary;
+      }
+
+      return await expandedModelEcology.syncRicherSourceDiagnostics();
+    };
+  const getModelOrganHealthReportInput = async (): Promise<ModelOrganHealthReportInput> => {
+    const summary = await getRicherModelRegistryHealthSummary();
+    return {
+      generatedAt: summary.generatedAt ?? new Date().toISOString(),
+      profiles: summary.organs.map((organ) => ({
+        modelProfileId: organ.modelProfileId,
+        role: organ.role,
+        serviceId: organ.serviceId,
+        availability: organ.availability,
+        quarantineState: organ.quarantineState,
+        fallbackTargetProfileId: organ.fallbackTargetProfileId,
+        errorRate: organ.errorRate,
+        latencyMsP95: organ.latencyMsP95,
+      })),
+    };
+  };
 
   return {
     async start(): Promise<void> {
@@ -1231,6 +1309,7 @@ export function createPhase0RuntimeLifecycle(
           throw result.error;
         }
 
+        await expandedModelEcology.syncRicherSourceDiagnostics();
         await periodicHomeostatWorker.start();
 
         await perceptionController.emitSystemSignal({
@@ -1315,5 +1394,8 @@ export function createPhase0RuntimeLifecycle(
     }): Promise<BaselineModelProfileDiagnostic[]> {
       return modelRouter.getBaselineDiagnostics(input ? { organHealth: input } : undefined);
     },
+
+    getRicherModelRegistryHealthSummary,
+    getModelOrganHealthReportInput,
   };
 }

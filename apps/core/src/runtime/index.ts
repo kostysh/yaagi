@@ -24,6 +24,11 @@ export {
   createPhase0TickExecution,
 } from './runtime-lifecycle.ts';
 export {
+  createExpandedModelEcologyService,
+  EXPANDED_MODEL_PROFILE_ID,
+  type ExpandedModelEcologyService,
+} from './model-ecology.ts';
+export {
   createDbBackedHomeostatService,
   createHomeostatService,
   createPeriodicHomeostatWorker,

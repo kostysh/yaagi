@@ -47,7 +47,7 @@ links:
 - Bounded response DTOs, pagination/cursor semantics and error contracts for operator routes.
 - Owner-routed control handoff semantics for `POST /control/tick`, including idempotent `requestId` behavior and explicit mapping of runtime admission rejections.
 - Explicit provenance policy for operator-requested ticks that preserves current `F-0003` trigger taxonomy instead of silently extending it.
-- Explicit future-gap contract for richer model ecology (`F-0014`) and governor-backed controls (`CF-016`).
+- Explicit bounded source-adapter contract for richer model ecology (`F-0014`) and future-owned governor-backed controls (`CF-016`).
 
 ### Out of scope
 
@@ -65,7 +65,7 @@ links:
 - Read routes must consume only canonical owner surfaces and return bounded DTOs. Raw row/table dumps, ad hoc SQL-shaped payloads and alternate shadow read models are forbidden.
 - `POST /control/tick` must route only through the existing runtime owner gate (`F-0003`). The HTTP seam may not create ticks or mutate continuity rows by direct DB writes.
 - Because the canonical tick trigger taxonomy is currently `boot | scheduler | system`, operator-triggered ticks in this seam must reuse the existing `system` trigger and carry operator provenance in the request payload/metadata. Introducing a new runtime trigger is out of scope for `F-0013`.
-- `GET /models` must stay bounded to delivered `F-0008` diagnostics and explicit future-gap markers. It must not fabricate richer health that belongs to `F-0014` or seize ownership of the richer source state.
+- `GET /models` must stay bounded to delivered `F-0008` diagnostics plus the canonical bounded richer summary sourced from `F-0014`. It must not fabricate richer health, dump raw source tables or seize ownership of the richer source state.
 - `POST /control/freeze-development` must remain explicitly unavailable until `CF-016` owns the underlying governor/freeze surfaces; this seam may not invent direct governor writes or hidden backdoors.
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
@@ -316,7 +316,7 @@ type OperatorUnavailableControlResponse = {
   - `GET /state` bounded snapshot projection;
   - `GET /timeline` stable pagination and cursor semantics;
   - `GET /episodes` stable pagination and canonical episode contract projection;
-  - `GET /models` baseline diagnostics plus explicit future-gap marker;
+  - `GET /models` baseline diagnostics plus the bounded richer summary sourced from `F-0014`, including explicit unavailable/degraded semantics when optional organs are absent;
   - `POST /control/tick` accepted and rejected handoff semantics, including idempotent `requestId` replay;
   - `POST /control/freeze-development` explicit unavailable contract before `CF-016`.
 - If implementation changes the public Hono route wiring materially, deployment-cell smoke is mandatory before feature closure.
@@ -346,7 +346,7 @@ Tasks:
 - `T-F0013-02`
 
 ### Slice SL-F0013-02: Baseline model introspection boundary
-Delivers: bounded `GET /models` route over delivered `F-0008` diagnostics with explicit future-gap semantics for `F-0014`, plus the required realignment of delivered `F-0008` assumptions that currently treat `/models` as absent.
+Delivers: bounded `GET /models` route over delivered `F-0008` diagnostics with the canonical bounded richer summary sourced from `F-0014`, plus the required realignment of delivered `F-0008` assumptions that currently treat `/models` as absent.
 Covers: AC-F0013-04, AC-F0013-07
 Verification: `apps/core/test/platform/operator-models.integration.test.ts`, linked `change-proposal` / realignment for `F-0008`
 Exit criteria:
@@ -384,7 +384,7 @@ Tasks:
 
 - **T-F0013-01 (SL-F0013-01):** Define route DTOs, query schemas and owner mapping for `GET /state`, `GET /timeline` and `GET /episodes`. Covers: AC-F0013-01, AC-F0013-02, AC-F0013-03.
 - **T-F0013-02 (SL-F0013-01):** Add bounded read adapters for timeline and episode pagination plus state snapshot projection without raw table dumps. Covers: AC-F0013-02, AC-F0013-03, AC-F0013-07.
-- **T-F0013-03 (SL-F0013-02):** Define the bounded `GET /models` contract over `F-0008` diagnostics and explicit `F-0014` future-gap semantics. Covers: AC-F0013-04.
+- **T-F0013-03 (SL-F0013-02):** Define the bounded `GET /models` contract over `F-0008` diagnostics and the canonical `F-0014` richer-summary adapter semantics. Covers: AC-F0013-04.
 - **T-F0013-04 (SL-F0013-02):** Realign delivered `F-0008` `/models`-absence assumption through an explicit linked change-proposal/update before enabling the new operator route. Covers: AC-F0013-04, AC-F0013-07.
 - **T-F0013-05 (SL-F0013-03):** Implement `POST /control/tick` request/response mapping, required `requestId` validation, forwarded operator provenance and request-id idempotency handling over the canonical runtime gate. Covers: AC-F0013-05.
 - **T-F0013-06 (SL-F0013-03):** Implement explicit unavailable semantics for `POST /control/freeze-development` before `CF-016`. Covers: AC-F0013-06.
@@ -476,3 +476,4 @@ Tasks:
 - **v1.2 (2026-03-25):** `plan-slice` translated the shaped operator boundary into delivery-ordered slices with explicit verification targets and made the required `F-0008` `/models` realignment a first-class planned task instead of a hidden follow-up.
 - **v1.3 (2026-03-25):** `implementation` delivered the bounded operator API end-to-end on the canonical Hono/runtime path: `GET /state`, `GET /timeline`, `GET /episodes`, `GET /models`, `POST /control/tick` and explicit `501` `POST /control/freeze-development` are now live, timeline/episode pagination uses explicit owner adapters, `F-0008` `/models` assumptions are realigned, and deployment-cell smoke now covers the public operator boundary.
 - **v1.4 (2026-03-25):** Realigned future `/models` owner references after `F-0014 spec-compact`: richer model ecology now points to `F-0014` as the source seam, while this dossier remains the owner only of the bounded operator projection over that source state.
+- **v1.5 (2026-03-25):** Realigned delivered `/models` behavior after `F-0014 implementation`: the route now projects the bounded richer summary from `F-0014` when source diagnostics exist, while preserving explicit unavailable/degraded semantics and leaving the richer source state itself outside `F-0013` ownership.

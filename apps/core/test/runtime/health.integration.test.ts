@@ -109,6 +109,24 @@ void test('AC-F0008-06 surfaces baseline profile diagnostics through health and 
                 },
               },
             ]),
+          getRicherModelRegistryHealthSummary: () =>
+            Promise.resolve({
+              available: true,
+              owner: 'F-0014' as const,
+              generatedAt: '2026-03-25T21:05:00.000Z',
+              organs: [
+                {
+                  modelProfileId: 'embedding.pool@shared',
+                  role: 'embedding' as const,
+                  serviceId: 'vllm-pool',
+                  availability: 'degraded' as const,
+                  quarantineState: 'active' as const,
+                  fallbackTargetProfileId: null,
+                  errorRate: 0.45,
+                  latencyMsP95: 255,
+                },
+              ],
+            }),
         }),
       },
     );
@@ -173,7 +191,17 @@ void test('AC-F0008-06 surfaces baseline profile diagnostics through health and 
         richerRegistryHealth: {
           available: boolean;
           owner: string;
-          reason: string;
+          generatedAt: string;
+          organs: Array<{
+            modelProfileId: string;
+            role: string;
+            serviceId: string;
+            availability: string;
+            quarantineState: string;
+            fallbackTargetProfileId: string | null;
+            errorRate: number | null;
+            latencyMsP95: number | null;
+          }>;
         };
       };
       assert.deepEqual(modelsPayload.baselineProfiles, [
@@ -190,9 +218,21 @@ void test('AC-F0008-06 surfaces baseline profile diagnostics through health and 
         },
       ]);
       assert.deepEqual(modelsPayload.richerRegistryHealth, {
-        available: false,
-        owner: 'CF-010',
-        reason: 'future_owned',
+        available: true,
+        owner: 'F-0014',
+        generatedAt: '2026-03-25T21:05:00.000Z',
+        organs: [
+          {
+            modelProfileId: 'embedding.pool@shared',
+            role: 'embedding',
+            serviceId: 'vllm-pool',
+            availability: 'degraded',
+            quarantineState: 'active',
+            fallbackTargetProfileId: null,
+            errorRate: 0.45,
+            latencyMsP95: 255,
+          },
+        ],
       });
     } finally {
       await runtime.stop();

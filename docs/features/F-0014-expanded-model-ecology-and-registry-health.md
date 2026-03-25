@@ -1,11 +1,11 @@
 ---
 id: F-0014
 title: Расширенная модельная экология и здоровье реестра
-status: planned
-coverage_gate: deferred
+status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: models
-depends_on: [F-0002, F-0008]
+depends_on: [F-0002, F-0008, F-0013]
 impacts: [runtime, db, models, observability, api]
 created: 2026-03-25
 updated: 2026-03-25
@@ -282,13 +282,13 @@ Exit criteria:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0014-01 | `packages/contracts/test/models/expanded-registry.contract.test.ts` → `test("AC-F0014-01 expanded registry is the only canonical richer-model owner surface")` | planned |
-| AC-F0014-02 | `packages/db/test/models/expanded-registry-store.integration.test.ts` → `test("AC-F0014-02 richer organ families persist explicit capability and status metadata without replacing baseline ownership")` | planned |
-| AC-F0014-03 | `apps/core/test/models/registry-health.integration.test.ts` → `test("AC-F0014-03 richer source diagnostics feed bounded operator projection and CF-015 report input without creating shadow state")` | planned |
-| AC-F0014-04 | `apps/core/test/models/richer-fallback.contract.test.ts` → `test("AC-F0014-04 richer fallback preserves explicit reflection, structured refusal and selection-admission separation")` | planned |
-| AC-F0014-05 | `apps/core/test/models/optional-organs.integration.test.ts` → `test("AC-F0014-05 optional richer organs degrade explicitly without becoming hidden boot-critical dependencies")` | planned |
-| AC-F0014-06 | `apps/core/test/models/ownership-boundary.contract.test.ts` → `test("AC-F0014-06 richer model ecology stays separate from operator publication, CF-015 reporting, homeostat consumption and specialist lifecycle policy")` | planned |
-| AC-F0014-07 | `packages/db/test/models/registry-surface-split.integration.test.ts` → `test("AC-F0014-07 richer registry source state extends the model_registry family without a shadow registry")` | planned |
+| AC-F0014-01 | `packages/contracts/test/models/expanded-registry.contract.test.ts` → `test("AC-F0014-01 expanded registry is the only canonical richer-model owner surface")` | done |
+| AC-F0014-02 | `packages/db/test/models/expanded-registry-store.integration.test.ts` → `test("AC-F0014-02 richer organ families persist explicit capability and status metadata without replacing baseline ownership")` | done |
+| AC-F0014-03 | `apps/core/test/models/registry-health.integration.test.ts` → `test("AC-F0014-03 richer source diagnostics feed bounded operator projection and CF-015 report input without creating shadow state")`; `infra/docker/deployment-cell.smoke.ts` → bounded `/models` deployment-cell projection `// Covers: AC-F0014-03` | done |
+| AC-F0014-04 | `apps/core/test/models/richer-fallback.contract.test.ts` → `test("AC-F0014-04 richer fallback preserves explicit reflection, structured refusal and selection-admission separation")`; `apps/core/test/models/model-router.integration.test.ts` → richer-row coexistence in the shared registry family `// Covers: AC-F0014-04` | done |
+| AC-F0014-05 | `apps/core/test/models/optional-organs.integration.test.ts` → `test("AC-F0014-05 optional richer organs degrade explicitly without becoming hidden boot-critical dependencies")`; `infra/docker/deployment-cell.smoke.ts` → bounded unavailable richer-organ summary in the canonical container path `// Covers: AC-F0014-05` | done |
+| AC-F0014-06 | `apps/core/test/models/ownership-boundary.contract.test.ts` → `test("AC-F0014-06 richer model ecology stays separate from operator publication, CF-015 reporting, homeostat consumption and specialist lifecycle policy")`; `apps/core/test/platform/operator-models.integration.test.ts` → bounded `F-0013` projection over `F-0014` source state `// Covers: AC-F0014-06` | done |
+| AC-F0014-07 | `packages/db/test/models/registry-surface-split.integration.test.ts` → `test("AC-F0014-07 richer registry source state extends the model_registry family without a shadow registry")` | done |
 
 ## 10. Decision log (ADR blocks)
 
@@ -310,7 +310,45 @@ Exit criteria:
 
 ## 11. Progress & links
 
-- Status progression: `proposed -> shaped -> planned -> in_progress -> done`
+- Status progression: `proposed -> shaped -> planned -> done`
+- Candidate source: `CF-010`
+- Delivered prerequisites: `F-0002`, `F-0008`, `F-0013`
+- Code:
+  - `apps/core/src/platform/core-config.ts`
+  - `apps/core/src/platform/core-runtime.ts`
+  - `apps/core/src/platform/operator-api.ts`
+  - `apps/core/src/runtime/model-ecology.ts`
+  - `apps/core/src/runtime/model-router.ts`
+  - `apps/core/src/runtime/runtime-lifecycle.ts`
+  - `apps/core/test/models/model-router.integration.test.ts`
+  - `apps/core/test/models/optional-organs.integration.test.ts`
+  - `apps/core/test/models/ownership-boundary.contract.test.ts`
+  - `apps/core/test/models/registry-health.integration.test.ts`
+  - `apps/core/test/models/richer-fallback.contract.test.ts`
+  - `apps/core/test/platform/operator-models.integration.test.ts`
+  - `apps/core/test/runtime/health.integration.test.ts`
+  - `infra/docker/deployment-cell.smoke.ts`
+  - `infra/migrations/009_expanded_model_ecology.sql`
+  - `packages/contracts/src/models.ts`
+  - `packages/contracts/test/models/expanded-registry.contract.test.ts`
+  - `packages/db/src/model-ecology.ts`
+  - `packages/db/src/model-routing.ts`
+  - `packages/db/test/models/expanded-registry-store.integration.test.ts`
+  - `packages/db/test/models/registry-surface-split.integration.test.ts`
+  - `packages/db/testing/subject-state-db-harness.ts`
+- Verification:
+  - `pnpm format`
+  - `pnpm typecheck`
+  - `pnpm lint`
+  - `pnpm test`
+  - `pnpm smoke:cell`
+  - `pnpm debt:audit:changed`
+  - `node scripts/index-refresh.mjs`
+  - `node scripts/lint-dossiers.mjs`
+  - `node scripts/coverage-audit.mjs --dossier docs/features/F-0014-expanded-model-ecology-and-registry-health.md --orphans-scope=dossier`
+  - `node scripts/contract-drift-audit.mjs --dossier docs/features/F-0014-expanded-model-ecology-and-registry-health.md --base HEAD~1`
+  - `node scripts/contract-drift-audit.mjs --dossier docs/features/F-0008-baseline-model-router-and-organ-profiles.md --base HEAD~1`
+  - `node scripts/contract-drift-audit.mjs --dossier docs/features/F-0013-operator-http-api-and-introspection.md --base HEAD~1`
 - Issue: none
 - PRs: none
 - Process artifacts:
@@ -323,3 +361,4 @@ Exit criteria:
 - **v1.0 (2026-03-25):** Initial dossier created from `CF-010`; intake fixes one canonical owner for expanded model ecology, richer registry health and explicit fallback/quarantine metadata while keeping baseline router invariants with `F-0008`, operator publication with `F-0013`, Homeostat consumption with `F-0012`, workshop lifecycle with `CF-011` and specialist rollout with `CF-019`.
 - **v1.1 (2026-03-25):** `spec-compact`: tightened the seam into a decision-complete shaped spec. `F-0014` now owns richer source state and bounded source diagnostics rather than final reports, baseline-vs-expanded registry ownership is split explicitly, `CF-015` remains the report owner, and `F-0013` future `/models` projection is realigned onto `F-0014` as its richer source seam.
 - **v1.2 (2026-03-25):** `plan-slice`: moved the dossier to `planned`, turned the four delivery slices into implementation-ready waves with explicit verification artifacts and exit criteria, and made the required realignment of delivered `F-0008`/`F-0013` code paths explicit as linked tasks instead of hidden follow-up debt.
+- **v1.3 (2026-03-25):** `implementation`: delivered the richer registry source surfaces on the canonical runtime path. `model_registry` now carries explicit `service_id` continuity for baseline and richer rows, companion source tables `model_profile_health` and `model_fallback_links` are live, `vllm-deep` / `vllm-pool` probe into bounded unavailable/degraded source diagnostics without becoming boot-critical, `F-0013` `/models` now projects the bounded `F-0014` richer summary, and container smoke proves the new richer organs remain optional on the deployment-cell path.

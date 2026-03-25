@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { PHASE0_BASELINE_PROFILE_ID } from '../../src/runtime/index.ts';
 import { createPlatformTestRuntime } from '../../testing/platform-test-fixture.ts';
 
-void test('AC-F0013-04 returns bounded baseline model diagnostics and explicit CF-010 future-gap metadata', async () => {
+void test('AC-F0013-04 returns bounded baseline model diagnostics and the F-0014 richer registry projection', async () => {
   const { runtime, cleanup } = await createPlatformTestRuntime({
     dependencies: {
       createRuntimeLifecycle: () => ({
@@ -26,6 +26,24 @@ void test('AC-F0013-04 returns bounded baseline model diagnostics and explicit C
               },
             },
           ]),
+        getRicherModelRegistryHealthSummary: () =>
+          Promise.resolve({
+            available: true,
+            owner: 'F-0014' as const,
+            generatedAt: '2026-03-25T21:00:00.000Z',
+            organs: [
+              {
+                modelProfileId: 'code.deep@shared',
+                role: 'code' as const,
+                serviceId: 'vllm-deep',
+                availability: 'available' as const,
+                quarantineState: 'clear' as const,
+                fallbackTargetProfileId: null,
+                errorRate: 0,
+                latencyMsP95: 125,
+              },
+            ],
+          }),
       }),
     },
   });
@@ -49,7 +67,17 @@ void test('AC-F0013-04 returns bounded baseline model diagnostics and explicit C
       richerRegistryHealth: {
         available: boolean;
         owner: string;
-        reason: string;
+        generatedAt: string;
+        organs: Array<{
+          modelProfileId: string;
+          role: string;
+          serviceId: string;
+          availability: string;
+          quarantineState: string;
+          fallbackTargetProfileId: string | null;
+          errorRate: number | null;
+          latencyMsP95: number | null;
+        }>;
       };
     };
 
@@ -67,9 +95,21 @@ void test('AC-F0013-04 returns bounded baseline model diagnostics and explicit C
       },
     ]);
     assert.deepEqual(payload.richerRegistryHealth, {
-      available: false,
-      owner: 'CF-010',
-      reason: 'future_owned',
+      available: true,
+      owner: 'F-0014',
+      generatedAt: '2026-03-25T21:00:00.000Z',
+      organs: [
+        {
+          modelProfileId: 'code.deep@shared',
+          role: 'code',
+          serviceId: 'vllm-deep',
+          availability: 'available',
+          quarantineState: 'clear',
+          fallbackTargetProfileId: null,
+          errorRate: 0,
+          latencyMsP95: 125,
+        },
+      ],
     });
   } finally {
     await cleanup();

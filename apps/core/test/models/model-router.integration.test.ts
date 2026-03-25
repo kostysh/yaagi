@@ -88,3 +88,42 @@ void test('AC-F0008-02 keeps reflection as an explicit profile or adapter-over-d
   assert.equal(reflection.adapterOf, deliberation.modelProfileId);
   assert.equal(reflection.role, 'reflection');
 });
+
+void test('AC-F0014-04 keeps baseline diagnostics and selection isolated from richer-role rows in the shared registry family', async () => {
+  const harness = createSubjectStateDbHarness();
+  const store = createRuntimeModelProfileStore(harness.db);
+  const router = createPhase0ModelRouter({
+    fastModelBaseUrl: 'http://vllm-fast:8000/v1',
+    store,
+  });
+
+  await router.ensureBaselineProfiles();
+  await store.ensureModelProfiles([
+    {
+      modelProfileId: 'code.deep@shared',
+      role: 'code',
+      serviceId: 'vllm-deep',
+      endpoint: 'http://vllm-deep:8001/v1',
+      baseModel: 'model-deep',
+      capabilities: ['code'],
+      healthJson: { owner: 'F-0014' },
+    },
+  ]);
+
+  const diagnostics = await router.getBaselineDiagnostics();
+  const selection = await router.selectProfile({
+    tickMode: 'reactive',
+    taskKind: 'reactive.signal',
+    latencyBudget: 'tight',
+    riskLevel: 'low',
+    contextSize: 64,
+    requiredCapabilities: ['reactive'],
+  });
+
+  assert.deepEqual(
+    diagnostics.map((profile) => profile.role),
+    ['deliberation', 'reflex', 'reflection'],
+  );
+  assert.equal(selection.accepted, true);
+  assert.equal(selection.accepted ? selection.role : null, 'reflex');
+});

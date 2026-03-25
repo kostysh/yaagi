@@ -78,6 +78,8 @@ void test('AC-F0002-01 loads the phase-0 runtime config from env and repo defaul
 
     assert.equal(config.postgresUrl, 'postgres://yaagi:yaagi@127.0.0.1:5432/yaagi');
     assert.equal(config.fastModelBaseUrl, 'http://127.0.0.1:8000/v1');
+    assert.equal(config.deepModelBaseUrl, 'http://127.0.0.1:8001/v1');
+    assert.equal(config.poolModelBaseUrl, 'http://127.0.0.1:8002/v1');
     assert.equal(config.port, 8791);
     assert.equal(config.bootTimeoutMs, 3000);
     assert.equal(config.pgBossSchema, 'pgboss');

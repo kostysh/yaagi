@@ -4,6 +4,8 @@ import { z } from 'zod';
 export type CoreRuntimeConfig = {
   postgresUrl: string;
   fastModelBaseUrl: string;
+  deepModelBaseUrl: string;
+  poolModelBaseUrl: string;
   telegramEnabled: boolean;
   telegramBotToken: string | null;
   telegramAllowedChatIds: string[];
@@ -27,6 +29,8 @@ export type CoreRuntimeConfig = {
 
 const DEFAULT_POSTGRES_URL = 'postgres://yaagi:yaagi@127.0.0.1:5432/yaagi';
 const DEFAULT_FAST_MODEL_BASE_URL = 'http://127.0.0.1:8000/v1';
+const DEFAULT_DEEP_MODEL_BASE_URL = 'http://127.0.0.1:8001/v1';
+const DEFAULT_POOL_MODEL_BASE_URL = 'http://127.0.0.1:8002/v1';
 const DEFAULT_TELEGRAM_API_BASE_URL = 'https://api.telegram.org';
 const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_PORT = 8787;
@@ -104,6 +108,8 @@ const resolvePathFromRoot = (
 const envSchema = z.object({
   YAAGI_POSTGRES_URL: z.string().optional(),
   YAAGI_FAST_MODEL_BASE_URL: z.string().optional(),
+  YAAGI_DEEP_MODEL_BASE_URL: z.string().optional(),
+  YAAGI_POOL_MODEL_BASE_URL: z.string().optional(),
   YAAGI_TELEGRAM_ENABLED: z.string().optional(),
   YAAGI_TELEGRAM_BOT_TOKEN: z.string().optional(),
   YAAGI_TELEGRAM_ALLOWED_CHAT_IDS: z.string().optional(),
@@ -153,6 +159,18 @@ export function loadCoreRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Cor
       requireUrl(
         parsedEnv.YAAGI_FAST_MODEL_BASE_URL ?? DEFAULT_FAST_MODEL_BASE_URL,
         'YAAGI_FAST_MODEL_BASE_URL',
+      ),
+    ),
+    deepModelBaseUrl: normalizeFastModelBaseUrl(
+      requireUrl(
+        parsedEnv.YAAGI_DEEP_MODEL_BASE_URL ?? DEFAULT_DEEP_MODEL_BASE_URL,
+        'YAAGI_DEEP_MODEL_BASE_URL',
+      ),
+    ),
+    poolModelBaseUrl: normalizeFastModelBaseUrl(
+      requireUrl(
+        parsedEnv.YAAGI_POOL_MODEL_BASE_URL ?? DEFAULT_POOL_MODEL_BASE_URL,
+        'YAAGI_POOL_MODEL_BASE_URL',
       ),
     ),
     telegramEnabled,

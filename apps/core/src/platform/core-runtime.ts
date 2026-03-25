@@ -10,6 +10,7 @@ import {
   type HttpIngestStimulusInput,
   type PerceptionHealthSnapshot,
 } from '@yaagi/contracts/perception';
+import type { OperatorRicherRegistryHealthSummary } from '@yaagi/contracts/models';
 import { checkPostgresConnectivity, ensureDatabaseReady } from '@yaagi/db/bootstrap';
 import { type CoreRuntimeConfig, loadCoreRuntimeConfig } from './core-config.ts';
 import { createPhase0DecisionInvoker, PHASE0_AGENT_KEYS } from './phase0-ai.ts';
@@ -55,6 +56,7 @@ export type CoreRuntimeDependencies = {
       deliberation?: ModelHealthSummary;
       reflection?: ModelHealthSummary;
     }): Promise<BaselineModelProfileDiagnostic[]>;
+    getRicherModelRegistryHealthSummary?(): Promise<OperatorRicherRegistryHealthSummary>;
     ingestHttpStimulus?(input: unknown): Promise<{
       stimulusId: string;
       deduplicated: boolean;

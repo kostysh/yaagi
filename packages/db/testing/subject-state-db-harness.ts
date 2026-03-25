@@ -16,6 +16,7 @@ import type {
   NarrativeSpineVersionRow,
 } from '../src/narrative-memetic.ts';
 import type { StimulusInboxRecord } from '@yaagi/contracts/perception';
+import type { ExpandedFallbackLink, ExpandedModelProfileHealth } from '@yaagi/contracts/models';
 import type {
   EvidenceRef,
   SubjectBelief,
@@ -33,6 +34,8 @@ type HarnessMemeticEdge = NarrativeMemeticEdgeRow;
 type HarnessCoalition = NarrativeMemeticCoalitionRow;
 type HarnessNarrativeVersion = NarrativeSpineVersionRow;
 type HarnessFieldJournalEntry = FieldJournalEntryRow;
+type HarnessModelProfileHealth = ExpandedModelProfileHealth;
+type HarnessFallbackLink = ExpandedFallbackLink;
 
 type HarnessState = {
   agentState: RuntimeAgentStateRow | null;
@@ -45,6 +48,8 @@ type HarnessState = {
   narrativeVersionsById: Record<string, HarnessNarrativeVersion>;
   fieldJournalEntriesById: Record<string, HarnessFieldJournalEntry>;
   modelProfiles: Record<string, RuntimeModelProfileRow>;
+  modelProfileHealthById: Record<string, HarnessModelProfileHealth>;
+  modelFallbackLinksByKey: Record<string, HarnessFallbackLink>;
   goals: Record<string, SubjectGoal>;
   beliefs: Record<string, SubjectBelief>;
   entities: Record<string, SubjectEntity>;
@@ -176,6 +181,8 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
     narrativeVersionsById: structuredClone(options.seed?.narrativeVersionsById ?? {}),
     fieldJournalEntriesById: structuredClone(options.seed?.fieldJournalEntriesById ?? {}),
     modelProfiles: structuredClone(options.seed?.modelProfiles ?? {}),
+    modelProfileHealthById: structuredClone(options.seed?.modelProfileHealthById ?? {}),
+    modelFallbackLinksByKey: structuredClone(options.seed?.modelFallbackLinksByKey ?? {}),
     goals: structuredClone(options.seed?.goals ?? {}),
     beliefs: structuredClone(options.seed?.beliefs ?? {}),
     entities: structuredClone(options.seed?.entities ?? {}),
@@ -221,6 +228,8 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
         state.narrativeVersionsById = restored.narrativeVersionsById;
         state.fieldJournalEntriesById = restored.fieldJournalEntriesById;
         state.modelProfiles = restored.modelProfiles;
+        state.modelProfileHealthById = restored.modelProfileHealthById;
+        state.modelFallbackLinksByKey = restored.modelFallbackLinksByKey;
         state.goals = restored.goals;
         state.beliefs = restored.beliefs;
         state.entities = restored.entities;
@@ -406,14 +415,15 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
       const profile: RuntimeModelProfileRow = {
         modelProfileId: String(params[0]),
         role: params[1] as RuntimeModelProfileRow['role'],
-        endpoint: String(params[2]),
-        artifactUri: (params[3] as string | null) ?? null,
-        baseModel: String(params[4]),
-        adapterOf: (params[5] as string | null) ?? null,
-        capabilitiesJson: parseJsonParam<string[]>(params[6]),
-        costJson: parseJsonParam<Record<string, unknown>>(params[7]),
-        healthJson: parseJsonParam<Record<string, unknown>>(params[8]),
-        status: params[9] as RuntimeModelProfileRow['status'],
+        serviceId: String(params[2]),
+        endpoint: String(params[3]),
+        artifactUri: (params[4] as string | null) ?? null,
+        baseModel: String(params[5]),
+        adapterOf: (params[6] as string | null) ?? null,
+        capabilitiesJson: parseJsonParam<string[]>(params[7]),
+        costJson: parseJsonParam<Record<string, unknown>>(params[8]),
+        healthJson: parseJsonParam<Record<string, unknown>>(params[9]),
+        status: params[10] as RuntimeModelProfileRow['status'],
         createdAt: state.modelProfiles[String(params[0])]?.createdAt ?? nowIso(),
         updatedAt: nowIso(),
       };
@@ -438,6 +448,79 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
         })
         .map((profile) => structuredClone(profile) as TRow);
       return { rows: profiles };
+    }
+
+    if (sql.startsWith('insert into polyphony_runtime.model_profile_health')) {
+      const row: HarnessModelProfileHealth = {
+        modelProfileId: String(params[0]),
+        serviceId: params[1] as HarnessModelProfileHealth['serviceId'],
+        availability: params[2] as HarnessModelProfileHealth['availability'],
+        quarantineState: params[3] as HarnessModelProfileHealth['quarantineState'],
+        healthy: (params[4] as boolean | null) ?? null,
+        errorRate: params[5] == null ? null : Number(params[5]),
+        latencyMsP95: params[6] == null ? null : Number(params[6]),
+        checkedAt: String(params[7]),
+        sourceJson: parseJsonParam<Record<string, unknown>>(params[8]),
+      };
+      state.modelProfileHealthById[row.modelProfileId] = row;
+      return { rows: [structuredClone(row) as TRow] };
+    }
+
+    if (
+      sql.startsWith('select') &&
+      sql.includes('from polyphony_runtime.model_profile_health') &&
+      sql.includes('order by model_profile_id asc')
+    ) {
+      const modelProfileIds = sql.includes('where model_profile_id = any($1::text[])')
+        ? new Set((params[0] as string[]) ?? [])
+        : null;
+      const rows = Object.values(state.modelProfileHealthById)
+        .filter((row) => (modelProfileIds ? modelProfileIds.has(row.modelProfileId) : true))
+        .sort((left, right) => left.modelProfileId.localeCompare(right.modelProfileId))
+        .map((row) => structuredClone(row) as TRow);
+      return { rows };
+    }
+
+    if (sql.startsWith('delete from polyphony_runtime.model_fallback_links')) {
+      const modelProfileIds = new Set((params[0] as string[]) ?? []);
+      for (const [key, row] of Object.entries(state.modelFallbackLinksByKey)) {
+        if (modelProfileIds.has(row.modelProfileId)) {
+          delete state.modelFallbackLinksByKey[key];
+        }
+      }
+      return { rows: [] };
+    }
+
+    if (sql.startsWith('insert into polyphony_runtime.model_fallback_links')) {
+      const row: HarnessFallbackLink = {
+        modelProfileId: String(params[0]),
+        fallbackTargetProfileId: (params[1] as string | null) ?? null,
+        linkKind: params[2] as HarnessFallbackLink['linkKind'],
+        allowed: Boolean(params[3]),
+        reason: String(params[4]),
+        updatedAt: String(params[5]),
+      };
+      state.modelFallbackLinksByKey[`${row.modelProfileId}|${row.linkKind}`] = row;
+      return { rows: [structuredClone(row) as TRow] };
+    }
+
+    if (
+      sql.startsWith('select') &&
+      sql.includes('from polyphony_runtime.model_fallback_links') &&
+      sql.includes('order by model_profile_id asc, link_kind asc')
+    ) {
+      const modelProfileIds = sql.includes('where model_profile_id = any($1::text[])')
+        ? new Set((params[0] as string[]) ?? [])
+        : null;
+      const rows = Object.values(state.modelFallbackLinksByKey)
+        .filter((row) => (modelProfileIds ? modelProfileIds.has(row.modelProfileId) : true))
+        .sort((left, right) => {
+          const byProfile = left.modelProfileId.localeCompare(right.modelProfileId);
+          if (byProfile !== 0) return byProfile;
+          return left.linkKind.localeCompare(right.linkKind);
+        })
+        .map((row) => structuredClone(row) as TRow);
+      return { rows };
     }
 
     if (

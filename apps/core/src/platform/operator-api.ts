@@ -10,6 +10,7 @@ import {
   type OperatorEpisodeCursor,
   type OperatorTimelineCursor,
 } from '@yaagi/contracts/operator-api';
+import type { OperatorRicherRegistryHealthSummary } from '@yaagi/contracts/models';
 import type {
   RuntimeEpisodePageInput,
   RuntimeEpisodeRow,
@@ -32,6 +33,7 @@ export type OperatorRuntimeLifecycle = {
     deliberation?: ModelHealthSummary;
     reflection?: ModelHealthSummary;
   }): Promise<BaselineModelProfileDiagnostic[]>;
+  getRicherModelRegistryHealthSummary?(): Promise<OperatorRicherRegistryHealthSummary>;
   requestTick?(input: {
     requestId: string;
     kind: 'reactive' | 'deliberative' | 'contemplative' | 'consolidation' | 'developmental';
@@ -202,7 +204,17 @@ export function registerOperatorApiRoutes(
       return context.json({ error: 'models_unavailable' }, 503);
     }
 
-    const baselineProfiles = await runtimeLifecycle.getModelRoutingDiagnostics();
+    const [baselineProfiles, richerRegistryHealth] = await Promise.all([
+      runtimeLifecycle.getModelRoutingDiagnostics(),
+      runtimeLifecycle.getRicherModelRegistryHealthSummary
+        ? runtimeLifecycle.getRicherModelRegistryHealthSummary()
+        : Promise.resolve({
+            available: false,
+            owner: 'F-0014' as const,
+            reason: 'future_owned',
+          }),
+    ]);
+
     return context.json({
       baselineProfiles: baselineProfiles.map((profile) => ({
         modelProfileId: profile.modelProfileId,
@@ -212,11 +224,7 @@ export function registerOperatorApiRoutes(
         baseModel: profile.baseModel,
         healthSummary: profile.healthSummary,
       })),
-      richerRegistryHealth: {
-        available: false,
-        owner: 'CF-010',
-        reason: 'future_owned',
-      },
+      richerRegistryHealth,
     });
   });
 

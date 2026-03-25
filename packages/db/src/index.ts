@@ -63,16 +63,25 @@ export {
   type TickTrigger,
 } from './runtime.ts';
 export {
+  createExpandedModelEcologyStore,
+  type ExpandedFallbackLinkInput,
+  type ExpandedModelEcologyStore,
+  type ExpandedModelProfileHealthInput,
+  type ModelEcologyDbExecutor,
+} from './model-ecology.ts';
+export {
   BASELINE_MODEL_PROFILE_ROLE,
   createRuntimeModelProfileStore,
   MODEL_PROFILE_ROLE,
   MODEL_PROFILE_STATUS,
   MODEL_SELECTION_CONTINUITY_KEY,
+  RICHER_MODEL_PROFILE_ROLE,
   setRuntimeCurrentModelProfile,
   type BaselineModelProfileRole,
   type ModelProfileRole,
   type ModelProfileStatus,
   type ModelRoutingDbExecutor,
+  type RicherModelProfileRole,
   type RuntimeModelProfileRow,
   type RuntimeModelProfileSeedInput,
   type RuntimeModelProfileSelectionInput,

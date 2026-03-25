@@ -143,6 +143,7 @@ const createBaselineProfiles = (fastModelBaseUrl: string): RuntimeModelProfileSe
   {
     modelProfileId: PHASE0_BASELINE_PROFILE_ID.REFLEX,
     role: MODEL_PROFILE_ROLE.REFLEX,
+    serviceId: 'vllm-fast',
     endpoint: fastModelBaseUrl,
     baseModel: 'model-fast',
     capabilities: ['reactive', 'low-latency', 'text-generation'],
@@ -158,6 +159,7 @@ const createBaselineProfiles = (fastModelBaseUrl: string): RuntimeModelProfileSe
   {
     modelProfileId: PHASE0_BASELINE_PROFILE_ID.DELIBERATION,
     role: MODEL_PROFILE_ROLE.DELIBERATION,
+    serviceId: 'vllm-fast',
     endpoint: fastModelBaseUrl,
     baseModel: 'model-fast',
     capabilities: ['deliberation', 'structured-output', 'longer-context'],
@@ -173,6 +175,7 @@ const createBaselineProfiles = (fastModelBaseUrl: string): RuntimeModelProfileSe
   {
     modelProfileId: PHASE0_BASELINE_PROFILE_ID.REFLECTION,
     role: MODEL_PROFILE_ROLE.REFLECTION,
+    serviceId: 'vllm-fast',
     endpoint: fastModelBaseUrl,
     baseModel: 'model-fast',
     adapterOf: PHASE0_BASELINE_PROFILE_ID.DELIBERATION,

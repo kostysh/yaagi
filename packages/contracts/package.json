@@ -26,6 +26,10 @@
     "./operator-api": {
       "types": "./src/operator-api.ts",
       "default": "./src/operator-api.ts"
+    },
+    "./models": {
+      "types": "./src/models.ts",
+      "default": "./src/models.ts"
     }
   },
   "dependencies": {
