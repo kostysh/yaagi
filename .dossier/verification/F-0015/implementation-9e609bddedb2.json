@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "created_at": "2026-03-25T23:48:14.951Z",
+  "step": "implementation",
+  "feature_id": "F-0015",
+  "dossier": "docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md",
+  "current_commit": "9e609bddedb2fc82e719bfd8bb574c85a3993294",
+  "status": "pass",
+  "checks": [
+    {
+      "name": "sync-index",
+      "command": "node scripts/sync-index.mjs --root .",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_ms": 32,
+      "status": "pass"
+    },
+    {
+      "name": "lint-dossiers",
+      "command": "node scripts/lint-dossiers.mjs --root .",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_ms": 28,
+      "status": "pass"
+    },
+    {
+      "name": "coverage-audit",
+      "command": "node scripts/coverage-audit.mjs --root . --orphans-scope auto --dossier docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_ms": 34,
+      "status": "pass"
+    },
+    {
+      "name": "debt-audit",
+      "command": "node scripts/debt-audit.mjs --root . --changed-only",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_ms": 66,
+      "status": "pass"
+    },
+    {
+      "name": "git-diff-check",
+      "command": "git diff --check",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_ms": 2,
+      "status": "pass"
+    }
+  ]
+}
