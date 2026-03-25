@@ -93,6 +93,12 @@ const toTerminalResult = (error: unknown): TickTerminalResult => {
       ...(candidate.failureDetail ? { failureDetail: candidate.failureDetail } : {}),
       ...(candidate.continuityFlags ? { continuityFlags: candidate.continuityFlags } : {}),
       ...(candidate.actionId ? { actionId: candidate.actionId } : {}),
+      ...(Object.hasOwn(candidate, 'selectedCoalitionId')
+        ? { selectedCoalitionId: candidate.selectedCoalitionId ?? null }
+        : {}),
+      ...(candidate.narrativeMemeticDelta
+        ? { narrativeMemeticDelta: candidate.narrativeMemeticDelta }
+        : {}),
     };
   }
 

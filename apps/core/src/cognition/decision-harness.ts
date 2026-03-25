@@ -1,5 +1,6 @@
 import {
   type DecisionContext,
+  type NarrativeMemeticOutputs,
   tickDecisionV1Schema,
   type DecisionResult,
   type DecisionMode,
@@ -30,6 +31,12 @@ export type DecisionHarnessInput = {
   subjectStateSnapshot: SubjectStateSnapshot;
   recentEpisodes: RuntimeEpisodeRow[];
   perceptionBatch?: PerceptionBatch;
+  narrativeMemeticOutputs?: NarrativeMemeticOutputs;
+  narrativeMemeticMeta?: {
+    truncated: boolean;
+    sourceIds: string[];
+    conflictMarkers: string[];
+  };
   requiredSubjectStateSchemaVersion?: string;
 };
 
@@ -83,6 +90,10 @@ export function createDecisionHarness(options: {
         subjectStateSnapshot: input.subjectStateSnapshot,
         recentEpisodes: input.recentEpisodes,
         ...(input.perceptionBatch ? { perceptionBatch: input.perceptionBatch } : {}),
+        ...(input.narrativeMemeticOutputs
+          ? { narrativeMemeticOutputs: input.narrativeMemeticOutputs }
+          : {}),
+        ...(input.narrativeMemeticMeta ? { narrativeMemeticMeta: input.narrativeMemeticMeta } : {}),
         ...(input.requiredSubjectStateSchemaVersion
           ? { requiredSubjectStateSchemaVersion: input.requiredSubjectStateSchemaVersion }
           : {}),

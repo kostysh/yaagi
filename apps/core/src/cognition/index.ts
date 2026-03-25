@@ -11,3 +11,9 @@ export {
   type DecisionHarnessInput,
   type DecisionHarnessSelectedProfile,
 } from './decision-harness.ts';
+export {
+  buildNarrativeMemeticCycle,
+  type NarrativeMemeticBuildInput,
+  type NarrativeMemeticBuildResult,
+  type PreviousNarrativeSummary,
+} from './narrative-memetic.ts';

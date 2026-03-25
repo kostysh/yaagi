@@ -2,7 +2,12 @@ import path from 'node:path';
 import type { Client } from 'pg';
 import { DEPENDENCY } from '@yaagi/contracts/boot';
 import type { ExecutiveVerdict } from '@yaagi/contracts/actions';
-import type { DecisionMode, DecisionResult } from '@yaagi/contracts/cognition';
+import {
+  createEmptyNarrativeMemeticOutputs,
+  type DecisionMode,
+  type DecisionResult,
+  type NarrativeMemeticOutputs,
+} from '@yaagi/contracts/cognition';
 import {
   DEFAULT_PERCEPTION_HEALTH,
   type HttpIngestStimulusInput,
@@ -11,6 +16,7 @@ import {
 } from '@yaagi/contracts/perception';
 import {
   appendRuntimeTimelineEvent,
+  createNarrativeMemeticStore,
   createRuntimeActionLogStore,
   createPerceptionStore,
   createRuntimeDbClient,
@@ -34,6 +40,7 @@ import {
 import { ConstitutionalBootService } from '../boot/index.ts';
 import {
   createDecisionHarness,
+  buildNarrativeMemeticCycle,
   DECISION_CONTEXT_LIMITS,
   type DecisionAgentInvoker,
 } from '../cognition/index.ts';
@@ -282,6 +289,12 @@ const createDbBackedTickRuntimeStore = (
           ? { continuityFlagsJson: input.terminal.continuityFlags }
           : {}),
         ...(input.terminal.actionId ? { actionId: input.terminal.actionId } : {}),
+        ...(Object.hasOwn(input.terminal, 'selectedCoalitionId')
+          ? { selectedCoalitionId: input.terminal.selectedCoalitionId ?? null }
+          : {}),
+        ...(input.terminal.narrativeMemeticDelta
+          ? { narrativeMemeticDelta: input.terminal.narrativeMemeticDelta }
+          : {}),
       };
 
       if (input.terminal.status === TICK_STATUS.COMPLETED) {
@@ -376,6 +389,15 @@ const reserveDbBackedTickActionId = (
     await store.setTickActionId(input);
   });
 
+const createEmptyPerceptionBatch = (tickId: string): PerceptionBatch => ({
+  claimedStimulusIds: [],
+  highestPriority: null,
+  items: [],
+  sourceKinds: [],
+  requiresImmediateTick: false,
+  tickId,
+});
+
 const buildRoutingInputFromTick = (
   context: StartedTick,
 ): Parameters<ReturnType<typeof createPhase0ModelRouter>['selectProfile']>[0] => {
@@ -446,6 +468,29 @@ export const createPhase0TickExecution =
     prepareReactiveTick: (tickId: string) => Promise<PerceptionBatch>;
     loadSubjectStateSnapshot: (input: SubjectStateSnapshotInput) => Promise<SubjectStateSnapshot>;
     listRecentEpisodes: (input: { limit: number }) => Promise<RuntimeEpisodeRow[]>;
+    prepareNarrativeMemeticCycle?: (input: {
+      tickId: string;
+      decisionMode: 'wake' | DecisionMode;
+      subjectStateSnapshot: SubjectStateSnapshot;
+      recentEpisodes: RuntimeEpisodeRow[];
+      perceptionBatch: PerceptionBatch;
+    }) => Promise<{
+      outputs: NarrativeMemeticOutputs;
+      meta: {
+        truncated: boolean;
+        sourceIds: string[];
+        conflictMarkers: string[];
+      };
+      delta: NonNullable<TickTerminalResult['narrativeMemeticDelta']>;
+      candidates: Array<{
+        candidateId: string;
+        abstractLabel: string;
+        supportingRefs: string[];
+        sourceKinds: Array<'stimulus' | 'episode' | 'goal' | 'belief' | 'entity' | 'journal'>;
+        durablePromotionAllowed: false;
+      }>;
+      seededBaseline: boolean;
+    }>;
     runDecision: (input: {
       tickId: string;
       decisionMode: DecisionMode;
@@ -459,6 +504,12 @@ export const createPhase0TickExecution =
       subjectStateSnapshot: SubjectStateSnapshot;
       recentEpisodes: RuntimeEpisodeRow[];
       perceptionBatch?: PerceptionBatch;
+      narrativeMemeticOutputs?: NarrativeMemeticOutputs;
+      narrativeMemeticMeta?: {
+        truncated: boolean;
+        sourceIds: string[];
+        conflictMarkers: string[];
+      };
     }) => Promise<DecisionResult>;
     handleDecisionAction: (input: {
       tickId: string;
@@ -473,14 +524,58 @@ export const createPhase0TickExecution =
     }) => Promise<'eligible' | 'profile_unavailable' | 'profile_unhealthy'>;
   }) =>
   async (context: StartedTick): Promise<TickTerminalResult> => {
+    const subjectStateSnapshot = await dependencies.loadSubjectStateSnapshot({
+      goalLimit: DECISION_CONTEXT_LIMITS.goalLimit,
+      beliefLimit: DECISION_CONTEXT_LIMITS.beliefLimit,
+      entityLimit: DECISION_CONTEXT_LIMITS.entityLimit,
+      relationshipLimit: DECISION_CONTEXT_LIMITS.relationshipLimit,
+    });
+    const buildNarrativeMemeticFallback = () => ({
+      outputs: createEmptyNarrativeMemeticOutputs(),
+      meta: {
+        truncated: false,
+        sourceIds: [`tick:${context.tickId}:narrative:none`],
+        conflictMarkers: ['no_winning_coalition'],
+      },
+      delta: {
+        seedMemeticUnits: [],
+        memeticUnitUpdates: [],
+        memeticEdgeUpserts: [],
+        coalition: null,
+        narrativeVersion: null,
+        fieldJournalEntries: [],
+      },
+      candidates: [],
+      seededBaseline: false,
+    });
+
     if (context.kind === 'wake') {
+      const narrativeMemetic = dependencies.prepareNarrativeMemeticCycle
+        ? await dependencies.prepareNarrativeMemeticCycle({
+            tickId: context.tickId,
+            decisionMode: 'wake',
+            subjectStateSnapshot,
+            recentEpisodes: [],
+            perceptionBatch: createEmptyPerceptionBatch(context.tickId),
+          })
+        : buildNarrativeMemeticFallback();
+
       return {
         status: TICK_STATUS.COMPLETED,
         summary: 'Phase-0 wake tick completed',
         result: {
           kind: context.kind,
           trigger: context.trigger,
+          narrativeMemetic: narrativeMemetic.outputs,
+          narrativeTrace: {
+            seededBaseline: narrativeMemetic.seededBaseline,
+            candidateIds: narrativeMemetic.candidates.map((candidate) => candidate.candidateId),
+          },
         },
+        continuityFlags: {
+          narrativeMemeticBootstrapSeeded: narrativeMemetic.seededBaseline,
+        },
+        narrativeMemeticDelta: narrativeMemetic.delta,
       };
     }
 
@@ -519,26 +614,20 @@ export const createPhase0TickExecution =
     const perceptionBatch =
       context.kind === 'reactive'
         ? await dependencies.prepareReactiveTick(context.tickId)
-        : {
-            claimedStimulusIds: [],
-            highestPriority: null,
-            items: [],
-            sourceKinds: [],
-            requiresImmediateTick: false,
-            tickId: context.tickId,
-          };
+        : createEmptyPerceptionBatch(context.tickId);
 
-    const [subjectStateSnapshot, recentEpisodes] = await Promise.all([
-      dependencies.loadSubjectStateSnapshot({
-        goalLimit: DECISION_CONTEXT_LIMITS.goalLimit,
-        beliefLimit: DECISION_CONTEXT_LIMITS.beliefLimit,
-        entityLimit: DECISION_CONTEXT_LIMITS.entityLimit,
-        relationshipLimit: DECISION_CONTEXT_LIMITS.relationshipLimit,
-      }),
-      dependencies.listRecentEpisodes({
-        limit: DECISION_CONTEXT_LIMITS.recentEpisodeLimit,
-      }),
-    ]);
+    const recentEpisodes = await dependencies.listRecentEpisodes({
+      limit: DECISION_CONTEXT_LIMITS.recentEpisodeLimit,
+    });
+    const narrativeMemetic = dependencies.prepareNarrativeMemeticCycle
+      ? await dependencies.prepareNarrativeMemeticCycle({
+          tickId: context.tickId,
+          decisionMode,
+          subjectStateSnapshot,
+          recentEpisodes,
+          perceptionBatch,
+        })
+      : buildNarrativeMemeticFallback();
     const selectedProfileEligibility = dependencies.resolveSelectedProfileEligibility
       ? await dependencies.resolveSelectedProfileEligibility({
           modelProfileId: selection.modelProfileId,
@@ -559,12 +648,21 @@ export const createPhase0TickExecution =
       subjectStateSnapshot,
       recentEpisodes,
       perceptionBatch,
+      narrativeMemeticOutputs: narrativeMemetic.outputs,
+      narrativeMemeticMeta: narrativeMemetic.meta,
     });
     const decisionTrace = {
       decisionMode,
       subjectStateSchemaVersion: subjectStateSnapshot.subjectStateSchemaVersion,
       recentEpisodeIds: recentEpisodes.map((episode) => episode.episodeId),
       perceptualSourceIds: perceptionBatch.claimedStimulusIds,
+      narrativeMemetic: {
+        winningCoalitionId: narrativeMemetic.outputs.winningCoalition?.coalitionId ?? null,
+        activeUnitIds: narrativeMemetic.outputs.activeMemeticUnits.map((unit) => unit.unitId),
+        candidateIds: narrativeMemetic.candidates.map((candidate) => candidate.candidateId),
+        conflictMarkers: narrativeMemetic.meta.conflictMarkers,
+        seededBaseline: narrativeMemetic.seededBaseline,
+      },
       validation: decision.accepted
         ? { accepted: true, schema: 'TickDecisionV1' }
         : {
@@ -595,6 +693,7 @@ export const createPhase0TickExecution =
           modelEndpoint: selection.endpoint,
           selectionReason: selection.selectionReason,
           perceptionBatch,
+          narrativeMemetic: narrativeMemetic.outputs,
           decisionTrace,
         },
       };
@@ -610,6 +709,7 @@ export const createPhase0TickExecution =
       modelEndpoint: selection.endpoint,
       selectionReason: selection.selectionReason,
       perceptionBatch,
+      narrativeMemetic: narrativeMemetic.outputs,
       decision: decision.decision,
       decisionTrace,
       executive: executiveVerdict.accepted
@@ -646,11 +746,16 @@ export const createPhase0TickExecution =
         actionId: executiveVerdict.actionId,
         continuityFlags: {
           selectedModelProfileId: selection.modelProfileId,
+          ...(narrativeMemetic.outputs.winningCoalition
+            ? { selectedCoalitionId: narrativeMemetic.outputs.winningCoalition.coalitionId }
+            : {}),
           executiveRejected: {
             reason: executiveVerdict.refusalReason,
             detail: executiveVerdict.detail,
           },
         },
+        selectedCoalitionId: narrativeMemetic.outputs.winningCoalition?.coalitionId ?? null,
+        narrativeMemeticDelta: narrativeMemetic.delta,
         result: buildResultPayload(executiveVerdict),
       };
     }
@@ -662,7 +767,12 @@ export const createPhase0TickExecution =
       result: buildResultPayload(executiveVerdict),
       continuityFlags: {
         selectedModelProfileId: selection.modelProfileId,
+        ...(narrativeMemetic.outputs.winningCoalition
+          ? { selectedCoalitionId: narrativeMemetic.outputs.winningCoalition.coalitionId }
+          : {}),
       },
+      selectedCoalitionId: narrativeMemetic.outputs.winningCoalition?.coalitionId ?? null,
+      narrativeMemeticDelta: narrativeMemetic.delta,
     };
   };
 
@@ -902,6 +1012,103 @@ export function createPhase0RuntimeLifecycle(
         withRuntimeClient(config.postgresUrl, async (client) => {
           const store = createTickRuntimeStore(client);
           return await store.listRecentEpisodes(input);
+        }),
+      prepareNarrativeMemeticCycle: (input) =>
+        withRuntimeClient(config.postgresUrl, async (client) => {
+          const narrativeStore = createNarrativeMemeticStore(client);
+          const snapshot = await narrativeStore.loadSnapshot();
+
+          return buildNarrativeMemeticCycle({
+            tickId: input.tickId,
+            decisionMode: input.decisionMode,
+            perceptionSummary: {
+              stimulusRefs: input.perceptionBatch.claimedStimulusIds,
+              urgency:
+                input.perceptionBatch.highestPriority === 'critical'
+                  ? 1
+                  : input.perceptionBatch.highestPriority === 'high'
+                    ? 0.8
+                    : input.perceptionBatch.highestPriority === 'normal'
+                      ? 0.55
+                      : input.perceptionBatch.highestPriority === 'low'
+                        ? 0.25
+                        : 0,
+              novelty:
+                input.perceptionBatch.items.length === 0
+                  ? 0
+                  : Math.max(
+                      0,
+                      Math.min(
+                        1,
+                        input.perceptionBatch.items.reduce(
+                          (total, item) => total + item.coalescedCount,
+                          0,
+                        ) /
+                          (input.perceptionBatch.items.length * 4),
+                      ),
+                    ),
+              resourcePressure: Math.max(
+                0,
+                Math.min(
+                  1,
+                  Number(
+                    input.subjectStateSnapshot.agentState.resourcePostureJson['pressure'] ?? 0,
+                  ) ||
+                    Number(
+                      input.subjectStateSnapshot.agentState.resourcePostureJson['cpuLoad'] ?? 0,
+                    ) ||
+                    Number(
+                      input.subjectStateSnapshot.agentState.resourcePostureJson['memoryPressure'] ??
+                        0,
+                    ) ||
+                    0,
+                ),
+              ),
+              summary:
+                input.perceptionBatch.items.length === 0
+                  ? 'no claimed stimuli'
+                  : `${input.perceptionBatch.items.length} claimed stimuli`,
+            },
+            subjectStateSnapshot: {
+              subjectStateSchemaVersion: input.subjectStateSnapshot.subjectStateSchemaVersion,
+              goals: input.subjectStateSnapshot.goals.map((goal) => ({ ...goal })),
+              beliefs: input.subjectStateSnapshot.beliefs.map((belief) => ({ ...belief })),
+              entities: input.subjectStateSnapshot.entities.map((entity) => ({ ...entity })),
+              relationships: input.subjectStateSnapshot.relationships.map((relationship) => ({
+                ...relationship,
+              })),
+              agentState: { ...input.subjectStateSnapshot.agentState },
+            },
+            recentEpisodes: input.recentEpisodes.map((episode) => ({
+              episodeId: episode.episodeId,
+              tickId: episode.tickId,
+              summary: episode.summary,
+              sourceRefs: [`episode:${episode.episodeId}`],
+            })),
+            activeMemeticUnits: snapshot.activeUnits.map((unit) => ({
+              unitId: unit.unitId,
+              label: unit.abstractLabel,
+              activation: unit.activationScore,
+              reinforcement: unit.reinforcementScore,
+              decay: unit.decayScore,
+              provenanceAnchors: unit.provenanceAnchorsJson,
+            })),
+            fieldJournalExcerpts: snapshot.recentFieldJournalEntries.map((entry) => ({
+              entryId: entry.entryId,
+              summary: entry.summary,
+              tensionMarkers: entry.tensionMarkersJson,
+              provenanceAnchors: entry.provenanceAnchorsJson,
+            })),
+            resourcePostureJson: { ...input.subjectStateSnapshot.agentState.resourcePostureJson },
+            previousNarrative: snapshot.latestNarrativeVersion
+              ? {
+                  versionId: snapshot.latestNarrativeVersion.versionId,
+                  currentChapter: snapshot.latestNarrativeVersion.currentChapter,
+                  continuityDirection: snapshot.latestNarrativeVersion.continuityDirection,
+                  summary: snapshot.latestNarrativeVersion.summary,
+                }
+              : null,
+          });
         }),
       runDecision: (input) => decisionHarness.run(input),
       handleDecisionAction: (input) => executiveCenter.handleDecisionAction(input),

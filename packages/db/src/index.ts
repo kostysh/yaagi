@@ -75,6 +75,19 @@ export {
   type PerceptionStore,
 } from './perception.ts';
 export {
+  createNarrativeMemeticStore,
+  type FieldJournalEntryRow,
+  type NarrativeMemeticApplyTickInput,
+  type NarrativeMemeticCoalitionRow,
+  type NarrativeMemeticDbExecutor,
+  type NarrativeMemeticEdgeRow,
+  type NarrativeMemeticSnapshot,
+  type NarrativeMemeticSnapshotInput,
+  type NarrativeMemeticStore,
+  type NarrativeMemeticUnitRow,
+  type NarrativeSpineVersionRow,
+} from './narrative-memetic.ts';
+export {
   normalizeEvidenceRefs,
   type ApplyTickStateDeltaInput,
   type BeliefUpsert,

@@ -8,6 +8,13 @@ import type {
 import { TICK_STATUS } from '../src/runtime.ts';
 import type { RuntimeActionLogRow } from '../src/action-log.ts';
 import type { RuntimeModelProfileRow } from '../src/model-routing.ts';
+import type {
+  FieldJournalEntryRow,
+  NarrativeMemeticCoalitionRow,
+  NarrativeMemeticEdgeRow,
+  NarrativeMemeticUnitRow,
+  NarrativeSpineVersionRow,
+} from '../src/narrative-memetic.ts';
 import type { StimulusInboxRecord } from '@yaagi/contracts/perception';
 import type {
   EvidenceRef,
@@ -21,12 +28,22 @@ type HarnessTick = RuntimeTickRow;
 type HarnessEpisode = RuntimeEpisodeRow;
 type HarnessEvent = RuntimeTimelineEventRow;
 type HarnessActionLog = RuntimeActionLogRow;
+type HarnessMemeticUnit = NarrativeMemeticUnitRow;
+type HarnessMemeticEdge = NarrativeMemeticEdgeRow;
+type HarnessCoalition = NarrativeMemeticCoalitionRow;
+type HarnessNarrativeVersion = NarrativeSpineVersionRow;
+type HarnessFieldJournalEntry = FieldJournalEntryRow;
 
 type HarnessState = {
   agentState: RuntimeAgentStateRow | null;
   ticks: Record<string, HarnessTick>;
   episodesById: Record<string, HarnessEpisode>;
   actionLogsById: Record<string, HarnessActionLog>;
+  memeticUnits: Record<string, HarnessMemeticUnit>;
+  memeticEdges: Record<string, HarnessMemeticEdge>;
+  coalitionsById: Record<string, HarnessCoalition>;
+  narrativeVersionsById: Record<string, HarnessNarrativeVersion>;
+  fieldJournalEntriesById: Record<string, HarnessFieldJournalEntry>;
   modelProfiles: Record<string, RuntimeModelProfileRow>;
   goals: Record<string, SubjectGoal>;
   beliefs: Record<string, SubjectBelief>;
@@ -153,6 +170,11 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
     ticks: structuredClone(options.seed?.ticks ?? {}),
     episodesById: structuredClone(options.seed?.episodesById ?? {}),
     actionLogsById: structuredClone(options.seed?.actionLogsById ?? {}),
+    memeticUnits: structuredClone(options.seed?.memeticUnits ?? {}),
+    memeticEdges: structuredClone(options.seed?.memeticEdges ?? {}),
+    coalitionsById: structuredClone(options.seed?.coalitionsById ?? {}),
+    narrativeVersionsById: structuredClone(options.seed?.narrativeVersionsById ?? {}),
+    fieldJournalEntriesById: structuredClone(options.seed?.fieldJournalEntriesById ?? {}),
     modelProfiles: structuredClone(options.seed?.modelProfiles ?? {}),
     goals: structuredClone(options.seed?.goals ?? {}),
     beliefs: structuredClone(options.seed?.beliefs ?? {}),
@@ -193,6 +215,11 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
         state.ticks = restored.ticks;
         state.episodesById = restored.episodesById;
         state.actionLogsById = restored.actionLogsById;
+        state.memeticUnits = restored.memeticUnits;
+        state.memeticEdges = restored.memeticEdges;
+        state.coalitionsById = restored.coalitionsById;
+        state.narrativeVersionsById = restored.narrativeVersionsById;
+        state.fieldJournalEntriesById = restored.fieldJournalEntriesById;
         state.modelProfiles = restored.modelProfiles;
         state.goals = restored.goals;
         state.beliefs = restored.beliefs;
@@ -303,6 +330,78 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
       return { rows: [structuredClone(tick) as TRow] };
     }
 
+    if (
+      sql.startsWith('select') &&
+      sql.includes('from polyphony_runtime.memetic_units') &&
+      sql.includes("where status in ('active', 'dormant')")
+    ) {
+      const limit = Number(params[0]);
+      const rows = Object.values(state.memeticUnits)
+        .filter((unit) => unit.status === 'active' || unit.status === 'dormant')
+        .sort((left, right) => {
+          const byActivation = right.activationScore - left.activationScore;
+          if (byActivation !== 0) return byActivation;
+          const byReinforcement = right.reinforcementScore - left.reinforcementScore;
+          if (byReinforcement !== 0) return byReinforcement;
+          return right.updatedAt.localeCompare(left.updatedAt);
+        })
+        .slice(0, limit)
+        .map((unit) => structuredClone(unit) as TRow);
+      return { rows };
+    }
+
+    if (
+      sql.startsWith('select') &&
+      sql.includes('from polyphony_runtime.memetic_edges') &&
+      sql.includes('source_unit_id = any($1::text[])')
+    ) {
+      const unitIds = new Set((params[0] as string[]) ?? []);
+      const limit = Number(params[1]);
+      const rows = Object.values(state.memeticEdges)
+        .filter((edge) => unitIds.has(edge.sourceUnitId) || unitIds.has(edge.targetUnitId))
+        .sort((left, right) => {
+          const byUpdatedAt = right.updatedAt.localeCompare(left.updatedAt);
+          if (byUpdatedAt !== 0) return byUpdatedAt;
+          return left.edgeId.localeCompare(right.edgeId);
+        })
+        .slice(0, limit)
+        .map((edge) => structuredClone(edge) as TRow);
+      return { rows };
+    }
+
+    if (
+      sql.startsWith('select') &&
+      sql.includes('from polyphony_runtime.narrative_spine_versions') &&
+      sql.includes('order by created_at desc')
+    ) {
+      const rows = Object.values(state.narrativeVersionsById)
+        .sort((left, right) => {
+          const byCreatedAt = right.createdAt.localeCompare(left.createdAt);
+          if (byCreatedAt !== 0) return byCreatedAt;
+          return right.versionId.localeCompare(left.versionId);
+        })
+        .slice(0, 1)
+        .map((version) => structuredClone(version) as TRow);
+      return { rows };
+    }
+
+    if (
+      sql.startsWith('select') &&
+      sql.includes('from polyphony_runtime.field_journal_entries') &&
+      sql.includes('order by created_at desc, entry_id desc')
+    ) {
+      const limit = Number(params[0]);
+      const rows = Object.values(state.fieldJournalEntriesById)
+        .sort((left, right) => {
+          const byCreatedAt = right.createdAt.localeCompare(left.createdAt);
+          if (byCreatedAt !== 0) return byCreatedAt;
+          return right.entryId.localeCompare(left.entryId);
+        })
+        .slice(0, limit)
+        .map((entry) => structuredClone(entry) as TRow);
+      return { rows };
+    }
+
     if (sql.startsWith('insert into polyphony_runtime.model_registry')) {
       const profile: RuntimeModelProfileRow = {
         modelProfileId: String(params[0]),
@@ -376,6 +475,15 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
         tick.failureJson = {};
         tick.continuityFlagsJson = parseJsonParam<Record<string, unknown>>(params[4]);
         tick.actionId = (params[5] as string | null) ?? null;
+        tick.selectedCoalitionId = (params[6] as string | null) ?? null;
+        if (
+          tick.selectedCoalitionId &&
+          !Object.hasOwn(state.coalitionsById, tick.selectedCoalitionId)
+        ) {
+          throw new Error(
+            `insert or update on table "ticks" violates foreign key constraint "ticks_selected_coalition_fk"`,
+          );
+        }
       } else {
         tick.failureJson = parseJsonParam<Record<string, unknown>>(params[4]);
         tick.continuityFlagsJson = parseJsonParam<Record<string, unknown>>(params[5]);
@@ -424,6 +532,112 @@ export function createSubjectStateDbHarness(options: HarnessOptions = {}): {
       };
       state.episodesById[episode.episodeId] = episode;
       return { rows: [structuredClone(episode) as TRow] };
+    }
+
+    if (sql.startsWith('insert into polyphony_runtime.memetic_units')) {
+      const unit: HarnessMemeticUnit = {
+        unitId: String(params[0]),
+        originKind: params[1] as HarnessMemeticUnit['originKind'],
+        unitType: String(params[2]),
+        abstractLabel: String(params[3]),
+        canonicalSummary: String(params[4]),
+        activationScore: Number(params[5]),
+        reinforcementScore: Number(params[6]),
+        decayScore: Number(params[7]),
+        evidenceScore: Number(params[8]),
+        status: params[9] as HarnessMemeticUnit['status'],
+        lastActivatedTickId: (params[10] as string | null) ?? null,
+        createdByPath: String(params[11]),
+        provenanceAnchorsJson: parseJsonParam<string[]>(params[12]),
+        createdAt: state.memeticUnits[String(params[0])]?.createdAt ?? nowIso(),
+        updatedAt: nowIso(),
+      };
+      state.memeticUnits[unit.unitId] = unit;
+      return { rows: [] };
+    }
+
+    if (
+      sql.startsWith('update polyphony_runtime.memetic_units') &&
+      sql.includes('set activation_score = $2')
+    ) {
+      const unit = state.memeticUnits[String(params[0])];
+      if (!unit) {
+        return { rows: [] };
+      }
+
+      unit.activationScore = Number(params[1]);
+      unit.reinforcementScore = Number(params[2]);
+      unit.decayScore = Number(params[3]);
+      unit.evidenceScore = Number(params[4]);
+      unit.status = params[5] as HarnessMemeticUnit['status'];
+      unit.lastActivatedTickId = (params[6] as string | null) ?? null;
+      unit.provenanceAnchorsJson = parseJsonParam<string[]>(params[7]);
+      unit.updatedAt = nowIso();
+      return { rows: [] };
+    }
+
+    if (sql.startsWith('insert into polyphony_runtime.memetic_edges')) {
+      const edge: HarnessMemeticEdge = {
+        edgeId: String(params[0]),
+        sourceUnitId: String(params[1]),
+        targetUnitId: String(params[2]),
+        relationKind: params[3] as HarnessMemeticEdge['relationKind'],
+        strength: Number(params[4]),
+        confidence: Number(params[5]),
+        tickId: String(params[6]),
+        updatedAt: nowIso(),
+      };
+      state.memeticEdges[edge.edgeId] = edge;
+      return { rows: [] };
+    }
+
+    if (sql.startsWith('insert into polyphony_runtime.coalitions')) {
+      const coalition: HarnessCoalition = {
+        coalitionId: String(params[0]),
+        tickId: String(params[1]),
+        decisionMode: params[2] as HarnessCoalition['decisionMode'],
+        vector: String(params[3]),
+        memberUnitIdsJson: parseJsonParam<string[]>(params[4]),
+        supportScore: Number(params[5]),
+        suppressionScore: Number(params[6]),
+        winning: Boolean(params[7]),
+        createdAt: state.coalitionsById[String(params[0])]?.createdAt ?? nowIso(),
+      };
+      state.coalitionsById[coalition.coalitionId] = coalition;
+      return { rows: [] };
+    }
+
+    if (sql.startsWith('insert into polyphony_runtime.narrative_spine_versions')) {
+      const version: HarnessNarrativeVersion = {
+        versionId: String(params[0]),
+        tickId: String(params[1]),
+        basedOnVersionId: (params[2] as string | null) ?? null,
+        currentChapter: String(params[3]),
+        summary: String(params[4]),
+        continuityDirection: String(params[5]),
+        tensionsJson: parseJsonParam<HarnessNarrativeVersion['tensionsJson']>(params[6]),
+        provenanceAnchorsJson: parseJsonParam<string[]>(params[7]),
+        createdAt: state.narrativeVersionsById[String(params[0])]?.createdAt ?? nowIso(),
+      };
+      state.narrativeVersionsById[version.versionId] = version;
+      return { rows: [] };
+    }
+
+    if (sql.startsWith('insert into polyphony_runtime.field_journal_entries')) {
+      const entry: HarnessFieldJournalEntry = {
+        entryId: String(params[0]),
+        tickId: String(params[1]),
+        entryType: String(params[2]),
+        summary: String(params[3]),
+        interpretation: String(params[4]),
+        tensionMarkersJson: parseJsonParam<string[]>(params[5]),
+        maturityState: params[6] as HarnessFieldJournalEntry['maturityState'],
+        linkedUnitId: (params[7] as string | null) ?? null,
+        provenanceAnchorsJson: parseJsonParam<string[]>(params[8]),
+        createdAt: state.fieldJournalEntriesById[String(params[0])]?.createdAt ?? nowIso(),
+      };
+      state.fieldJournalEntriesById[entry.entryId] = entry;
+      return { rows: [] };
     }
 
     if (

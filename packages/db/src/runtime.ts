@@ -9,6 +9,8 @@ import {
   type SubjectStateSnapshotInput,
   type SubjectStateStore,
 } from './subject-state.ts';
+import type { NarrativeMemeticTickDelta } from '@yaagi/contracts/cognition';
+import { createNarrativeMemeticStore } from './narrative-memetic.ts';
 import { createPerceptionStore, parseTickPerceptionClaim } from './perception.ts';
 import { setRuntimeCurrentModelProfile } from './model-routing.ts';
 
@@ -151,6 +153,8 @@ export type TickFinalizationInput = {
   failureJson?: Record<string, unknown>;
   continuityFlagsJson?: Record<string, unknown>;
   actionId?: string;
+  selectedCoalitionId?: string | null;
+  narrativeMemeticDelta?: NarrativeMemeticTickDelta;
   occurredAt?: Date;
   subjectStateDelta?: SubjectStateDelta;
 };
@@ -797,6 +801,7 @@ export function createTickRuntimeStore(
   const leaseOwner = options.leaseOwner ?? DEFAULT_RUNTIME_LEASE_OWNER;
   const leaseDurationMs = options.leaseDurationMs ?? DEFAULT_RUNTIME_LEASE_DURATION_MS;
   const subjectStateStore = createSubjectStateStore(db);
+  const narrativeMemeticStore = createNarrativeMemeticStore(db);
 
   return {
     ensureSubjectStateAnchor(): Promise<SubjectStateSnapshot['agentState']> {
@@ -1005,31 +1010,6 @@ export function createTickRuntimeStore(
           }
         }
 
-        const updatedTickResult = await db.query<RuntimeTickRow>(
-          `update ${tickTable}
-           set status = $2,
-               ended_at = $3,
-               result_json = $4::jsonb,
-               failure_json = '{}'::jsonb,
-               continuity_flags_json = $5::jsonb,
-               action_id = $6,
-               updated_at = now()
-           where tick_id = $1
-           returning ${tickColumns}`,
-          [
-            input.tickId,
-            TICK_STATUS.COMPLETED,
-            toTimestamp(occurredAt),
-            JSON.stringify(input.resultJson ?? {}),
-            JSON.stringify(input.continuityFlagsJson ?? {}),
-            input.actionId ?? null,
-          ],
-        );
-        const tick = updatedTickResult.rows[0];
-        if (!tick) {
-          throw new Error(`failed to complete tick ${input.tickId}`);
-        }
-
         const episode = await insertEpisodeRow(
           db,
           {
@@ -1045,6 +1025,40 @@ export function createTickRuntimeStore(
           episodeId: episode.episodeId,
           delta: input.subjectStateDelta ?? {},
         });
+        if (input.narrativeMemeticDelta) {
+          await narrativeMemeticStore.applyTickDelta({
+            tickId: input.tickId,
+            episodeId: episode.episodeId,
+            delta: input.narrativeMemeticDelta,
+          });
+        }
+
+        const updatedTickResult = await db.query<RuntimeTickRow>(
+          `update ${tickTable}
+           set status = $2,
+               ended_at = $3,
+               result_json = $4::jsonb,
+               failure_json = '{}'::jsonb,
+               continuity_flags_json = $5::jsonb,
+               action_id = $6,
+               selected_coalition_id = $7,
+               updated_at = now()
+           where tick_id = $1
+           returning ${tickColumns}`,
+          [
+            input.tickId,
+            TICK_STATUS.COMPLETED,
+            toTimestamp(occurredAt),
+            JSON.stringify(input.resultJson ?? {}),
+            JSON.stringify(input.continuityFlagsJson ?? {}),
+            input.actionId ?? null,
+            input.selectedCoalitionId ?? null,
+          ],
+        );
+        const tick = updatedTickResult.rows[0];
+        if (!tick) {
+          throw new Error(`failed to complete tick ${input.tickId}`);
+        }
 
         await clearAgentActiveTickPointers(db);
 
@@ -1058,6 +1072,9 @@ export function createTickRuntimeStore(
             summary: episode.summary,
             resultJson: episode.resultJson,
             ...(input.actionId ? { actionId: input.actionId } : {}),
+            ...(input.selectedCoalitionId
+              ? { selectedCoalitionId: input.selectedCoalitionId }
+              : {}),
           },
         });
 

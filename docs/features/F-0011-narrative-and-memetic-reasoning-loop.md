@@ -1,11 +1,11 @@
 ---
 id: F-0011
 title: Нарративный и меметический контур рассуждения
-status: planned
-coverage_gate: deferred
+status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: cognition
-depends_on: [F-0003, F-0004, F-0005]
+depends_on: [F-0003, F-0004, F-0005, F-0009]
 impacts: [runtime, db, memory, cognition, narrative]
 created: 2026-03-25
 updated: 2026-03-25
@@ -228,26 +228,25 @@ type NarrativeMemeticOutputs = {
 
 ### 5.5 Verification surface
 
-- Fast-path verification for the eventual implementation must cover:
+- Delivered fast-path verification covers:
   - bootstrap seeding before the first `wake` tick;
   - canonical candidate assembly inputs and `no raw-ingest-to-durable`;
   - ordinary tick writes for existing units only;
   - provenance anchors on durable units and narrative revisions;
   - bounded `NarrativeMemeticOutputs` shape and read-only downstream consumption;
   - explicit write-authority boundaries against `F-0004` and `CF-018`.
-- Runtime integration should prove that retry/replay preserves the promotion boundary and does not create duplicate durable units or impossible narrative chronology.
-- Container smoke is not inherently required by this planning step itself. For implementation, smoke becomes mandatory only for slices that actually change runtime/startup/deployment behavior in the canonical deployment cell.
+- Runtime integration proves wake/bootstrap wiring and reactive downstream handoff inside the existing tick lifecycle, including canonical `selected_coalition_id` continuity on the completed tick path.
+- Because the feature changes runtime behavior, implementation closure requires the canonical deployment-cell smoke path.
 
 ## 6. Definition of Done
 
-- `F-0011` is `planned` with explicit separation between ordinary tick writes and `CF-018`-owned durable transition classes.
-- The dossier keeps one bounded downstream cognition contract and one internal input contract without introducing a public API or a parallel self-model store.
-- The dossier contains four delivery slices with ordered exit criteria and named verification artifacts.
-- The task list references only slice IDs and AC IDs and is sufficient to start implementation without inventing new ownership boundaries.
-- Core schema intent remains explicit for `memetic_units`, `memetic_edges`, `coalitions`, `narrative_spine_versions` and `field_journal_entries`, including the rule that durable `memetic_candidates` storage is not introduced.
-- The dossier explicitly forbids direct writes to `psm_json`, `goals`, `beliefs`, `entities` and `relationships`.
-- Verification expectations cover bootstrap, candidate-vs-unit separation, provenance, downstream contract shape and owner-boundary enforcement.
-- Architecture coverage and global index remain aligned with the planned status and owner boundary.
+- `F-0011` is `done` with explicit separation between ordinary tick writes and `CF-018`-owned durable transition classes.
+- The feature delivers one bounded downstream cognition contract and one internal input contract without introducing a public API or a parallel self-model store.
+- Canonical runtime and DB surfaces are live for `memetic_units`, `memetic_edges`, `coalitions`, `narrative_spine_versions` and `field_journal_entries`, while durable `memetic_candidates` storage is still intentionally absent.
+- Wake/bootstrap seeding, ordinary existing-unit updates, coalition persistence, narrative/journal append and downstream context handoff are implemented on the canonical completed-tick path.
+- Direct writes to `psm_json`, `goals`, `beliefs`, `entities` and `relationships` remain forbidden outside the existing `F-0004` owner contract.
+- Verification now covers bootstrap, candidate-vs-unit separation, provenance, downstream contract shape, runtime handoff and owner-boundary enforcement, including deployment-cell smoke.
+- Architecture coverage and global index remain aligned with the delivered status and owner boundary.
 
 ## 7. Slicing plan
 
@@ -303,12 +302,12 @@ Exit criteria:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0011-01 | `SL-F0011-01`, `SL-F0011-04` via `contract`, `integration` | planned |
-| AC-F0011-02 | `SL-F0011-01`, `SL-F0011-02` via `contract`, `integration`, `db` | planned |
-| AC-F0011-03 | `SL-F0011-02`, `SL-F0011-04` via `integration`, `db`, `smoke-if-runtime-path-changes` | planned |
-| AC-F0011-04 | `SL-F0011-02`, `SL-F0011-03`, `SL-F0011-04` via `integration`, `db` | planned |
-| AC-F0011-05 | `SL-F0011-01`, `SL-F0011-03`, `SL-F0011-04` via `contract`, `integration`, `smoke-if-runtime-path-changes` | planned |
-| AC-F0011-06 | `SL-F0011-02`, `SL-F0011-03`, `SL-F0011-04` via `integration`, `db`, `smoke-if-runtime-path-changes` | planned |
+| AC-F0011-01 | `apps/core/test/cognition/narrative-memetic.contract.test.ts` → `test("AC-F0011-01 bootstraps a minimal baseline when no prior narrative or durable units exist")`; `apps/core/test/runtime/narrative-memetic-handoff.integration.test.ts` → `test("AC-F0011-01 seeds the narrative/memetic baseline during the wake tick before any previous cycle exists")`; `packages/db/test/narrative-memetic-store.integration.test.ts` → `test("AC-F0011-01 persists bootstrap baseline surfaces on the canonical completed-tick path")` | done |
+| AC-F0011-02 | `apps/core/test/cognition/narrative-memetic.contract.test.ts` → `test("AC-F0011-02 assembles only canonical tick-local memetic candidates and keeps durable promotion disabled")` | done |
+| AC-F0011-03 | `apps/core/test/cognition/narrative-memetic.contract.test.ts` → `test("AC-F0011-03 emits bounded read-model outputs while updating only existing durable units on ordinary ticks")`; `packages/db/test/narrative-memetic-store.integration.test.ts` → `test("AC-F0011-03 updates only existing durable units and persists the winning coalition without creating a new durable unit")` | done |
+| AC-F0011-04 | `packages/db/test/narrative-memetic-store.integration.test.ts` → bootstrap baseline completed-tick test `// Covers: AC-F0011-04`; `packages/db/test/narrative-memetic-store.integration.test.ts` → ordinary-tick coalition persistence test `// Covers: AC-F0011-04` | done |
+| AC-F0011-05 | `apps/core/test/cognition/context-builder.contract.test.ts` → bounded context enrichment contract `// Covers: AC-F0011-05`; `apps/core/test/runtime/narrative-memetic-handoff.integration.test.ts` → `test("AC-F0011-05 hands the bounded narrative/memetic read model into downstream decision flow and persists the winning coalition id")`; `infra/docker/deployment-cell.smoke.ts` → bounded reactive deployment-cell smoke `// Covers: AC-F0011-05` | done |
+| AC-F0011-06 | `packages/db/test/narrative-memetic-store.integration.test.ts` → ordinary-tick coalition persistence test `// Covers: AC-F0011-06`; `apps/core/test/runtime/subject-state-delta.contract.test.ts` → subject-state persistence guard `// Covers: AC-F0011-06` | done |
 
 ## 10. Decision log (ADR blocks)
 
@@ -330,16 +329,41 @@ Exit criteria:
 
 ## 11. Progress & links
 
-- Status progression: `proposed -> shaped -> planned -> in_progress -> done`
+- Status progression: `proposed -> shaped -> planned -> done`
 - Candidate source: `CF-005`
-- Delivered prerequisites: `F-0003`, `F-0004`, `F-0005`
-- Optional process artifacts:
-  - `.dossier/verification/F-0011/...`
-  - `.dossier/reviews/F-0011/...`
-  - `.dossier/steps/F-0011/...`
+- Delivered prerequisites: `F-0003`, `F-0004`, `F-0005`, `F-0009`
+- Code:
+  - `apps/core/src/cognition/context-builder.ts`
+  - `apps/core/src/cognition/decision-harness.ts`
+  - `apps/core/src/cognition/index.ts`
+  - `apps/core/src/cognition/narrative-memetic.ts`
+  - `apps/core/src/runtime/runtime-lifecycle.ts`
+  - `apps/core/src/runtime/tick-runtime.ts`
+  - `apps/core/test/cognition/context-builder.contract.test.ts`
+  - `apps/core/test/cognition/narrative-memetic.contract.test.ts`
+  - `apps/core/test/runtime/narrative-memetic-handoff.integration.test.ts`
+  - `apps/core/test/runtime/subject-state-delta.contract.test.ts`
+  - `infra/migrations/007_narrative_memetic_runtime.sql`
+  - `packages/contracts/src/cognition.ts`
+  - `packages/contracts/src/runtime.ts`
+  - `packages/db/src/index.ts`
+  - `packages/db/src/narrative-memetic.ts`
+  - `packages/db/src/runtime.ts`
+  - `packages/db/test/narrative-memetic-store.integration.test.ts`
+  - `packages/db/testing/subject-state-db-harness.ts`
+- Verification:
+  - `pnpm quality:fix`
+  - `pnpm test`
+  - `pnpm smoke:cell`
+  - `node scripts/index-refresh.mjs`
+  - `node scripts/lint-dossiers.mjs`
+  - `node scripts/coverage-audit.mjs --dossier docs/features/F-0011-narrative-and-memetic-reasoning-loop.md --orphans-scope=dossier`
+  - `pnpm debt:audit:changed`
+  - `node scripts/dossier-verify.mjs --dossier docs/features/F-0011-narrative-and-memetic-reasoning-loop.md --step implementation`
 
 ## 12. Change log
 
 - **v1.0 (2026-03-25):** Initial feature-intake dossier created from `CF-005`; intake keeps memetics, narrative spine and field journal in one dossier and explicitly leaves durable promotion/compaction to `CF-018`.
 - **v1.1 (2026-03-25):** `spec-compact` shaped the feature: refined ACs, fixed ordinary tick vs consolidation ownership, defined bounded downstream narrative/memetic contract and documented core schema intent for narrative/memetic surfaces.
 - **v1.2 (2026-03-25):** `plan-slice` moved the dossier to `planned`; delivery is split into four slices covering bootstrap/contracts, ordinary-tick persistence boundaries, downstream read-model handoff and runtime/replay closure verification.
+- **v1.3 (2026-03-25):** Completed `implementation`: delivered canonical `NarrativeMemeticInputs` / `TickLocalMemeticCandidate` / `NarrativeMemeticOutputs` contracts, added the `memetic_units` / `memetic_edges` / `coalitions` / `narrative_spine_versions` / `field_journal_entries` runtime schema, wired wake/bootstrap and reactive completed-tick persistence through the canonical runtime path, exposed bounded narrative/memetic context to the `F-0009` handoff, and closed AC-linked contract/integration/DB coverage without creating an ordinary-tick durable promotion path.

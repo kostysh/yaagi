@@ -384,10 +384,10 @@ Phase-0 / first-delivery boundary (`F-0009`):
 - already selected model profile metadata;
 - resource posture.
 
-Later enrichments stay explicit future-owned extensions of the same seam:
+Delivered and future-owned extensions of the same seam stay explicit:
 
-- narrative current chapter and field journal excerpts remain future inputs owned by the narrative seam (`F-0011`);
-- active memetic units remain future inputs owned by the same cognition seam, not by `F-0009`;
+- `F-0011` now owns narrative current chapter, field journal excerpts and active memetic units as bounded downstream context enrichments;
+- these enrichments remain cognition-owned inputs and do not transfer durable write authority to `F-0009`;
 - available organs/skills for execution planning remain future inputs owned by the executive/tool boundary (`F-0010`) and later model ecology seams.
 
 Практически `Context Builder` должен опираться на унифицированный слой сенсорных адаптеров и буфер восприятия.
@@ -458,7 +458,7 @@ interface SensorAdapter {
 
 Канонический lifecycle должен работать так:
 
-1. **Bootstrap before first tick:** до первого `wake` тика runtime materialize-ит минимальный baseline set из constitution, identity core и initial goals/beliefs. Первый тик не может зависеть от "прошлого цикла", которого ещё не было.
+1. **Bootstrap before first reactive tick:** на первом `wake` тике runtime materialize-ит минимальный baseline set из constitution, identity core и initial goals/beliefs. Первый реактивный цикл не может зависеть от "прошлого narrative цикла", которого ещё не было.
 2. **Candidate assembly inside tick:** `Memetic Arena` строит candidate set из current stimulus, retrieved episodes, active goals/beliefs, narrative tensions, field journal excerpts, active durable units и resource posture.
 3. **Tick-local competition:** candidates и existing units вместе участвуют в activation, suppression/support scoring и coalition formation; победившая coalition only influences attention, organ selection и final decision path.
 4. **No raw-ingest-to-durable rule:** raw `stimulus_inbox.normalized_json`, пользовательские сообщения и любые single-shot payloads не могут verbatim становиться `memetic_units`. Сначала они должны пройти через tick, episode encoding и evidence linking.
@@ -837,24 +837,31 @@ Singleton-таблица.
 - `unit_id`
 - `origin_kind` (`seeded`, `consolidated`, `governor_labeled`)
 - `unit_type`
-- `content`
-- `activation`
-- `valence`
-- `stability`
-- `plasticity`
+- `abstract_label`
+- `canonical_summary`
+- `activation_score`
+- `reinforcement_score`
+- `decay_score`
 - `evidence_score`
-- `anchors_json`
+- `last_activated_tick_id`
+- `created_by_path`
+- `provenance_anchors_json`
 - `status` (`active`, `dormant`, `quarantined`, `retired`, `merged`)
+- `created_at`
 - `updated_at`
 
 #### `memetic_edges`
 
 Содержит:
 
-- `src_unit_id`
-- `dst_unit_id`
+- `edge_id`
+- `source_unit_id`
+- `target_unit_id`
 - `relation_kind` (`supports`, `suppresses`, `contextualizes`, `contradicts`)
-- `weight`
+- `strength`
+- `confidence`
+- `tick_id`
+- `updated_at`
 
 #### `coalitions`
 
@@ -862,23 +869,26 @@ Singleton-таблица.
 
 - `coalition_id`
 - `tick_id`
+- `decision_mode`
 - `vector`
-- `strength`
-- `explanation_md`
-- `member_ids_json`
-- `won`
+- `member_unit_ids_json`
+- `support_score`
+- `suppression_score`
+- `winning`
+- `created_at`
 
 #### `narrative_spine_versions`
 
 Содержит:
 
 - `version_id`
-- `anchors_md`
-- `facts_md`
-- `current_chapter_md`
-- `tensions_md`
-- `direction_md`
-- `source_episode_ids_json`
+- `tick_id`
+- `based_on_version_id`
+- `current_chapter`
+- `summary`
+- `continuity_direction`
+- `tensions_json`
+- `provenance_anchors_json`
 - `created_at`
 
 #### `field_journal_entries`
@@ -887,9 +897,13 @@ Singleton-таблица.
 
 - `entry_id`
 - `tick_id`
-- `entry_kind`
-- `content_md`
-- `ttl`
+- `entry_type`
+- `summary`
+- `interpretation`
+- `tension_markers_json`
+- `maturity_state`
+- `linked_unit_id`
+- `provenance_anchors_json`
 - `created_at`
 
 #### `development_ledger`
@@ -1204,7 +1218,7 @@ Phase-0 / first-delivery subset (`TickDecisionV1`):
 
 Possible later enrichments after explicit future seams:
 
-- `activeMemeticUnits`, `winningCoalition`, `coalitionDiagnostics`, `affectPatch`, `narrativeSummary`, `fieldJournalExcerpts`, `narrativeTensions` and `provenanceAnchors` remain future cognition-owned enrichments (`F-0011`);
+- `activeMemeticUnits`, `winningCoalition`, `coalitionDiagnostics`, `affectPatch`, `narrativeSummary`, `fieldJournalExcerpts`, `narrativeTensions` and `provenanceAnchors` are now delivered as bounded cognition-owned context enrichments by `F-0011`, but they still remain outside the validated `TickDecisionV1` response schema itself;
 - `goalOps` and richer consequence/execution payloads remain future runtime/executive/governor-owned enrichments (`F-0010`, `CF-016`).
 
 ```json
@@ -2206,7 +2220,7 @@ Homeostat должен иметь не только метрики, но и де
 | Baseline model router and profile continuity | `F-0008` | `done` | Baseline router invariants are delivered; expanded model ecology and specialist organs remain future seams. |
 | Context Builder and structured decision harness | `F-0009` | `done` | The bounded cognition harness is delivered: context assembly, validated Mastra-backed decisions and reactive-first runtime wiring now run inside the canonical deployment cell without a new public API or durable decision-history table. |
 | Executive center and bounded action layer | `F-0010` | `done` | The bounded executive/action seam is now delivered: validated decisions flow through one canonical executive boundary, append-only `action_log` audit exists, and first-wave bounded wrappers plus `ticks.action_id` continuity are implemented without new public API surface. |
-| Narrative and memetic cognition | `F-0011` | `planned` | Planned owner now has explicit delivery slices for bootstrap/contracts, ordinary tick persistence boundaries, downstream bounded handoff and runtime/replay closure, while durable promotion/compaction paths remain explicitly deferred to `CF-018`. |
+| Narrative and memetic cognition | `F-0011` | `done` | Narrative/memetic runtime delivery is now live: wake/bootstrap seeding, bounded candidate assembly, ordinary existing-unit updates, coalition/narrative/journal persistence and downstream read-model handoff are implemented, while durable promotion/compaction paths remain explicitly deferred to `CF-018`. |
 | Homeostat and operational guardrails | `CF-008` | `candidate` | Early safety reactions are described architecturally but not yet intaken. |
 | Development governor and policy gates | `CF-016` | `candidate` | Minimal governor ownership is defined, but no delivered governor seam exists yet. |
 | Consolidation, event envelope and graceful shutdown | `CF-018` | `candidate` | Retention/compaction and graceful shutdown biography remain backlog-owned future work. |

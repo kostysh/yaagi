@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DECISION_MODE } from '@yaagi/contracts/cognition';
+import { DECISION_MODE, createEmptyNarrativeMemeticOutputs } from '@yaagi/contracts/cognition';
 import { buildDecisionContext, type DecisionContextBuildInput } from '../../src/cognition/index.ts';
 
 const subjectStateSnapshot = {
@@ -63,6 +63,7 @@ const subjectStateSnapshot = {
 };
 
 void test('AC-F0009-02 carries explicit version, truncation and conflict markers for bounded context sections', () => {
+  // Covers: AC-F0011-05
   const partialPerceptionBatch: NonNullable<DecisionContextBuildInput['perceptionBatch']> & {
     truncated: boolean;
     conflictMarkers: string[];
@@ -108,6 +109,30 @@ void test('AC-F0009-02 carries explicit version, truncation and conflict markers
       },
     ],
     perceptionBatch: partialPerceptionBatch,
+    narrativeMemeticOutputs: {
+      ...createEmptyNarrativeMemeticOutputs(),
+      activeMemeticUnits: [
+        {
+          unitId: 'seed:goal:goal-1',
+          label: 'Goal 1',
+          activation: 0.88,
+          reinforcement: 0.81,
+          decay: 0.04,
+        },
+      ],
+      winningCoalition: {
+        coalitionId: 'coalition-contract',
+        vector: 'act',
+        strength: 0.88,
+        memberUnitIds: ['seed:goal:goal-1'],
+      },
+      provenanceAnchors: ['goal:goal-1'],
+    },
+    narrativeMemeticMeta: {
+      truncated: false,
+      sourceIds: ['goal:goal-1'],
+      conflictMarkers: [],
+    },
     limits: {
       goalLimit: 1,
       beliefLimit: 1,
@@ -130,6 +155,8 @@ void test('AC-F0009-02 carries explicit version, truncation and conflict markers
   assert.equal(built.context.perceptualMeta.truncated, true);
   assert.deepEqual(built.context.perceptualMeta.conflictMarkers, ['perception_partial_claim']);
   assert.equal(built.context.subjectState.subjectStateSchemaVersion, '2026-03-24');
+  assert.equal(built.context.narrativeMemetic.winningCoalition?.coalitionId, 'coalition-contract');
+  assert.deepEqual(built.context.narrativeMemeticMeta.sourceIds, ['goal:goal-1']);
 
   const incompatible = buildDecisionContext({
     tickId: 'tick-contract',

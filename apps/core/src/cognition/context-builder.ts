@@ -1,8 +1,10 @@
 import {
   DECISION_MODE,
+  createEmptyNarrativeMemeticOutputs,
   decisionContextSchema,
   type DecisionContext,
   type DecisionMode,
+  type NarrativeMemeticOutputs,
   type DecisionRefusal,
   type DecisionRefusalReason,
   type DecisionRole,
@@ -38,6 +40,12 @@ export type DecisionContextBuildInput = {
   subjectStateSnapshot: SubjectStateSnapshot;
   recentEpisodes: RuntimeEpisodeRow[];
   perceptionBatch?: PerceptionBatch;
+  narrativeMemeticOutputs?: NarrativeMemeticOutputs;
+  narrativeMemeticMeta?: {
+    truncated: boolean;
+    sourceIds: string[];
+    conflictMarkers: string[];
+  };
   requiredSubjectStateSchemaVersion?: string;
   limits?: Partial<DecisionContextLimits>;
 };
@@ -127,6 +135,36 @@ const readPerceptionMeta = (
   };
 };
 
+const readNarrativeMemeticMeta = (
+  outputs: NarrativeMemeticOutputs | undefined,
+  candidate:
+    | {
+        truncated: boolean;
+        sourceIds: string[];
+        conflictMarkers: string[];
+      }
+    | undefined,
+  tickId: string,
+) => {
+  if (candidate) {
+    return {
+      truncated: candidate.truncated,
+      sourceIds: candidate.sourceIds,
+      conflictMarkers: candidate.conflictMarkers,
+    };
+  }
+
+  const sourceIds = outputs?.provenanceAnchors?.length
+    ? outputs.provenanceAnchors
+    : [`tick:${tickId}:narrative:none`];
+
+  return {
+    truncated: false,
+    sourceIds,
+    conflictMarkers: outputs?.winningCoalition ? [] : ['no_winning_coalition'],
+  };
+};
+
 export function buildDecisionContext(input: DecisionContextBuildInput): DecisionContextBuildResult {
   if (
     input.decisionMode !== DECISION_MODE.REACTIVE &&
@@ -163,6 +201,13 @@ export function buildDecisionContext(input: DecisionContextBuildInput): Decision
   };
   const perceptionBatch = input.perceptionBatch;
   const perceptionMeta = readPerceptionMeta(perceptionBatch);
+  const narrativeMemeticOutputs =
+    input.narrativeMemeticOutputs ?? createEmptyNarrativeMemeticOutputs();
+  const narrativeMemeticMeta = readNarrativeMemeticMeta(
+    input.narrativeMemeticOutputs,
+    input.narrativeMemeticMeta,
+    input.tickId,
+  );
   const perceptionItems = perceptionBatch?.items ?? [];
   const sourceIds = perceptionBatch?.claimedStimulusIds.length
     ? perceptionBatch.claimedStimulusIds
@@ -237,6 +282,8 @@ export function buildDecisionContext(input: DecisionContextBuildInput): Decision
       sourceIds: input.recentEpisodes.map((episode) => `episode:${episode.episodeId}`),
       conflictMarkers: episodeMetaTruncated ? ['episode_slice_truncated'] : [],
     },
+    narrativeMemetic: narrativeMemeticOutputs,
+    narrativeMemeticMeta,
     resourcePostureJson: { ...input.subjectStateSnapshot.agentState.resourcePostureJson },
   });
 

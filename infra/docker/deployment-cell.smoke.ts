@@ -900,6 +900,7 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
     await t.test(
       'AC-F0009-06 executes one bounded reactive decision path inside the deployment cell without new public API or durable history tables',
       async () => {
+        // Covers: AC-F0011-05
         const ingestResponse = await fetch(`${coreBaseUrl()}/ingest`, {
           method: 'POST',
           headers: {
@@ -925,6 +926,25 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
         await waitForPostgresValue(
           "select count(*)::text from polyphony_runtime.episodes where result_json ? 'decision';",
           '1',
+        );
+        await waitForPostgresValue(
+          "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' and selected_coalition_id is not null;",
+          '1',
+        );
+        await waitForPostgresValue(
+          "select count(*)::text from polyphony_runtime.field_journal_entries where tick_id in (select tick_id from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed');",
+          '1',
+        );
+
+        const selectedCoalitionId = await queryPostgres(
+          "select selected_coalition_id from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' limit 1;",
+        );
+        assert.equal(selectedCoalitionId.length > 0, true);
+        assert.equal(
+          await queryPostgres(
+            "select result_json -> 'narrativeMemetic' -> 'winningCoalition' ->> 'coalitionId' from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' limit 1;",
+          ),
+          selectedCoalitionId,
         );
 
         const actionType = await queryPostgres(

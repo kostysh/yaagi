@@ -29,6 +29,7 @@ const startedReactiveTick = {
 };
 
 void test('AC-F0009-04 does not mirror structured decision artifacts into subject-state persistence on completed ticks', async () => {
+  // Covers: AC-F0011-06
   const harness = createSubjectStateDbHarness({
     seed: {
       agentState: {
@@ -97,6 +98,37 @@ void test('AC-F0009-04 does not mirror structured decision artifacts into subjec
         outcome: 'review_request',
       },
     },
+    narrativeMemetic: {
+      activeMemeticUnits: [
+        {
+          unitId: 'seed:goal:goal-operator-reply',
+          label: 'Reply to the operator',
+          activation: 0.91,
+          reinforcement: 0.84,
+          decay: 0.04,
+        },
+      ],
+      winningCoalition: {
+        coalitionId: 'coalition-reactive-completed',
+        vector: 'act',
+        strength: 0.91,
+        memberUnitIds: ['seed:goal:goal-operator-reply'],
+      },
+      coalitionDiagnostics: {
+        suppressedUnitIds: [],
+        supportEdges: [],
+        conflictMarkers: [],
+      },
+      affectPatch: {},
+      narrativeSummary: {
+        currentChapter: 'act',
+        summary: 'goal-driven coalition won',
+        continuityDirection: 'pivot',
+      },
+      fieldJournalExcerpts: [],
+      narrativeTensions: [],
+      provenanceAnchors: ['goal:goal-operator-reply'],
+    },
   } satisfies Record<string, unknown>;
 
   await tickStore.completeTick({
@@ -105,8 +137,27 @@ void test('AC-F0009-04 does not mirror structured decision artifacts into subjec
     summary: 'bounded reactive decision completed',
     resultJson: terminalResult,
     actionId: 'action-reactive-completed',
+    selectedCoalitionId: 'coalition-reactive-completed',
     continuityFlagsJson: {
       selectedModelProfileId: 'reflex.fast@baseline',
+      selectedCoalitionId: 'coalition-reactive-completed',
+    },
+    narrativeMemeticDelta: {
+      seedMemeticUnits: [],
+      memeticUnitUpdates: [],
+      memeticEdgeUpserts: [],
+      coalition: {
+        coalitionId: 'coalition-reactive-completed',
+        decisionMode: 'reactive',
+        vector: 'act',
+        memberUnitIds: ['seed:goal:goal-operator-reply'],
+        supportScore: 0.91,
+        suppressionScore: 0,
+        winning: true,
+        provenanceAnchors: ['goal:goal-operator-reply'],
+      },
+      narrativeVersion: null,
+      fieldJournalEntries: [],
     },
     subjectStateDelta: buildPhase0SubjectStateDelta({
       tickId: startedReactiveTick.tickId,
@@ -116,8 +167,10 @@ void test('AC-F0009-04 does not mirror structured decision artifacts into subjec
         summary: 'bounded reactive decision completed',
         result: terminalResult,
         actionId: 'action-reactive-completed',
+        selectedCoalitionId: 'coalition-reactive-completed',
         continuityFlags: {
           selectedModelProfileId: 'reflex.fast@baseline',
+          selectedCoalitionId: 'coalition-reactive-completed',
         },
       },
     }),
@@ -134,5 +187,9 @@ void test('AC-F0009-04 does not mirror structured decision artifacts into subjec
   assert.equal(
     harness.state.ticks[startedReactiveTick.tickId]?.actionId,
     'action-reactive-completed',
+  );
+  assert.equal(
+    harness.state.ticks[startedReactiveTick.tickId]?.selectedCoalitionId,
+    'coalition-reactive-completed',
   );
 });

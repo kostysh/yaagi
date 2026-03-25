@@ -25,6 +25,7 @@ type TickRecord = {
   continuityFlags: Record<string, unknown>;
   failureDetail: string | null;
   actionId: string | null;
+  selectedCoalitionId: string | null;
 };
 
 type EpisodeRecord = {
@@ -89,6 +90,7 @@ export function createTickRuntimeHarness(options: HarnessOptions = {}): TickRunt
       continuityFlags: {},
       failureDetail: null,
       actionId: null,
+      selectedCoalitionId: null,
     });
     agentState.currentTick = options.seedStartedTick.tickId;
   }
@@ -125,6 +127,7 @@ export function createTickRuntimeHarness(options: HarnessOptions = {}): TickRunt
         continuityFlags: {},
         failureDetail: null,
         actionId: null,
+        selectedCoalitionId: null,
       });
       agentState.currentTick = input.tickId;
       events.push({
@@ -156,6 +159,7 @@ export function createTickRuntimeHarness(options: HarnessOptions = {}): TickRunt
       tick.failureDetail = input.terminal.failureDetail ?? null;
       tick.continuityFlags = input.terminal.continuityFlags ?? {};
       tick.actionId = input.terminal.actionId ?? null;
+      tick.selectedCoalitionId = input.terminal.selectedCoalitionId ?? null;
       agentState.currentTick = null;
       events.push({
         eventId: `event-${input.tickId}-${input.terminal.status}`,

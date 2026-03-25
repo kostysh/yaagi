@@ -1,3 +1,5 @@
+import type { NarrativeMemeticTickDelta } from './cognition.ts';
+
 export const TICK_KIND = Object.freeze({
   REACTIVE: 'reactive',
   DELIBERATIVE: 'deliberative',
@@ -67,4 +69,6 @@ export type TickTerminalResult = {
   failureDetail?: string;
   continuityFlags?: Record<string, unknown>;
   actionId?: string;
+  selectedCoalitionId?: string | null;
+  narrativeMemeticDelta?: NarrativeMemeticTickDelta;
 };
