@@ -1,7 +1,7 @@
 ---
 id: F-0013
 title: HTTP API управления и интроспекции
-status: shaped
+status: planned
 coverage_gate: deferred
 owners: ["@codex"]
 area: api
@@ -320,46 +320,62 @@ type OperatorUnavailableControlResponse = {
 ## 7. Slicing plan
 
 ### Slice SL-F0013-01: Read-only state, timeline and episode contracts
-Delivers: bounded route DTOs, explicit owner adapters and stable pagination contracts for `GET /state`, `GET /timeline` and `GET /episodes`.
+Delivers: bounded route DTOs, query validation and explicit owner adapters for `GET /state`, `GET /timeline` and `GET /episodes`, including the missing timeline/episode pagination adapter boundary over existing `F-0003` stores.
 Covers: AC-F0013-01, AC-F0013-02, AC-F0013-03, AC-F0013-07
-Verification: `contract`, `integration`
+Verification: `apps/core/test/platform/operator-api-boundary.contract.test.ts`, `apps/core/test/platform/operator-state.integration.test.ts`, `apps/core/test/platform/operator-history.integration.test.ts`
 Exit criteria:
 - State/timeline/episode responses stay bounded and owner-shaped.
 - Timeline and episode list routes use stable ordering and explicit cursor semantics instead of unbounded full-history dumps.
+- Timeline listing is implemented through one explicit store/adapter boundary rather than ad hoc SQL in handlers.
+Tasks:
+- `T-F0013-01`
+- `T-F0013-02`
 
 ### Slice SL-F0013-02: Baseline model introspection boundary
-Delivers: bounded `GET /models` route over delivered `F-0008` diagnostics with explicit future-gap semantics for `CF-010`.
+Delivers: bounded `GET /models` route over delivered `F-0008` diagnostics with explicit future-gap semantics for `CF-010`, plus the required realignment of delivered `F-0008` assumptions that currently treat `/models` as absent.
 Covers: AC-F0013-04, AC-F0013-07
-Verification: `contract`, `integration`
+Verification: `apps/core/test/platform/operator-models.integration.test.ts`, linked `change-proposal` / realignment for `F-0008`
 Exit criteria:
 - Baseline router/profile diagnostics are exposed without overclaiming richer registry ownership.
 - Missing richer model-health surfaces are explicit, machine-readable and bounded.
+- The delivered `F-0008` assumption “health is enriched without opening `/models`” is realigned canonically before or together with route delivery, not left as a hidden contradiction.
+Tasks:
+- `T-F0013-03`
+- `T-F0013-04`
 
 ### Slice SL-F0013-03: Operator tick handoff and future-owned governor gating
 Delivers: bounded `POST /control/tick` handoff, request-id idempotency, operator-provenance forwarding and explicit `POST /control/freeze-development` unavailable contract.
 Covers: AC-F0013-05, AC-F0013-06, AC-F0013-07
-Verification: `contract`, `integration`
+Verification: `apps/core/test/platform/operator-control.integration.test.ts`, `apps/core/test/platform/operator-governor-gating.contract.test.ts`
 Exit criteria:
 - `POST /control/tick` calls the canonical runtime gate and preserves the existing trigger taxonomy.
 - Governance-sensitive control remains explicit but unavailable until `CF-016`.
+Tasks:
+- `T-F0013-05`
+- `T-F0013-06`
 
 ### Slice SL-F0013-04: Runtime closure and smoke alignment
 Delivers: final route wiring, operator module closure and deployment-cell smoke coverage if the public runtime boundary changes materially.
 Covers: AC-F0013-01, AC-F0013-08
-Verification: `integration`, `smoke-if-runtime-path-changes`
+Verification: `apps/core/test/platform/operator-api-boundary.contract.test.ts`, `infra/docker/deployment-cell.smoke.ts` when runtime/public boundary changes materially
 Exit criteria:
 - Operator route family is wired on the canonical Hono runtime without stealing `/health`.
 - Smoke coverage is present if implementation materially changes startup/public route behavior.
+- Existing delivered tests or dossiers that assumed operator routes were absent are explicitly realigned instead of silently patched.
+Tasks:
+- `T-F0013-07`
+- `T-F0013-08`
 
 ## 8. Task list
 
-- **T-F0013-01:** Define route DTOs, query schemas and owner mapping for `GET /state`, `GET /timeline` and `GET /episodes`. Covers: AC-F0013-01, AC-F0013-02, AC-F0013-03.
-- **T-F0013-02:** Add bounded read adapters for timeline and episode pagination plus state snapshot projection without raw table dumps. Covers: AC-F0013-02, AC-F0013-03, AC-F0013-07.
-- **T-F0013-03:** Define the bounded `GET /models` contract over `F-0008` diagnostics and explicit `CF-010` future-gap semantics. Covers: AC-F0013-04.
-- **T-F0013-04:** Implement `POST /control/tick` request/response mapping, required `requestId` validation, forwarded operator provenance and request-id idempotency handling over the canonical runtime gate. Covers: AC-F0013-05.
-- **T-F0013-05:** Implement explicit unavailable semantics for `POST /control/freeze-development` before `CF-016`. Covers: AC-F0013-06.
-- **T-F0013-06:** Add contract/integration coverage for bounded introspection, control rejection mapping and no-foreign-write boundaries. Covers: AC-F0013-01, AC-F0013-02, AC-F0013-03, AC-F0013-04, AC-F0013-05, AC-F0013-06, AC-F0013-07.
-- **T-F0013-07:** Align public route wiring and deployment-cell smoke if implementation materially changes startup/runtime public behavior. Covers: AC-F0013-08.
+- **T-F0013-01 (SL-F0013-01):** Define route DTOs, query schemas and owner mapping for `GET /state`, `GET /timeline` and `GET /episodes`. Covers: AC-F0013-01, AC-F0013-02, AC-F0013-03.
+- **T-F0013-02 (SL-F0013-01):** Add bounded read adapters for timeline and episode pagination plus state snapshot projection without raw table dumps. Covers: AC-F0013-02, AC-F0013-03, AC-F0013-07.
+- **T-F0013-03 (SL-F0013-02):** Define the bounded `GET /models` contract over `F-0008` diagnostics and explicit `CF-010` future-gap semantics. Covers: AC-F0013-04.
+- **T-F0013-04 (SL-F0013-02):** Realign delivered `F-0008` `/models`-absence assumption through an explicit linked change-proposal/update before enabling the new operator route. Covers: AC-F0013-04, AC-F0013-07.
+- **T-F0013-05 (SL-F0013-03):** Implement `POST /control/tick` request/response mapping, required `requestId` validation, forwarded operator provenance and request-id idempotency handling over the canonical runtime gate. Covers: AC-F0013-05.
+- **T-F0013-06 (SL-F0013-03):** Implement explicit unavailable semantics for `POST /control/freeze-development` before `CF-016`. Covers: AC-F0013-06.
+- **T-F0013-07 (SL-F0013-04):** Add contract/integration coverage for bounded introspection, control rejection mapping and no-foreign-write boundaries. Covers: AC-F0013-01, AC-F0013-02, AC-F0013-03, AC-F0013-04, AC-F0013-05, AC-F0013-06, AC-F0013-07.
+- **T-F0013-08 (SL-F0013-04):** Align public route wiring, delivered-route realignment and deployment-cell smoke if implementation materially changes startup/runtime public behavior. Covers: AC-F0013-08.
 
 ## 9. Test plan & Coverage map
 
@@ -417,12 +433,14 @@ Exit criteria:
   - None yet; implementation targets are expected in `apps/core/src/platform` Hono route surfaces plus operator-facing contract/integration tests.
 - Verification:
   - `node scripts/index-refresh.mjs`
+  - `node scripts/contract-drift-audit.mjs --dossier docs/features/F-0013-operator-http-api-and-introspection.md --base HEAD~1`
   - `node scripts/lint-dossiers.mjs`
   - `node scripts/coverage-audit.mjs --dossier docs/features/F-0013-operator-http-api-and-introspection.md --orphans-scope=dossier`
   - `pnpm debt:audit:changed`
-  - `node scripts/dossier-verify.mjs --dossier docs/features/F-0013-operator-http-api-and-introspection.md --step spec-compact`
+  - `node scripts/dossier-verify.mjs --dossier docs/features/F-0013-operator-http-api-and-introspection.md --step plan-slice`
 
 ## 12. Change log
 
 - **v1.0 (2026-03-25):** Initial feature-intake dossier created from `CF-009`; intake fixed one canonical owner for operator-facing HTTP introspection and bounded control routes, while explicitly keeping richer model ecology with `CF-010`, governance-sensitive controls with `CF-016`, and baseline health ownership outside this seam.
 - **v1.1 (2026-03-25):** `spec-compact` shaped the operator API into implementation-grade route contracts: bounded DTOs, pagination/cursor rules, explicit control rejection mapping, operator provenance over the existing `system` trigger, and an explicit unavailable contract for pre-`CF-016` `freeze-development`.
+- **v1.2 (2026-03-25):** `plan-slice` translated the shaped operator boundary into delivery-ordered slices with explicit verification targets and made the required `F-0008` `/models` realignment a first-class planned task instead of a hidden follow-up.
