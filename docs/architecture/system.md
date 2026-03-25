@@ -444,12 +444,10 @@ interface SensorAdapter {
 
 Отвечает за:
 
-- активацию memetic units;
-- reinforcement/decay;
+- активацию, reinforcement и decay existing memetic units;
 - coalition formation;
 - suppression/support scoring;
-- quarantine паразитических паттернов;
-- handoff winning coalition в PSM/Decision Agent.
+- handoff bounded narrative/memetic outputs в Context Builder / Decision Agent.
 
 ##### Memetic Lifecycle
 
@@ -466,7 +464,7 @@ interface SensorAdapter {
 4. **No raw-ingest-to-durable rule:** raw `stimulus_inbox.normalized_json`, пользовательские сообщения и любые single-shot payloads не могут verbatim становиться `memetic_units`. Сначала они должны пройти через tick, episode encoding и evidence linking.
 5. **Tick write boundary:** обычный tick может обновлять activation/reinforcement/decay у existing units, создавать `coalitions` rows и добавлять anchors/evidence к уже существующим patterns, но не должен сам по себе silently промоутить разовый stimulus в durable meme.
 6. **Promotion boundary:** новые durable `memetic_units` могут появляться только тремя путями: bootstrap seeding, consolidation из повторяющихся patterns, либо explicit governor/operator labeling. Creation always requires abstracted content, provenance anchors и evidence beyond one isolated stimulus.
-7. **Consolidation ownership:** именно `consolidation` tick является owner-ом promotion, merge, split, decay, quarantine и retire semantics для durable memetic state; это не должно происходить ad hoc в reactive path.
+7. **Consolidation ownership:** именно `consolidation` tick является owner-ом promotion, merge, split, quarantine, retire и compaction semantics для durable memetic state; ordinary ticks may update bounded activation/reinforcement/decay scores on existing units, but irreversible lifecycle transitions must not happen ad hoc в reactive path.
 8. **Narrative boundary:** one-off unresolved tensions и незрелые patterns должны жить в `field_journal_entries` / narrative, пока не появится достаточное повторяющееся evidence для durable promotion.
 9. **Provenance invariant:** каждый durable unit обязан иметь traceable anchors к episodes, goals, beliefs, entities, narrative tensions или model organs; anchorless units запрещены.
 
@@ -488,7 +486,7 @@ interface SensorAdapter {
 - narrative spine updates;
 - field journal maintenance;
 - distinction between facts / interpretations / direction;
-- narrative compaction;
+- handoff narrative compaction candidates в consolidation-owned path;
 - linkage between episodes and narrative revisions.
 
 #### 4.2.7 Model Router
@@ -1058,7 +1056,7 @@ Identity-bearing surfaces допускают чтение из нескольк�
 | Active tick / continuity bridge (`ticks` lifecycle rows, `agent_state.current_tick`, active-tick continuity metadata) | Tick runtime lifecycle (`F-0003`) | `F-0001` activates runtime; `F-0008` may attach selected-profile metadata through the same continuity transaction; `F-0004` may commit completed-tick state deltas only through the completed terminal path | Boot/recovery after activation, router acting alone, executive/tool workers, reporting/homeostat jobs | Admission, lifecycle ordering and terminal cleanup belong to one active-tick transaction. Neighbouring seams may attach their own metadata only through that boundary, not via side writes. |
 | Subject-state singleton and normalized tables (`psm_json`, `goals`, `beliefs`, `entities`, `relationships`) | `SubjectStateStore` (`F-0004`) | `F-0003` completed-tick path invokes the store; future cognitive seams consume bounded snapshots and submit deltas through canonical store contracts | Boot/recovery logic, router, executive/tool gateway, reporting/homeostat workers, direct SQL from future seams | Writes are valid only through the canonical store contract and only on the allowed completed-tick commit path or explicit schema migration/backfill owned by the same seam. |
 | Model-profile continuity surfaces (`model_registry`, `ticks.selected_model_profile_id`, `agent_state.current_model_profile_id`) | Baseline model-routing seam (`F-0008`) via the `F-0003` continuity transaction | Runtime and future decision harness request selection; platform health surface reads diagnostics; boot/recovery reads the active profile pointer during restart/reclaim | Boot/preflight changing profile selection, `SubjectStateStore`, executive/governor/reporting workers writing profile choices directly | Profile registration is router-owned; active profile pointers become durable only when committed through the runtime continuity boundary. |
-| Future narrative and memetic surfaces (`memetic_units`, `memetic_edges`, `coalitions`, `narrative_spine_versions`, `field_journal_entries`) | Narrative/memetic cognition seam (`F-0011` with `CF-018` for allowed durable transitions) | Tick runtime may pass bounded candidates; context builder and reporting may consume read models | Boot/runtime/router/executive writing durable narrative or memetic state directly | Durable transitions must use explicit promotion/compaction paths. No other seam receives generic write authority over these surfaces. |
+| Future narrative and memetic surfaces (`memetic_units`, `memetic_edges`, `coalitions`, `narrative_spine_versions`, `field_journal_entries`) | Narrative/memetic cognition seam (`F-0011` with `CF-018` for allowed durable transitions) | Tick runtime may pass bounded candidates; context builder and reporting may consume read models | Boot/runtime/router/executive writing durable narrative or memetic state directly | Ordinary cognition ticks may update activation/reinforcement/decay for existing durable units plus coalition/narrative/journal rows. Durable creation, promotion and compaction must use explicit consolidation/governor paths. |
 | Development/governance proposal surfaces (`development_ledger`, model/code/policy proposals) | Future governor/workshop/code-evolution seams (`CF-016`, `CF-011`, `CF-012`) | Runtime, recovery, workshop and human override may submit evidence or incidents through governor-owned gates | Boot/runtime/router/subject-state seams writing arbitrary proposal rows directly | Proposal and ledger writes must flow through policy gates and preserve evidence plus rollback links. |
 | Read-only reporting surfaces (identity continuity reports, model health reports, stable-snapshot inventories) | Derived observability/reporting seam (`CF-015`) | All canonical writers above provide source state; homeostat and human audit consume reports | Reporting workers back-writing identity-bearing source tables | Reports are materialized from committed source state and may not mutate the business or identity-bearing surfaces they summarize. |
 
@@ -1206,19 +1204,49 @@ Phase-0 / first-delivery subset (`TickDecisionV1`):
 
 Possible later enrichments after explicit future seams:
 
-- `winningCoalition`, `affectPatch` and related narrative/memetic outputs remain future cognition-owned enrichments (`F-0011`);
+- `activeMemeticUnits`, `winningCoalition`, `coalitionDiagnostics`, `affectPatch`, `narrativeSummary`, `fieldJournalExcerpts`, `narrativeTensions` and `provenanceAnchors` remain future cognition-owned enrichments (`F-0011`);
 - `goalOps` and richer consequence/execution payloads remain future runtime/executive/governor-owned enrichments (`F-0010`, `CF-016`).
 
 ```json
 {
   "observations": ["..."],
   "interpretations": ["..."],
+  "activeMemeticUnits": [
+    {
+      "id": "meme-1",
+      "label": "preserve trust",
+      "activation": 0.88
+    }
+  ],
   "winningCoalition": {
     "id": "coalition-1",
     "vector": "act",
     "strength": 0.81
   },
+  "coalitionDiagnostics": {
+    "suppressedUnitIds": ["meme-2"],
+    "conflictMarkers": ["resource_pressure"]
+  },
   "affectPatch": {},
+  "narrativeSummary": {
+    "currentChapter": "stabilize",
+    "summary": "..."
+  },
+  "fieldJournalExcerpts": [
+    {
+      "entryId": "fj-1",
+      "summary": "...",
+      "maturityState": "tracking"
+    }
+  ],
+  "narrativeTensions": [
+    {
+      "id": "tension-1",
+      "summary": "...",
+      "severity": 0.61
+    }
+  ],
+  "provenanceAnchors": ["episode:ep-1", "goal:g-1"],
   "goalOps": [],
   "action": {
     "type": "tool_call|none|reflect|schedule_job",
@@ -2178,7 +2206,7 @@ Homeostat должен иметь не только метрики, но и де
 | Baseline model router and profile continuity | `F-0008` | `done` | Baseline router invariants are delivered; expanded model ecology and specialist organs remain future seams. |
 | Context Builder and structured decision harness | `F-0009` | `done` | The bounded cognition harness is delivered: context assembly, validated Mastra-backed decisions and reactive-first runtime wiring now run inside the canonical deployment cell without a new public API or durable decision-history table. |
 | Executive center and bounded action layer | `F-0010` | `done` | The bounded executive/action seam is now delivered: validated decisions flow through one canonical executive boundary, append-only `action_log` audit exists, and first-wave bounded wrappers plus `ticks.action_id` continuity are implemented without new public API surface. |
-| Narrative and memetic cognition | `F-0011` | `proposed` | Intake owner now exists for narrative/memetic cognition; durable promotion/compaction paths remain explicitly deferred to `CF-018`. |
+| Narrative and memetic cognition | `F-0011` | `shaped` | Shaped owner now fixes ordinary tick write boundaries plus the bounded downstream narrative/memetic contract, while durable promotion/compaction paths remain explicitly deferred to `CF-018`. |
 | Homeostat and operational guardrails | `CF-008` | `candidate` | Early safety reactions are described architecturally but not yet intaken. |
 | Development governor and policy gates | `CF-016` | `candidate` | Minimal governor ownership is defined, but no delivered governor seam exists yet. |
 | Consolidation, event envelope and graceful shutdown | `CF-018` | `candidate` | Retention/compaction and graceful shutdown biography remain backlog-owned future work. |
