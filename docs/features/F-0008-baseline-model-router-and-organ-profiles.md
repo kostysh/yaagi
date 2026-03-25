@@ -44,7 +44,7 @@ links:
 
 ### Out of scope
 
-- Расширенная local model ecology (`vllm-deep`, `vllm-pool`, embeddings, reranking, classifier/safety, richer health checks organs); этим владеет `CF-010`.
+- Расширенная local model ecology (`vllm-deep`, `vllm-pool`, richer shared roles, quarantine/fallback metadata и source diagnostics); этим владеет `F-0014`.
 - Context Builder, AI SDK-backed decision harness, structured decision validation и end-to-end deliberative/contemplative cognition; этим владеет `CF-017` и последующие cognitive seams.
 - Executive/tool gateway, review requests, action execution и job dispatch.
 - Ownership над operator-facing `/models`, control routes, richer introspection API и human-governed consultant policies.
@@ -160,7 +160,7 @@ interface ModelRouter {
 - Repo-level vs feature-local contract:
   - repo-level: baseline roles, explicit reflection rule, structured refusal, separation `selection != admission`, router diagnostics enrich the existing health surface;
   - feature-local: deterministic selection matrix details, continuity persistence mechanics, health-summary reuse rules and the exact fast/smoke verification map for the delivered baseline router.
-- Router input может обогащаться по мере появления `CF-017`, `CF-005` и `CF-010`, но baseline contract не должен ломать already persisted routing evidence.
+- Router input может обогащаться по мере появления `CF-017`, `CF-005` и `F-0014`, но baseline contract не должен ломать already persisted routing evidence.
 
 ### 5.2 Data model changes
 
@@ -180,7 +180,7 @@ interface ModelRouter {
   - `model_registry_status_idx` on `(status, model_profile_id)`.
 - `ticks.selected_model_profile_id` перестаёт быть всегда `null` и начинает заполняться после успешного router selection.
 - `agent_state.current_model_profile_id` остаётся canonical active pointer для текущего тика и обновляется через тот же transactional boundary, в котором runtime фиксирует active tick ownership.
-- Permitted writes for this seam are limited to baseline profile registration (`model_registry`) and model-profile continuity metadata (`ticks.selected_model_profile_id`, `agent_state.current_model_profile_id`) committed through the runtime continuity boundary.
+- Permitted writes for this seam are limited to baseline profile registration in the baseline slice of `model_registry` (`reflex`, `deliberation`, `reflection`) and model-profile continuity metadata (`ticks.selected_model_profile_id`, `agent_state.current_model_profile_id`) committed through the runtime continuity boundary.
 - Forbidden writes for this seam:
   - tick admission, lease ownership and terminal lifecycle fields outside the `F-0003` runtime boundary;
   - `psm_json`, goals/beliefs, entities/relationships and future narrative/memetic surfaces;
@@ -196,7 +196,7 @@ interface ModelRouter {
 - `reflection` requested, но отдельного reflection profile нет: допустим только explicit adapter-over-deliberation path.
 - `reflex` и `deliberation` используют один и тот же underlying endpoint, но разные profiles/adapters и разные routing limits.
 - Profile помечен `active`, но `health_json` говорит, что endpoint временно unhealthy.
-- Caller пытается запросить `code` или `embedding` role до `CF-010`.
+- Caller пытается запросить `code` или `embedding` role до `F-0014`.
 - Runtime работает в degraded startup mode, где baseline `reflex` жив, а `deliberation` временно unavailable.
 
 ### 5.5 Failure modes and recovery boundaries
@@ -224,7 +224,7 @@ interface ModelRouter {
 
 ## 6. Definition of Done
 
-- Новый dossier явно фиксирует ownership boundaries между `F-0008`, `F-0002`, `F-0003`, `CF-017` и `CF-010`.
+- Новый dossier явно фиксирует ownership boundaries между `F-0008`, `F-0002`, `F-0003`, `CF-017` и `F-0014`.
 - AC-F0008-* покрывают baseline profiles, explicit reflection path, deterministic selection, continuity persistence, refusal semantics и diagnostics without API/dependency creep.
 - Backlog candidate `CF-006` переведён в `intaken`, а `docs/ssot/index.md` синхронизирован с новым dossier.
 - Implementation plan для этой фичи обязан включать и fast verification path, и containerized smoke path, потому что seam меняет runtime/dependency behavior.
@@ -371,3 +371,4 @@ Tasks:
 - **v1.8 (2026-03-24):** `change-proposal`: aligned `F-0008` with the new architecture-level baseline router invariants. The architecture now carries only the minimal delivered router contract, while deterministic selection details, continuity persistence and fast/smoke proofs remain explicitly feature-local to this dossier.
 - **v1.9 (2026-03-25):** `change-proposal`: realigned router wording to the repo-level AI SDK substrate. `F-0008` remains `done` because baseline routing and profile continuity stay framework-neutral, but the old Mastra-specific cognition references were retired in favor of the AI SDK-backed harness owned by `F-0009`.
 - **v1.10 (2026-03-25):** `change-proposal`: realigned `F-0008` with planned `F-0013` operator API delivery. The dossier no longer claims that a future `/models` route is forbidden; instead it fixes that `F-0008` owns baseline routing diagnostics while any later operator `/models` publication remains owned by `F-0013` and must not change boot dependencies or routing ownership.
+- **v1.11 (2026-03-25):** Realigned future richer-model ownership after `F-0014 spec-compact`: this dossier now treats non-baseline shared-role ecology, richer source diagnostics and fallback/quarantine metadata as `F-0014`-owned, while `F-0008` stays limited to baseline rows, router invariants and continuity pointers.

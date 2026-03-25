@@ -47,14 +47,14 @@ links:
 - Bounded response DTOs, pagination/cursor semantics and error contracts for operator routes.
 - Owner-routed control handoff semantics for `POST /control/tick`, including idempotent `requestId` behavior and explicit mapping of runtime admission rejections.
 - Explicit provenance policy for operator-requested ticks that preserves current `F-0003` trigger taxonomy instead of silently extending it.
-- Explicit future-gap contract for richer model ecology (`CF-010`) and governor-backed controls (`CF-016`).
+- Explicit future-gap contract for richer model ecology (`F-0014`) and governor-backed controls (`CF-016`).
 
 ### Out of scope
 
 - Public authN/authZ, rate limiting, stronger perimeter controls and human-override security policy; these remain future work aligned with `CF-014`.
 - Dashboard/UI delivery, websockets, SSE, streaming consoles or external operator workbenches.
 - New direct business-state mutation routes for `psm_json`, `goals`, `beliefs`, `entities`, `relationships`, `memetic_*`, `action_log`, `development_ledger`, lifecycle evidence or model-registry internals.
-- Richer organ ecology, organ error rates, registry-health diagnostics and specialist-organ introspection beyond baseline `F-0008` diagnostics; those remain `CF-010`.
+- Richer organ ecology, registry-health source diagnostics and specialist-organ introspection beyond baseline `F-0008` diagnostics; those remain `F-0014` and later downstream reporting/specialist seams.
 - Real `freeze-development` execution, governor policy writes, proposal admission or development-ledger ownership before `CF-016`.
 - New public routes such as `GET /episodes/:id`, `GET /actions`, bulk exports or arbitrary query surfaces not named in the intake.
 
@@ -65,7 +65,7 @@ links:
 - Read routes must consume only canonical owner surfaces and return bounded DTOs. Raw row/table dumps, ad hoc SQL-shaped payloads and alternate shadow read models are forbidden.
 - `POST /control/tick` must route only through the existing runtime owner gate (`F-0003`). The HTTP seam may not create ticks or mutate continuity rows by direct DB writes.
 - Because the canonical tick trigger taxonomy is currently `boot | scheduler | system`, operator-triggered ticks in this seam must reuse the existing `system` trigger and carry operator provenance in the request payload/metadata. Introducing a new runtime trigger is out of scope for `F-0013`.
-- `GET /models` must stay bounded to delivered `F-0008` diagnostics and explicit future-gap markers. It must not fabricate richer health that belongs to `CF-010`.
+- `GET /models` must stay bounded to delivered `F-0008` diagnostics and explicit future-gap markers. It must not fabricate richer health that belongs to `F-0014` or seize ownership of the richer source state.
 - `POST /control/freeze-development` must remain explicitly unavailable until `CF-016` owns the underlying governor/freeze surfaces; this seam may not invent direct governor writes or hidden backdoors.
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
@@ -73,7 +73,7 @@ links:
 - **AC-F0013-01:** `F-0013` establishes one canonical owner seam for operator-facing HTTP API beyond phase-0 `GET /health` and beyond already delivered ingress routes: operator introspection and bounded control requests are handled through one Hono boundary with explicit DTO contracts instead of ad hoc debug handlers or raw database endpoints.
 - **AC-F0013-02:** `GET /state` returns a bounded read-only representation derived from the canonical `F-0004` subject-state snapshot contract, including `subjectStateSchemaVersion`, bounded agent-state fields and bounded goal/belief/entity/relationship slices; it must not expose identity-bearing tables as raw dumps or create any mutation path.
 - **AC-F0013-03:** `GET /timeline` and `GET /episodes` expose bounded, stable-order read-only list contracts over `F-0003` continuity surfaces with explicit `limit` and cursor semantics, stable ordering keys, and machine-readable truncation/page metadata; they must not provide unbounded history dumps or bypass canonical event/episode contracts.
-- **AC-F0013-04:** `GET /models` consumes only canonical baseline routing/profile diagnostics already owned by `F-0008`; richer model ecology and registry health remain future-owned by `CF-010`, and those absent capabilities must surface as explicit unavailable/degraded fields rather than fabricated data.
+- **AC-F0013-04:** `GET /models` consumes canonical baseline routing/profile diagnostics from `F-0008` and may later project a bounded richer summary sourced from `F-0014`; until richer source diagnostics are delivered, those absent capabilities must surface as explicit unavailable/degraded fields rather than fabricated data.
 - **AC-F0013-05:** `POST /control/tick` routes through the canonical `F-0003` runtime request gate with a required caller-supplied `requestId`, explicit HTTP mapping for `accepted`, `boot_inactive`, `lease_busy` and `unsupported_tick_kind`, and deterministic idempotent replay for repeated `requestId` submissions; the HTTP layer preserves operator provenance without introducing a new tick trigger taxonomy or direct state writes.
 - **AC-F0013-06:** Governance-sensitive routes such as `POST /control/freeze-development` remain explicitly future-owned by `CF-016`: before minimal governor surfaces exist, the route returns a bounded unavailable contract rather than silently mutating governor state or pretending the capability exists.
 - **AC-F0013-07:** `F-0013` preserves ownership separation at the HTTP boundary: it does not become a convenience writer for subject-state, narrative/memetic storage, `action_log`, development ledger, lifecycle evidence, model-registry internals or baseline `GET /health`.
@@ -188,8 +188,22 @@ type OperatorModelsResponse = {
   }>;
   richerRegistryHealth: {
     available: false;
-    owner: "CF-010";
+    owner: "F-0014";
     reason: "future_owned";
+  } | {
+    available: true;
+    owner: "F-0014";
+    generatedAt: string;
+    organs: Array<{
+      modelProfileId: string;
+      role: "code" | "embedding" | "reranker" | "classifier" | "safety";
+      serviceId: string;
+      availability: "available" | "degraded" | "unavailable";
+      quarantineState: "clear" | "active";
+      fallbackTargetProfileId: string | null;
+      errorRate: number | null;
+      latencyMsP95: number | null;
+    }>;
   };
 };
 ```
@@ -280,7 +294,7 @@ type OperatorUnavailableControlResponse = {
 
 - `/state` is a read-only projection over `F-0004`; it must not become a writable patch surface.
 - `/timeline` and `/episodes` are read-only projections over `F-0003`; they must not redefine event or episode semantics outside the canonical runtime continuity boundary.
-- `/models` is a bounded projection over `F-0008`; it may expose baseline profile diagnostics but not richer `CF-010` ecology.
+- `/models` is a bounded projection over `F-0008` baseline diagnostics and, later, a bounded richer summary sourced from `F-0014`; it does not own the richer source state itself.
 - `/control/tick` is an operator transport into `F-0003`, not an alternate runtime engine.
 - `/control/freeze-development` is an explicit unavailable placeholder for the future `CF-016` control seam, not an early governor implementation.
 - `/health` remains owned by platform/runtime seams and is intentionally outside this dossier even though it sits in the same Hono namespace.
@@ -332,7 +346,7 @@ Tasks:
 - `T-F0013-02`
 
 ### Slice SL-F0013-02: Baseline model introspection boundary
-Delivers: bounded `GET /models` route over delivered `F-0008` diagnostics with explicit future-gap semantics for `CF-010`, plus the required realignment of delivered `F-0008` assumptions that currently treat `/models` as absent.
+Delivers: bounded `GET /models` route over delivered `F-0008` diagnostics with explicit future-gap semantics for `F-0014`, plus the required realignment of delivered `F-0008` assumptions that currently treat `/models` as absent.
 Covers: AC-F0013-04, AC-F0013-07
 Verification: `apps/core/test/platform/operator-models.integration.test.ts`, linked `change-proposal` / realignment for `F-0008`
 Exit criteria:
@@ -370,7 +384,7 @@ Tasks:
 
 - **T-F0013-01 (SL-F0013-01):** Define route DTOs, query schemas and owner mapping for `GET /state`, `GET /timeline` and `GET /episodes`. Covers: AC-F0013-01, AC-F0013-02, AC-F0013-03.
 - **T-F0013-02 (SL-F0013-01):** Add bounded read adapters for timeline and episode pagination plus state snapshot projection without raw table dumps. Covers: AC-F0013-02, AC-F0013-03, AC-F0013-07.
-- **T-F0013-03 (SL-F0013-02):** Define the bounded `GET /models` contract over `F-0008` diagnostics and explicit `CF-010` future-gap semantics. Covers: AC-F0013-04.
+- **T-F0013-03 (SL-F0013-02):** Define the bounded `GET /models` contract over `F-0008` diagnostics and explicit `F-0014` future-gap semantics. Covers: AC-F0013-04.
 - **T-F0013-04 (SL-F0013-02):** Realign delivered `F-0008` `/models`-absence assumption through an explicit linked change-proposal/update before enabling the new operator route. Covers: AC-F0013-04, AC-F0013-07.
 - **T-F0013-05 (SL-F0013-03):** Implement `POST /control/tick` request/response mapping, required `requestId` validation, forwarded operator provenance and request-id idempotency handling over the canonical runtime gate. Covers: AC-F0013-05.
 - **T-F0013-06 (SL-F0013-03):** Implement explicit unavailable semantics for `POST /control/freeze-development` before `CF-016`. Covers: AC-F0013-06.
@@ -384,7 +398,7 @@ Tasks:
 | AC-F0013-01 | `apps/core/test/platform/operator-api-boundary.contract.test.ts` → operator route family ownership and route registration `// Covers: AC-F0013-01` | done |
 | AC-F0013-02 | `apps/core/test/platform/operator-state.integration.test.ts` → bounded `GET /state` snapshot projection `// Covers: AC-F0013-02` | done |
 | AC-F0013-03 | `apps/core/test/platform/operator-history.integration.test.ts`, `packages/db/test/runtime-store.contract.test.ts` → `GET /timeline` / `GET /episodes` stable pagination, cursor semantics and db-boundary timestamp normalization `// Covers: AC-F0013-03` | done |
-| AC-F0013-04 | `apps/core/test/platform/operator-models.integration.test.ts` → bounded baseline model diagnostics and explicit `CF-010` future-gap contract `// Covers: AC-F0013-04` | done |
+| AC-F0013-04 | `apps/core/test/platform/operator-models.integration.test.ts` → bounded baseline model diagnostics and explicit `F-0014` future-gap / richer-summary contract `// Covers: AC-F0013-04` | done |
 | AC-F0013-05 | `apps/core/test/platform/operator-control.integration.test.ts` → `POST /control/tick` required-requestId validation, accepted/rejected mapping and request-id idempotency `// Covers: AC-F0013-05` | done |
 | AC-F0013-06 | `apps/core/test/platform/operator-governor-gating.contract.test.ts` → `POST /control/freeze-development` explicit unavailable contract before `CF-016` `// Covers: AC-F0013-06` | done |
 | AC-F0013-07 | `apps/core/test/platform/operator-api-boundary.contract.test.ts` → no foreign write authority and no `/health` ownership grab `// Covers: AC-F0013-07` | done |
@@ -461,3 +475,4 @@ Tasks:
 - **v1.1 (2026-03-25):** `spec-compact` shaped the operator API into implementation-grade route contracts: bounded DTOs, pagination/cursor rules, explicit control rejection mapping, operator provenance over the existing `system` trigger, and an explicit unavailable contract for pre-`CF-016` `freeze-development`.
 - **v1.2 (2026-03-25):** `plan-slice` translated the shaped operator boundary into delivery-ordered slices with explicit verification targets and made the required `F-0008` `/models` realignment a first-class planned task instead of a hidden follow-up.
 - **v1.3 (2026-03-25):** `implementation` delivered the bounded operator API end-to-end on the canonical Hono/runtime path: `GET /state`, `GET /timeline`, `GET /episodes`, `GET /models`, `POST /control/tick` and explicit `501` `POST /control/freeze-development` are now live, timeline/episode pagination uses explicit owner adapters, `F-0008` `/models` assumptions are realigned, and deployment-cell smoke now covers the public operator boundary.
+- **v1.4 (2026-03-25):** Realigned future `/models` owner references after `F-0014 spec-compact`: richer model ecology now points to `F-0014` as the source seam, while this dossier remains the owner only of the bounded operator projection over that source state.
