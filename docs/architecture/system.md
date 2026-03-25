@@ -554,6 +554,8 @@ interface SensorAdapter {
 - affect bounds;
 - continuity risk.
 
+Он владеет вычислением risk snapshots и bounded guardrail reactions, но не получает прямого права на policy execution или side writes в identity-bearing surfaces.
+
 #### 4.2.12 Development Governor
 
 Обрабатывает:
@@ -1048,6 +1050,8 @@ Singleton-таблица.
 - `development_freeze`
 - `alerts_json`
 - `created_at`
+
+Canonical owner этой surface — intake feature `F-0012`. Snapshot rows derive from committed runtime/state/narrative/executive evidence; any automatic reaction must route through canonical owners instead of back-writing foreign source tables.
 
 #### `action_log`
 
@@ -2056,6 +2060,7 @@ Homeostat должен иметь не только метрики, но и де
 | `rollback_frequency` | > 2/неделю | > 4/неделю | full developmental freeze + human review |
 
 Идея этих порогов проста: Полифония должна уметь быть не только умной, но и операционно вменяемой.
+`F-0012` intake fixes that early homeostat delivery must separate thresholds backed by already delivered canonical inputs from future signal families that depend on later seams such as expanded model health, governor policy state or lifecycle retention.
 
 ---
 
@@ -2231,7 +2236,7 @@ Homeostat должен иметь не только метрики, но и де
 | Context Builder and structured decision harness | `F-0009` | `done` | The bounded cognition harness remains the canonical owner and now runs through the delivered AI SDK-backed structured-generation boundary without grabbing narrative, executive or memory ownership. |
 | Executive center and bounded action layer | `F-0010` | `done` | The bounded executive/action seam is now delivered: validated decisions flow through one canonical executive boundary, append-only `action_log` audit exists, and first-wave bounded wrappers plus `ticks.action_id` continuity are implemented without new public API surface. |
 | Narrative and memetic cognition | `F-0011` | `done` | Narrative/memetic runtime delivery is now live: wake/bootstrap seeding, bounded candidate assembly, ordinary existing-unit updates, coalition/narrative/journal persistence and downstream read-model handoff are implemented, while durable promotion/compaction paths remain explicitly deferred to `CF-018`. |
-| Homeostat and operational guardrails | `CF-008` | `candidate` | Early safety reactions are described architecturally but not yet intaken. |
+| Homeostat and operational guardrails | `F-0012` | `proposed` | Early safety reactions now have an intaken owner; shaping must keep snapshot/alert generation separate from richer reporting, governor policy execution and lifecycle retention seams. |
 | Development governor and policy gates | `CF-016` | `candidate` | Minimal governor ownership is defined, but no delivered governor seam exists yet. |
 | Consolidation, event envelope and graceful shutdown | `CF-018` | `candidate` | Retention/compaction and graceful shutdown biography remain backlog-owned future work. |
 | Observability and reporting | `CF-015` | `candidate` | Baseline health exists, but dedicated reports, metrics, tracing and richer reactions are still deferred. |
