@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "created_at": "2026-03-25T19:44:24.150Z",
+  "feature_id": "F-0012",
+  "dossier": "docs/features/F-0012-homeostat-and-operational-guardrails.md",
+  "step": "implementation",
+  "dossier_status": "done",
+  "current_commit": "241fd1ac11fefb401e267367984632048de99099",
+  "verification_artifact": ".dossier/verification/F-0012/implementation-241fd1ac11fe.json",
+  "review_artifact": ".dossier/reviews/F-0012/implementation-241fd1ac11fe.json",
+  "review_fresh_for_commit": true,
+  "process_complete": true,
+  "blockers": [],
+  "next_step": "none"
+}
