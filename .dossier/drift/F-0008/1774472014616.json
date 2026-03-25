@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "created_at": "2026-03-25T20:53:34.613Z",
+  "feature_id": "F-0008",
+  "dossier": "docs/features/F-0008-baseline-model-router-and-organ-profiles.md",
+  "current_commit": "ef3e2b56168b0be78a4d5e1be98e9e06f0286c0e",
+  "baseline": "a7c881d7231bab8b362d74b07a1cfa8a77ae1464",
+  "executable_contract_changed": true,
+  "maturity_requires_audit": true,
+  "added_ac_ids": [],
+  "removed_ac_ids": [],
+  "changed_executable_sections": [
+    "2. Scope",
+    "3. Requirements & Acceptance Criteria (SSoT)",
+    "4. Non-functional requirements (NFR)",
+    "5. Design (compact)",
+    "9. Test plan & Coverage map"
+  ],
+  "frontmatter_changes": [],
+  "changed_files": [
+    ".dossier/drift/F-0008/1774471993153.json",
+    "docs/features/F-0008-baseline-model-router-and-organ-profiles.md"
+  ],
+  "code_follow_up_files": [],
+  "architecture_follow_up_files": [],
+  "requires_follow_up": true
+}
