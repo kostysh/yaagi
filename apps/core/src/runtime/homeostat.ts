@@ -76,6 +76,16 @@ export type PeriodicHomeostatWorker = {
   stop(): Promise<void>;
 };
 
+type PeriodicQueueBoss = {
+  start: () => Promise<unknown>;
+  createQueue: (...args: Parameters<PgBoss['createQueue']>) => Promise<unknown>;
+  schedule: (...args: Parameters<PgBoss['schedule']>) => Promise<unknown>;
+  work: (...args: Parameters<PgBoss['work']>) => Promise<unknown>;
+  offWork: (...args: Parameters<PgBoss['offWork']>) => Promise<unknown>;
+  unschedule: (...args: Parameters<PgBoss['unschedule']>) => Promise<unknown>;
+  stop: (...args: Parameters<PgBoss['stop']>) => Promise<unknown>;
+};
+
 type HomeostatServiceOptions = {
   now?: () => Date;
   createId?: () => string;
@@ -92,6 +102,10 @@ type HomeostatServiceOptions = {
     reactionRequestRefs: string[];
   }) => Promise<void>;
   enqueueReactionRequest: (request: HomeostatReactionRequest) => Promise<void>;
+};
+
+type PeriodicHomeostatWorkerOptions = {
+  createBoss?: () => PeriodicQueueBoss;
 };
 
 type Threshold = {
@@ -174,6 +188,34 @@ const buildIdempotencyKey = (input: {
   ].join('|');
 
 const unique = <T>(values: T[]): T[] => [...new Set(values)];
+
+const getExpectedReactionCount = (snapshot: Pick<HomeostatSnapshot, 'alerts'>): number =>
+  snapshot.alerts.reduce((total, alert) => total + alert.requestedActionKinds.length, 0);
+
+const getPublishedDedupeKeys = (input: {
+  latestSnapshot: HomeostatSnapshot | null;
+  createdAt: string;
+  dedupeWindowMs: number;
+}): Set<string> => {
+  const { latestSnapshot, createdAt, dedupeWindowMs } = input;
+  if (!latestSnapshot) {
+    return new Set<string>();
+  }
+
+  if (parseIsoDate(createdAt) - parseIsoDate(latestSnapshot.createdAt) > dedupeWindowMs) {
+    return new Set<string>();
+  }
+
+  const expectedReactionCount = getExpectedReactionCount(latestSnapshot);
+  if (
+    expectedReactionCount === 0 ||
+    latestSnapshot.reactionRequestRefs.length < expectedReactionCount
+  ) {
+    return new Set<string>();
+  }
+
+  return new Set(latestSnapshot.alerts.flatMap((alert) => alert.idempotencyKeys));
+};
 
 const buildReactionKinds = (
   signalFamily: HomeostatSignalFamily,
@@ -519,11 +561,11 @@ export function createHomeostatService(options: HomeostatServiceOptions): Homeos
     const evaluated = evaluateHomeostatSignals(context);
     const snapshotId = `homeostat-snapshot:${createId()}`;
     const latestSnapshot = await options.loadLatestSnapshot();
-    const dedupeKeys =
-      latestSnapshot &&
-      parseIsoDate(createdAt) - parseIsoDate(latestSnapshot.createdAt) <= dedupeWindowMs
-        ? new Set(latestSnapshot.alerts.flatMap((alert) => alert.idempotencyKeys))
-        : new Set<string>();
+    const dedupeKeys = getPublishedDedupeKeys({
+      latestSnapshot,
+      createdAt,
+      dedupeWindowMs,
+    });
 
     const reactions = evaluated.reactions
       .map((reaction) => ({
@@ -552,12 +594,9 @@ export function createHomeostatService(options: HomeostatServiceOptions): Homeos
     for (const reaction of reactionsToEnqueue) {
       await options.enqueueReactionRequest(reaction);
       enqueuedReactionRefs.push(reaction.reactionRequestId);
-    }
-
-    if (enqueuedReactionRefs.length > 0) {
       await options.updateReactionRequestRefs({
         snapshotId,
-        reactionRequestRefs: enqueuedReactionRefs,
+        reactionRequestRefs: [...enqueuedReactionRefs],
       });
     }
 
@@ -694,17 +733,31 @@ export const createDbBackedHomeostatService = (
 export const createPeriodicHomeostatWorker = (
   config: Pick<CoreRuntimeConfig, 'postgresUrl' | 'pgBossSchema'>,
   service: HomeostatService,
+  options: PeriodicHomeostatWorkerOptions = {},
 ): PeriodicHomeostatWorker => {
-  const boss = new PgBoss({
-    connectionString: config.postgresUrl,
-    schema: config.pgBossSchema,
-    migrate: true,
-    supervise: false,
-    schedule: true,
-    cronMonitorIntervalSeconds: 1,
-    cronWorkerIntervalSeconds: 1,
-  });
+  const boss =
+    options.createBoss?.() ??
+    new PgBoss({
+      connectionString: config.postgresUrl,
+      schema: config.pgBossSchema,
+      migrate: true,
+      supervise: false,
+      schedule: true,
+      cronMonitorIntervalSeconds: 1,
+      cronWorkerIntervalSeconds: 1,
+    });
   let started = false;
+
+  const teardownBoss = async (graceful: boolean): Promise<void> => {
+    await boss.offWork(HOMEOSTAT_PERIODIC_QUEUE).catch(() => {});
+    await boss
+      .unschedule(HOMEOSTAT_PERIODIC_QUEUE, HOMEOSTAT_PERIODIC_SCHEDULE_KEY)
+      .catch(() => {});
+    await boss
+      .stop(graceful ? { graceful: true, timeout: 1_000 } : { graceful: false })
+      .catch(() => {});
+    started = false;
+  };
 
   return {
     async start(): Promise<void> {
@@ -712,40 +765,36 @@ export const createPeriodicHomeostatWorker = (
         return;
       }
 
-      await boss.start();
-      await boss.createQueue(HOMEOSTAT_PERIODIC_QUEUE, {
-        policy: 'singleton',
-      });
-      await boss.schedule(HOMEOSTAT_PERIODIC_QUEUE, HOMEOSTAT_PERIODIC_CRON, null, {
-        key: HOMEOSTAT_PERIODIC_SCHEDULE_KEY,
-      });
-      await boss.work(
-        HOMEOSTAT_PERIODIC_QUEUE,
-        {
-          pollingIntervalSeconds: PERIODIC_POLLING_INTERVAL_SECONDS,
-        },
-        async () => {
-          const result = await service.evaluatePeriodic();
-          return {
-            snapshotId: result.snapshot.snapshotId,
-            reactionRequestRefs: result.snapshot.reactionRequestRefs,
-          };
-        },
-      );
-      started = true;
+      try {
+        await boss.start();
+        await boss.createQueue(HOMEOSTAT_PERIODIC_QUEUE, {
+          policy: 'singleton',
+        });
+        await boss.schedule(HOMEOSTAT_PERIODIC_QUEUE, HOMEOSTAT_PERIODIC_CRON, null, {
+          key: HOMEOSTAT_PERIODIC_SCHEDULE_KEY,
+        });
+        await boss.work(
+          HOMEOSTAT_PERIODIC_QUEUE,
+          {
+            pollingIntervalSeconds: PERIODIC_POLLING_INTERVAL_SECONDS,
+          },
+          async () => {
+            const result = await service.evaluatePeriodic();
+            return {
+              snapshotId: result.snapshot.snapshotId,
+              reactionRequestRefs: result.snapshot.reactionRequestRefs,
+            };
+          },
+        );
+        started = true;
+      } catch (error) {
+        await teardownBoss(false);
+        throw error;
+      }
     },
 
     async stop(): Promise<void> {
-      if (!started) {
-        return;
-      }
-
-      await boss.offWork(HOMEOSTAT_PERIODIC_QUEUE).catch(() => {});
-      await boss
-        .unschedule(HOMEOSTAT_PERIODIC_QUEUE, HOMEOSTAT_PERIODIC_SCHEDULE_KEY)
-        .catch(() => {});
-      await boss.stop({ graceful: true, timeout: 1_000 }).catch(() => {});
-      started = false;
+      await teardownBoss(true);
     },
   };
 };

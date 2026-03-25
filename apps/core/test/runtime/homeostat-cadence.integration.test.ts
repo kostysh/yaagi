@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { HOMEOSTAT_CADENCE_KIND } from '@yaagi/contracts/runtime';
-import { createHomeostatService } from '../../src/runtime/index.ts';
+import {
+  createHomeostatService,
+  createPeriodicHomeostatWorker,
+  type HomeostatService,
+} from '../../src/runtime/index.ts';
 import { createBaseHomeostatContext } from '../../testing/homeostat-fixture.ts';
 
 void test('AC-F0012-04 runs the same homeostat evaluator on completed-tick and periodic cadence paths', async () => {
@@ -81,4 +85,82 @@ void test('AC-F0012-07 periodic homeostat evaluation does not require an active 
 
   assert.equal(result.snapshot.tickId, null);
   assert.equal(persisted, 1);
+});
+
+void test('AC-F0012-04 tears down a partially started periodic worker when scheduler boot fails', async () => {
+  const calls: string[] = [];
+  const service: HomeostatService = {
+    evaluateTickComplete: () => Promise.reject(new Error('not used')),
+    evaluatePeriodic: () =>
+      Promise.resolve({
+        snapshot: {
+          snapshotId: 'snapshot-homeostat-worker',
+          cadenceKind: HOMEOSTAT_CADENCE_KIND.PERIODIC,
+          tickId: null,
+          overallStability: 0.8,
+          signalScores: [],
+          alerts: [],
+          reactionRequestRefs: [],
+          developmentFreeze: false,
+          createdAt: '2026-03-25T12:40:00.000Z',
+        },
+        reactions: [],
+        skippedIdempotencyKeys: [],
+      }),
+  };
+  const worker = createPeriodicHomeostatWorker(
+    {
+      postgresUrl: 'postgres://unused',
+      pgBossSchema: 'pgboss',
+    },
+    service,
+    {
+      createBoss: () => ({
+        start: () => {
+          calls.push('start');
+          return Promise.resolve();
+        },
+        createQueue: () => {
+          calls.push('createQueue');
+          return Promise.resolve();
+        },
+        schedule: () => {
+          calls.push('schedule');
+          return Promise.resolve();
+        },
+        work: () => {
+          calls.push('work');
+          return Promise.reject(new Error('worker registration failed'));
+        },
+        offWork: () => {
+          calls.push('offWork');
+          return Promise.resolve();
+        },
+        unschedule: () => {
+          calls.push('unschedule');
+          return Promise.resolve();
+        },
+        stop: () => {
+          calls.push('stop');
+          return Promise.resolve();
+        },
+      }),
+    },
+  );
+
+  await assert.rejects(() => worker.start(), /worker registration failed/);
+  await worker.stop();
+
+  assert.deepEqual(calls, [
+    'start',
+    'createQueue',
+    'schedule',
+    'work',
+    'offWork',
+    'unschedule',
+    'stop',
+    'offWork',
+    'unschedule',
+    'stop',
+  ]);
 });
