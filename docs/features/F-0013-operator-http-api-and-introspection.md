@@ -74,7 +74,7 @@ links:
 - **AC-F0013-02:** `GET /state` returns a bounded read-only representation derived from the canonical `F-0004` subject-state snapshot contract, including `subjectStateSchemaVersion`, bounded agent-state fields and bounded goal/belief/entity/relationship slices; it must not expose identity-bearing tables as raw dumps or create any mutation path.
 - **AC-F0013-03:** `GET /timeline` and `GET /episodes` expose bounded, stable-order read-only list contracts over `F-0003` continuity surfaces with explicit `limit` and cursor semantics, stable ordering keys, and machine-readable truncation/page metadata; they must not provide unbounded history dumps or bypass canonical event/episode contracts.
 - **AC-F0013-04:** `GET /models` consumes only canonical baseline routing/profile diagnostics already owned by `F-0008`; richer model ecology and registry health remain future-owned by `CF-010`, and those absent capabilities must surface as explicit unavailable/degraded fields rather than fabricated data.
-- **AC-F0013-05:** `POST /control/tick` routes through the canonical `F-0003` runtime request gate with explicit HTTP mapping for `accepted`, `boot_inactive`, `lease_busy` and `unsupported_tick_kind`; repeated `requestId` submissions remain idempotent, and the HTTP layer preserves operator provenance without introducing a new tick trigger taxonomy or direct state writes.
+- **AC-F0013-05:** `POST /control/tick` routes through the canonical `F-0003` runtime request gate with a required caller-supplied `requestId`, explicit HTTP mapping for `accepted`, `boot_inactive`, `lease_busy` and `unsupported_tick_kind`, and deterministic idempotent replay for repeated `requestId` submissions; the HTTP layer preserves operator provenance without introducing a new tick trigger taxonomy or direct state writes.
 - **AC-F0013-06:** Governance-sensitive routes such as `POST /control/freeze-development` remain explicitly future-owned by `CF-016`: before minimal governor surfaces exist, the route returns a bounded unavailable contract rather than silently mutating governor state or pretending the capability exists.
 - **AC-F0013-07:** `F-0013` preserves ownership separation at the HTTP boundary: it does not become a convenience writer for subject-state, narrative/memetic storage, `action_log`, development ledger, lifecycle evidence, model-registry internals or baseline `GET /health`.
 - **AC-F0013-08:** Route wiring stays on the canonical `AI SDK + Hono + core monolith` runtime path; if implementation materially changes public route wiring or runtime startup behavior, the deployment-cell smoke path becomes mandatory for closure.
@@ -200,7 +200,7 @@ type OperatorModelsResponse = {
 
 ```ts
 type OperatorTickControlRequest = {
-  requestId?: string;
+  requestId: string;
   kind:
     | "reactive"
     | "deliberative"
@@ -233,6 +233,7 @@ type OperatorTickRejected = {
 
   - HTTP mapping:
     - `202` for accepted and request-id dedupe replay
+    - `400` for schema-invalid payloads, including missing `requestId`
     - `409` for `lease_busy`
     - `422` for `unsupported_tick_kind`
     - `503` for `boot_inactive`
@@ -287,6 +288,7 @@ type OperatorUnavailableControlResponse = {
 ### 5.5 Edge cases and failure modes
 
 - Invalid or oversized cursor/query-limit values must fail with bounded request errors rather than silently widening the read surface.
+- `POST /control/tick` without `requestId` must fail request validation rather than letting the server invent ad hoc idempotency semantics.
 - Repeated `POST /control/tick` submissions with the same `requestId` must remain idempotent and return the canonical accepted response shape instead of creating duplicate ticks.
 - `GET /models` may have baseline diagnostics available while richer registry health remains unavailable; the route must represent that split explicitly in-band.
 - `POST /control/tick` may legitimately reject `deliberative`, `contemplative`, `consolidation` or `developmental` kinds with `unsupported_tick_kind` until neighbouring seams deliver support; the API must not hide or remap that refusal.
@@ -309,7 +311,7 @@ type OperatorUnavailableControlResponse = {
 
 - `F-0013` is the canonical owner for operator-facing HTTP introspection and bounded control routes beyond phase-0 `GET /health`.
 - `GET /state`, `GET /timeline`, `GET /episodes` and `GET /models` have explicit bounded DTO contracts, owner mappings and pagination/degradation semantics.
-- `POST /control/tick` is shaped as an owner-routed handoff through `F-0003` with idempotent `requestId` behavior and explicit rejection mapping.
+- `POST /control/tick` is shaped as an owner-routed handoff through `F-0003` with required `requestId`, idempotent replay behavior and explicit rejection mapping.
 - Operator tick control does not extend the canonical runtime trigger taxonomy; operator provenance is preserved through forwarded payload/metadata instead.
 - `POST /control/freeze-development` is explicitly unavailable and future-owned by `CF-016`, not silently absent or prematurely implemented.
 - The feature does not seize ownership of baseline health, subject-state writes, narrative/memetic writes, model-registry internals, development ledger or lifecycle evidence.
@@ -354,7 +356,7 @@ Exit criteria:
 - **T-F0013-01:** Define route DTOs, query schemas and owner mapping for `GET /state`, `GET /timeline` and `GET /episodes`. Covers: AC-F0013-01, AC-F0013-02, AC-F0013-03.
 - **T-F0013-02:** Add bounded read adapters for timeline and episode pagination plus state snapshot projection without raw table dumps. Covers: AC-F0013-02, AC-F0013-03, AC-F0013-07.
 - **T-F0013-03:** Define the bounded `GET /models` contract over `F-0008` diagnostics and explicit `CF-010` future-gap semantics. Covers: AC-F0013-04.
-- **T-F0013-04:** Implement `POST /control/tick` request/response mapping, forwarded operator provenance and request-id idempotency handling over the canonical runtime gate. Covers: AC-F0013-05.
+- **T-F0013-04:** Implement `POST /control/tick` request/response mapping, required `requestId` validation, forwarded operator provenance and request-id idempotency handling over the canonical runtime gate. Covers: AC-F0013-05.
 - **T-F0013-05:** Implement explicit unavailable semantics for `POST /control/freeze-development` before `CF-016`. Covers: AC-F0013-06.
 - **T-F0013-06:** Add contract/integration coverage for bounded introspection, control rejection mapping and no-foreign-write boundaries. Covers: AC-F0013-01, AC-F0013-02, AC-F0013-03, AC-F0013-04, AC-F0013-05, AC-F0013-06, AC-F0013-07.
 - **T-F0013-07:** Align public route wiring and deployment-cell smoke if implementation materially changes startup/runtime public behavior. Covers: AC-F0013-08.
@@ -367,7 +369,7 @@ Exit criteria:
 | AC-F0013-02 | `apps/core/test/platform/operator-state.integration.test.ts` → bounded `GET /state` snapshot projection `// Covers: AC-F0013-02` | planned |
 | AC-F0013-03 | `apps/core/test/platform/operator-history.integration.test.ts` → `GET /timeline` / `GET /episodes` stable pagination and cursor semantics `// Covers: AC-F0013-03` | planned |
 | AC-F0013-04 | `apps/core/test/platform/operator-models.integration.test.ts` → bounded baseline model diagnostics and explicit `CF-010` future-gap contract `// Covers: AC-F0013-04` | planned |
-| AC-F0013-05 | `apps/core/test/platform/operator-control.integration.test.ts` → `POST /control/tick` accepted/rejected mapping plus request-id idempotency `// Covers: AC-F0013-05` | planned |
+| AC-F0013-05 | `apps/core/test/platform/operator-control.integration.test.ts` → `POST /control/tick` required-requestId validation, accepted/rejected mapping and request-id idempotency `// Covers: AC-F0013-05` | planned |
 | AC-F0013-06 | `apps/core/test/platform/operator-governor-gating.contract.test.ts` → `POST /control/freeze-development` explicit unavailable contract before `CF-016` `// Covers: AC-F0013-06` | planned |
 | AC-F0013-07 | `apps/core/test/platform/operator-api-boundary.contract.test.ts` → no foreign write authority and no `/health` ownership grab `// Covers: AC-F0013-07` | planned |
 | AC-F0013-08 | `infra/docker/deployment-cell.smoke.ts` → operator boundary smoke when public route wiring materially changes `// Covers: AC-F0013-08` | planned |
