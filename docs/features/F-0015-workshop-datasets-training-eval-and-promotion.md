@@ -1,14 +1,14 @@
 ---
 id: F-0015
 title: Контур workshop для датасетов, обучения, оценки и promotion
-status: shaped
+status: planned
 coverage_gate: deferred
 owners: ["@codex"]
 area: workshop
 depends_on: [F-0002, F-0003, F-0014]
 impacts: [runtime, db, models, workshop, artifacts, observability]
 created: 2026-03-25
-updated: 2026-03-25
+updated: 2026-03-26
 links:
   issue: ""
   pr: []
@@ -276,6 +276,13 @@ type WorkshopPromotionPackage = {
 
 ## 7. Slicing plan
 
+Implementation order is strict: `SL-F0015-01 -> SL-F0015-02 -> SL-F0015-03 -> SL-F0015-04`.
+
+Planning defaults fixed by this step:
+- First implementation wave must make the lifecycle substrate generic for both `shared_adapter` and `specialist_candidate`, but only shared-adapter paths are expected to reach live handoff in the first delivery wave.
+- Specialist candidates reuse the same workshop stores/contracts immediately, while specialist-specific rollout fractions, retirement and traffic policy remain deferred to `CF-019`.
+- No slice in this dossier may introduce direct writes to active profile pointers or richer `model_registry` rows; every such boundary stays external by design.
+
 ### Slice SL-F0015-01: Dataset construction and provenance boundary
 Delivers: canonical dataset manifests, provenance/redaction/split discipline and one explicit dataset-build contract over the delivered episode/eval sources.
 Covers: AC-F0015-01, AC-F0015-02, AC-F0015-03, AC-F0015-09
@@ -284,6 +291,7 @@ Exit criteria:
 - Workshop datasets are materialized through one canonical contract/store path.
 - Provenance and redaction evidence are durable and machine-readable.
 - Raw ad hoc exports no longer masquerade as canonical train-set input.
+- One canonical dataset adapter/store boundary exists for later training/eval slices; no direct runtime helper writes remain.
 
 ### Slice SL-F0015-02: Training and eval lifecycle
 Delivers: canonical training-run and eval-run lifecycle for shared adapters and future specialist candidates without taking ownership of specialist rollout policy.
@@ -293,6 +301,7 @@ Exit criteria:
 - Training and eval runs are durable, linked and auditable.
 - Artifact URIs and metrics stay attached to the run lineage.
 - Workshop infrastructure can serve shared-adapter and future specialist candidates without claiming specialist lifecycle ownership.
+- Candidate registration preconditions are explicit: no candidate row may appear without linked dataset, training and latest eval evidence.
 
 ### Slice SL-F0015-03: Candidate lifecycle and bounded promotion handoff
 Delivers: explicit `model_candidates` lifecycle surface, `candidate_stage_events` audit trail and bounded promotion-package assembly with predecessor, rollback target and required eval evidence.
@@ -304,6 +313,7 @@ Exit criteria:
 - Workshop can prepare activation-ready evidence without mutating active routing or richer registry source rows directly.
 - Ownership boundaries to `F-0008`, `F-0014`, `CF-016` and `CF-019` remain explicit in code and contract coverage.
 - The `F-0014` workshop-owner realignment introduced at intake is confirmed not to require hidden runtime/test changes; if deeper coupling is discovered, it is reopened explicitly through this dossier rather than left as drift.
+- Shared-adapter candidates may produce real handoff-ready packages in this dossier; specialist candidates must stop at the same lifecycle substrate without inventing specialist-only rollout semantics.
 
 ### Slice SL-F0015-04: Runtime closure and deployment alignment
 Delivers: canonical workshop job family wiring, artifact-volume closure and conditional smoke coverage when workshop wiring materially affects runtime/deployment posture.
@@ -313,6 +323,7 @@ Exit criteria:
 - Workshop jobs run on the canonical PostgreSQL/`pg-boss` substrate and artifact volumes.
 - Worker/runtime failure modes stay bounded and explicit.
 - Deployment-cell smoke covers workshop wiring if the live container/runtime path changes materially.
+- No new public HTTP route family is introduced; only internal workshop wiring and bounded runtime adapters are closed here.
 
 ## 8. Task list
 
@@ -325,6 +336,7 @@ Exit criteria:
 - **T-F0015-09 (SL-F0015-03):** Prove workshop handoff does not seize ownership from `F-0008`, `F-0014`, `CF-016` or `CF-019`, and validate the `F-0014` owner-boundary realignment introduced by `feature-intake`. Covers: AC-F0015-07.
 - **T-F0015-07 (SL-F0015-04):** Wire workshop jobs onto the canonical `pg-boss`/artifact-volume path and bound failure behavior. Covers: AC-F0015-02, AC-F0015-08.
 - **T-F0015-08 (SL-F0015-04):** Add final runtime/smoke verification for workshop delivery when live deployment posture changes and preserve dataset hygiene on the live path. Covers: AC-F0015-08, AC-F0015-09.
+- **T-F0015-10 (SL-F0015-04):** Keep the first implementation wave shared-adapter-first: specialist candidates must reuse the same lifecycle substrate without adding specialist-specific rollout or retirement logic. Covers: AC-F0015-05, AC-F0015-07.
 
 ## 9. Test plan & Coverage map
 
@@ -383,10 +395,11 @@ Exit criteria:
   - `packages/db/test/workshop/`
 - Verification:
   - `node scripts/index-refresh.mjs`
+  - `node scripts/contract-drift-audit.mjs --dossier docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md --base HEAD~1`
   - `node scripts/lint-dossiers.mjs`
   - `node scripts/coverage-audit.mjs --dossier docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md --orphans-scope=dossier`
   - `pnpm debt:audit:changed`
-  - `node scripts/dossier-verify.mjs --dossier docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md --step spec-compact`
+  - `node scripts/dossier-verify.mjs --dossier docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md --step plan-slice`
 - Issue: none
 - PRs: none
 - Process artifacts:
@@ -398,3 +411,4 @@ Exit criteria:
 
 - **v1.0 (2026-03-25):** Initial dossier created from `CF-011`; intake fixes one canonical owner for workshop datasets, training, eval, candidate registration and bounded promotion/rollback handoff while keeping richer model-registry ownership with `F-0014`, operator publication with `F-0013`, governance approval with `CF-016`, specialist lifecycle with `CF-019` and body/code evolution with `CF-012`.
 - **v1.1 (2026-03-26):** `spec-compact`: fixed the full staged candidate lifecycle as canonical workshop-owned semantics, introduced explicit `model_candidates` and `candidate_stage_events` source surfaces, made `promotion-package` a bounded projection instead of a second source of truth, and clarified that `CF-016`, `F-0008`, `F-0014` and `CF-019` execute approval/activation overlays rather than owning workshop lifecycle storage.
+- **v1.2 (2026-03-26):** `plan-slice`: moved the dossier to `planned`, fixed strict delivery order `dataset -> training/eval -> candidate lifecycle -> runtime closure`, made the first implementation wave shared-adapter-first while preserving a generic specialist-capable lifecycle substrate, and turned the slices/tasks into implementation-ready closure criteria without reopening ownership boundaries.

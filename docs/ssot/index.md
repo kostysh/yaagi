@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-03-25T23:04:56.140Z_
+_Last sync: 2026-03-25T23:10:06.162Z_
 
 ## Features
 
@@ -24,7 +24,7 @@ _Last sync: 2026-03-25T23:04:56.140Z_
 | F-0012 | Гомеостат и операционные guardrails | done | strict | governance | F-0003, F-0004, F-0010, F-0011 | runtime,db,governance,safety,observability,jobs | `../features/F-0012-homeostat-and-operational-guardrails.md` |
 | F-0013 | HTTP API управления и интроспекции | done | strict | api | F-0001, F-0003, F-0004, F-0005, F-0008 | runtime,api,state,timeline,observability,models,governance | `../features/F-0013-operator-http-api-and-introspection.md` |
 | F-0014 | Расширенная модельная экология и здоровье реестра | done | strict | models | F-0002, F-0008, F-0013 | runtime,db,models,observability,api | `../features/F-0014-expanded-model-ecology-and-registry-health.md` |
-| F-0015 | Контур workshop для датасетов, обучения, оценки и promotion | shaped | deferred | workshop | F-0002, F-0003, F-0014 | runtime,db,models,workshop,artifacts,observability | `../features/F-0015-workshop-datasets-training-eval-and-promotion.md` |
+| F-0015 | Контур workshop для датасетов, обучения, оценки и promotion | planned | deferred | workshop | F-0002, F-0003, F-0014 | runtime,db,models,workshop,artifacts,observability | `../features/F-0015-workshop-datasets-training-eval-and-promotion.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
