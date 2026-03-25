@@ -23,7 +23,7 @@ const smokeLifecycleMetrics = {
   telegramFamilyTeardowns: 0,
   runtimeResets: 0,
 };
-const expectedRuntimeResets = 10;
+const expectedRuntimeResets = 11;
 
 function coreBaseUrl(port = defaultCoreHostPort): string {
   return `http://127.0.0.1:${port}`;
@@ -694,6 +694,66 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
           ),
           '3',
         );
+      },
+    );
+
+    await prepareFreshRuntimeScenario();
+    await t.test(
+      'AC-F0015-02 wires canonical workshop queues and artifact volumes in the deployment cell without opening a new public route family',
+      async () => {
+        const healthResponse = await waitForHttp(coreHealthUrl());
+        assert.equal(healthResponse.status, 200);
+
+        const queueNames = await queryPostgres(
+          "select string_agg(name, ',' order by name) from pgboss.queue where name like 'workshop.%';",
+        );
+        assert.equal(
+          queueNames,
+          [
+            'workshop.candidate-register',
+            'workshop.candidate-transition',
+            'workshop.dataset-build',
+            'workshop.eval-run',
+            'workshop.promotion-package',
+            'workshop.training-run',
+          ].join(','),
+        );
+
+        const materializationPayload = JSON.parse(
+          await execCoreScript(`
+            import { access } from 'node:fs/promises';
+
+            const canAccess = async (targetPath) => {
+              try {
+                await access(targetPath);
+                return true;
+              } catch {
+                return false;
+              }
+            };
+
+            console.log(
+              JSON.stringify({
+                modelsAdapters: await canAccess('/models/adapters/.gitkeep'),
+                modelsSpecialists: await canAccess('/models/specialists/.gitkeep'),
+                dataReports: await canAccess('/data/reports/.gitkeep'),
+                dataDatasets: await canAccess('/data/datasets/.gitkeep'),
+              }),
+            );
+          `),
+        ) as {
+          modelsAdapters: boolean;
+          modelsSpecialists: boolean;
+          dataReports: boolean;
+          dataDatasets: boolean;
+        };
+
+        assert.deepEqual(materializationPayload, {
+          modelsAdapters: true,
+          modelsSpecialists: true,
+          dataReports: true,
+          dataDatasets: true,
+        });
       },
     );
 

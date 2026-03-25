@@ -10,7 +10,12 @@ export {
   type RuntimeActionLogRow,
   type RuntimeActionLogStore,
 } from './action-log.ts';
-export { PgBoss, createRuntimeJobEnqueuer, type RuntimeJobEnqueuer } from './jobs.ts';
+export {
+  PgBoss,
+  createRuntimeJobEnqueuer,
+  type RuntimeJobEnqueuer,
+  type RuntimeJobHandle,
+} from './jobs.ts';
 export {
   createHomeostatStore,
   type HomeostatDbExecutor,
@@ -69,6 +74,21 @@ export {
   type ExpandedModelProfileHealthInput,
   type ModelEcologyDbExecutor,
 } from './model-ecology.ts';
+export {
+  createWorkshopStore,
+  type PersistWorkshopDatasetInput,
+  type PersistWorkshopEvalRunInput,
+  type PersistWorkshopTrainingRunInput,
+  type RecordWorkshopCandidateStageTransitionInput,
+  type RegisterWorkshopCandidateInput,
+  type WorkshopCandidateStageEventRow,
+  type WorkshopDatasetRow,
+  type WorkshopDbExecutor,
+  type WorkshopEvalRunRow,
+  type WorkshopModelCandidateRow,
+  type WorkshopStore,
+  type WorkshopTrainingRunRow,
+} from './workshop.ts';
 export {
   BASELINE_MODEL_PROFILE_ROLE,
   createRuntimeModelProfileStore,

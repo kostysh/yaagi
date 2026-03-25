@@ -30,6 +30,10 @@
     "./models": {
       "types": "./src/models.ts",
       "default": "./src/models.ts"
+    },
+    "./workshop": {
+      "types": "./src/workshop.ts",
+      "default": "./src/workshop.ts"
     }
   },
   "dependencies": {

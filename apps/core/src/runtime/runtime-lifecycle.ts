@@ -76,6 +76,11 @@ import {
   type PeriodicHomeostatWorker,
 } from './homeostat.ts';
 import { createExpandedModelEcologyService } from './model-ecology.ts';
+import {
+  createDbBackedWorkshopService,
+  createWorkshopWorker,
+  type WorkshopWorker,
+} from '../workshop/index.ts';
 
 type RuntimeLifecycle = {
   start(): Promise<void>;
@@ -102,6 +107,19 @@ type RuntimeLifecycle = {
   }): Promise<BaselineModelProfileDiagnostic[]>;
   getRicherModelRegistryHealthSummary(): Promise<OperatorRicherRegistryHealthSummary>;
   getModelOrganHealthReportInput(): Promise<ModelOrganHealthReportInput>;
+};
+
+export const startBoundedWorkshopWorker = async (
+  worker: WorkshopWorker,
+  logError: (message: string, error: unknown) => void = console.error,
+): Promise<boolean> => {
+  try {
+    await worker.start();
+    return true;
+  } catch (error) {
+    logError('workshop worker failed to start; continuing in bounded degraded mode', error);
+    return false;
+  }
 };
 
 export const buildPhase0SubjectStateDelta = (input: FinishTickInput): SubjectStateDelta => {
@@ -1014,6 +1032,8 @@ export function createPhase0RuntimeLifecycle(
     config,
     homeostatService,
   );
+  const workshopService = createDbBackedWorkshopService(config);
+  const workshopWorker: WorkshopWorker = createWorkshopWorker(config, workshopService);
   const fastModelHealthProbe = createFastModelHealthProbe(config);
   const resolveBaselineHealth = async (): Promise<
     Record<'reflex' | 'deliberation' | 'reflection', ModelHealthSummary>
@@ -1310,6 +1330,7 @@ export function createPhase0RuntimeLifecycle(
         }
 
         await expandedModelEcology.syncRicherSourceDiagnostics();
+        await startBoundedWorkshopWorker(workshopWorker);
         await periodicHomeostatWorker.start();
 
         await perceptionController.emitSystemSignal({
@@ -1324,6 +1345,7 @@ export function createPhase0RuntimeLifecycle(
 
         started = true;
       } catch (error) {
+        await workshopWorker.stop().catch(() => {});
         await periodicHomeostatWorker.stop().catch(() => {});
         await perceptionController.stop().catch(() => {});
         if (tickRuntime) {
@@ -1335,6 +1357,7 @@ export function createPhase0RuntimeLifecycle(
 
     async stop(): Promise<void> {
       started = false;
+      await workshopWorker.stop().catch(() => {});
       await periodicHomeostatWorker.stop().catch(() => {});
       await perceptionController.stop();
       if (tickRuntime) {

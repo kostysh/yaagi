@@ -1,8 +1,8 @@
 ---
 id: F-0015
 title: Контур workshop для датасетов, обучения, оценки и promotion
-status: planned
-coverage_gate: deferred
+status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: workshop
 depends_on: [F-0002, F-0003, F-0014]
@@ -342,15 +342,15 @@ Exit criteria:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0015-01 | `packages/db/test/workshop/datasets-store.integration.test.ts` → canonical workshop source surfaces and no shadow lifecycle helpers `// Covers: AC-F0015-01` | planned |
-| AC-F0015-02 | `packages/contracts/test/workshop/job-contracts.contract.test.ts` → canonical core↔workshop job payloads on PostgreSQL/`pg-boss` substrate `// Covers: AC-F0015-02` | planned |
-| AC-F0015-03 | `packages/contracts/test/workshop/dataset-build.contract.test.ts`, `packages/db/test/workshop/datasets-store.integration.test.ts` → provenance, redaction and split manifests `// Covers: AC-F0015-03` | planned |
-| AC-F0015-04 | `packages/db/test/workshop/training-runs.integration.test.ts`, `apps/core/test/workshop/eval-pipeline.integration.test.ts` → durable training/eval lineage and candidate evidence `// Covers: AC-F0015-04` | planned |
-| AC-F0015-05 | `apps/core/test/workshop/candidate-lifecycle.contract.test.ts` → full staged lifecycle semantics and external-gate transition requirements `// Covers: AC-F0015-05` | planned |
-| AC-F0015-06 | `apps/core/test/workshop/promotion-package.contract.test.ts` → predecessor, rollback target, required eval evidence and DTO-over-lifecycle semantics in bounded promotion handoff `// Covers: AC-F0015-06` | planned |
-| AC-F0015-07 | `apps/core/test/workshop/ownership-boundary.integration.test.ts` → workshop does not seize `F-0008` / `F-0014` / `CF-016` / `CF-019` ownership `// Covers: AC-F0015-07` | planned |
-| AC-F0015-08 | `packages/db/test/workshop/artifact-lineage.integration.test.ts`, `apps/core/test/workshop/workshop-runtime.integration.test.ts` → canonical artifact URI and lifecycle-event lineage with no scattered hidden state `// Covers: AC-F0015-08` | planned |
-| AC-F0015-09 | `packages/contracts/test/workshop/dataset-build.contract.test.ts`, `infra/docker/deployment-cell.smoke.ts` → secret-redaction guardrails and bounded deployment-cell workshop wiring `// Covers: AC-F0015-09` | planned |
+| AC-F0015-01 | `packages/db/test/workshop/datasets-store.integration.test.ts` → canonical workshop source surfaces and no shadow lifecycle helpers `// Covers: AC-F0015-01` | done |
+| AC-F0015-02 | `packages/contracts/test/workshop/job-contracts.contract.test.ts`, `apps/core/test/workshop/workshop-runtime.integration.test.ts` → canonical core↔workshop job payloads and queue-family wiring on PostgreSQL/`pg-boss` `// Covers: AC-F0015-02` | done |
+| AC-F0015-03 | `packages/contracts/test/workshop/dataset-build.contract.test.ts`, `packages/db/test/workshop/datasets-store.integration.test.ts` → provenance, reviewed redaction and split manifests `// Covers: AC-F0015-03` | done |
+| AC-F0015-04 | `packages/db/test/workshop/training-runs.integration.test.ts`, `apps/core/test/workshop/eval-pipeline.integration.test.ts` → durable training/eval lineage and candidate evidence `// Covers: AC-F0015-04` | done |
+| AC-F0015-05 | `apps/core/test/workshop/candidate-lifecycle.contract.test.ts` → full staged lifecycle semantics and external-gate transition requirements `// Covers: AC-F0015-05` | done |
+| AC-F0015-06 | `apps/core/test/workshop/promotion-package.contract.test.ts` → predecessor, rollback target, required eval evidence and DTO-over-lifecycle semantics in bounded promotion handoff `// Covers: AC-F0015-06` | done |
+| AC-F0015-07 | `apps/core/test/workshop/ownership-boundary.integration.test.ts` → workshop does not seize `F-0008` / `F-0014` / `CF-016` / `CF-019` ownership `// Covers: AC-F0015-07` | done |
+| AC-F0015-08 | `packages/db/test/workshop/artifact-lineage.integration.test.ts`, `apps/core/test/workshop/workshop-runtime.integration.test.ts` → canonical artifact URI and lifecycle-event lineage plus bounded startup degradation with no scattered hidden state `// Covers: AC-F0015-08` | done |
+| AC-F0015-09 | `packages/contracts/test/workshop/dataset-build.contract.test.ts`, `infra/docker/deployment-cell.smoke.ts` → secret-redaction guardrails and bounded deployment-cell workshop wiring `// Covers: AC-F0015-09` | done |
 
 ## 10. Decision log (ADR blocks)
 
@@ -383,23 +383,42 @@ Exit criteria:
 - Status progression: `proposed -> shaped -> planned -> done`
 - Candidate source: `CF-011`
 - Delivered prerequisites: `F-0002`, `F-0003`, `F-0014`
-- Planned code:
-  - `apps/core/src/runtime/`
-  - `apps/core/src/workshop/`
-  - `apps/core/test/workshop/`
-  - `infra/docker/`
-  - `infra/migrations/`
-  - `packages/contracts/src/`
-  - `packages/contracts/test/workshop/`
-  - `packages/db/src/`
-  - `packages/db/test/workshop/`
+- Delivered code:
+  - `apps/core/src/runtime/index.ts`
+  - `apps/core/src/runtime/runtime-lifecycle.ts`
+  - `apps/core/src/workshop/index.ts`
+  - `apps/core/src/workshop/service.ts`
+  - `apps/core/src/workshop/worker.ts`
+  - `apps/core/test/workshop/candidate-lifecycle.contract.test.ts`
+  - `apps/core/test/workshop/eval-pipeline.integration.test.ts`
+  - `apps/core/test/workshop/ownership-boundary.integration.test.ts`
+  - `apps/core/test/workshop/promotion-package.contract.test.ts`
+  - `apps/core/test/workshop/workshop-runtime.integration.test.ts`
+  - `apps/core/testing/workshop-fixture.ts`
+  - `infra/docker/deployment-cell.smoke.ts`
+  - `infra/migrations/010_workshop_pipeline.sql`
+  - `packages/contracts/package.json`
+  - `packages/contracts/src/workshop.ts`
+  - `packages/contracts/test/workshop/dataset-build.contract.test.ts`
+  - `packages/contracts/test/workshop/job-contracts.contract.test.ts`
+  - `packages/db/src/index.ts`
+  - `packages/db/src/workshop.ts`
+  - `packages/db/test/workshop/artifact-lineage.integration.test.ts`
+  - `packages/db/test/workshop/datasets-store.integration.test.ts`
+  - `packages/db/test/workshop/training-runs.integration.test.ts`
+  - `packages/db/testing/workshop-db-harness.ts`
 - Verification:
+  - `pnpm format`
+  - `pnpm typecheck`
+  - `pnpm lint`
+  - `pnpm test`
+  - `pnpm smoke:cell`
+  - `pnpm debt:audit:changed`
   - `node scripts/index-refresh.mjs`
-  - `node scripts/contract-drift-audit.mjs --dossier docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md --base HEAD~1`
   - `node scripts/lint-dossiers.mjs`
   - `node scripts/coverage-audit.mjs --dossier docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md --orphans-scope=dossier`
-  - `pnpm debt:audit:changed`
-  - `node scripts/dossier-verify.mjs --dossier docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md --step plan-slice`
+  - `node scripts/contract-drift-audit.mjs --dossier docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md --base HEAD~1`
+  - `node scripts/dossier-verify.mjs --dossier docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md --step implementation`
 - Issue: none
 - PRs: none
 - Process artifacts:
@@ -412,3 +431,4 @@ Exit criteria:
 - **v1.0 (2026-03-25):** Initial dossier created from `CF-011`; intake fixes one canonical owner for workshop datasets, training, eval, candidate registration and bounded promotion/rollback handoff while keeping richer model-registry ownership with `F-0014`, operator publication with `F-0013`, governance approval with `CF-016`, specialist lifecycle with `CF-019` and body/code evolution with `CF-012`.
 - **v1.1 (2026-03-26):** `spec-compact`: fixed the full staged candidate lifecycle as canonical workshop-owned semantics, introduced explicit `model_candidates` and `candidate_stage_events` source surfaces, made `promotion-package` a bounded projection instead of a second source of truth, and clarified that `CF-016`, `F-0008`, `F-0014` and `CF-019` execute approval/activation overlays rather than owning workshop lifecycle storage.
 - **v1.2 (2026-03-26):** `plan-slice`: moved the dossier to `planned`, fixed strict delivery order `dataset -> training/eval -> candidate lifecycle -> runtime closure`, made the first implementation wave shared-adapter-first while preserving a generic specialist-capable lifecycle substrate, and turned the slices/tasks into implementation-ready closure criteria without reopening ownership boundaries.
+- **v1.3 (2026-03-26):** `implementation`: delivered the canonical workshop seam on the existing PostgreSQL/`pg-boss` substrate. `@yaagi/contracts/workshop` and `@yaagi/db` now own bounded job payloads plus durable `datasets`, `training_runs`, `eval_runs`, `model_candidates` and `candidate_stage_events`; `apps/core` materializes dataset/eval/promotion artifacts on canonical volumes, starts the workshop queue family in bounded degraded mode, proves full lifecycle and ownership boundaries through AC-linked tests, and container smoke now checks workshop queue wiring and artifact paths.

@@ -22,6 +22,7 @@ export {
 export {
   createPhase0RuntimeLifecycle,
   createPhase0TickExecution,
+  startBoundedWorkshopWorker,
 } from './runtime-lifecycle.ts';
 export {
   createExpandedModelEcologyService,
@@ -39,3 +40,19 @@ export {
   type HomeostatService,
   type PeriodicHomeostatWorker,
 } from './homeostat.ts';
+export {
+  createDbBackedWorkshopService,
+  createWorkshopJobGateway,
+  createWorkshopService,
+  createWorkshopWorker,
+  runWorkshopJobEnvelope,
+  type WorkshopBuildDatasetResult,
+  type WorkshopJobGateway,
+  type WorkshopLaunchEvalResult,
+  type WorkshopLaunchTrainingResult,
+  type WorkshopPreparePromotionPackageResult,
+  type WorkshopRecordStageTransitionResult,
+  type WorkshopRegisterCandidateResult,
+  type WorkshopService,
+  type WorkshopWorker,
+} from '../workshop/index.ts';
