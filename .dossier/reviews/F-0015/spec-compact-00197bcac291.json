@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "created_at": "2026-03-25T23:06:00.397Z",
+  "reviewer": "Turing (agent 019d2690-2c9a-7401-a4e9-0c11b689fab5)",
+  "step": "spec-compact",
+  "dossier": "docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md",
+  "feature_id": "F-0015",
+  "reviewed_commit": "00197bcac291ef3fffe3a07cfb77eac8ab0d7de0",
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": []
+  },
+  "notes": "Independent reviewer-agent PASS: shaped spec is internally consistent, lifecycle truth is correctly fixed in model_candidates + candidate_stage_events, promotion-package remains a bounded projection, and adjacent ownership boundaries align across dossier, architecture, backlog and SSOT."
+}
