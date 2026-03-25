@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "created_at": "2026-03-25T21:54:00.314Z",
+  "feature_id": "F-0013",
+  "dossier": "docs/features/F-0013-operator-http-api-and-introspection.md",
+  "current_commit": "3f9999aa5eb91d965a5af3b502a013b1b5b7e8e1",
+  "baseline": "HEAD",
+  "executable_contract_changed": true,
+  "maturity_requires_audit": true,
+  "added_ac_ids": [],
+  "removed_ac_ids": [],
+  "changed_executable_sections": [
+    "2. Scope",
+    "3. Requirements & Acceptance Criteria (SSoT)",
+    "5. Design (compact)",
+    "7. Slicing plan",
+    "9. Test plan & Coverage map"
+  ],
+  "frontmatter_changes": [],
+  "changed_files": [
+    ".dossier/reviews/F-0014/feature-intake-3f9999aa5eb9.json",
+    ".dossier/steps/F-0014/feature-intake.json",
+    ".dossier/verification/F-0014/feature-intake-3f9999aa5eb9.json",
+    "docs/architecture/system.md",
+    "docs/backlog/feature-candidates.md",
+    "docs/features/F-0008-baseline-model-router-and-organ-profiles.md",
+    "docs/features/F-0013-operator-http-api-and-introspection.md",
+    "docs/features/F-0014-expanded-model-ecology-and-registry-health.md",
+    "docs/ssot/index.md"
+  ],
+  "code_follow_up_files": [],
+  "architecture_follow_up_files": [
+    "docs/architecture/system.md"
+  ],
+  "requires_follow_up": true
+}
