@@ -52,6 +52,7 @@ This repository uses the dossier protocol.
 20. Canonical follow-up artifacts for unresolved debt are fixed: use the existing feature dossier when the debt belongs to an intaken feature, `docs/backlog/feature-candidates.md` when it exposes a not-yet-intaken seam, and `docs/adr/ADR-*.md` when it is cross-cutting. Chat-only or TODO-only follow-ups do not satisfy this rule.
 21. Before starting `spec-compact` or `plan-slice`, perform and surface an explicit assessment of whether Codex Plan mode is needed. Use Plan mode only as a preparatory decision phase, never as a substitute for the dossier step itself.
 22. If that assessment concludes Plan mode is needed, do not continue the dossier step immediately. Ask the user exactly: `For the following reasons, <description of reasons>, it is recommended to use planning mode at this step before the workflow dossier step <step name>. If you agree, enable planning mode.` Then stop and wait for the user's decision.
+    Comment: make this request in the user's language while preserving the same structure and intent; do not switch to English solely because the template sentence is written in English here.
 23. If that assessment concludes Plan mode is not needed, state that decision briefly in the user update that begins the step, then continue in the normal mutating workflow.
 24. After any accepted Plan mode phase, only the canonical artifacts and checks that are otherwise required for the actual dossier step remain mandatory. Plan mode itself does not create or replace dossier/backlog/ADR/index obligations.
 

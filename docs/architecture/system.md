@@ -1041,17 +1041,42 @@ Singleton-таблица.
 Содержит:
 
 - `snapshot_id`
+- `cadence_kind`
 - `tick_id`
 - `overall_stability`
 - `affect_volatility`
 - `goal_churn`
 - `coalition_dominance`
+- `narrative_rewrite_rate`
+- `development_proposal_rate`
 - `resource_pressure`
+- `organ_error_rate`
+- `rollback_frequency`
 - `development_freeze`
+- `signal_status_json`
 - `alerts_json`
+- `reaction_request_refs_json`
 - `created_at`
 
-Canonical owner этой surface — intake feature `F-0012`. Snapshot rows derive from committed runtime/state/narrative/executive evidence; any automatic reaction must route through canonical owners instead of back-writing foreign source tables.
+Canonical owner этой surface — feature `F-0012`. Snapshot rows derive from committed runtime/state/narrative/executive evidence plus future canonical source surfaces for reporting/governor/lifecycle metrics. Missing source families must be marked `degraded` or `not_evaluable`, never replaced with hidden proxies. Any automatic reaction must route through canonical owners instead of back-writing foreign source tables.
+
+#### `homeostat.reaction-request` queue family
+
+Typed durable queue family on canonical PostgreSQL/`pg-boss` substrate.
+
+Payload carries:
+
+- `reaction_request_id`
+- `snapshot_id`
+- `signal_family`
+- `severity`
+- `requested_action_kind`
+- `evidence_refs_json`
+- `idempotency_key`
+- `expires_at`
+- `created_at`
+
+Canonical owner этой queue family — `F-0012`. Publishing a reaction request does not authorize direct execution: consumers remain the canonical owner gates for runtime, router, narrative, executive and future governor policy enforcement.
 
 #### `action_log`
 
@@ -1082,8 +1107,10 @@ Identity-bearing surfaces допускают чтение из нескольк�
 | Subject-state singleton and normalized tables (`psm_json`, `goals`, `beliefs`, `entities`, `relationships`) | `SubjectStateStore` (`F-0004`) | `F-0003` completed-tick path invokes the store; future cognitive seams consume bounded snapshots and submit deltas through canonical store contracts | Boot/recovery logic, router, executive/tool gateway, reporting/homeostat workers, direct SQL from future seams | Writes are valid only through the canonical store contract and only on the allowed completed-tick commit path or explicit schema migration/backfill owned by the same seam. |
 | Model-profile continuity surfaces (`model_registry`, `ticks.selected_model_profile_id`, `agent_state.current_model_profile_id`) | Baseline model-routing seam (`F-0008`) via the `F-0003` continuity transaction | Runtime and future decision harness request selection; platform health surface reads diagnostics; boot/recovery reads the active profile pointer during restart/reclaim | Boot/preflight changing profile selection, `SubjectStateStore`, executive/governor/reporting workers writing profile choices directly | Profile registration is router-owned; active profile pointers become durable only when committed through the runtime continuity boundary. |
 | Future narrative and memetic surfaces (`memetic_units`, `memetic_edges`, `coalitions`, `narrative_spine_versions`, `field_journal_entries`) | Narrative/memetic cognition seam (`F-0011` with `CF-018` for allowed durable transitions) | Tick runtime may pass bounded candidates; context builder and reporting may consume read models | Boot/runtime/router/executive writing durable narrative or memetic state directly | Ordinary cognition ticks may update activation/reinforcement/decay for existing durable units, maintain `memetic_edges` between already durable units and append coalition/narrative/journal rows. Durable creation, promotion and compaction must use explicit consolidation/governor paths. |
+| Homeostat snapshots and typed reaction requests (`homeostat_snapshots`, `homeostat.reaction-request`) | Homeostat seam (`F-0012`) | `F-0003` completed-tick path and scheduled homeostat jobs may trigger evaluation; reporting, governor and audit consumers read snapshots or consume typed requests through owner gates | Reporting/governor/runtime helpers mutating snapshots directly, arbitrary workers publishing control requests outside the typed contract | Snapshot rows are derived from committed canonical state only. Reaction requests are durable and advisory until a canonical consumer decides enforcement. |
 | Development/governance proposal surfaces (`development_ledger`, model/code/policy proposals) | Future governor/workshop/code-evolution seams (`CF-016`, `CF-011`, `CF-012`) | Runtime, recovery, workshop and human override may submit evidence or incidents through governor-owned gates | Boot/runtime/router/subject-state seams writing arbitrary proposal rows directly | Proposal and ledger writes must flow through policy gates and preserve evidence plus rollback links. |
-| Read-only reporting surfaces (identity continuity reports, model health reports, stable-snapshot inventories) | Derived observability/reporting seam (`CF-015`) | All canonical writers above provide source state; homeostat and human audit consume reports | Reporting workers back-writing identity-bearing source tables | Reports are materialized from committed source state and may not mutate the business or identity-bearing surfaces they summarize. |
+| Rollback and lifecycle evidence surfaces (rollback incidents, graceful-shutdown events, event-envelope lifecycle rows) | Future lifecycle/consolidation seam (`CF-018`) | Homeostat, governor and reporting consume the evidence read-only; boot/recovery may attach bounded recovery links through its own boundary | Homeostat/reporting/governor inventing rollback evidence or mutating lifecycle history directly | These surfaces provide the canonical source for `rollback_frequency` and related freeze escalations. |
+| Read-only reporting surfaces (identity continuity reports, model health reports, stable-snapshot inventories) | Derived observability/reporting seam (`CF-015`) | All canonical writers above provide source state; homeostat and human audit consume reports | Reporting workers back-writing identity-bearing source tables | Reports are materialized from committed source state and may not mutate the business or identity-bearing surfaces they summarize. Model/organ health reports are the canonical read source for `organ_error_rate`. |
 
 ### 7.2.2 Non-identity workers
 
@@ -2060,7 +2087,7 @@ Homeostat должен иметь не только метрики, но и де
 | `rollback_frequency` | > 2/неделю | > 4/неделю | full developmental freeze + human review |
 
 Идея этих порогов проста: Полифония должна уметь быть не только умной, но и операционно вменяемой.
-`F-0012` intake fixes that early homeostat delivery must separate thresholds backed by already delivered canonical inputs from future signal families that depend on later seams such as expanded model health, governor policy state or lifecycle retention.
+`F-0012` spec-compact fixes the entire starter threshold matrix as canonical now. Signals whose richest sources belong to future seams (`CF-015`, `CF-016`, `CF-018`, plus richer organ ecology from `CF-010`) must read those seams' canonical surfaces once delivered; until then, homeostat emits `degraded` or `not_evaluable` status for the affected family and never fabricates proxy metrics. The same evaluator runs both after committed ticks and on scheduled periodic passes through canonical PostgreSQL/`pg-boss`.
 
 ---
 
@@ -2236,7 +2263,7 @@ Homeostat должен иметь не только метрики, но и де
 | Context Builder and structured decision harness | `F-0009` | `done` | The bounded cognition harness remains the canonical owner and now runs through the delivered AI SDK-backed structured-generation boundary without grabbing narrative, executive or memory ownership. |
 | Executive center and bounded action layer | `F-0010` | `done` | The bounded executive/action seam is now delivered: validated decisions flow through one canonical executive boundary, append-only `action_log` audit exists, and first-wave bounded wrappers plus `ticks.action_id` continuity are implemented without new public API surface. |
 | Narrative and memetic cognition | `F-0011` | `done` | Narrative/memetic runtime delivery is now live: wake/bootstrap seeding, bounded candidate assembly, ordinary existing-unit updates, coalition/narrative/journal persistence and downstream read-model handoff are implemented, while durable promotion/compaction paths remain explicitly deferred to `CF-018`. |
-| Homeostat and operational guardrails | `F-0012` | `proposed` | Early safety reactions now have an intaken owner; shaping must keep snapshot/alert generation separate from richer reporting, governor policy execution and lifecycle retention seams. |
+| Homeostat and operational guardrails | `F-0012` | `shaped` | Homeostat now owns the full starter signal matrix, dual-cadence evaluation, `homeostat_snapshots` and typed reaction requests, while canonical source surfaces for reporting, governor and lifecycle metrics remain explicitly future-owned. |
 | Development governor and policy gates | `CF-016` | `candidate` | Minimal governor ownership is defined, but no delivered governor seam exists yet. |
 | Consolidation, event envelope and graceful shutdown | `CF-018` | `candidate` | Retention/compaction and graceful shutdown biography remain backlog-owned future work. |
 | Observability and reporting | `CF-015` | `candidate` | Baseline health exists, but dedicated reports, metrics, tracing and richer reactions are still deferred. |
