@@ -1,7 +1,7 @@
 ---
 id: F-0012
 title: Гомеостат и операционные guardrails
-status: shaped
+status: planned
 coverage_gate: deferred
 owners: ["@codex"]
 area: governance
@@ -26,8 +26,8 @@ links:
 
 - **User problem:** После `F-0004`, `F-0010` и `F-0011` система уже умеет хранить bounded subject-state, вести narrative/memetic continuity и принимать bounded executive outcomes, но у неё всё ещё нет канонического owner-а для operational sanity checks и early safety reactions. Без explicit owner-а oscillation/continuity risk, development freeze logic и rollback-sensitive guardrails расползаются между runtime, reporting, governor и lifecycle seams, а автоматические реакции рискуют превратиться в direct writes или неаудируемые shortcuts.
 - **Goal:** Зафиксировать один canonical dossier-owner для `Homeostat`, который вычисляет всю архитектурную стартовую матрицу guardrail-сигналов, пишет durable `homeostat_snapshots`, публикует bounded reaction requests через typed `pg-boss` family и при этом не захватывает policy execution или foreign write authority.
-- **Non-goals:** Полный observability/reporting perimeter, operator API, mature governor policy execution, detailed implementation future source seams, expanded organ ecology и direct tool execution не входят в этот `spec-compact`.
-- **Current substrate / baseline:** Delivered prerequisites already exist as `F-0003` runtime/scheduler continuity, `F-0004` bounded subject-state store, `F-0010` executive/action audit boundary and `F-0011` narrative/memetic seam. Full guardrail shaping additionally depends on future canonical source surfaces owned by `CF-015`, `CF-016` and `CF-018`; this step must realign those boundaries explicitly instead of inventing proxy metrics.
+- **Non-goals:** Полный observability/reporting perimeter, operator API, mature governor policy execution, detailed implementation future source seams, expanded organ ecology и direct tool execution не входят в текущий feature scope.
+- **Current substrate / baseline:** Delivered prerequisites already exist as `F-0003` runtime/scheduler continuity, `F-0004` bounded subject-state store, `F-0010` executive/action audit boundary and `F-0011` narrative/memetic seam. Full guardrail shaping additionally depends on future canonical source surfaces owned by `CF-015`, `CF-016` and `CF-018`; the dossier must realign those boundaries explicitly instead of inventing proxy metrics.
 
 ## 2. Scope
 
@@ -54,7 +54,7 @@ links:
 
 - Direct policy execution, direct freeze writes, direct rollback/quarantine enforcement and direct tool invocation.
 - Dedicated operator-facing reports, dashboards, tracing pipelines and HTTP routes.
-- Delivery of the future source seams themselves; this step shapes their contracts and schema expectations only.
+- Delivery of the future source seams themselves; this dossier shapes their contracts and schema expectations only.
 - A separate worker service, sidecar topology or process-local timer loop as a new canonical scheduler path.
 
 ### Constraints
@@ -185,7 +185,7 @@ links:
 
 ### 5.6 Verification surface
 
-- `spec-compact` defines:
+- This dossier defines:
   - contract tests for signal scoring, status semantics and threshold evaluation;
   - integration tests for tick-complete and periodic cadence using the same evaluator;
   - persistence coverage for `homeostat_snapshots`;
@@ -204,47 +204,65 @@ links:
 
 ## 7. Slicing plan
 
-### Slice SL-F0012-01: Signal matrix and snapshot contract
-Delivers: full signal catalog, threshold profile, status semantics and the shaped `HomeostatSnapshot` schema contract.
-Covers: AC-F0012-01, AC-F0012-02, AC-F0012-06, AC-F0012-07
-Verification: `contract`
+### Slice SL-F0012-01: Contracts, threshold catalog and snapshot persistence boundary
+Delivers: canonical `HomeostatSignalScore` / `HomeostatSnapshot` / `HomeostatReactionRequest` contracts, the full starter threshold matrix and the `homeostat_snapshots` persistence boundary for deterministic read-back.
+Covers: AC-F0012-01, AC-F0012-02, AC-F0012-06
+Verification: `contract`, `db`
+Exit criteria:
+- Signal catalog, warning/critical thresholds and alert payload fields are fixed in one canonical contract surface without parallel shadow enums.
+- `homeostat_snapshots` persistence shape is explicit enough for deterministic replay and read-only downstream consumption.
+- Planned storage/tests stay on the canonical runtime stack: `packages/contracts`, `packages/db`, `node:test`.
 
-### Slice SL-F0012-02: Reaction queue and owner-gate routing
-Delivers: typed `homeostat.reaction-request` family, payload contract, idempotency rules and owner-routed reaction semantics.
-Covers: AC-F0012-01, AC-F0012-04, AC-F0012-05, AC-F0012-08
+### Slice SL-F0012-02: Evaluator on committed state and degraded source semantics
+Delivers: one evaluator over committed canonical evidence, source-reader boundaries for delivered and future-owned surfaces, and explicit `evaluated | degraded | not_evaluable` behavior per signal family.
+Covers: AC-F0012-02, AC-F0012-03, AC-F0012-06, AC-F0012-07
 Verification: `contract`, `integration`
+Exit criteria:
+- Delivered inputs from `F-0003`, `F-0004`, `F-0010` and `F-0011` are mapped to signal families through explicit adapters instead of ad hoc runtime reads.
+- `CF-015`, `CF-016` and `CF-018` source expectations are consumed only through declared read contracts and degrade cleanly when absent or stale.
+- The evaluator produces one stable score/status shape regardless of which source families are currently unavailable.
 
-### Slice SL-F0012-03: Future-source contracts and cross-cutting realignment
-Delivers: explicit source-surface contracts for `CF-015`, `CF-016` and `CF-018`, plus shaped schema expectations for the signals they feed.
-Covers: AC-F0012-02, AC-F0012-03, AC-F0012-08
-Verification: `contract`
+### Slice SL-F0012-03: Reaction publication and owner-gate routing
+Delivers: typed `homeostat.reaction-request` publication on canonical `pg-boss`, idempotency/coalescing rules and owner-routed reaction semantics that remain advisory until canonical consumers act.
+Covers: AC-F0012-01, AC-F0012-04, AC-F0012-05, AC-F0012-08
+Verification: `contract`, `integration`, `db`
+Exit criteria:
+- Reaction publication uses an allowlisted `homeostat.reaction-request` family on the existing `packages/db/src/jobs.ts` substrate.
+- Payloads carry stable identity, severity, evidence refs, TTL and idempotency data sufficient for retry-safe routing.
+- Write-authority guards prove that homeostat publishes advisory requests only and never mutates governor, lifecycle, subject-state, narrative or action tables directly.
 
-### Slice SL-F0012-04: Dual cadence and degraded-mode runtime behavior
-Delivers: completed-tick versus periodic evaluation rules, partial-signal degradation semantics and verification scope for runtime integration.
-Covers: AC-F0012-04, AC-F0012-07
-Verification: `integration`
+### Slice SL-F0012-04: Dual cadence wiring, runtime closure and smoke gate
+Delivers: post-commit tick wiring, scheduled periodic evaluation, duplicate-suppression rules, final runtime verification and conditional deployment-cell smoke closure.
+Covers: AC-F0012-03, AC-F0012-04, AC-F0012-07, AC-F0012-08
+Verification: `integration`, `smoke-if-runtime-path-changes`
+Exit criteria:
+- The same evaluator runs on the completed-tick path and on scheduled periodic jobs without diverging payload or threshold semantics.
+- Repeated scheduler invocations coalesce duplicate reactions by explicit idempotency/evidence rules rather than incidental timing.
+- If implementation changes runtime/startup/deployment behavior, the canonical deployment-cell smoke path is added before feature closure.
 
 ## 8. Task list
 
-- **T-F0012-01:** Shape the full starter signal matrix, thresholds and status semantics for `SL-F0012-01`. Covers: AC-F0012-02, AC-F0012-07.
-- **T-F0012-02:** Define the canonical `homeostat_snapshots` contract, persistence boundary and downstream read-only consumption for `SL-F0012-01`. Covers: AC-F0012-01, AC-F0012-06, AC-F0012-08.
-- **T-F0012-03:** Specify the typed `homeostat.reaction-request` family, payload fields and idempotency rules for `SL-F0012-02`. Covers: AC-F0012-01, AC-F0012-04, AC-F0012-05.
-- **T-F0012-04:** Specify owner-gate routing semantics so reactions remain advisory until canonical consumers decide enforcement. Covers: AC-F0012-05, AC-F0012-08.
-- **T-F0012-05:** Realign the future source contracts and schema expectations for `CF-015`, `CF-016` and `CF-018`. Covers: AC-F0012-03, AC-F0012-08.
-- **T-F0012-06:** Define dual cadence execution rules and degraded-mode behavior for periodic versus tick-complete evaluation. Covers: AC-F0012-04, AC-F0012-07.
+- **T-F0012-01:** Materialize the threshold catalog and contract types for `SL-F0012-01` in the canonical contract surface used by runtime and persistence layers. Covers: AC-F0012-01, AC-F0012-02, AC-F0012-06.
+- **T-F0012-02:** Add the `homeostat_snapshots` store boundary, indexes and deterministic read-model mapping for `SL-F0012-01`. Covers: AC-F0012-01, AC-F0012-06.
+- **T-F0012-03:** Implement committed-state source readers and score assembly for `SL-F0012-02`, using delivered seams first and future-source adapters second. Covers: AC-F0012-02, AC-F0012-06, AC-F0012-07.
+- **T-F0012-04:** Add degradation and `not_evaluable` guards for `CF-015` / `CF-016` / `CF-018` source gaps in `SL-F0012-02`. Covers: AC-F0012-03, AC-F0012-07, AC-F0012-08.
+- **T-F0012-05:** Implement typed `homeostat.reaction-request` publication and payload/idempotency rules for `SL-F0012-03`. Covers: AC-F0012-01, AC-F0012-04, AC-F0012-05.
+- **T-F0012-06:** Add owner-gate routing and write-authority guards for `SL-F0012-03`, proving reactions remain advisory. Covers: AC-F0012-05, AC-F0012-08.
+- **T-F0012-07:** Wire the shared evaluator into completed-tick and scheduled periodic execution paths for `SL-F0012-04`. Covers: AC-F0012-04, AC-F0012-07.
+- **T-F0012-08:** Add final runtime integration coverage, duplicate-reaction suppression checks and conditional deployment-cell smoke closure for `SL-F0012-04`. Covers: AC-F0012-03, AC-F0012-04, AC-F0012-08.
 
 ## 9. Test plan & Coverage map
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0012-01 | To be defined during `plan-slice` / `implementation` | planned |
-| AC-F0012-02 | To be defined during `plan-slice` / `implementation` | planned |
-| AC-F0012-03 | To be defined during `plan-slice` / `implementation` | planned |
-| AC-F0012-04 | To be defined during `plan-slice` / `implementation` | planned |
-| AC-F0012-05 | To be defined during `plan-slice` / `implementation` | planned |
-| AC-F0012-06 | To be defined during `plan-slice` / `implementation` | planned |
-| AC-F0012-07 | To be defined during `plan-slice` / `implementation` | planned |
-| AC-F0012-08 | To be defined during `plan-slice` / `implementation` | planned |
+| AC-F0012-01 | `packages/db/test/homeostat-store.integration.test.ts` → snapshot/reaction persistence boundary `// Covers: AC-F0012-01`; `apps/core/test/runtime/homeostat-write-authority.contract.test.ts` → advisory-only publication guard `// Covers: AC-F0012-01` | planned |
+| AC-F0012-02 | `apps/core/test/runtime/homeostat-evaluator.contract.test.ts` → `test("AC-F0012-02 evaluates the full starter guardrail matrix from canonical source mappings")` | planned |
+| AC-F0012-03 | `apps/core/test/runtime/homeostat-degraded-sources.integration.test.ts` → `test("AC-F0012-03 degrades CF-015 / CF-016 / CF-018-backed signals without fabricating proxy metrics")` | planned |
+| AC-F0012-04 | `apps/core/test/runtime/homeostat-cadence.integration.test.ts` → `test("AC-F0012-04 runs the same homeostat evaluator on completed-tick and periodic cadence paths")`; `infra/docker/deployment-cell.smoke.ts` → scheduler/runtime closure smoke `// Covers: AC-F0012-04` when runtime or startup behavior changes | planned |
+| AC-F0012-05 | `apps/core/test/runtime/homeostat-reaction-routing.integration.test.ts` → `test("AC-F0012-05 publishes bounded homeostat reaction requests through owner gates without direct execution")`; `apps/core/test/runtime/homeostat-write-authority.contract.test.ts` → foreign-write prohibition `// Covers: AC-F0012-05` | planned |
+| AC-F0012-06 | `packages/db/test/homeostat-store.integration.test.ts` → `test("AC-F0012-06 persists deterministic homeostat snapshots for replay and read-only downstream consumption")`; `apps/core/test/runtime/homeostat-evaluator.contract.test.ts` → snapshot shape contract `// Covers: AC-F0012-06` | planned |
+| AC-F0012-07 | `apps/core/test/runtime/homeostat-degraded-sources.integration.test.ts` → degraded/not-evaluable semantics `// Covers: AC-F0012-07`; `apps/core/test/runtime/homeostat-cadence.integration.test.ts` → periodic evaluation without an active tick `// Covers: AC-F0012-07` | planned |
+| AC-F0012-08 | `apps/core/test/runtime/homeostat-write-authority.contract.test.ts` → owner-boundary enforcement `// Covers: AC-F0012-08`; `apps/core/test/runtime/homeostat-reaction-routing.integration.test.ts` → owner-gate routing `// Covers: AC-F0012-08` | planned |
 
 ## 10. Decision log (ADR blocks)
 
@@ -278,15 +296,23 @@ Verification: `integration`
 - Candidate source: `CF-008`
 - Delivered prerequisites: `F-0003`, `F-0004`, `F-0010`, `F-0011`
 - Code:
-  - None yet; `spec-compact` only.
+  - None yet; planning targets are:
+    - `packages/contracts/src/runtime.ts`
+    - `packages/db/src/homeostat.ts`
+    - `packages/db/src/index.ts`
+    - `packages/db/src/jobs.ts`
+    - `apps/core/src/runtime/homeostat-evaluator.ts`
+    - `apps/core/src/runtime/runtime-lifecycle.ts`
 - Verification:
   - `node scripts/index-refresh.mjs`
+  - `node scripts/contract-drift-audit.mjs --dossier docs/features/F-0012-homeostat-and-operational-guardrails.md --base HEAD~1`
   - `node scripts/lint-dossiers.mjs`
   - `node scripts/coverage-audit.mjs --dossier docs/features/F-0012-homeostat-and-operational-guardrails.md --orphans-scope=dossier`
   - `pnpm debt:audit:changed`
-  - `node scripts/dossier-verify.mjs --dossier docs/features/F-0012-homeostat-and-operational-guardrails.md --step spec-compact`
+  - `node scripts/dossier-verify.mjs --dossier docs/features/F-0012-homeostat-and-operational-guardrails.md --step plan-slice`
 
 ## 12. Change log
 
 - **v1.0 (2026-03-25):** Initial feature-intake dossier created from `CF-008`; intake fixed `Homeostat` and `homeostat_snapshots` as one early-safety seam and separated reporting, governor policy execution and lifecycle ownership.
 - **v1.1 (2026-03-25):** `spec-compact` completed: full starter signal matrix fixed, dual cadence aligned on canonical `pg-boss`, typed reaction-request queue contract introduced, and cross-cutting source contracts for `CF-015`, `CF-016` and `CF-018` made explicit.
+- **v1.2 (2026-03-25):** `plan-slice` moved the dossier to `planned`; delivery is now split into four implementation slices covering contract/persistence surfaces, committed-state evaluator and degraded source handling, advisory reaction publication, and dual-cadence runtime closure.
