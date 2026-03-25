@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "created_at": "2026-03-25T21:12:58.092Z",
+  "feature_id": "F-0013",
+  "dossier": "docs/features/F-0013-operator-http-api-and-introspection.md",
+  "current_commit": "81ea0934f5d9ed6f631a2183bd76b8533bdc14ab",
+  "baseline": "a43a2d3f217d92227d919e7e6aabd60f33a832d7",
+  "executable_contract_changed": true,
+  "maturity_requires_audit": true,
+  "added_ac_ids": [],
+  "removed_ac_ids": [],
+  "changed_executable_sections": [
+    "9. Test plan & Coverage map"
+  ],
+  "frontmatter_changes": [
+    "coverage_gate"
+  ],
+  "changed_files": [
+    ".dossier/drift/F-0013/1774473093206.json",
+    "apps/core/src/platform/core-runtime.ts",
+    "apps/core/src/platform/operator-api.ts",
+    "apps/core/src/runtime/runtime-lifecycle.ts",
+    "apps/core/test/platform/operator-api-boundary.contract.test.ts",
+    "apps/core/test/platform/operator-control.integration.test.ts",
+    "apps/core/test/platform/operator-governor-gating.contract.test.ts",
+    "apps/core/test/platform/operator-history.integration.test.ts",
+    "apps/core/test/platform/operator-models.integration.test.ts",
+    "apps/core/test/platform/operator-state.integration.test.ts",
+    "apps/core/test/runtime/health.integration.test.ts",
+    "apps/core/testing/platform-test-fixture.ts",
+    "docs/architecture/system.md",
+    "docs/features/F-0013-operator-http-api-and-introspection.md",
+    "docs/ssot/index.md",
+    "infra/docker/deployment-cell.smoke.ts",
+    "packages/contracts/package.json",
+    "packages/contracts/src/operator-api.ts",
+    "packages/db/src/index.ts",
+    "packages/db/src/runtime.ts",
+    "packages/db/test/runtime-store.contract.test.ts"
+  ],
+  "code_follow_up_files": [
+    "apps/core/src/platform/core-runtime.ts",
+    "apps/core/src/platform/operator-api.ts",
+    "apps/core/src/runtime/runtime-lifecycle.ts",
+    "apps/core/test/platform/operator-api-boundary.contract.test.ts",
+    "apps/core/test/platform/operator-control.integration.test.ts",
+    "apps/core/test/platform/operator-governor-gating.contract.test.ts",
+    "apps/core/test/platform/operator-history.integration.test.ts",
+    "apps/core/test/platform/operator-models.integration.test.ts",
+    "apps/core/test/platform/operator-state.integration.test.ts",
+    "apps/core/test/runtime/health.integration.test.ts",
+    "apps/core/testing/platform-test-fixture.ts",
+    "infra/docker/deployment-cell.smoke.ts",
+    "packages/contracts/package.json",
+    "packages/contracts/src/operator-api.ts",
+    "packages/db/src/index.ts",
+    "packages/db/src/runtime.ts",
+    "packages/db/test/runtime-store.contract.test.ts"
+  ],
+  "architecture_follow_up_files": [
+    "docs/architecture/system.md"
+  ],
+  "requires_follow_up": false
+}
