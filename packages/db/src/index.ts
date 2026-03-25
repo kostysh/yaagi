@@ -10,7 +10,15 @@ export {
   type RuntimeActionLogRow,
   type RuntimeActionLogStore,
 } from './action-log.ts';
-export { createRuntimeJobEnqueuer, type RuntimeJobEnqueuer } from './jobs.ts';
+export { PgBoss, createRuntimeJobEnqueuer, type RuntimeJobEnqueuer } from './jobs.ts';
+export {
+  createHomeostatStore,
+  type HomeostatDbExecutor,
+  type HomeostatSnapshotRow,
+  type HomeostatStore,
+  type ListHomeostatSnapshotsInput,
+  type PersistHomeostatSnapshotInput,
+} from './homeostat.ts';
 export {
   applyTickStateDelta,
   appendRuntimeTimelineEvent,

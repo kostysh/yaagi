@@ -61,6 +61,12 @@ import {
   type TickRuntime,
   type TickRuntimeStore,
 } from './tick-runtime.ts';
+import {
+  createDbBackedHomeostatService,
+  createPeriodicHomeostatWorker,
+  type HomeostatService,
+  type PeriodicHomeostatWorker,
+} from './homeostat.ts';
 
 type RuntimeLifecycle = {
   start(): Promise<void>;
@@ -227,6 +233,7 @@ const createDbBackedTickRuntimeStore = (
   config: CoreRuntimeConfig,
   options: {
     ensureBaselineProfiles?: () => Promise<void>;
+    afterCompletedTick?: (input: { tickId: string; occurredAt: string }) => Promise<void>;
   } = {},
 ): TickRuntimeStore => ({
   initialize: () =>
@@ -298,6 +305,16 @@ const createDbBackedTickRuntimeStore = (
           ...finalization,
           subjectStateDelta: buildPhase0SubjectStateDelta(input),
         });
+        if (options.afterCompletedTick) {
+          try {
+            await options.afterCompletedTick({
+              tickId: input.tickId,
+              occurredAt: input.finishedAt,
+            });
+          } catch (error) {
+            console.error('homeostat post-commit tick evaluation failed', error);
+          }
+        }
         return;
       }
 
@@ -940,6 +957,11 @@ export function createPhase0RuntimeLifecycle(
   } = {},
 ): RuntimeLifecycle {
   let tickRuntime: TickRuntime | null = null;
+  const homeostatService: HomeostatService = createDbBackedHomeostatService(config);
+  const periodicHomeostatWorker: PeriodicHomeostatWorker = createPeriodicHomeostatWorker(
+    config,
+    homeostatService,
+  );
   const fastModelHealthProbe = createFastModelHealthProbe(config);
   const resolveBaselineHealth = async (): Promise<
     Record<'reflex' | 'deliberation' | 'reflection', ModelHealthSummary>
@@ -989,6 +1011,12 @@ export function createPhase0RuntimeLifecycle(
     store: createDbBackedTickRuntimeStore(config, {
       ensureBaselineProfiles: async () => {
         await modelRouter.ensureBaselineProfiles();
+      },
+      afterCompletedTick: async ({ tickId, occurredAt }) => {
+        await homeostatService.evaluateTickComplete({
+          tickId,
+          createdAt: occurredAt,
+        });
       },
     }),
     executeTick: createPhase0TickExecution({
@@ -1197,6 +1225,8 @@ export function createPhase0RuntimeLifecycle(
           throw result.error;
         }
 
+        await periodicHomeostatWorker.start();
+
         await perceptionController.emitSystemSignal({
           signalType: 'system.boot.completed',
           occurredAt: new Date().toISOString(),
@@ -1209,6 +1239,7 @@ export function createPhase0RuntimeLifecycle(
 
         started = true;
       } catch (error) {
+        await periodicHomeostatWorker.stop().catch(() => {});
         await perceptionController.stop().catch(() => {});
         if (tickRuntime) {
           await tickRuntime.stop().catch(() => {});
@@ -1219,6 +1250,7 @@ export function createPhase0RuntimeLifecycle(
 
     async stop(): Promise<void> {
       started = false;
+      await periodicHomeostatWorker.stop().catch(() => {});
       await perceptionController.stop();
       if (tickRuntime) {
         await tickRuntime.stop();

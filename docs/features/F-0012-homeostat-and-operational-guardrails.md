@@ -1,8 +1,8 @@
 ---
 id: F-0012
 title: Гомеостат и операционные guardrails
-status: planned
-coverage_gate: deferred
+status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: governance
 depends_on: [F-0003, F-0004, F-0010, F-0011]
@@ -125,7 +125,7 @@ links:
 
 - Homeostat lives inside the existing `core` monolith.
 - Tick-complete evaluation runs only after committed runtime/state/narrative/executive writes are durable.
-- Periodic evaluation runs through a dedicated allowlisted scheduler/job family on the already delivered PostgreSQL/`pg-boss` substrate; it is not an ad hoc in-memory timer.
+- Periodic evaluation runs through the dedicated `homeostat.periodic-evaluation` scheduler/job family on the already delivered PostgreSQL/`pg-boss` substrate; it is not an ad hoc in-memory timer.
 - Early delivered read inputs come from:
   - `F-0003` runtime continuity, tick history and scheduler posture;
   - `F-0004` bounded subject-state snapshots and goal state;
@@ -161,6 +161,7 @@ links:
   - `reaction_request_refs_json`
   - `created_at`
 - Reaction publication uses an allowlisted `pg-boss` family rather than a new domain queue table. The shaped canonical family name is `homeostat.reaction-request`.
+- The internal cadence trigger also uses a dedicated allowlisted `pg-boss` family named `homeostat.periodic-evaluation` with the canonical schedule key `default`; it is runtime-owned infrastructure for periodic evaluation, not a downstream reaction contract.
 - This shaping step also fixes future schema expectations outside `F-0012`:
   - `CF-015` must expose a durable read model for organ/profile health diagnostics;
   - `CF-016` must expose durable development-governor evidence for proposal-rate and freeze decisions;
@@ -191,7 +192,7 @@ links:
   - persistence coverage for `homeostat_snapshots`;
   - routing coverage for typed reaction requests through canonical owner gates;
   - degradation coverage for missing future-owned sources.
-- Implementation must decide whether runtime-path changes trigger containerized smoke in addition to the fast verification path; if runtime startup or scheduled job behavior changes, smoke is mandatory.
+- Runtime/startup behavior changed in implementation, so the canonical deployment-cell smoke path is mandatory and part of feature closure.
 
 ## 6. Definition of Done
 
@@ -200,7 +201,7 @@ links:
 - `homeostat_snapshots` and the typed `homeostat.reaction-request` family are separated from reporting, governor execution and lifecycle retention seams.
 - Missing future source surfaces have explicit canonical owners and schema expectations recorded in SSoT/backlog artifacts.
 - Direct write access to foreign identity-bearing, action, governor or lifecycle surfaces remains forbidden.
-- Architecture coverage, backlog watchpoints and the global index stay aligned with the shaped decision.
+- Architecture coverage, backlog watchpoints and the global index stay aligned with the delivered implementation.
 
 ## 7. Slicing plan
 
@@ -255,14 +256,14 @@ Exit criteria:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0012-01 | `packages/db/test/homeostat-store.integration.test.ts` → snapshot/reaction persistence boundary `// Covers: AC-F0012-01`; `apps/core/test/runtime/homeostat-write-authority.contract.test.ts` → advisory-only publication guard `// Covers: AC-F0012-01` | planned |
-| AC-F0012-02 | `apps/core/test/runtime/homeostat-evaluator.contract.test.ts` → `test("AC-F0012-02 evaluates the full starter guardrail matrix from canonical source mappings")` | planned |
-| AC-F0012-03 | `apps/core/test/runtime/homeostat-degraded-sources.integration.test.ts` → `test("AC-F0012-03 degrades CF-015 / CF-016 / CF-018-backed signals without fabricating proxy metrics")` | planned |
-| AC-F0012-04 | `apps/core/test/runtime/homeostat-cadence.integration.test.ts` → `test("AC-F0012-04 runs the same homeostat evaluator on completed-tick and periodic cadence paths")`; `infra/docker/deployment-cell.smoke.ts` → scheduler/runtime closure smoke `// Covers: AC-F0012-04` when runtime or startup behavior changes | planned |
-| AC-F0012-05 | `apps/core/test/runtime/homeostat-reaction-routing.integration.test.ts` → `test("AC-F0012-05 publishes bounded homeostat reaction requests through owner gates without direct execution")`; `apps/core/test/runtime/homeostat-write-authority.contract.test.ts` → foreign-write prohibition `// Covers: AC-F0012-05` | planned |
-| AC-F0012-06 | `packages/db/test/homeostat-store.integration.test.ts` → `test("AC-F0012-06 persists deterministic homeostat snapshots for replay and read-only downstream consumption")`; `apps/core/test/runtime/homeostat-evaluator.contract.test.ts` → snapshot shape contract `// Covers: AC-F0012-06` | planned |
-| AC-F0012-07 | `apps/core/test/runtime/homeostat-degraded-sources.integration.test.ts` → degraded/not-evaluable semantics `// Covers: AC-F0012-07`; `apps/core/test/runtime/homeostat-cadence.integration.test.ts` → periodic evaluation without an active tick `// Covers: AC-F0012-07` | planned |
-| AC-F0012-08 | `apps/core/test/runtime/homeostat-write-authority.contract.test.ts` → owner-boundary enforcement `// Covers: AC-F0012-08`; `apps/core/test/runtime/homeostat-reaction-routing.integration.test.ts` → owner-gate routing `// Covers: AC-F0012-08` | planned |
+| AC-F0012-01 | `packages/db/test/homeostat-store.integration.test.ts` → `test("AC-F0012-01 snapshot/reaction persistence boundary keeps advisory reaction refs separate from signal scores")`; `apps/core/test/runtime/homeostat-write-authority.contract.test.ts` → advisory-only publication guard `// Covers: AC-F0012-01` | done |
+| AC-F0012-02 | `apps/core/test/runtime/homeostat-evaluator.contract.test.ts` → `test("AC-F0012-02 evaluates the full starter guardrail matrix from canonical source mappings")` | done |
+| AC-F0012-03 | `apps/core/test/runtime/homeostat-degraded-sources.integration.test.ts` → `test("AC-F0012-03 degrades CF-015 / CF-016 / CF-018-backed signals without fabricating proxy metrics")`; `infra/docker/deployment-cell.smoke.ts` → wake-tick plus periodic runtime cadence smoke `// Covers: AC-F0012-03` | done |
+| AC-F0012-04 | `apps/core/test/runtime/homeostat-cadence.integration.test.ts` → `test("AC-F0012-04 runs the same homeostat evaluator on completed-tick and periodic cadence paths")`; `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0012-04 runs homeostat on the committed wake tick and on scheduled periodic cadence inside the deployment cell")` | done |
+| AC-F0012-05 | `apps/core/test/runtime/homeostat-reaction-routing.integration.test.ts` → `test("AC-F0012-05 publishes bounded homeostat reaction requests through owner gates without direct execution")`; `apps/core/test/runtime/homeostat-write-authority.contract.test.ts` → foreign-write prohibition `// Covers: AC-F0012-05` | done |
+| AC-F0012-06 | `packages/db/test/homeostat-store.integration.test.ts` → `test("AC-F0012-06 persists deterministic homeostat snapshots for replay and read-only downstream consumption")`; `apps/core/test/runtime/homeostat-evaluator.contract.test.ts` → `test("AC-F0012-06 persists a stable snapshot shape for replay and read-only downstream consumption")` | done |
+| AC-F0012-07 | `apps/core/test/runtime/homeostat-degraded-sources.integration.test.ts` → degraded/not-evaluable semantics `// Covers: AC-F0012-07`; `apps/core/test/runtime/homeostat-cadence.integration.test.ts` → `test("AC-F0012-07 periodic homeostat evaluation does not require an active tick to emit a bounded snapshot")` | done |
+| AC-F0012-08 | `apps/core/test/runtime/homeostat-write-authority.contract.test.ts` → `test("AC-F0012-08 keeps homeostat outputs advisory and does not encode direct foreign-table mutations")`; `apps/core/test/runtime/homeostat-reaction-routing.integration.test.ts` → owner-gate routing `// Covers: AC-F0012-08` | done |
 
 ## 10. Decision log (ADR blocks)
 
@@ -292,27 +293,42 @@ Exit criteria:
 
 ## 11. Progress & links
 
-- Status progression: `proposed -> shaped -> planned -> in_progress -> done`
+- Status progression: `proposed -> shaped -> planned -> done`
 - Candidate source: `CF-008`
 - Delivered prerequisites: `F-0003`, `F-0004`, `F-0010`, `F-0011`
 - Code:
-  - None yet; planning targets are:
-    - `packages/contracts/src/runtime.ts`
-    - `packages/db/src/homeostat.ts`
-    - `packages/db/src/index.ts`
-    - `packages/db/src/jobs.ts`
-    - `apps/core/src/runtime/homeostat-evaluator.ts`
-    - `apps/core/src/runtime/runtime-lifecycle.ts`
+  - `apps/core/src/runtime/homeostat.ts`
+  - `apps/core/src/runtime/index.ts`
+  - `apps/core/src/runtime/runtime-lifecycle.ts`
+  - `apps/core/testing/homeostat-fixture.ts`
+  - `apps/core/test/runtime/homeostat-cadence.integration.test.ts`
+  - `apps/core/test/runtime/homeostat-degraded-sources.integration.test.ts`
+  - `apps/core/test/runtime/homeostat-evaluator.contract.test.ts`
+  - `apps/core/test/runtime/homeostat-reaction-routing.integration.test.ts`
+  - `apps/core/test/runtime/homeostat-write-authority.contract.test.ts`
+  - `infra/docker/deployment-cell.smoke.ts`
+  - `infra/migrations/008_homeostat_runtime.sql`
+  - `packages/contracts/src/runtime.ts`
+  - `packages/db/src/homeostat.ts`
+  - `packages/db/src/index.ts`
+  - `packages/db/src/jobs.ts`
+  - `packages/db/test/homeostat-store.integration.test.ts`
 - Verification:
+  - `pnpm format`
+  - `pnpm typecheck`
+  - `pnpm lint`
+  - `pnpm test`
+  - `pnpm smoke:cell`
   - `node scripts/index-refresh.mjs`
   - `node scripts/contract-drift-audit.mjs --dossier docs/features/F-0012-homeostat-and-operational-guardrails.md --base HEAD~1`
   - `node scripts/lint-dossiers.mjs`
   - `node scripts/coverage-audit.mjs --dossier docs/features/F-0012-homeostat-and-operational-guardrails.md --orphans-scope=dossier`
   - `pnpm debt:audit:changed`
-  - `node scripts/dossier-verify.mjs --dossier docs/features/F-0012-homeostat-and-operational-guardrails.md --step plan-slice`
+  - `node scripts/dossier-verify.mjs --dossier docs/features/F-0012-homeostat-and-operational-guardrails.md --step implementation`
 
 ## 12. Change log
 
 - **v1.0 (2026-03-25):** Initial feature-intake dossier created from `CF-008`; intake fixed `Homeostat` and `homeostat_snapshots` as one early-safety seam and separated reporting, governor policy execution and lifecycle ownership.
 - **v1.1 (2026-03-25):** `spec-compact` completed: full starter signal matrix fixed, dual cadence aligned on canonical `pg-boss`, typed reaction-request queue contract introduced, and cross-cutting source contracts for `CF-015`, `CF-016` and `CF-018` made explicit.
 - **v1.2 (2026-03-25):** `plan-slice` moved the dossier to `planned`; delivery is now split into four implementation slices covering contract/persistence surfaces, committed-state evaluator and degraded source handling, advisory reaction publication, and dual-cadence runtime closure.
+- **v1.3 (2026-03-25):** Completed `implementation`: delivered canonical homeostat contracts and persistence, added the `homeostat_snapshots` runtime schema, wired post-commit and periodic evaluation through the canonical `pg-boss` substrate, emitted advisory `homeostat.reaction-request` jobs with explicit idempotency keys, and closed AC-linked contract/integration/DB/smoke coverage without granting direct write authority over foreign seams.

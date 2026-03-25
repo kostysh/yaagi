@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { Client } from 'pg';
 import { PgBoss } from 'pg-boss';
 
+export { PgBoss } from 'pg-boss';
+
 const JOB_ENQUEUE_TIMEOUT_MESSAGE = 'job_enqueue.phase0_followup timed out';
 const JOB_ROLLBACK_TIMEOUT_MS = 1_000;
 

@@ -23,7 +23,7 @@ const smokeLifecycleMetrics = {
   telegramFamilyTeardowns: 0,
   runtimeResets: 0,
 };
-const expectedRuntimeResets = 8;
+const expectedRuntimeResets = 9;
 
 function coreBaseUrl(port = defaultCoreHostPort): string {
   return `http://127.0.0.1:${port}`;
@@ -46,10 +46,21 @@ truncate table
   polyphony_runtime.entities,
   polyphony_runtime.beliefs,
   polyphony_runtime.goals,
+  polyphony_runtime.homeostat_snapshots,
   polyphony_runtime.episodes,
   polyphony_runtime.action_log,
   polyphony_runtime.timeline_events,
   polyphony_runtime.ticks
+restart identity cascade;
+
+truncate table
+  pgboss.schedule,
+  pgboss.subscription,
+  pgboss.job,
+  pgboss.job_common,
+  pgboss.queue,
+  pgboss.bam,
+  pgboss.warning
 restart identity cascade;
 
 insert into polyphony_runtime.agent_state (
@@ -642,6 +653,38 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
            )::text;`,
           ),
           'true',
+        );
+      },
+    );
+
+    await prepareFreshRuntimeScenario();
+    await t.test(
+      'AC-F0012-04 runs homeostat on the committed wake tick and on scheduled periodic cadence inside the deployment cell',
+      async () => {
+        assert.equal(
+          await queryPostgres(
+            "select count(*)::text from polyphony_runtime.homeostat_snapshots where cadence_kind = 'tick_complete' and tick_id is not null;",
+          ),
+          '1',
+        );
+
+        await waitForPostgresValue(
+          "select count(*)::text from polyphony_runtime.homeostat_snapshots where cadence_kind = 'periodic';",
+          '1',
+          15_000,
+        );
+
+        assert.equal(
+          await queryPostgres(
+            "select count(*)::text from polyphony_runtime.ticks where status = 'completed';",
+          ),
+          '1',
+        );
+        assert.equal(
+          await queryPostgres(
+            "select count(*)::text from pgboss.queue where name = 'homeostat.periodic-evaluation';",
+          ),
+          '1',
         );
       },
     );

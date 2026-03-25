@@ -23,3 +23,14 @@ export {
   createPhase0RuntimeLifecycle,
   createPhase0TickExecution,
 } from './runtime-lifecycle.ts';
+export {
+  createDbBackedHomeostatService,
+  createHomeostatService,
+  createPeriodicHomeostatWorker,
+  evaluateHomeostatSignals,
+  type HomeostatEvaluationContext,
+  type HomeostatEvaluationResult,
+  type HomeostatRunResult,
+  type HomeostatService,
+  type PeriodicHomeostatWorker,
+} from './homeostat.ts';
