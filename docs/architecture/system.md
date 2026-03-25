@@ -1390,7 +1390,7 @@ Ownership note:
 
 - `GET /health` остаётся platform/runtime-owned readiness boundary.
 - Operator namespace (`GET /state`, `GET /timeline`, `GET /episodes`, `GET /models`, `POST /control/tick`) принадлежит `F-0013` как bounded read/control HTTP seam.
-- `GET /models` в этом operator namespace ограничен baseline diagnostics из `F-0008`; richer registry/organ health остаётся future-owned by `CF-010`.
+- `GET /models` в этом operator namespace ограничен baseline diagnostics из `F-0008`; richer registry/organ health остаётся future-owned by `F-0014`.
 - `POST /control/freeze-development` принадлежит будущему operator namespace, но до delivery `CF-016` должен оставаться explicit unavailable control, а не ad hoc governor write path.
 
 ### 8.2 Внутренний протокол core ↔ model organs
@@ -2094,7 +2094,7 @@ Homeostat должен иметь не только метрики, но и де
 | `rollback_frequency` | > 2/неделю | > 4/неделю | full developmental freeze + human review |
 
 Идея этих порогов проста: Полифония должна уметь быть не только умной, но и операционно вменяемой.
-`F-0012` spec-compact fixes the entire starter threshold matrix as canonical now. Signals whose richest sources belong to future seams (`CF-015`, `CF-016`, `CF-018`, plus richer organ ecology from `CF-010`) must read those seams' canonical surfaces once delivered; until then, homeostat emits `degraded` or `not_evaluable` status for the affected family and never fabricates proxy metrics. The same evaluator runs both after committed ticks and on scheduled periodic passes through canonical PostgreSQL/`pg-boss`.
+`F-0012` spec-compact fixes the entire starter threshold matrix as canonical now. Signals whose richest sources belong to future seams (`CF-015`, `CF-016`, `CF-018`, plus richer organ ecology from `F-0014`) must read those seams' canonical surfaces once delivered; until then, homeostat emits `degraded` or `not_evaluable` status for the affected family and never fabricates proxy metrics. The same evaluator runs both after committed ticks and on scheduled periodic passes through canonical PostgreSQL/`pg-boss`.
 
 ---
 
@@ -2274,8 +2274,8 @@ Homeostat должен иметь не только метрики, но и де
 | Development governor and policy gates | `CF-016` | `candidate` | Minimal governor ownership is defined, but no delivered governor seam exists yet. |
 | Consolidation, event envelope and graceful shutdown | `CF-018` | `candidate` | Retention/compaction and graceful shutdown biography remain backlog-owned future work. |
 | Observability and reporting | `CF-015` | `candidate` | Baseline health exists, but dedicated reports, metrics, tracing and richer reactions are still deferred. |
-| Operator API and introspection | `F-0013` | `done` | Operator-facing HTTP API beyond minimal health/ingress is now delivered as one bounded Hono route family: `/state`, `/timeline`, `/episodes`, `/models` and `/control/tick` are live, `/control/freeze-development` is explicit `501 future_owned`, baseline model diagnostics stay sourced from `F-0008`, and richer model ecology plus governor-backed execution remain future-owned by `CF-010` and `CF-016`. |
-| Expanded model ecology and registry health | `CF-010` | `candidate` | Additional organs, richer registry health and fallback policy remain future-owned. |
+| Operator API and introspection | `F-0013` | `done` | Operator-facing HTTP API beyond minimal health/ingress is now delivered as one bounded Hono route family: `/state`, `/timeline`, `/episodes`, `/models` and `/control/tick` are live, `/control/freeze-development` is explicit `501 future_owned`, baseline model diagnostics stay sourced from `F-0008`, and richer model ecology plus governor-backed execution remain future-owned by `F-0014` and `CF-016`. |
+| Expanded model ecology and registry health | `F-0014` | `proposed` | One canonical dossier now owns the future-expanded organ registry, richer registry health and explicit fallback/quarantine metadata beyond the delivered baseline router slice. |
 | Workshop training/eval/promotion pipeline | `CF-011` | `candidate` | Workshop lifecycle is architectural only; no intake or delivery yet. |
 | Controlled body evolution | `CF-012` | `candidate` | Stable-snapshot consumption exists, but controlled worktree/code-evolution flow remains future-owned. |
 | Skills lifecycle boundary | `CF-013` | `candidate` | Skill lifecycle ownership exists only in backlog at this point. |

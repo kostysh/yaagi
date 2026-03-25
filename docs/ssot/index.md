@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-03-25T21:11:25.459Z_
+_Last sync: 2026-03-25T21:39:43.403Z_
 
 ## Features
 
@@ -23,6 +23,7 @@ _Last sync: 2026-03-25T21:11:25.459Z_
 | F-0011 | Нарративный и меметический контур рассуждения | done | strict | cognition | F-0003, F-0004, F-0005, F-0009 | runtime,db,memory,cognition,narrative | `../features/F-0011-narrative-and-memetic-reasoning-loop.md` |
 | F-0012 | Гомеостат и операционные guardrails | done | strict | governance | F-0003, F-0004, F-0010, F-0011 | runtime,db,governance,safety,observability,jobs | `../features/F-0012-homeostat-and-operational-guardrails.md` |
 | F-0013 | HTTP API управления и интроспекции | done | strict | api | F-0001, F-0003, F-0004, F-0005, F-0008 | runtime,api,state,timeline,observability,models,governance | `../features/F-0013-operator-http-api-and-introspection.md` |
+| F-0014 | Расширенная модельная экология и здоровье реестра | proposed | deferred | models | F-0002, F-0008 | runtime,db,models,observability,api | `../features/F-0014-expanded-model-ecology-and-registry-health.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -43,6 +44,7 @@ graph TD
   F0011["F-0011 Нарративный и меметический контур рассуждения"]
   F0012["F-0012 Гомеостат и операционные guardrails"]
   F0013["F-0013 HTTP API управления и интроспекции"]
+  F0014["F-0014 Расширенная модельная экология и здоровье реестра"]
   F0001 --> F0002
   F0003 --> F0001
   F0003 --> F0002
@@ -86,6 +88,8 @@ graph TD
   F0013 --> F0004
   F0013 --> F0005
   F0013 --> F0008
+  F0014 --> F0002
+  F0014 --> F0008
 ```
 <!-- END GENERATED DEP_GRAPH -->
 
