@@ -2267,7 +2267,7 @@ Homeostat должен иметь не только метрики, но и де
 | Development governor and policy gates | `CF-016` | `candidate` | Minimal governor ownership is defined, but no delivered governor seam exists yet. |
 | Consolidation, event envelope and graceful shutdown | `CF-018` | `candidate` | Retention/compaction and graceful shutdown biography remain backlog-owned future work. |
 | Observability and reporting | `CF-015` | `candidate` | Baseline health exists, but dedicated reports, metrics, tracing and richer reactions are still deferred. |
-| Operator API and introspection | `CF-009` | `candidate` | Public operator/control API beyond health remains deferred to backlog owner. |
+| Operator API and introspection | `F-0013` | `proposed` | Operator-facing HTTP API beyond minimal health/ingress is now intaken as its own seam: bounded read-only introspection and owner-routed control routes are scoped here, while richer model ecology and governor-backed control execution remain explicitly future-owned by `CF-010` and `CF-016`. |
 | Expanded model ecology and registry health | `CF-010` | `candidate` | Additional organs, richer registry health and fallback policy remain future-owned. |
 | Workshop training/eval/promotion pipeline | `CF-011` | `candidate` | Workshop lifecycle is architectural only; no intake or delivery yet. |
 | Controlled body evolution | `CF-012` | `candidate` | Stable-snapshot consumption exists, but controlled worktree/code-evolution flow remains future-owned. |

@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-03-25T19:36:54.637Z_
+_Last sync: 2026-03-25T19:54:10.813Z_
 
 ## Features
 
@@ -22,6 +22,7 @@ _Last sync: 2026-03-25T19:36:54.637Z_
 | F-0010 | Исполнительный центр и ограниченный слой действий | done | strict | actions | F-0002, F-0003, F-0005, F-0008, F-0009 | runtime,db,tools,jobs,workspace,network | `../features/F-0010-executive-center-and-bounded-action-layer.md` |
 | F-0011 | Нарративный и меметический контур рассуждения | done | strict | cognition | F-0003, F-0004, F-0005, F-0009 | runtime,db,memory,cognition,narrative | `../features/F-0011-narrative-and-memetic-reasoning-loop.md` |
 | F-0012 | Гомеостат и операционные guardrails | done | strict | governance | F-0003, F-0004, F-0010, F-0011 | runtime,db,governance,safety,observability,jobs | `../features/F-0012-homeostat-and-operational-guardrails.md` |
+| F-0013 | HTTP API управления и интроспекции | proposed | deferred | api | F-0001, F-0003, F-0004, F-0005, F-0008 | runtime,api,state,timeline,observability,models,governance | `../features/F-0013-operator-http-api-and-introspection.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -41,6 +42,7 @@ graph TD
   F0010["F-0010 Исполнительный центр и ограниченный слой действий"]
   F0011["F-0011 Нарративный и меметический контур рассуждения"]
   F0012["F-0012 Гомеостат и операционные guardrails"]
+  F0013["F-0013 HTTP API управления и интроспекции"]
   F0001 --> F0002
   F0003 --> F0001
   F0003 --> F0002
@@ -79,6 +81,11 @@ graph TD
   F0012 --> F0004
   F0012 --> F0010
   F0012 --> F0011
+  F0013 --> F0001
+  F0013 --> F0003
+  F0013 --> F0004
+  F0013 --> F0005
+  F0013 --> F0008
 ```
 <!-- END GENERATED DEP_GRAPH -->
 
