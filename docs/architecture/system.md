@@ -1386,6 +1386,13 @@ Possible later enrichments after explicit future seams:
 
 Формат — `application/json`.
 
+Ownership note:
+
+- `GET /health` остаётся platform/runtime-owned readiness boundary.
+- Operator namespace (`GET /state`, `GET /timeline`, `GET /episodes`, `GET /models`, `POST /control/tick`) принадлежит `F-0013` как bounded read/control HTTP seam.
+- `GET /models` в этом operator namespace ограничен baseline diagnostics из `F-0008`; richer registry/organ health остаётся future-owned by `CF-010`.
+- `POST /control/freeze-development` принадлежит будущему operator namespace, но до delivery `CF-016` должен оставаться explicit unavailable control, а не ad hoc governor write path.
+
 ### 8.2 Внутренний протокол core ↔ model organs
 
 Используется HTTP/JSON по внутренней Docker network.
@@ -2267,7 +2274,7 @@ Homeostat должен иметь не только метрики, но и де
 | Development governor and policy gates | `CF-016` | `candidate` | Minimal governor ownership is defined, but no delivered governor seam exists yet. |
 | Consolidation, event envelope and graceful shutdown | `CF-018` | `candidate` | Retention/compaction and graceful shutdown biography remain backlog-owned future work. |
 | Observability and reporting | `CF-015` | `candidate` | Baseline health exists, but dedicated reports, metrics, tracing and richer reactions are still deferred. |
-| Operator API and introspection | `F-0013` | `proposed` | Operator-facing HTTP API beyond minimal health/ingress is now intaken as its own seam: bounded read-only introspection and owner-routed control routes are scoped here, while richer model ecology and governor-backed control execution remain explicitly future-owned by `CF-010` and `CF-016`. |
+| Operator API and introspection | `F-0013` | `shaped` | Operator-facing HTTP API beyond minimal health/ingress is now shaped as one bounded Hono route family: explicit DTOs, cursor/idempotency semantics and owner-routed control handoff live here, while richer model ecology and governor-backed control execution remain explicitly future-owned by `CF-010` and `CF-016`. |
 | Expanded model ecology and registry health | `CF-010` | `candidate` | Additional organs, richer registry health and fallback policy remain future-owned. |
 | Workshop training/eval/promotion pipeline | `CF-011` | `candidate` | Workshop lifecycle is architectural only; no intake or delivery yet. |
 | Controlled body evolution | `CF-012` | `candidate` | Stable-snapshot consumption exists, but controlled worktree/code-evolution flow remains future-owned. |
