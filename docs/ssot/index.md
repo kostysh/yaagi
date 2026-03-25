@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-03-25T14:01:01.657Z_
+_Last sync: 2026-03-25T15:53:09.698Z_
 
 ## Features
 
@@ -20,7 +20,7 @@ _Last sync: 2026-03-25T14:01:01.657Z_
 | F-0008 | Базовый маршрутизатор моделей и профили органов | done | strict | models | F-0002, F-0003 | runtime,db,models,cognition | `../features/F-0008-baseline-model-router-and-organ-profiles.md` |
 | F-0009 | Context Builder и structured decision harness | done | strict | cognition | F-0003, F-0004, F-0005, F-0008 | runtime,db,perception,memory,models,cognition | `../features/F-0009-context-builder-and-structured-decision-harness.md` |
 | F-0010 | Исполнительный центр и ограниченный слой действий | done | strict | actions | F-0002, F-0003, F-0005, F-0008, F-0009 | runtime,db,tools,jobs,workspace,network | `../features/F-0010-executive-center-and-bounded-action-layer.md` |
-| F-0011 | Нарративный и меметический контур рассуждения | shaped | deferred | cognition | F-0003, F-0004, F-0005 | runtime,db,memory,cognition,narrative | `../features/F-0011-narrative-and-memetic-reasoning-loop.md` |
+| F-0011 | Нарративный и меметический контур рассуждения | planned | deferred | cognition | F-0003, F-0004, F-0005 | runtime,db,memory,cognition,narrative | `../features/F-0011-narrative-and-memetic-reasoning-loop.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph

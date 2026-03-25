@@ -1,7 +1,7 @@
 ---
 id: F-0011
 title: Нарративный и меметический контур рассуждения
-status: shaped
+status: planned
 coverage_gate: deferred
 owners: ["@codex"]
 area: cognition
@@ -236,35 +236,79 @@ type NarrativeMemeticOutputs = {
   - bounded `NarrativeMemeticOutputs` shape and read-only downstream consumption;
   - explicit write-authority boundaries against `F-0004` and `CF-018`.
 - Runtime integration should prove that retry/replay preserves the promotion boundary and does not create duplicate durable units or impossible narrative chronology.
-- Container smoke is not inherently required by this shaped step itself. For implementation, smoke becomes mandatory only for slices that actually change runtime/startup/deployment behavior in the canonical deployment cell.
+- Container smoke is not inherently required by this planning step itself. For implementation, smoke becomes mandatory only for slices that actually change runtime/startup/deployment behavior in the canonical deployment cell.
 
 ## 6. Definition of Done
 
-- `F-0011` is `shaped` with explicit separation between ordinary tick writes and `CF-018`-owned durable transition classes.
-- The dossier fixes one bounded downstream cognition contract and one internal input contract without introducing a public API or a parallel self-model store.
-- Core schema intent is explicit for `memetic_units`, `memetic_edges`, `coalitions`, `narrative_spine_versions` and `field_journal_entries`, including the rule that durable `memetic_candidates` storage is not introduced.
+- `F-0011` is `planned` with explicit separation between ordinary tick writes and `CF-018`-owned durable transition classes.
+- The dossier keeps one bounded downstream cognition contract and one internal input contract without introducing a public API or a parallel self-model store.
+- The dossier contains four delivery slices with ordered exit criteria and named verification artifacts.
+- The task list references only slice IDs and AC IDs and is sufficient to start implementation without inventing new ownership boundaries.
+- Core schema intent remains explicit for `memetic_units`, `memetic_edges`, `coalitions`, `narrative_spine_versions` and `field_journal_entries`, including the rule that durable `memetic_candidates` storage is not introduced.
 - The dossier explicitly forbids direct writes to `psm_json`, `goals`, `beliefs`, `entities` and `relationships`.
 - Verification expectations cover bootstrap, candidate-vs-unit separation, provenance, downstream contract shape and owner-boundary enforcement.
-- Architecture coverage and global index remain aligned with the shaped status and owner boundary.
+- Architecture coverage and global index remain aligned with the planned status and owner boundary.
 
 ## 7. Slicing plan
 
-- To be added during `plan-slice`.
+### Slice SL-F0011-01: Bootstrap baseline and canonical cognition contracts
+Delivers: canonical input/output contract modules for `NarrativeMemeticInputs`, `TickLocalMemeticCandidate` and `NarrativeMemeticOutputs`, plus bootstrap baseline seeding rules for the first `wake` tick.
+Covers: AC-F0011-01, AC-F0011-02, AC-F0011-05
+Verification: `contract`, `integration`
+Exit criteria:
+- First-cycle bootstrap materializes the minimal baseline from constitution, identity core and initial goals/beliefs without requiring prior narrative state.
+- Candidate assembly accepts only canonical inputs from `F-0003`, `F-0004` and `F-0005`.
+- Downstream output shape is fixed and versionable before runtime wiring begins.
+
+### Slice SL-F0011-02: Ordinary tick persistence boundary for existing durable units
+Delivers: ordinary-tick write path that updates only existing durable narrative/memetic state, including coalition append, journal append and bounded edge maintenance.
+Covers: AC-F0011-02, AC-F0011-03, AC-F0011-04, AC-F0011-06
+Verification: `integration`, `db`
+Exit criteria:
+- Ordinary ticks update activation/reinforcement/decay on existing `memetic_units` only.
+- `memetic_edges` are created or updated only between already durable units.
+- No durable promotion path exists inside the ordinary tick transaction.
+- Provenance anchors are required on durable unit and narrative writes.
+
+### Slice SL-F0011-03: Downstream bounded read model and consumer handoff
+Delivers: read-only handoff of `NarrativeMemeticOutputs` into downstream cognition consumers such as the `F-0009` context builder path.
+Covers: AC-F0011-04, AC-F0011-05, AC-F0011-06
+Verification: `contract`, `integration`
+Exit criteria:
+- `activeMemeticUnits`, `winningCoalition`, `coalitionDiagnostics`, `affectPatch`, `narrativeSummary`, `fieldJournalExcerpts`, `narrativeTensions` and `provenanceAnchors` are emitted as one bounded contract.
+- Downstream consumers remain read-only with respect to narrative/memetic persistence.
+- No public API or parallel history store is introduced for this handoff.
+
+### Slice SL-F0011-04: Runtime wiring, replay safety and closure verification
+Delivers: end-to-end supported tick wiring with retry/replay safety and the final verification closure for runtime-impacting slices.
+Covers: AC-F0011-01, AC-F0011-03, AC-F0011-04, AC-F0011-05, AC-F0011-06
+Verification: `integration`, `smoke-if-runtime-path-changes`
+Exit criteria:
+- Supported tick paths can execute the narrative/memetic seam without bypassing `F-0004` or `CF-018` boundaries.
+- Retry/replay does not create impossible duplicate durable units or narrative history.
+- If implementation changes runtime/startup/deployment behavior, the canonical deployment-cell smoke path is added before feature closure.
 
 ## 8. Task list
 
-- To be added during `plan-slice`.
+- **T-F0011-01:** Materialize canonical contract modules and bootstrap seed assembly for `SL-F0011-01`. Covers: AC-F0011-01, AC-F0011-02, AC-F0011-05.
+- **T-F0011-02:** Add contract and first-cycle integration coverage for `SL-F0011-01`, including canonical-input and `no raw-ingest-to-durable` guards. Covers: AC-F0011-01, AC-F0011-02.
+- **T-F0011-03:** Implement ordinary-tick persistence boundaries for `SL-F0011-02`, including existing-unit score updates, bounded edge maintenance and append-only coalition/journal/narrative writes. Covers: AC-F0011-03, AC-F0011-04, AC-F0011-06.
+- **T-F0011-04:** Add database and integration coverage for `SL-F0011-02`, proving no hidden durable promotion and required provenance anchors. Covers: AC-F0011-03, AC-F0011-04, AC-F0011-06.
+- **T-F0011-05:** Implement bounded downstream read-model assembly and consumer handoff for `SL-F0011-03`. Covers: AC-F0011-05, AC-F0011-06.
+- **T-F0011-06:** Add contract and integration coverage for `SL-F0011-03`, proving read-only downstream consumption and no parallel history store. Covers: AC-F0011-05, AC-F0011-06.
+- **T-F0011-07:** Wire supported runtime entrypoints and replay/idempotency guards for `SL-F0011-04`. Covers: AC-F0011-01, AC-F0011-03, AC-F0011-04, AC-F0011-06.
+- **T-F0011-08:** Add final runtime integration coverage and conditional deployment-cell smoke for `SL-F0011-04`. Covers: AC-F0011-03, AC-F0011-05, AC-F0011-06.
 
 ## 9. Test plan & Coverage map
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0011-01 | `spec-compact` fixes bootstrap baseline and first-cycle verification expectations; executable coverage to be attached in `plan-slice` / `implementation` | planned |
-| AC-F0011-02 | `spec-compact` fixes canonical candidate-assembly inputs and `no raw-ingest-to-durable`; executable coverage to be attached in `plan-slice` / `implementation` | planned |
-| AC-F0011-03 | `spec-compact` fixes ordinary-tick write policy and forbidden promotion paths; executable coverage to be attached in `plan-slice` / `implementation` | planned |
-| AC-F0011-04 | `spec-compact` fixes provenance and field-journal maturity invariants; executable coverage to be attached in `plan-slice` / `implementation` | planned |
-| AC-F0011-05 | `spec-compact` fixes downstream `NarrativeMemeticOutputs` shape; executable coverage to be attached in `plan-slice` / `implementation` | planned |
-| AC-F0011-06 | `spec-compact` fixes write-authority boundary against `F-0004`; executable coverage to be attached in `plan-slice` / `implementation` | planned |
+| AC-F0011-01 | `SL-F0011-01`, `SL-F0011-04` via `contract`, `integration` | planned |
+| AC-F0011-02 | `SL-F0011-01`, `SL-F0011-02` via `contract`, `integration`, `db` | planned |
+| AC-F0011-03 | `SL-F0011-02`, `SL-F0011-04` via `integration`, `db`, `smoke-if-runtime-path-changes` | planned |
+| AC-F0011-04 | `SL-F0011-02`, `SL-F0011-03`, `SL-F0011-04` via `integration`, `db` | planned |
+| AC-F0011-05 | `SL-F0011-01`, `SL-F0011-03`, `SL-F0011-04` via `contract`, `integration`, `smoke-if-runtime-path-changes` | planned |
+| AC-F0011-06 | `SL-F0011-02`, `SL-F0011-03`, `SL-F0011-04` via `integration`, `db`, `smoke-if-runtime-path-changes` | planned |
 
 ## 10. Decision log (ADR blocks)
 
@@ -298,3 +342,4 @@ type NarrativeMemeticOutputs = {
 
 - **v1.0 (2026-03-25):** Initial feature-intake dossier created from `CF-005`; intake keeps memetics, narrative spine and field journal in one dossier and explicitly leaves durable promotion/compaction to `CF-018`.
 - **v1.1 (2026-03-25):** `spec-compact` shaped the feature: refined ACs, fixed ordinary tick vs consolidation ownership, defined bounded downstream narrative/memetic contract and documented core schema intent for narrative/memetic surfaces.
+- **v1.2 (2026-03-25):** `plan-slice` moved the dossier to `planned`; delivery is split into four slices covering bootstrap/contracts, ordinary-tick persistence boundaries, downstream read-model handoff and runtime/replay closure verification.
