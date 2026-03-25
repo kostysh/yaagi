@@ -5,7 +5,7 @@ status: shaped
 coverage_gate: deferred
 owners: ["@codex"]
 area: governance
-depends_on: [F-0004, F-0010, F-0011]
+depends_on: [F-0003, F-0004, F-0010, F-0011]
 impacts: [runtime, db, governance, safety, observability, jobs]
 created: 2026-03-25
 updated: 2026-03-25
