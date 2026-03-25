@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "created_at": "2026-03-25T15:54:16.742Z",
+  "step": "plan-slice",
+  "feature_id": "F-0011",
+  "dossier": "docs/features/F-0011-narrative-and-memetic-reasoning-loop.md",
+  "current_commit": "8ec1a9e3181a5b3846ee5575dc90dfb77015d2cc",
+  "status": "pass",
+  "checks": [
+    {
+      "name": "sync-index",
+      "command": "node scripts/sync-index.mjs --root .",
+      "exit_code": 0,
+      "stdout": "[sync-index] docs/ssot/index.md already up to date (11 dossier(s)).\n",
+      "stderr": "",
+      "duration_ms": 36,
+      "status": "pass"
+    },
+    {
+      "name": "lint-dossiers",
+      "command": "node scripts/lint-dossiers.mjs --root .",
+      "exit_code": 0,
+      "stdout": "Found 0 error(s), 0 warning(s) across 11 dossier(s).\n",
+      "stderr": "",
+      "duration_ms": 32,
+      "status": "pass"
+    },
+    {
+      "name": "coverage-audit",
+      "command": "node scripts/coverage-audit.mjs --root . --orphans-scope auto --dossier docs/features/F-0011-narrative-and-memetic-reasoning-loop.md",
+      "exit_code": 0,
+      "stdout": "Coverage audit: 1 dossier(s), 52 test file(s) scanned. Blocking missing: 0. Informational missing: 6. Orphans: 0 (scope: dossier).\n\n== docs/features/F-0011-narrative-and-memetic-reasoning-loop.md ==\nStatus: planned | coverage gate: deferred | AC count: 6\nInformational missing AC reference(s):\n- AC-F0011-01\n- AC-F0011-02\n- AC-F0011-03\n- AC-F0011-04\n- AC-F0011-05\n- AC-F0011-06\n",
+      "stderr": "",
+      "duration_ms": 29,
+      "status": "pass"
+    },
+    {
+      "name": "debt-audit",
+      "command": "node scripts/debt-audit.mjs --root . --changed-only",
+      "exit_code": 0,
+      "stdout": "Marker audit (debt-audit compatibility): 12 file(s) scanned.\nScope: explicit debt markers only; manual debt review is still required.\nNo unresolved debt markers found.\n",
+      "stderr": "",
+      "duration_ms": 40,
+      "status": "pass"
+    },
+    {
+      "name": "git-diff-check",
+      "command": "git diff --check",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "duration_ms": 2,
+      "status": "pass"
+    }
+  ]
+}
