@@ -318,9 +318,9 @@ Tasks:
   - `pnpm quality:fix`
   - `pnpm test`
   - `pnpm smoke:cell`
-  - `node scripts/sync-index.mjs`
-  - `node scripts/lint-dossiers.mjs`
-  - `node scripts/coverage-audit.mjs`
+  - `node scripts/dossier.mjs sync-index`
+  - `node scripts/dossier.mjs lint-dossiers`
+  - `node scripts/dossier.mjs coverage-audit`
   - `pnpm debt:audit:changed`
 
 ## 11. Журнал изменений (Change log)

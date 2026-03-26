@@ -353,9 +353,9 @@ Tasks:
   - `pnpm lint`
   - `pnpm test`
   - `pnpm smoke:cell`
-  - `node scripts/sync-index.mjs`
-  - `node scripts/lint-dossiers.mjs`
-  - `node scripts/coverage-audit.mjs --dossier docs/features/F-0008-baseline-model-router-and-organ-profiles.md`
+  - `node scripts/dossier.mjs sync-index`
+  - `node scripts/dossier.mjs lint-dossiers`
+  - `node scripts/dossier.mjs coverage-audit --dossier docs/features/F-0008-baseline-model-router-and-organ-profiles.md`
   - `pnpm debt:audit:changed`
   - `pnpm debt:audit`
 

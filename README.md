@@ -20,13 +20,13 @@ Canonical documentation entry points:
 - `docs/features/F-*.md`
 
 Bootstrap and maintenance commands:
-- `node scripts/index-refresh.mjs`
-- `node scripts/sync-index.mjs`
-- `node scripts/lint-dossiers.mjs`
-- `node scripts/coverage-audit.mjs`
-- `node scripts/next-step.mjs`
-- `node scripts/dossier-verify.mjs --step implementation --changed-only`
-- `node scripts/dependency-graph.mjs`
+- `node scripts/dossier.mjs index-refresh`
+- `node scripts/dossier.mjs sync-index`
+- `node scripts/dossier.mjs lint-dossiers`
+- `node scripts/dossier.mjs coverage-audit`
+- `node scripts/dossier.mjs next-step`
+- `node scripts/dossier.mjs dossier-verify --step implementation --changed-only`
+- `node scripts/dossier.mjs dependency-graph`
 
 ## Developer Runtime Notes
 

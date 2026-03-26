@@ -12,6 +12,8 @@ export default [
     ignores: [
       '**/dist/**',
       '**/node_modules/**',
+      'scripts/dossier.mjs',
+      'scripts/**/*.map',
       'docs/**',
       'workspace/**',
       'models/**',

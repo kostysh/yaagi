@@ -355,11 +355,11 @@ Exit criteria:
   - `pnpm quality:fix`
   - `pnpm test`
   - `pnpm smoke:cell`
-  - `node scripts/index-refresh.mjs`
-  - `node scripts/lint-dossiers.mjs`
-  - `node scripts/coverage-audit.mjs --dossier docs/features/F-0011-narrative-and-memetic-reasoning-loop.md --orphans-scope=dossier`
+  - `node scripts/dossier.mjs index-refresh`
+  - `node scripts/dossier.mjs lint-dossiers`
+  - `node scripts/dossier.mjs coverage-audit --dossier docs/features/F-0011-narrative-and-memetic-reasoning-loop.md --orphans-scope=dossier`
   - `pnpm debt:audit:changed`
-  - `node scripts/dossier-verify.mjs --dossier docs/features/F-0011-narrative-and-memetic-reasoning-loop.md --step implementation`
+  - `node scripts/dossier.mjs dossier-verify --dossier docs/features/F-0011-narrative-and-memetic-reasoning-loop.md --step implementation`
 
 ## 12. Change log
 

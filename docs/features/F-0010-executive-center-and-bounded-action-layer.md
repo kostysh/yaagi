@@ -376,9 +376,9 @@ Tasks:
   - `pnpm lint`
   - `pnpm test`
   - `pnpm smoke:cell`
-  - `node scripts/sync-index.mjs`
-  - `node scripts/lint-dossiers.mjs`
-  - `node scripts/coverage-audit.mjs --dossier docs/features/F-0010-executive-center-and-bounded-action-layer.md`
+  - `node scripts/dossier.mjs sync-index`
+  - `node scripts/dossier.mjs lint-dossiers`
+  - `node scripts/dossier.mjs coverage-audit --dossier docs/features/F-0010-executive-center-and-bounded-action-layer.md`
   - `pnpm debt:audit:changed`
   - `pnpm debt:audit`
   - `git diff --check`
