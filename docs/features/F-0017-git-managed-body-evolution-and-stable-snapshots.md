@@ -1,7 +1,7 @@
 ---
 id: F-0017
 title: Git-управляемая эволюция тела и стабильные снапшоты
-status: shaped
+status: planned
 coverage_gate: deferred
 owners: ["@codex"]
 area: body
@@ -308,49 +308,214 @@ Rollback limits:
 
 ## 6. Slicing plan (2–6 increments)
 
-Pending `plan-slice`.
+Forecast policy: slices below are implementation forecast, not separate product commitments. Commitment remains in ACs, Definition of Done, verification gates and rollout constraints.
+
+### Dependency visibility
+
+- Depends on: `F-0001`; owner: `@codex`; unblock condition: delivered boot/recovery continuity fields remain read-only for F-0017 and stable snapshot outputs are consumable without back-writing those fields.
+- Depends on: `F-0002`; owner: `@codex`; unblock condition: delivered canonical monorepo/deployment cell and materialized writable body paths remain the runtime substrate for worktree operations.
+- Depends on: `F-0010`; owner: `@codex`; unblock condition: delivered bounded action/tool layer remains the only path for Git and filesystem mutation.
+- Depends on: `F-0015`; owner: `@codex`; unblock condition: delivered workshop evidence/promotion package remains read-only input and is not re-owned by body evolution.
+- Depends on: `F-0016`; owner: `@codex`; unblock condition: delivered governor approval/outcome owner gates remain the only authority path for proposal decisions and execution/rollback evidence.
+
+### Contract risks to kill before implementation close-out
+
+- Authority ambiguity: `governor` and `human_override` must stay mutually exclusive request authority paths.
+- Root/path ambiguity: every write path must resolve under materialized writable body and never under tracked `/seed/body`.
+- Retry ambiguity: request replay must be idempotent only for the same normalized hash.
+- Gate ambiguity: candidate commit must not exist before repo gates and proposal eval suite pass.
+- Ownership ambiguity: F-0017 must not write governor, boot/recovery, workshop, reporting, public auth or deploy/release source surfaces.
+
+### SL-F0017-01 — Proposal authority, persistence and body boundary guards
+
+Deliverable:
+
+- Internal body-change service/source module with request normalization, authority validation, proposal/event persistence and fail-closed path guards.
+- Worktree-root resolver that accepts only materialized writable body paths.
+- Boundary guards rejecting tracked `/seed/body` targets and symlink/path escapes before file mutation.
+
+AC coverage:
+
+- AC-F0017-01, AC-F0017-02, AC-F0017-03, AC-F0017-04, AC-F0017-05
+- AC-F0017-06, AC-F0017-07, AC-F0017-08
+- AC-F0017-09, AC-F0017-10, AC-F0017-11, AC-F0017-12, AC-F0017-13, AC-F0017-14, AC-F0017-15
+
+Verification artifacts:
+
+- Contract tests for `BodyChangeAuthority`, idempotent replay and conflict rejection.
+- Persistence tests for proposal/event fields.
+- Boundary tests for worktree root placement, `/seed/body` rejection and symlink/path escape rejection.
+- Changed-source gate: `pnpm format`, `pnpm typecheck`, `pnpm lint`.
+
+Depends on:
+
+- `F-0002`; owner: `@codex`; unblock condition: materialized writable body path contract is available.
+- `F-0010`; owner: `@codex`; unblock condition: bounded tool/Git execution remains the write path.
+- `F-0016`; owner: `@codex`; unblock condition: governor approval/override evidence can be consumed read-only.
+
+Assumes:
+
+- Runtime path configuration can expose both immutable seed and materialized writable body roots to the body-evolution service.
+
+Fallback:
+
+- If runtime path configuration is incomplete, stop after persistence/authority tests and add an explicit implementation blocker rather than deriving paths ad hoc.
+
+Approval / decision path:
+
+- No ADR expected if implementation stays within existing path/root and owner-boundary contracts.
+- Architecture or ADR update required if a new writable root, new public route or new owner surface appears.
+
+### SL-F0017-02 — Eval-gated worktree execution and candidate commits
+
+Deliverable:
+
+- Internal worktree execution flow that creates isolated proposal branches/worktrees under materialized writable body.
+- Proposal lifecycle transitions through `worktree_ready`, `evaluating`, `evaluation_failed` and `candidate_committed`.
+- Gate adapter that requires canonical repo quality gates plus proposal-declared eval suite before candidate commit.
+- Runtime/startup/deployment detector that requires `pnpm smoke:cell` evidence before `candidate_committed`.
+
+AC coverage:
+
+- AC-F0017-16, AC-F0017-17, AC-F0017-18
+- Regression coverage for AC-F0017-04, AC-F0017-05, AC-F0017-06, AC-F0017-07, AC-F0017-08
+
+Verification artifacts:
+
+- Integration tests for gate pass/fail paths and lifecycle transitions.
+- Test fixture proving failed eval records evidence and does not create candidate commit.
+- Test fixture proving runtime/startup/deployment changes are blocked without `pnpm smoke:cell` evidence.
+- Changed-source gate: `pnpm format`, `pnpm typecheck`, `pnpm lint`.
+- Runtime/deployment gate when touched: `pnpm test` and `pnpm smoke:cell`.
+
+Depends on:
+
+- `SL-F0017-01`; owner: `@codex`; unblock condition: proposal persistence, authority validation and path guards are merged.
+- `F-0010`; owner: `@codex`; unblock condition: Git/worktree operations can be executed through bounded action/tool layer.
+
+Assumes:
+
+- Proposal eval suite can be represented as a named local command/evidence contract without adding public deploy orchestration.
+
+Fallback:
+
+- If eval suite naming is not yet stable, keep candidate commits blocked and add a narrow follow-up blocker before implementation closure.
+
+Approval / decision path:
+
+- Repo ADR update required only if quality gate order changes from `format -> typecheck -> lint` or if smoke semantics change.
+
+### SL-F0017-03 — Stable snapshots, rollback evidence, owner-gated outcomes and usage audit
+
+Deliverable:
+
+- Stable snapshot manifest/tag creation for body-owned rollback units.
+- Rollback evidence creation linked to proposal id, snapshot id, rollback reason and verification result.
+- Governor-compatible execution/rollback outcome evidence emitted only through `F-0016` owner gates.
+- Negative surface checks proving no public/operator execution route and no deploy/release activation.
+- Real usage audit of the internal flow, with corrective findings pre-classified before close-out.
+
+AC coverage:
+
+- AC-F0017-19, AC-F0017-20, AC-F0017-21, AC-F0017-22, AC-F0017-23, AC-F0017-24
+- AC-F0017-25, AC-F0017-26, AC-F0017-27, AC-F0017-28
+- AC-F0017-29, AC-F0017-30, AC-F0017-31, AC-F0017-32, AC-F0017-33
+
+Verification artifacts:
+
+- Manifest validation tests for git tag, schema version, active model profile map, critical config hash and eval summary.
+- Boot/recovery boundary test proving stable snapshot publication does not update continuity fields directly.
+- Rollback evidence contract tests.
+- Governor owner-gate integration tests for execution and rollback outcomes.
+- Route/surface/deploy-boundary tests proving public execution and release activation are absent.
+- Real usage audit log with findings classified as `docs-only`, `runtime`, `schema/help`, `cross-skill` or `audit-only`.
+- Changed-source gate: `pnpm format`, `pnpm typecheck`, `pnpm lint`.
+- Runtime/deployment gate when touched: `pnpm test` and `pnpm smoke:cell`.
+
+Depends on:
+
+- `SL-F0017-02`; owner: `@codex`; unblock condition: candidate commit and eval evidence flow exists.
+- `F-0001`; owner: `@codex`; unblock condition: boot/recovery continuity remains read-only and consumes rollback refs through its own boundary.
+- `F-0016`; owner: `@codex`; unblock condition: owner-gated outcome evidence submission remains available.
+
+Assumes:
+
+- Stable snapshot tags can be produced in the local Git context without production release activation.
+
+Fallback:
+
+- If tag creation conflicts with repo release rules, store manifest/evidence first and block `snapshot_ready` until the tag policy is clarified.
+
+Approval / decision path:
+
+- Architecture update required if stable snapshot manifest fields or ownership boundaries change.
+- Future backlog handoff remains `CF-024` for public/operator RBAC and `CF-025` for deploy/release automation.
+
+### Drift guard and real usage audit
+
+- Drift guard: each implementation slice must re-check `F-0017`, `F-0016`, `F-0001`, `F-0010`, `README.md` and relevant ADRs before source edits.
+- Drift guard: if implementation adds a route, release activation, boot continuity write, governor table write, workshop lifecycle write or reporting source write, stop and realign scope before continuing.
+- Real usage audit: after `SL-F0017-03`, exercise the internal body-change flow once in a non-public/local mode and classify findings as `docs-only`, `runtime`, `schema/help`, `cross-skill` or `audit-only`.
+- Expected corrective categories: `runtime` for path/eval edge cases, `schema/help` for manifest or internal command output mismatch, `cross-skill` for governor/backlog/dossier handoff ambiguity, `docs-only` for operator-facing explanation gaps, `audit-only` for observations that do not change behavior.
+
+### Rollout / activation plan
+
+1. Merge `SL-F0017-01` with internal APIs still unreachable from public/operator routes.
+2. Merge `SL-F0017-02` with candidate commits blocked unless repo gates and proposal eval pass.
+3. Merge `SL-F0017-03` with stable snapshot/rollback evidence enabled for internal owner calls only.
+4. Keep public/operator execution disabled until `CF-024`.
+5. Keep environment promotion and release activation disabled until `CF-025`.
+
+Rollback limits:
+
+- Roll back each implementation slice through normal Git revert if source behavior regresses.
+- Runtime body rollback inside F-0017 is limited to stable snapshot evidence and local Git refs.
+- Production release rollback remains out of scope and belongs to `CF-025`.
 
 ## 7. Task list (implementation units)
 
-Pending `plan-slice`.
+- **T-F0017-01:** Implement `SL-F0017-01`.
+- **T-F0017-02:** Implement `SL-F0017-02`.
+- **T-F0017-03:** Implement `SL-F0017-03`.
+- **T-F0017-04:** Run `SL-F0017-03` real usage audit and classify corrective findings as `docs-only`, `runtime`, `schema/help`, `cross-skill` or `audit-only`.
 
 ## 8. Test plan & Coverage map
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0017-01 | Governor approval intake contract test | planned |
-| AC-F0017-02 | Owner override intake contract test | planned |
-| AC-F0017-03 | Missing authorization rejection test | planned |
-| AC-F0017-04 | Same-hash replay idempotency test | planned |
-| AC-F0017-05 | Changed-hash replay conflict test | planned |
-| AC-F0017-06 | Worktree root integration test | planned |
-| AC-F0017-07 | Seed write rejection boundary test | planned |
-| AC-F0017-08 | Symlink/path escape rejection boundary test | planned |
-| AC-F0017-09 | Proposal id persistence contract test | planned |
-| AC-F0017-10 | Governor ref persistence contract test | planned |
-| AC-F0017-11 | Branch name persistence contract test | planned |
-| AC-F0017-12 | Worktree path persistence contract test | planned |
-| AC-F0017-13 | Lifecycle status persistence contract test | planned |
-| AC-F0017-14 | Required eval suite persistence contract test | planned |
-| AC-F0017-15 | Provenance refs persistence contract test | planned |
-| AC-F0017-16 | Repository quality gate integration test | planned |
-| AC-F0017-17 | Proposal eval suite gate integration test | planned |
-| AC-F0017-18 | Smoke-required gate test for runtime/startup/deployment changes | planned |
-| AC-F0017-19 | Stable snapshot git tag validation test | planned |
-| AC-F0017-20 | Stable snapshot schema version persistence test | planned |
-| AC-F0017-21 | Stable snapshot model profile map persistence test | planned |
-| AC-F0017-22 | Stable snapshot config hash persistence test | planned |
-| AC-F0017-23 | Stable snapshot eval summary persistence test | planned |
-| AC-F0017-24 | Boot/recovery back-write boundary test | planned |
-| AC-F0017-25 | Rollback proposal id evidence test | planned |
-| AC-F0017-26 | Rollback snapshot id evidence test | planned |
-| AC-F0017-27 | Rollback reason evidence test | planned |
-| AC-F0017-28 | Rollback verification result evidence test | planned |
-| AC-F0017-29 | Execution outcome owner-gate integration test | planned |
-| AC-F0017-30 | Rollback outcome owner-gate integration test | planned |
-| AC-F0017-31 | Public route absence test | planned |
-| AC-F0017-32 | Environment promotion absence test | planned |
-| AC-F0017-33 | Release activation absence test | planned |
+| AC-F0017-01 | `SL-F0017-01` governor approval intake contract test | planned |
+| AC-F0017-02 | `SL-F0017-01` owner override intake contract test | planned |
+| AC-F0017-03 | `SL-F0017-01` missing authorization rejection test | planned |
+| AC-F0017-04 | `SL-F0017-01` same-hash replay idempotency test | planned |
+| AC-F0017-05 | `SL-F0017-01` changed-hash replay conflict test | planned |
+| AC-F0017-06 | `SL-F0017-01` worktree root integration test | planned |
+| AC-F0017-07 | `SL-F0017-01` seed write rejection boundary test | planned |
+| AC-F0017-08 | `SL-F0017-01` symlink/path escape rejection boundary test | planned |
+| AC-F0017-09 | `SL-F0017-01` proposal id persistence contract test | planned |
+| AC-F0017-10 | `SL-F0017-01` governor ref persistence contract test | planned |
+| AC-F0017-11 | `SL-F0017-01` branch name persistence contract test | planned |
+| AC-F0017-12 | `SL-F0017-01` worktree path persistence contract test | planned |
+| AC-F0017-13 | `SL-F0017-01` lifecycle status persistence contract test | planned |
+| AC-F0017-14 | `SL-F0017-01` required eval suite persistence contract test | planned |
+| AC-F0017-15 | `SL-F0017-01` provenance refs persistence contract test | planned |
+| AC-F0017-16 | `SL-F0017-02` repository quality gate integration test | planned |
+| AC-F0017-17 | `SL-F0017-02` proposal eval suite gate integration test | planned |
+| AC-F0017-18 | `SL-F0017-02` smoke-required gate test for runtime/startup/deployment changes | planned |
+| AC-F0017-19 | `SL-F0017-03` stable snapshot git tag validation test | planned |
+| AC-F0017-20 | `SL-F0017-03` stable snapshot schema version persistence test | planned |
+| AC-F0017-21 | `SL-F0017-03` stable snapshot model profile map persistence test | planned |
+| AC-F0017-22 | `SL-F0017-03` stable snapshot config hash persistence test | planned |
+| AC-F0017-23 | `SL-F0017-03` stable snapshot eval summary persistence test | planned |
+| AC-F0017-24 | `SL-F0017-03` boot/recovery back-write boundary test | planned |
+| AC-F0017-25 | `SL-F0017-03` rollback proposal id evidence test | planned |
+| AC-F0017-26 | `SL-F0017-03` rollback snapshot id evidence test | planned |
+| AC-F0017-27 | `SL-F0017-03` rollback reason evidence test | planned |
+| AC-F0017-28 | `SL-F0017-03` rollback verification result evidence test | planned |
+| AC-F0017-29 | `SL-F0017-03` execution outcome owner-gate integration test | planned |
+| AC-F0017-30 | `SL-F0017-03` rollback outcome owner-gate integration test | planned |
+| AC-F0017-31 | `SL-F0017-03` public route absence test | planned |
+| AC-F0017-32 | `SL-F0017-03` environment promotion absence test | planned |
+| AC-F0017-33 | `SL-F0017-03` release activation absence test | planned |
 
 ## 9. Decision log (ADR blocks)
 
@@ -366,7 +531,7 @@ Pending `plan-slice`.
 - Status progression: `proposed -> shaped -> planned -> in_progress -> done`
 - Issue:
 - PRs:
-- Current workflow stage: `spec-compact` ready for review; next stage should be `plan-slice` if this stage closes and backlog is actualized to `specified`.
+- Current workflow stage: `plan-slice` closed; next stage is `implementation`.
 
 ## 11. Change log
 
@@ -374,3 +539,5 @@ Pending `plan-slice`.
 - 2026-04-10: [clarification] Intake context expanded with body/worktree ownership, immutable seed constraint, governor/boot boundaries and open dependency classification questions.
 - 2026-04-10: [clarification] Operator resolved `CF-024`/`CF-025` classification: they are later full-mechanism capabilities, not hard blockers for the internal safe `CF-012` body-evolution seam.
 - 2026-04-10: [scope realignment] `spec-compact` completed: ACs, NFRs, compact design, state/gate representations, verification surface and rollout cap are defined for the internal safe body-evolution mechanism.
+- 2026-04-10: [scope realignment] `plan-slice` drafted: three coherent implementation slices cover authority/path guards, eval-gated candidate commits, and stable snapshot/rollback/outcome handoff without public RBAC or deploy activation.
+- 2026-04-10: [scope realignment] `plan-slice` closed after verification, independent review and backlog actualization of `CF-012` to `planned`.

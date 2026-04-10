@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-10T18:10:00.175Z",
-  "next_apply_index": 13,
+  "updated_at": "2026-04-10T18:44:55.699Z",
+  "next_apply_index": 15,
   "packets": [
     {
       "packet_id": "f0947cdd-67be-4f98-9cbd-bec31fce4589",
@@ -209,6 +209,31 @@
       "content_hash": "dd536535d944d933d46a267cec1f888a4e2799b2f336e0c80ed86ccad20a4a2a",
       "sequence": 11,
       "applied_at": "2026-04-10T18:10:00.175Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-014",
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-10-012-cf012-planned",
+      "apply_index": 13,
+      "canonical_path": "patches/64b744a3f201--012-patch.template.json",
+      "content_hash": "64b744a3f2010a81ffc2813bae16fe8f5f847a0e7759112a972feea07f2b2f66",
+      "sequence": 12,
+      "applied_at": "2026-04-10T18:42:51.462Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-012"
+      ]
+    },
+    {
+      "patch_id": "2026-04-10-013-cf012-dependent-todo-reviewed",
+      "apply_index": 14,
+      "canonical_path": "patches/b4da68b77fc7--013-patch.template.json",
+      "content_hash": "b4da68b77fc7d9e349d6d70ce9061540f0a7c5d1b35f6487b54da769f56f6d6a",
+      "sequence": 13,
+      "applied_at": "2026-04-10T18:44:55.699Z",
       "kind": "patch-item",
       "target_item_keys": [
         "CF-014",

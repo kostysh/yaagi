@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "created_at": "2026-04-10T18:45:33.739Z",
+  "reviewer": "Darwin-independent-review-agent",
+  "step": "plan-slice",
+  "dossier": "docs/features/F-0017-git-managed-body-evolution-and-stable-snapshots.md",
+  "feature_id": "F-0017",
+  "event_commit": "bc65f238785dbb0fc03a31b68fac690e5bf05ab9",
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "No must-fix findings from independent review.",
+      "Slices are coherent and not over-granular: authority/path/persistence, eval-gated execution, then snapshots/rollback/outcomes/audit.",
+      "Backlog actualization remained the only residual closure task and is handled through backlog-engineer."
+    ]
+  },
+  "notes": "PASS: three reviewable slices cover the F-0017 AC surface with risk-first sequencing, explicit dependency ownership, verification artifacts, fallback paths, rollout/rollback limits, and no scope grab from CF-024/CF-025."
+}

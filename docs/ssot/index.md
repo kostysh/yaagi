@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-10T18:01:06.631Z_
+_Last sync: 2026-04-10T18:38:41.159Z_
 
 ## Features
 
@@ -26,7 +26,7 @@ _Last sync: 2026-04-10T18:01:06.631Z_
 | F-0014 | Расширенная модельная экология и здоровье реестра | done | strict | models | F-0002, F-0008, F-0013 | runtime,db,models,observability,api | `../features/F-0014-expanded-model-ecology-and-registry-health.md` |
 | F-0015 | Контур workshop для датасетов, обучения, оценки и promotion | done | strict | workshop | F-0002, F-0003, F-0014 | runtime,db,models,workshop,artifacts,observability | `../features/F-0015-workshop-datasets-training-eval-and-promotion.md` |
 | F-0016 | Development Governor и управление изменениями | done | strict | governance | F-0004, F-0011, F-0012, F-0013, F-0015 | runtime,db,governance,api,models,workspace,workshop | `../features/F-0016-development-governor-and-change-management.md` |
-| F-0017 | Git-управляемая эволюция тела и стабильные снапшоты | shaped | deferred | body | F-0001, F-0002, F-0010, F-0015, F-0016 | runtime,db,governance,workspace,tooling,recovery | `../features/F-0017-git-managed-body-evolution-and-stable-snapshots.md` |
+| F-0017 | Git-управляемая эволюция тела и стабильные снапшоты | planned | deferred | body | F-0001, F-0002, F-0010, F-0015, F-0016 | runtime,db,governance,workspace,tooling,recovery | `../features/F-0017-git-managed-body-evolution-and-stable-snapshots.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph

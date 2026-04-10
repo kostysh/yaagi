@@ -1,0 +1,27 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-10-013-cf012-dependent-todo-reviewed",
+    "created_at": "2026-04-10T18:44:42Z",
+    "sequence": 13,
+    "target_item_keys": [
+      "CF-014",
+      "CF-027"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-014",
+      "action": "remove_todo",
+      "todo_ids": [
+        "e3ecb706-c479-4c68-86c8-e0198e140413"
+      ]
+    },
+    {
+      "item_key": "CF-027",
+      "action": "remove_todo",
+      "todo_ids": [
+        "8ec28898-bc02-4327-9bef-b30216835a0b"
+      ]
+    }
+  ]
+}
