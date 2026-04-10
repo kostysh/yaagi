@@ -48,9 +48,9 @@ metrics:
   debt_items_found_total: 0
   debt_items_resolved_total: 0
   review_findings_total: 5
-  process_misses_total: 0
+  process_misses_total: 1
   backlog_actualization_count: 0
-  commit_recorded: false
+  commit_recorded: true
 ```
 
 # Журнал имплементации: F-0017 / SL-F0017-01
@@ -122,12 +122,13 @@ metrics:
 
 ## Process misses
 
-- None recorded.
+- 2026-04-11T00:35:34+02:00 final commit metadata was backfilled after the code/process closure commit landed; no artifacts were recomputed because commit SHA is trace metadata only.
 
 ## Close-out
 
 - Verification artifact: `.dossier/verification/F-0017/implementation-495d9db08c4c.json`.
 - Review artifact: `.dossier/reviews/F-0017/implementation-495d9db08c4c.json`.
 - Step artifact: `.dossier/steps/F-0017/implementation.json`.
+- Closure commit: `d58a62c` — `feat(monorepo): ✨ add body evolution proposal boundary`.
 - Process complete: yes.
 - Blocking items: none for `SL-F0017-01`; feature-wide next work remains `SL-F0017-02`.
