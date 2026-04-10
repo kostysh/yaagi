@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-10T00:19:25.084Z",
-  "last_refresh_at": null,
+  "updated_at": "2026-04-10T02:01:55.878Z",
+  "last_refresh_at": "2026-04-10T01:45:43.494Z",
   "context": {
     "glossary": [
       {
@@ -482,8 +482,7 @@
         "CF-003",
         "CF-004",
         "CF-006",
-        "CF-010",
-        "CF-016"
+        "CF-010"
       ],
       "origin_source_ids": [
         "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
@@ -503,6 +502,7 @@
       "quality_attribute_keys": [],
       "policy_decision_keys": [],
       "reverse_dependency_keys": [
+        "CF-016",
         "CF-024",
         "CF-026"
       ],
@@ -580,6 +580,7 @@
       "policy_decision_keys": [],
       "reverse_dependency_keys": [
         "CF-012",
+        "CF-016",
         "CF-019"
       ],
       "open_todo_ids": [],
@@ -753,12 +754,14 @@
       "item_key": "CF-016",
       "title": "Development Governor и управление изменениями",
       "type": "feature",
-      "delivery_state": "defined",
+      "delivery_state": "specified",
       "gaps": [],
       "depends_on_keys": [
         "CF-003",
         "CF-005",
-        "CF-008"
+        "CF-008",
+        "CF-009",
+        "CF-011"
       ],
       "origin_source_ids": [
         "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
@@ -780,7 +783,6 @@
       "quality_attribute_keys": [],
       "policy_decision_keys": [],
       "reverse_dependency_keys": [
-        "CF-009",
         "CF-012",
         "CF-014",
         "CF-015",

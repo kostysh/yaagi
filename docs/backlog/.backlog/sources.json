@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-09T23:44:45.473Z",
+  "updated_at": "2026-04-10T01:45:43.482Z",
   "sources": [
     {
       "source_id": "5b9f63ff-21ce-440c-a3a3-7416945dde4f",
@@ -131,9 +131,9 @@
       "kind": "architecture",
       "authority": "authoritative",
       "note": "Canonical system architecture",
-      "hash": "67b8154a735404798107511810d7a28b5d390214310c5fdf8350113d04b740c0",
+      "hash": "2c2638670ab0b32a07db5ecc541a287fd4bfa7ddcbe0887ece4fe68092521b6c",
       "registered_at": "2026-04-09T23:44:44.538Z",
-      "last_checked_at": "2026-04-09T23:44:44.538Z"
+      "last_checked_at": "2026-04-10T01:45:43.482Z"
     },
     {
       "source_id": "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
@@ -144,7 +144,7 @@
       "note": "Canonical Russian Polyphony concept",
       "hash": "c8030fe4d6e54c594c0b72c0cb628b1d9daf4aa81abef21742a84b205718a71a",
       "registered_at": "2026-04-09T23:44:44.599Z",
-      "last_checked_at": "2026-04-09T23:44:44.599Z"
+      "last_checked_at": "2026-04-10T01:45:43.482Z"
     },
     {
       "source_id": "97107644-d070-4cb0-bfe3-aa581331229c",
@@ -153,9 +153,9 @@
       "kind": "planning",
       "authority": "supporting",
       "note": "Legacy candidate backlog used for migration and legacy CF traceability",
-      "hash": "27ecdbe7a3ae0008be374fd59a8c66415e606c08e18bd83737b4bafea3dc01d3",
+      "hash": "136d786fff392aa470a6313d13b81736eafdbf5d914330a5f774c194eab66b9a",
       "registered_at": "2026-04-09T23:44:45.352Z",
-      "last_checked_at": "2026-04-09T23:44:45.352Z"
+      "last_checked_at": "2026-04-10T01:45:43.482Z"
     },
     {
       "source_id": "9d061028-1d37-4f85-9919-f6321ed1f995",
@@ -166,7 +166,7 @@
       "note": "Legacy planning note for real vLLM serving backlog seam",
       "hash": "8338a5b97fd9078dc661d0c47f39194cc27d558682d1b4c8264fb53c725d938d",
       "registered_at": "2026-04-09T23:44:45.473Z",
-      "last_checked_at": "2026-04-09T23:44:45.473Z"
+      "last_checked_at": "2026-04-10T01:45:43.482Z"
     },
     {
       "source_id": "4ffa2197-8f9f-4d98-a615-36b03c2cc660",
@@ -175,9 +175,9 @@
       "kind": "planning",
       "authority": "supporting",
       "note": "Legacy roadmap matrix used to normalize non-intaken delivery states",
-      "hash": "47463f7517210c2315a9408a25526ad46cc386489999954596b740868facccd1",
+      "hash": "a0a725f8e0d2c80467a64544198cfd833a4acb6b62efd2bc3fc264dafd8f7c7f",
       "registered_at": "2026-04-09T23:44:45.414Z",
-      "last_checked_at": "2026-04-09T23:44:45.414Z"
+      "last_checked_at": "2026-04-10T01:45:43.482Z"
     }
   ]
 }
