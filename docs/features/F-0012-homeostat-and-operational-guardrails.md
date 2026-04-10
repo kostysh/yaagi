@@ -319,12 +319,12 @@ Exit criteria:
   - `pnpm lint`
   - `pnpm test`
   - `pnpm smoke:cell`
-  - `node scripts/dossier.mjs index-refresh`
-  - `node scripts/dossier.mjs contract-drift-audit --dossier docs/features/F-0012-homeostat-and-operational-guardrails.md --base HEAD~1`
-  - `node scripts/dossier.mjs lint-dossiers`
-  - `node scripts/dossier.mjs coverage-audit --dossier docs/features/F-0012-homeostat-and-operational-guardrails.md --orphans-scope=dossier`
-  - `pnpm debt:audit:changed`
-  - `node scripts/dossier.mjs dossier-verify --dossier docs/features/F-0012-homeostat-and-operational-guardrails.md --step implementation`
+  - `dossier-engineer index-refresh`
+  - `dossier-engineer contract-drift-audit --dossier docs/features/F-0012-homeostat-and-operational-guardrails.md --base HEAD~1`
+  - `dossier-engineer lint-dossiers`
+  - `dossier-engineer coverage-audit --dossier docs/features/F-0012-homeostat-and-operational-guardrails.md --orphans-scope=dossier`
+  - `dossier-engineer debt-audit --changed-only`
+  - `dossier-engineer dossier-verify --dossier docs/features/F-0012-homeostat-and-operational-guardrails.md --step implementation`
 
 ## 12. Change log
 

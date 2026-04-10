@@ -16,17 +16,27 @@ Yet Another AGI
 
 Canonical documentation entry points:
 - `docs/architecture/system.md`
+- `docs/backlog/`
 - `docs/ssot/index.md`
 - `docs/features/F-*.md`
 
-Bootstrap and maintenance commands:
-- `node scripts/dossier.mjs index-refresh`
-- `node scripts/dossier.mjs sync-index`
-- `node scripts/dossier.mjs lint-dossiers`
-- `node scripts/dossier.mjs coverage-audit`
-- `node scripts/dossier.mjs next-step`
-- `node scripts/dossier.mjs dossier-verify --step implementation --changed-only`
-- `node scripts/dossier.mjs dependency-graph`
+Canonical automation path:
+- Root `pnpm` scripts cover repository-local quality, test, and smoke flows only.
+- Backlog and dossier automation is executed through the installed canonical `backlog-engineer` and `dossier-engineer` skill runtimes.
+- In repo docs, `backlog-engineer <command>` and `dossier-engineer <command>` are shorthand for those installed skill scripts; absolute local paths are intentionally omitted.
+- The repository does not vend embedded local copies, wrappers, or package aliases for those CLIs.
+
+Common backlog and dossier commands:
+- `backlog-engineer status`
+- `backlog-engineer queue`
+- `backlog-engineer gaps`
+- `dossier-engineer index-refresh`
+- `dossier-engineer sync-index`
+- `dossier-engineer lint-dossiers`
+- `dossier-engineer coverage-audit`
+- `dossier-engineer next-step --dossier docs/features/F-0001-constitutional-boot-recovery.md`
+- `dossier-engineer dossier-verify --step implementation --changed-only`
+- `dossier-engineer dependency-graph`
 
 ## Developer Runtime Notes
 

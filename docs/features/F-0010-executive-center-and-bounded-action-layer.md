@@ -376,11 +376,11 @@ Tasks:
   - `pnpm lint`
   - `pnpm test`
   - `pnpm smoke:cell`
-  - `node scripts/dossier.mjs sync-index`
-  - `node scripts/dossier.mjs lint-dossiers`
-  - `node scripts/dossier.mjs coverage-audit --dossier docs/features/F-0010-executive-center-and-bounded-action-layer.md`
-  - `pnpm debt:audit:changed`
-  - `pnpm debt:audit`
+  - `dossier-engineer sync-index`
+  - `dossier-engineer lint-dossiers`
+  - `dossier-engineer coverage-audit --dossier docs/features/F-0010-executive-center-and-bounded-action-layer.md`
+  - `dossier-engineer debt-audit --changed-only`
+  - `dossier-engineer debt-audit`
   - `git diff --check`
 
 ## 13. Change log

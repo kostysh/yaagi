@@ -17,19 +17,7 @@
     "cell:up:local": "env DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker compose --env-file .env.local -f infra/docker/compose.yaml up -d --build --wait",
     "cell:down": "docker compose -f infra/docker/compose.yaml down --volumes --remove-orphans",
     "smoke:cell": "node --experimental-strip-types --test infra/docker/deployment-cell.smoke.ts",
-    "smoke:cell:local": "node --env-file=.env.local --experimental-strip-types --test infra/docker/deployment-cell.smoke.ts",
-    "debt:audit": "node scripts/dossier.mjs debt-audit",
-    "debt:audit:changed": "node scripts/dossier.mjs debt-audit --changed-only",
-    "index:refresh": "node scripts/dossier.mjs index-refresh",
-    "sync:index": "node scripts/dossier.mjs sync-index",
-    "lint:dossiers": "node scripts/dossier.mjs lint-dossiers",
-    "coverage:audit": "node scripts/dossier.mjs coverage-audit",
-    "dependency:graph": "node scripts/dossier.mjs dependency-graph",
-    "next:step": "node scripts/dossier.mjs next-step",
-    "dossier:verify": "node scripts/dossier.mjs dossier-verify",
-    "review:artifact": "node scripts/dossier.mjs review-artifact",
-    "dossier:step:close": "node scripts/dossier.mjs dossier-step-close",
-    "contract:drift:audit": "node scripts/dossier.mjs contract-drift-audit"
+    "smoke:cell:local": "node --env-file=.env.local --experimental-strip-types --test infra/docker/deployment-cell.smoke.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.9",

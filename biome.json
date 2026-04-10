@@ -10,7 +10,6 @@
     "includes": [
       "**",
       "!**/dist",
-      "!scripts/dossier.mjs",
       "!scripts/**/*.map",
       "!**/.*",
       "!docs",

@@ -318,10 +318,10 @@ Tasks:
   - `pnpm quality:fix`
   - `pnpm test`
   - `pnpm smoke:cell`
-  - `node scripts/dossier.mjs sync-index`
-  - `node scripts/dossier.mjs lint-dossiers`
-  - `node scripts/dossier.mjs coverage-audit`
-  - `pnpm debt:audit:changed`
+  - `dossier-engineer sync-index`
+  - `dossier-engineer lint-dossiers`
+  - `dossier-engineer coverage-audit`
+  - `dossier-engineer debt-audit --changed-only`
 
 ## 11. Журнал изменений (Change log)
 

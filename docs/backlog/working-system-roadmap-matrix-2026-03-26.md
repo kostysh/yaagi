@@ -2,6 +2,7 @@
 
 > Аналитический backlog-документ.  
 > Это не SSOT на уровне требований; цель документа: свести [архитектуру](../architecture/system.md), [SSOT index](../ssot/index.md), [candidate backlog](./feature-candidates.md), ADR и фактический runtime к одному roadmap, который реально доводит систему до полноценной working system без stub-backed фикций.
+> После миграции на `backlog-engineer` этот roadmap остаётся supporting input для backlog realignment и очередности работ, но не является текущим backlog state.
 
 ## 1. Краткий итог
 

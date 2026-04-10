@@ -413,12 +413,12 @@ Exit criteria:
   - `pnpm lint`
   - `pnpm test`
   - `pnpm smoke:cell`
-  - `pnpm debt:audit:changed`
-  - `node scripts/dossier.mjs index-refresh`
-  - `node scripts/dossier.mjs lint-dossiers`
-  - `node scripts/dossier.mjs coverage-audit --dossier docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md --orphans-scope=dossier`
-  - `node scripts/dossier.mjs contract-drift-audit --dossier docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md --base HEAD~1`
-  - `node scripts/dossier.mjs dossier-verify --dossier docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md --step implementation`
+  - `dossier-engineer debt-audit --changed-only`
+  - `dossier-engineer index-refresh`
+  - `dossier-engineer lint-dossiers`
+  - `dossier-engineer coverage-audit --dossier docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md --orphans-scope=dossier`
+  - `dossier-engineer contract-drift-audit --dossier docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md --base HEAD~1`
+  - `dossier-engineer dossier-verify --dossier docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md --step implementation`
 - Issue: none
 - PRs: none
 - Process artifacts:

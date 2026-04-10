@@ -132,11 +132,10 @@ void test('AC-F0002-07 exposes canonical quality and style commands for source a
   assert.equal(biomeConfig.assist?.actions?.source?.organizeImports, 'on');
   assert.match(eslintConfig, /recommended-type-checked/);
   assert.match(eslintConfig, /tsconfig\.eslint\.json/);
-  assert.match(eslintConfig, /scripts\/dossier\.mjs/);
   assert.match(eslintConfig, /scripts\/\*\*\/\*\.map/);
   assert.deepEqual(
     biomeConfig.files?.includes?.filter((entry) => entry.startsWith('!scripts/')),
-    ['!scripts/dossier.mjs', '!scripts/**/*.map'],
+    ['!scripts/**/*.map'],
   );
   assert.deepEqual(eslintTsconfig.include, [
     'apps/**/*.ts',

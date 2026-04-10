@@ -47,13 +47,13 @@
 Canonical artifact для follow-up фиксируется так:
 
 - existing feature dossier, если долг относится к уже intaken feature;
-- `docs/backlog/feature-candidates.md`, если долг раскрывает ещё не intaken seam;
+- backlog root `docs/backlog/` через `backlog-engineer` (`packet` для нового seam, `patch-item` для существующего backlog item), если долг раскрывает ещё не intaken seam;
 - `docs/adr/ADR-*.md`, если долг cross-cutting.
 
 Automation support:
 
-- `pnpm debt:audit` checks the repo for explicit unresolved debt markers;
-- `pnpm debt:audit:changed` limits that guardrail to the currently changed scope;
+- `dossier-engineer debt-audit` checks the repo for explicit unresolved debt markers;
+- `dossier-engineer debt-audit --changed-only` limits that guardrail to the currently changed scope;
 - this automation is intentionally narrow and does not replace the human debt review / dependency re-check required by this ADR.
 
 Недопустимо:

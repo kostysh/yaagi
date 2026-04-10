@@ -3,6 +3,7 @@
 > Non-SSOT артефакт планирования, выведенный из `docs/architecture/system.md`.
 > Здесь нельзя размещать текст критериев приёмки.
 > В `docs/ssot/index.md` перечисляются только реальные досье, а не кандидаты `CF-*`.
+> После миграции на `backlog-engineer` этот файл сохраняется только как legacy planning input и историческая трассировка; текущий backlog truth живёт в backlog root `docs/backlog/` и читается через канонический установленный runtime `backlog-engineer`.
 
 ## Рамка дискавери
 

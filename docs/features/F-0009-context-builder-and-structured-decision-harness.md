@@ -352,11 +352,11 @@ Tasks:
   - `pnpm lint`
   - `pnpm test`
   - `pnpm smoke:cell`
-  - `node scripts/dossier.mjs sync-index`
-  - `node scripts/dossier.mjs lint-dossiers`
-  - `node scripts/dossier.mjs coverage-audit --dossier docs/features/F-0009-context-builder-and-structured-decision-harness.md`
-  - `pnpm debt:audit:changed`
-  - `pnpm debt:audit`
+  - `dossier-engineer sync-index`
+  - `dossier-engineer lint-dossiers`
+  - `dossier-engineer coverage-audit --dossier docs/features/F-0009-context-builder-and-structured-decision-harness.md`
+  - `dossier-engineer debt-audit --changed-only`
+  - `dossier-engineer debt-audit`
 
 ## 12. Change log
 
