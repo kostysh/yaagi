@@ -768,6 +768,7 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
 
     await prepareFreshRuntimeScenario();
     // Covers: AC-F0013-08
+    // Covers: AC-F0016-08
     await t.test(
       'AC-F0013-08 exposes bounded operator state and explicit governor gating in the deployment cell',
       async () => {

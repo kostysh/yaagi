@@ -15,12 +15,12 @@
 ## Backlog Metrics
 
 - Total items: 27
-- Items needing attention: 2
-- Ready for next step: 10
-- Items with gaps: 2
+- Items needing attention: 0
+- Ready for next step: 11
+- Items with gaps: 0
 - Open todo count: 0
 - Items by type: feature=27
-- Items by delivery state: defined=11, implemented=15, planned=1
+- Items by delivery state: defined=10, implemented=16, planned=1
 
 ## Task Graph
 
@@ -80,7 +80,6 @@ flowchart TD
   CF-004 --> CF-009
   CF-006 --> CF-009
   CF-010 --> CF-009
-  CF-016 --> CF-009
   CF-006 --> CF-010
   CF-020 --> CF-010
   CF-010 --> CF-011
@@ -90,6 +89,7 @@ flowchart TD
   CF-016 --> CF-012
   CF-007 --> CF-013
   CF-020 --> CF-013
+  CF-023 --> CF-013
   CF-007 --> CF-014
   CF-012 --> CF-014
   CF-016 --> CF-014
@@ -103,6 +103,8 @@ flowchart TD
   CF-003 --> CF-016
   CF-005 --> CF-016
   CF-008 --> CF-016
+  CF-009 --> CF-016
+  CF-011 --> CF-016
   CF-003 --> CF-017
   CF-004 --> CF-017
   CF-006 --> CF-017
@@ -113,6 +115,7 @@ flowchart TD
   CF-011 --> CF-019
   CF-016 --> CF-019
   CF-023 --> CF-019
+  CF-025 --> CF-019
   CF-001 --> CF-021
   CF-002 --> CF-021
   CF-003 --> CF-021
@@ -145,34 +148,24 @@ flowchart TD
 
 ## Needs Attention
 
-### CF-013 — Слой skills и процедур
-
-- Reason codes: gaps
-- Reasons: Gap present: the task is blocked until missing input is clarified.
-- Sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
-
-### CF-019 — Специализированные органы и политика вывода из эксплуатации
-
-- Reason codes: gaps
-- Reasons: Gap present: the task is blocked until missing input is clarified.
-- Sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
+No items currently require attention.
 
 ## Ready For Next Step
 
-### Root: CF-016
+### Root: CF-012
 
 - Ordering rule: depth -> downstream_dependency_count -> item_key
-- Items: CF-016 -> CF-015 -> CF-012 -> CF-014 -> CF-025 -> CF-027 -> CF-026
+- Items: CF-012 -> CF-014 -> CF-027
 
 ### Root: CF-018
 
 - Ordering rule: depth -> downstream_dependency_count -> item_key
-- Items: CF-018 -> CF-015 -> CF-025 -> CF-026 -> CF-027
+- Items: CF-018 -> CF-015 -> CF-025 -> CF-019 -> CF-026 -> CF-027
 
 ### Root: CF-023
 
 - Ordering rule: depth -> downstream_dependency_count -> item_key
-- Items: CF-023 -> CF-025 -> CF-026
+- Items: CF-023 -> CF-025 -> CF-013 -> CF-019 -> CF-026
 
 ### Root: CF-024
 
@@ -404,8 +397,8 @@ Item metrics:
 - Needs attention: false
 - Ready for next step: false
 - Gaps: none
-- Depends on: CF-001, CF-002, CF-003, CF-004, CF-006, CF-010, CF-016
-- Reverse dependencies: CF-024, CF-026
+- Depends on: CF-001, CF-002, CF-003, CF-004, CF-006, CF-010
+- Reverse dependencies: CF-016, CF-024, CF-026
 - Related sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md
 - Todo: none
 - Attention reasons: none
@@ -418,8 +411,8 @@ Context:
 - Policy decisions: none
 
 Item metrics:
-- Dependency count: 7
-- Reverse dependency count: 2
+- Dependency count: 6
+- Reverse dependency count: 3
 - Gap count: 0
 - Related source count: 3
 - Related context element count: 0
@@ -459,7 +452,7 @@ Item metrics:
 - Ready for next step: false
 - Gaps: none
 - Depends on: CF-010
-- Reverse dependencies: CF-012, CF-019
+- Reverse dependencies: CF-012, CF-016, CF-019
 - Related sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md
 - Todo: none
 - Attention reasons: none
@@ -473,7 +466,7 @@ Context:
 
 Item metrics:
 - Dependency count: 1
-- Reverse dependency count: 2
+- Reverse dependency count: 3
 - Gap count: 0
 - Related source count: 3
 - Related context element count: 0
@@ -509,14 +502,14 @@ Item metrics:
 
 - Type: feature
 - Delivery state: defined
-- Needs attention: true
-- Ready for next step: false
-- Gaps: The legacy roadmap still marks this seam as needing clarification: the backlog must narrow skill-seed ownership versus runtime adapter ownership before dossier intake.
-- Depends on: CF-007, CF-020
+- Needs attention: false
+- Ready for next step: true
+- Gaps: none
+- Depends on: CF-007, CF-020, CF-023
 - Reverse dependencies: none
 - Related sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
 - Todo: none
-- Attention reasons: Gap present: the task is blocked until missing input is clarified.
+- Attention reasons: none
 
 Context:
 - Claims: none
@@ -526,9 +519,9 @@ Context:
 - Policy decisions: none
 
 Item metrics:
-- Dependency count: 2
+- Dependency count: 3
 - Reverse dependency count: 0
-- Gap count: 1
+- Gap count: 0
 - Related source count: 4
 - Related context element count: 0
 
@@ -589,13 +582,13 @@ Item metrics:
 ### CF-016 — Development Governor и управление изменениями
 
 - Type: feature
-- Delivery state: defined
+- Delivery state: implemented
 - Needs attention: false
-- Ready for next step: true
+- Ready for next step: false
 - Gaps: none
-- Depends on: CF-003, CF-005, CF-008
-- Reverse dependencies: CF-009, CF-012, CF-014, CF-015, CF-019, CF-025, CF-027
-- Related sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
+- Depends on: CF-003, CF-005, CF-008, CF-009, CF-011
+- Reverse dependencies: CF-012, CF-014, CF-015, CF-019, CF-025, CF-027
+- Related sources: ../architecture/system.md, ../features/F-0016-development-governor-and-change-management.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
 - Todo: none
 - Attention reasons: none
 
@@ -607,10 +600,10 @@ Context:
 - Policy decisions: none
 
 Item metrics:
-- Dependency count: 3
-- Reverse dependency count: 7
+- Dependency count: 5
+- Reverse dependency count: 6
 - Gap count: 0
-- Related source count: 4
+- Related source count: 5
 - Related context element count: 0
 
 ### CF-017 — Context Builder и structured decision harness
@@ -671,14 +664,14 @@ Item metrics:
 
 - Type: feature
 - Delivery state: defined
-- Needs attention: true
-- Ready for next step: false
-- Gaps: The migrated legacy roadmap keeps this seam blocked until real serving, workshop handoff, and governor policy prerequisites are explicit enough to avoid inventing a second rollout regime.
-- Depends on: CF-010, CF-011, CF-016, CF-023
+- Needs attention: false
+- Ready for next step: true
+- Gaps: none
+- Depends on: CF-010, CF-011, CF-016, CF-023, CF-025
 - Reverse dependencies: none
 - Related sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
 - Todo: none
-- Attention reasons: Gap present: the task is blocked until missing input is clarified.
+- Attention reasons: none
 
 Context:
 - Claims: none
@@ -688,9 +681,9 @@ Context:
 - Policy decisions: none
 
 Item metrics:
-- Dependency count: 4
+- Dependency count: 5
 - Reverse dependency count: 0
-- Gap count: 1
+- Gap count: 0
 - Related source count: 4
 - Related context element count: 0
 
@@ -783,7 +776,7 @@ Item metrics:
 - Ready for next step: true
 - Gaps: none
 - Depends on: CF-020, CF-006, CF-010
-- Reverse dependencies: CF-019, CF-025
+- Reverse dependencies: CF-013, CF-019, CF-025
 - Related sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, local-vllm-model-shortlist-2026-03-24.md, working-system-roadmap-matrix-2026-03-26.md
 - Todo: none
 - Attention reasons: none
@@ -797,7 +790,7 @@ Context:
 
 Item metrics:
 - Dependency count: 3
-- Reverse dependency count: 2
+- Reverse dependency count: 3
 - Gap count: 0
 - Related source count: 5
 - Related context element count: 0
@@ -837,7 +830,7 @@ Item metrics:
 - Ready for next step: true
 - Gaps: none
 - Depends on: CF-020, CF-022, CF-023, CF-015, CF-016, CF-018
-- Reverse dependencies: CF-026
+- Reverse dependencies: CF-019, CF-026
 - Related sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
 - Todo: none
 - Attention reasons: none
@@ -851,7 +844,7 @@ Context:
 
 Item metrics:
 - Dependency count: 6
-- Reverse dependency count: 1
+- Reverse dependency count: 2
 - Gap count: 0
 - Related source count: 4
 - Related context element count: 0

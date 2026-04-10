@@ -85,6 +85,7 @@ import {
   createWorkshopWorker,
   type WorkshopWorker,
 } from '../workshop/index.ts';
+import type { WorkshopPromotionPackage } from '@yaagi/contracts/workshop';
 
 type RuntimeLifecycle = {
   start(): Promise<void>;
@@ -116,6 +117,21 @@ type RuntimeLifecycle = {
     targetRef: string | null;
     requestedAt: string;
   }): ReturnType<DevelopmentGovernorService['submitDevelopmentProposal']>;
+  submitWorkshopPromotionProposal(input: {
+    requestId: string;
+    promotionPackage: WorkshopPromotionPackage;
+    packageUri: string;
+    requestedAt: string;
+  }): ReturnType<DevelopmentGovernorService['submitWorkshopPromotionProposal']>;
+  recordProposalExecutionOutcome(input: {
+    requestId: string;
+    proposalId: string;
+    outcomeKind: 'executed' | 'rolled_back';
+    outcomeOrigin: 'runtime' | 'recovery' | 'workshop' | 'human_override';
+    targetRef: string;
+    evidenceRefs: string[];
+    recordedAt: string;
+  }): ReturnType<DevelopmentGovernorService['recordProposalExecutionOutcome']>;
   ingestHttpStimulus(input: HttpIngestStimulusInput): Promise<StimulusIngestResult>;
   health(): Promise<PerceptionHealthSnapshot>;
   getSubjectStateSnapshot(input?: SubjectStateSnapshotInput): Promise<SubjectStateSnapshot>;
@@ -1411,6 +1427,14 @@ export function createPhase0RuntimeLifecycle(
 
     submitDevelopmentProposal(input) {
       return developmentGovernor.submitDevelopmentProposal(input);
+    },
+
+    submitWorkshopPromotionProposal(input) {
+      return developmentGovernor.submitWorkshopPromotionProposal(input);
+    },
+
+    recordProposalExecutionOutcome(input) {
+      return developmentGovernor.recordProposalExecutionOutcome(input);
     },
 
     ingestHttpStimulus(input) {

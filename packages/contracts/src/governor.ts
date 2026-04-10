@@ -40,6 +40,7 @@ export const DEVELOPMENT_GOVERNOR_LEDGER_ENTRY_KIND = Object.freeze({
   FREEZE_CREATED: 'freeze_created',
   PROPOSAL_RECORDED: 'proposal_recorded',
   PROPOSAL_DECISION_RECORDED: 'proposal_decision_recorded',
+  PROPOSAL_EXECUTION_RECORDED: 'proposal_execution_recorded',
 } as const);
 
 export type DevelopmentGovernorLedgerEntryKind =
@@ -76,6 +77,14 @@ export const DEVELOPMENT_PROPOSAL_DECISION_KIND = Object.freeze({
 
 export type DevelopmentProposalDecisionKind =
   (typeof DEVELOPMENT_PROPOSAL_DECISION_KIND)[keyof typeof DEVELOPMENT_PROPOSAL_DECISION_KIND];
+
+export const DEVELOPMENT_PROPOSAL_EXECUTION_OUTCOME_KIND = Object.freeze({
+  EXECUTED: 'executed',
+  ROLLED_BACK: 'rolled_back',
+} as const);
+
+export type DevelopmentProposalExecutionOutcomeKind =
+  (typeof DEVELOPMENT_PROPOSAL_EXECUTION_OUTCOME_KIND)[keyof typeof DEVELOPMENT_PROPOSAL_EXECUTION_OUTCOME_KIND];
 
 export const developmentGovernorOriginSurfaceSchema = z.enum([
   DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.OPERATOR_API,
@@ -114,6 +123,11 @@ export const developmentProposalDecisionKindSchema = z.enum([
   DEVELOPMENT_PROPOSAL_DECISION_KIND.APPROVED,
   DEVELOPMENT_PROPOSAL_DECISION_KIND.REJECTED,
   DEVELOPMENT_PROPOSAL_DECISION_KIND.DEFERRED,
+]);
+
+export const developmentProposalExecutionOutcomeKindSchema = z.enum([
+  DEVELOPMENT_PROPOSAL_EXECUTION_OUTCOME_KIND.EXECUTED,
+  DEVELOPMENT_PROPOSAL_EXECUTION_OUTCOME_KIND.ROLLED_BACK,
 ]);
 
 export const developmentGovernorEvidenceRefSchema = z
@@ -180,6 +194,25 @@ export type DevelopmentProposalDecisionCommand = z.infer<
   typeof developmentProposalDecisionCommandSchema
 >;
 
+export const developmentProposalExecutionOutcomeCommandSchema = z.object({
+  requestId: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH),
+  proposalId: z.string().min(1),
+  outcomeKind: developmentProposalExecutionOutcomeKindSchema,
+  originSurface: developmentGovernorOriginSurfaceSchema,
+  outcomeOrigin: developmentGovernorOriginSurfaceSchema,
+  targetRef: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REF_MAX_LENGTH),
+  evidenceRefs: z
+    .array(developmentGovernorEvidenceRefSchema)
+    .min(1)
+    .max(DEVELOPMENT_GOVERNOR_EVIDENCE_REF_MAX_COUNT),
+  payload: z.record(z.string(), z.unknown()).default({}),
+  recordedAt: z.string().datetime({ offset: true }),
+});
+
+export type DevelopmentProposalExecutionOutcomeCommand = z.infer<
+  typeof developmentProposalExecutionOutcomeCommandSchema
+>;
+
 export const developmentFreezeAcceptedSchema = z.object({
   accepted: z.literal(true),
   requestId: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH),
@@ -211,7 +244,7 @@ export const developmentProposalAcceptedSchema = z.object({
   accepted: z.literal(true),
   requestId: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH),
   proposalId: z.string().min(1),
-  state: z.literal(DEVELOPMENT_PROPOSAL_STATE.SUBMITTED),
+  state: z.enum([DEVELOPMENT_PROPOSAL_STATE.SUBMITTED, DEVELOPMENT_PROPOSAL_STATE.DEFERRED]),
   deduplicated: z.boolean(),
   createdAt: z.string().datetime({ offset: true }),
 });
@@ -266,6 +299,36 @@ export const developmentProposalDecisionResultSchema = z.discriminatedUnion('acc
   developmentProposalDecisionRejectedSchema,
 ]);
 
+export const developmentProposalExecutionOutcomeAcceptedSchema = z.object({
+  accepted: z.literal(true),
+  requestId: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH),
+  proposalId: z.string().min(1),
+  outcomeId: z.string().min(1),
+  state: z.enum([DEVELOPMENT_PROPOSAL_STATE.EXECUTED, DEVELOPMENT_PROPOSAL_STATE.ROLLED_BACK]),
+  outcomeKind: developmentProposalExecutionOutcomeKindSchema,
+  deduplicated: z.boolean(),
+  createdAt: z.string().datetime({ offset: true }),
+});
+
+export const developmentProposalExecutionOutcomeRejectedSchema = z.object({
+  accepted: z.literal(false),
+  requestId: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH).optional(),
+  reason: z.enum([
+    'invalid_request',
+    'proposal_not_found',
+    'invalid_state_transition',
+    'target_ref_mismatch',
+    'insufficient_evidence',
+    'conflicting_request_id',
+    'persistence_unavailable',
+  ]),
+});
+
+export const developmentProposalExecutionOutcomeResultSchema = z.discriminatedUnion('accepted', [
+  developmentProposalExecutionOutcomeAcceptedSchema,
+  developmentProposalExecutionOutcomeRejectedSchema,
+]);
+
 export type DevelopmentFreezeAccepted = z.infer<typeof developmentFreezeAcceptedSchema>;
 export type DevelopmentFreezeRejected = z.infer<typeof developmentFreezeRejectedSchema>;
 export type DevelopmentFreezeResult = z.infer<typeof developmentFreezeResultSchema>;
@@ -280,4 +343,13 @@ export type DevelopmentProposalDecisionRejected = z.infer<
 >;
 export type DevelopmentProposalDecisionResult = z.infer<
   typeof developmentProposalDecisionResultSchema
+>;
+export type DevelopmentProposalExecutionOutcomeAccepted = z.infer<
+  typeof developmentProposalExecutionOutcomeAcceptedSchema
+>;
+export type DevelopmentProposalExecutionOutcomeRejected = z.infer<
+  typeof developmentProposalExecutionOutcomeRejectedSchema
+>;
+export type DevelopmentProposalExecutionOutcomeResult = z.infer<
+  typeof developmentProposalExecutionOutcomeResultSchema
 >;

@@ -3,11 +3,14 @@ import assert from 'node:assert/strict';
 import {
   DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE,
   DEVELOPMENT_PROPOSAL_DECISION_KIND,
+  DEVELOPMENT_PROPOSAL_EXECUTION_OUTCOME_KIND,
   DEVELOPMENT_PROPOSAL_KIND,
   DEVELOPMENT_PROPOSAL_STATE,
   developmentProposalCommandSchema,
   developmentProposalDecisionCommandSchema,
   developmentProposalDecisionResultSchema,
+  developmentProposalExecutionOutcomeCommandSchema,
+  developmentProposalExecutionOutcomeResultSchema,
   developmentProposalResultSchema,
 } from '../../src/governor.ts';
 import { operatorDevelopmentProposalRequestSchema } from '../../src/operator-api.ts';
@@ -115,4 +118,36 @@ void test('AC-F0016-09 defines advisory decision records separately from executi
   assert.equal(command.payload['advisoryOnly'], true);
   assert.equal(result.state, 'approved');
   assert.equal(result.decisionKind, 'approved');
+});
+
+void test('AC-F0016-09 records bounded execution evidence separately from execution authority', () => {
+  const command = developmentProposalExecutionOutcomeCommandSchema.parse({
+    requestId: 'proposal-execution-1',
+    proposalId: 'development-proposal:1',
+    outcomeKind: DEVELOPMENT_PROPOSAL_EXECUTION_OUTCOME_KIND.EXECUTED,
+    originSurface: DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.HUMAN_OVERRIDE,
+    outcomeOrigin: DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.HUMAN_OVERRIDE,
+    targetRef: 'model-profile:reflex.fast@candidate',
+    evidenceRefs: ['owner-execution:activation-confirmed:1'],
+    payload: {
+      evidenceOnly: true,
+      executionBoundary: 'downstream_owner',
+    },
+    recordedAt: '2026-04-10T12:20:00.000Z',
+  });
+  const result = developmentProposalExecutionOutcomeResultSchema.parse({
+    accepted: true,
+    requestId: command.requestId,
+    proposalId: command.proposalId,
+    outcomeId: 'development-proposal-outcome:1',
+    state: DEVELOPMENT_PROPOSAL_STATE.EXECUTED,
+    outcomeKind: DEVELOPMENT_PROPOSAL_EXECUTION_OUTCOME_KIND.EXECUTED,
+    deduplicated: false,
+    createdAt: command.recordedAt,
+  });
+
+  assert.equal(command.payload['evidenceOnly'], true);
+  assert.equal(result.accepted, true);
+  assert.equal(result.state, 'executed');
+  assert.equal(result.outcomeKind, 'executed');
 });

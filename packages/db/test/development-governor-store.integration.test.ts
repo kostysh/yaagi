@@ -198,3 +198,39 @@ void test('AC-F0016-02 makes freeze requests idempotent by request id and hash',
   assert.equal(conflict.accepted, false);
   assert.equal(conflict.reason, 'conflicting_request_id');
 });
+
+void test('AC-F0016-08 reloads the latest active freeze for startup recovery', async () => {
+  const harness = createGovernorDbHarness();
+  const store = createDevelopmentGovernorStore(harness.db);
+
+  await store.freezeDevelopment({
+    freezeId: 'development-freeze:old',
+    ledgerId: 'development-ledger:old',
+    triggerKind: DEVELOPMENT_FREEZE_TRIGGER_KIND.OPERATOR,
+    originSurface: DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.OPERATOR_API,
+    requestId: 'freeze-request-old',
+    normalizedRequestHash: 'hash-old',
+    reason: 'older active freeze',
+    requestedBy: 'operator_api',
+    evidenceRefs: ['operator:manual-control'],
+    createdAt: '2026-04-10T12:00:00.000Z',
+  });
+  await store.freezeDevelopment({
+    freezeId: 'development-freeze:new',
+    ledgerId: 'development-ledger:new',
+    triggerKind: DEVELOPMENT_FREEZE_TRIGGER_KIND.POLICY_AUTO,
+    originSurface: DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.HOMEOSTAT,
+    requestId: 'freeze-request-new',
+    normalizedRequestHash: 'hash-new',
+    reason: 'newer active freeze',
+    requestedBy: 'homeostat',
+    evidenceRefs: ['homeostat:development-proposal-rate'],
+    createdAt: '2026-04-10T12:05:00.000Z',
+  });
+
+  const activeFreeze = await store.loadActiveFreeze();
+
+  assert.equal(activeFreeze?.freezeId, 'development-freeze:new');
+  assert.equal(activeFreeze?.requestId, 'freeze-request-new');
+  assert.equal(harness.agentState.developmentFreeze, true);
+});

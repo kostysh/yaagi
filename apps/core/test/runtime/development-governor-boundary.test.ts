@@ -5,7 +5,7 @@ import path from 'node:path';
 
 const REPO_ROOT = process.cwd();
 const GOVERNOR_TABLE_WRITE_PATTERN =
-  /\b(?:insert\s+into|update|delete\s+from)\s+[^;]*development_(?:freezes|proposals|proposal_decisions|ledger)/i;
+  /\b(?:insert\s+into|update|delete\s+from)\s+[^;]*development_(?:freezes|proposals|proposal_decisions|proposal_execution_outcomes|ledger)/i;
 
 const ALLOWED_SOURCE_FILES = new Set([
   path.join(REPO_ROOT, 'packages/db/src/development-governor.ts'),
@@ -46,4 +46,19 @@ void test('AC-F0016-02 keeps governor-owned table writes behind the governor sto
   }
 
   assert.deepEqual(violations, []);
+});
+
+void test('AC-F0016-02 detects direct writes to the proposal execution-outcome surface', () => {
+  assert.equal(
+    GOVERNOR_TABLE_WRITE_PATTERN.test(
+      'insert into polyphony_runtime.development_proposal_execution_outcomes (outcome_id) values ($1)',
+    ),
+    true,
+  );
+  assert.equal(
+    GOVERNOR_TABLE_WRITE_PATTERN.test(
+      'select * from polyphony_runtime.development_proposal_execution_outcomes',
+    ),
+    false,
+  );
 });

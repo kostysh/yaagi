@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-10-008-actualize-cf-016-implemented",
+    "created_at": "2026-04-10T12:44:02Z",
+    "sequence": 8,
+    "target_item_keys": ["CF-016"]
+  },
+  "operations": [
+    {
+      "item_key": "CF-016",
+      "action": "replace_fields",
+      "fields": {
+        "delivery_state": "implemented",
+        "gaps": []
+      }
+    },
+    {
+      "item_key": "CF-016",
+      "action": "append_unique",
+      "field": "implementation_source_ids",
+      "values": ["ef27eeb6-7dfa-408b-a240-1712dd407575"]
+    },
+    {
+      "item_key": "CF-016",
+      "action": "append_unique",
+      "field": "test_source_ids",
+      "values": ["ef27eeb6-7dfa-408b-a240-1712dd407575"]
+    }
+  ]
+}

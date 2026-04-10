@@ -5,6 +5,7 @@ import {
   DEVELOPMENT_GOVERNOR_LEDGER_ENTRY_KIND,
   DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE,
   DEVELOPMENT_PROPOSAL_DECISION_KIND,
+  DEVELOPMENT_PROPOSAL_EXECUTION_OUTCOME_KIND,
   DEVELOPMENT_PROPOSAL_KIND,
 } from '@yaagi/contracts/governor';
 import {
@@ -13,6 +14,7 @@ import {
   type DevelopmentGovernorDbExecutor,
   type DevelopmentLedgerRow,
   type DevelopmentProposalDecisionRow,
+  type DevelopmentProposalExecutionOutcomeRow,
   type DevelopmentProposalRow,
 } from '../src/development-governor.ts';
 
@@ -64,19 +66,47 @@ const createDecisionInput = (
   ...overrides,
 });
 
+const createExecutionOutcomeInput = (
+  proposalId = 'development-proposal:1',
+  overrides: Partial<
+    Parameters<
+      ReturnType<typeof createDevelopmentGovernorStore>['recordProposalExecutionOutcome']
+    >[0]
+  > = {},
+) => ({
+  outcomeId: 'development-proposal-outcome:1',
+  ledgerId: 'development-ledger:outcome-1',
+  proposalId,
+  outcomeKind: DEVELOPMENT_PROPOSAL_EXECUTION_OUTCOME_KIND.EXECUTED,
+  outcomeOrigin: DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.HUMAN_OVERRIDE,
+  originSurface: DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.HUMAN_OVERRIDE,
+  requestId: 'proposal-outcome-request-1',
+  normalizedRequestHash: 'outcome-hash-1',
+  targetRef: 'workspace:body',
+  evidenceRefs: ['owner-execution:1'],
+  createdAt: '2026-04-10T12:20:00.000Z',
+  payloadJson: { evidenceOnly: true, executionBoundary: 'downstream_owner' },
+  ...overrides,
+});
+
 const createGovernorDbHarness = (): {
   db: DevelopmentGovernorDbExecutor;
   freezes: DevelopmentFreezeRow[];
   proposals: DevelopmentProposalRow[];
   decisions: DevelopmentProposalDecisionRow[];
+  outcomes: DevelopmentProposalExecutionOutcomeRow[];
   ledger: DevelopmentLedgerRow[];
   queries: string[];
+  onOutcomeLookup(hook: (lookupIndex: number) => void): void;
 } => {
   const freezes: DevelopmentFreezeRow[] = [];
   const proposals: DevelopmentProposalRow[] = [];
   const decisions: DevelopmentProposalDecisionRow[] = [];
+  const outcomes: DevelopmentProposalExecutionOutcomeRow[] = [];
   const ledger: DevelopmentLedgerRow[] = [];
   const queries: string[] = [];
+  let outcomeLookupCount = 0;
+  let outcomeLookupHook: ((lookupIndex: number) => void) | undefined;
 
   const query = ((sqlText: unknown, params: unknown[] = []) => {
     if (typeof sqlText !== 'string') {
@@ -146,6 +176,16 @@ const createGovernorDbHarness = (): {
       return Promise.resolve({ rows: row ? [row] : [] });
     }
 
+    if (
+      sql.includes('from polyphony_runtime.development_proposal_execution_outcomes') &&
+      sql.includes('where request_id = $1')
+    ) {
+      outcomeLookupCount += 1;
+      outcomeLookupHook?.(outcomeLookupCount);
+      const row = outcomes.find((entry) => entry.requestId === params[0]);
+      return Promise.resolve({ rows: row ? [row] : [] });
+    }
+
     if (sql.startsWith('insert into polyphony_runtime.development_proposal_decisions')) {
       const row: DevelopmentProposalDecisionRow = {
         decisionId: String(params[0]),
@@ -160,6 +200,24 @@ const createGovernorDbHarness = (): {
         createdAt: new Date(String(params[9])).toISOString(),
       };
       decisions.push(row);
+      return Promise.resolve({ rows: [row] });
+    }
+
+    if (sql.startsWith('insert into polyphony_runtime.development_proposal_execution_outcomes')) {
+      const row: DevelopmentProposalExecutionOutcomeRow = {
+        outcomeId: String(params[0]),
+        proposalId: String(params[1]),
+        outcomeKind: params[2] as DevelopmentProposalExecutionOutcomeRow['outcomeKind'],
+        outcomeOrigin: params[3] as DevelopmentProposalExecutionOutcomeRow['outcomeOrigin'],
+        originSurface: params[4] as DevelopmentProposalExecutionOutcomeRow['originSurface'],
+        requestId: String(params[5]),
+        normalizedRequestHash: String(params[6]),
+        targetRef: String(params[7]),
+        evidenceRefsJson: JSON.parse(String(params[8])) as string[],
+        payloadJson: JSON.parse(String(params[9])) as Record<string, unknown>,
+        createdAt: new Date(String(params[10])).toISOString(),
+      };
+      outcomes.push(row);
       return Promise.resolve({ rows: [row] });
     }
 
@@ -224,8 +282,12 @@ const createGovernorDbHarness = (): {
     freezes,
     proposals,
     decisions,
+    outcomes,
     ledger,
     queries,
+    onOutcomeLookup: (hook) => {
+      outcomeLookupHook = hook;
+    },
   };
 };
 
@@ -374,4 +436,170 @@ void test('AC-F0016-07 rejects repeated deferred proposal decisions', async () =
   assert.equal(repeatedDeferred.reason, 'invalid_state_transition');
   assert.equal(finalDecision.accepted, true);
   assert.equal(finalDecision.proposal.state, 'approved');
+});
+
+void test('AC-F0016-09 records execution outcomes only after advisory approval', async () => {
+  const harness = createGovernorDbHarness();
+  const store = createDevelopmentGovernorStore(harness.db);
+  const proposal = await store.submitDevelopmentProposal(createProposalInput());
+  assert.equal(proposal.accepted, true);
+
+  const prematureOutcome = await store.recordProposalExecutionOutcome(
+    createExecutionOutcomeInput(proposal.proposal.proposalId),
+  );
+  const decision = await store.recordProposalDecision(
+    createDecisionInput(proposal.proposal.proposalId),
+  );
+  const outcome = await store.recordProposalExecutionOutcome(
+    createExecutionOutcomeInput(proposal.proposal.proposalId),
+  );
+  const replay = await store.recordProposalExecutionOutcome(
+    createExecutionOutcomeInput(proposal.proposal.proposalId, {
+      outcomeId: 'development-proposal-outcome:2',
+      ledgerId: 'development-ledger:outcome-2',
+    }),
+  );
+  const conflict = await store.recordProposalExecutionOutcome(
+    createExecutionOutcomeInput(proposal.proposal.proposalId, {
+      outcomeId: 'development-proposal-outcome:3',
+      ledgerId: 'development-ledger:outcome-3',
+      normalizedRequestHash: 'outcome-hash-2',
+    }),
+  );
+
+  assert.equal(prematureOutcome.accepted, false);
+  assert.equal(prematureOutcome.reason, 'invalid_state_transition');
+  assert.equal(decision.accepted, true);
+  assert.equal(outcome.accepted, true);
+  assert.equal(outcome.proposal.state, 'executed');
+  assert.equal(outcome.outcome.outcomeKind, 'executed');
+  assert.equal(outcome.ledgerEntry?.entryKind, 'proposal_execution_recorded');
+  assert.equal(outcome.ledgerEntry?.payloadJson['executionBoundary'], 'downstream_owner');
+  assert.equal(replay.accepted, true);
+  assert.equal(replay.deduplicated, true);
+  assert.equal(conflict.accepted, false);
+  assert.equal(conflict.reason, 'conflicting_request_id');
+  assert.equal(harness.outcomes.length, 1);
+});
+
+void test('AC-F0016-09 deduplicates execution outcome replay after proposal lock', async () => {
+  const harness = createGovernorDbHarness();
+  const store = createDevelopmentGovernorStore(harness.db);
+  const proposal = await store.submitDevelopmentProposal(createProposalInput());
+  assert.equal(proposal.accepted, true);
+  const decision = await store.recordProposalDecision(
+    createDecisionInput(proposal.proposal.proposalId),
+  );
+  assert.equal(decision.accepted, true);
+
+  const input = createExecutionOutcomeInput(proposal.proposal.proposalId);
+  harness.onOutcomeLookup((lookupIndex) => {
+    if (lookupIndex !== 2 || harness.outcomes.length > 0) {
+      return;
+    }
+
+    const lockedProposal = harness.proposals.find(
+      (entry) => entry.proposalId === proposal.proposal.proposalId,
+    );
+    if (lockedProposal) {
+      lockedProposal.state = 'executed';
+      lockedProposal.updatedAt = '2026-04-10T12:20:00.000Z';
+    }
+    harness.outcomes.push({
+      outcomeId: 'development-proposal-outcome:concurrent',
+      proposalId: input.proposalId,
+      outcomeKind: input.outcomeKind,
+      outcomeOrigin: input.outcomeOrigin,
+      originSurface: input.originSurface,
+      requestId: input.requestId,
+      normalizedRequestHash: input.normalizedRequestHash,
+      targetRef: input.targetRef,
+      evidenceRefsJson: input.evidenceRefs,
+      payloadJson: input.payloadJson ?? {},
+      createdAt: input.createdAt,
+    });
+  });
+
+  const replay = await store.recordProposalExecutionOutcome(input);
+
+  assert.equal(replay.accepted, true);
+  assert.equal(replay.deduplicated, true);
+  assert.equal(replay.proposal.state, 'executed');
+  assert.equal(replay.outcome.outcomeId, 'development-proposal-outcome:concurrent');
+  assert.equal(replay.ledgerEntry, null);
+  assert.equal(harness.outcomes.length, 1);
+});
+
+void test('AC-F0016-09 rejects execution outcome target drift', async () => {
+  const harness = createGovernorDbHarness();
+  const store = createDevelopmentGovernorStore(harness.db);
+  const proposal = await store.submitDevelopmentProposal(createProposalInput());
+  assert.equal(proposal.accepted, true);
+  const decision = await store.recordProposalDecision(
+    createDecisionInput(proposal.proposal.proposalId),
+  );
+  assert.equal(decision.accepted, true);
+
+  const result = await store.recordProposalExecutionOutcome(
+    createExecutionOutcomeInput(proposal.proposal.proposalId, {
+      targetRef: 'workspace:other-body',
+    }),
+  );
+
+  assert.equal(result.accepted, false);
+  assert.equal(result.reason, 'target_ref_mismatch');
+  assert.equal(harness.outcomes.length, 0);
+});
+
+void test('AC-F0016-09 rejects execution outcome when proposal has no stable target', async () => {
+  const harness = createGovernorDbHarness();
+  const store = createDevelopmentGovernorStore(harness.db);
+  const proposal = await store.submitDevelopmentProposal(createProposalInput({ targetRef: null }));
+  assert.equal(proposal.accepted, true);
+  const decision = await store.recordProposalDecision(
+    createDecisionInput(proposal.proposal.proposalId),
+  );
+  assert.equal(decision.accepted, true);
+
+  const result = await store.recordProposalExecutionOutcome(
+    createExecutionOutcomeInput(proposal.proposal.proposalId),
+  );
+
+  assert.equal(result.accepted, false);
+  assert.equal(result.reason, 'target_ref_mismatch');
+  assert.equal(harness.outcomes.length, 0);
+});
+
+void test('AC-F0016-10 records internal workshop proposals as deferred during active freeze', async () => {
+  const harness = createGovernorDbHarness();
+  harness.freezes.push({
+    freezeId: 'development-freeze:1',
+    state: 'frozen',
+    triggerKind: DEVELOPMENT_FREEZE_TRIGGER_KIND.OPERATOR,
+    originSurface: DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.OPERATOR_API,
+    requestId: 'freeze-request-1',
+    normalizedRequestHash: 'freeze-hash-1',
+    reason: 'manual freeze',
+    requestedBy: 'operator_api',
+    evidenceRefsJson: ['operator:freeze'],
+    createdAt,
+  });
+  const store = createDevelopmentGovernorStore(harness.db);
+
+  const result = await store.submitDevelopmentProposal(
+    createProposalInput({
+      proposalKind: DEVELOPMENT_PROPOSAL_KIND.MODEL_ADAPTER,
+      originSurface: DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.WORKSHOP,
+      submitterOwner: 'F-0015',
+      requestId: 'workshop-proposal-request-1',
+      normalizedRequestHash: 'workshop-proposal-hash-1',
+      evidenceRefs: ['workshop:candidate:1', 'workshop:promotion-package:file:///pkg.json'],
+      rollbackPlanRef: 'rollback:model:baseline',
+      targetRef: 'model-profile:reflex.fast@candidate',
+    }),
+  );
+
+  assert.equal(result.accepted, true);
+  assert.equal(result.proposal.state, 'deferred');
+  assert.equal(harness.ledger[0]?.entryKind, 'proposal_recorded');
 });

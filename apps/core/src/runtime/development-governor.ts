@@ -9,9 +9,12 @@ import {
   type DevelopmentGovernorOriginSurface,
   type DevelopmentProposalDecisionKind,
   type DevelopmentProposalDecisionResult,
+  type DevelopmentProposalExecutionOutcomeKind,
+  type DevelopmentProposalExecutionOutcomeResult,
   type DevelopmentProposalKind,
   type DevelopmentProposalResult,
 } from '@yaagi/contracts/governor';
+import { WORKSHOP_CANDIDATE_KIND, type WorkshopPromotionPackage } from '@yaagi/contracts/workshop';
 import {
   HOMEOSTAT_ALERT_SEVERITY,
   HOMEOSTAT_REQUESTED_ACTION_KIND,
@@ -55,6 +58,23 @@ type RecordDevelopmentProposalDecisionInput = {
   decidedAt?: string;
 };
 
+type RecordDevelopmentProposalExecutionOutcomeInput = {
+  requestId: string;
+  proposalId: string;
+  outcomeKind: DevelopmentProposalExecutionOutcomeKind;
+  outcomeOrigin: DevelopmentGovernorOriginSurface;
+  targetRef: string;
+  evidenceRefs: string[];
+  recordedAt?: string;
+};
+
+type SubmitWorkshopPromotionProposalInput = {
+  requestId: string;
+  promotionPackage: WorkshopPromotionPackage;
+  packageUri: string;
+  requestedAt?: string;
+};
+
 export type DevelopmentGovernorService = {
   freezeDevelopment(input: FreezeDevelopmentInput): Promise<DevelopmentFreezeResult>;
   submitDevelopmentProposal(
@@ -63,6 +83,12 @@ export type DevelopmentGovernorService = {
   recordProposalDecision(
     input: RecordDevelopmentProposalDecisionInput,
   ): Promise<DevelopmentProposalDecisionResult>;
+  recordProposalExecutionOutcome(
+    input: RecordDevelopmentProposalExecutionOutcomeInput,
+  ): Promise<DevelopmentProposalExecutionOutcomeResult>;
+  submitWorkshopPromotionProposal(
+    input: SubmitWorkshopPromotionProposalInput,
+  ): Promise<DevelopmentProposalResult>;
   applyHomeostatReaction(request: HomeostatReactionRequest): Promise<DevelopmentFreezeResult>;
   recoverActiveFreeze(): Promise<{ activeFreeze: DevelopmentFreezeRow | null }>;
   loadActiveFreeze(): Promise<DevelopmentFreezeRow | null>;
@@ -102,6 +128,19 @@ type ProposalDecisionCommandMaterial = {
   decisionOrigin: DevelopmentGovernorOriginSurface;
   originSurface: DevelopmentGovernorOriginSurface;
   rationale: string;
+  hashEvidenceRefs: string[];
+  storeEvidenceRefs: string[];
+  createdAt: string;
+  payloadJson: Record<string, unknown>;
+};
+
+type ProposalExecutionOutcomeCommandMaterial = {
+  requestId: string;
+  proposalId: string;
+  outcomeKind: DevelopmentProposalExecutionOutcomeKind;
+  outcomeOrigin: DevelopmentGovernorOriginSurface;
+  originSurface: DevelopmentGovernorOriginSurface;
+  targetRef: string;
   hashEvidenceRefs: string[];
   storeEvidenceRefs: string[];
   createdAt: string;
@@ -188,6 +227,23 @@ const hashProposalDecisionCommand = (command: ProposalDecisionCommandMaterial): 
     )
     .digest('hex');
 
+const hashProposalExecutionOutcomeCommand = (
+  command: ProposalExecutionOutcomeCommandMaterial,
+): string =>
+  createHash('sha256')
+    .update(
+      stableJson({
+        evidenceRefs: command.hashEvidenceRefs,
+        originSurface: command.originSurface,
+        outcomeKind: command.outcomeKind,
+        outcomeOrigin: command.outcomeOrigin,
+        proposalId: command.proposalId,
+        requestId: command.requestId,
+        targetRef: command.targetRef,
+      }),
+    )
+    .digest('hex');
+
 const toAcceptedResult = (
   storeResult: Extract<
     Awaited<ReturnType<ReturnType<typeof createDevelopmentGovernorStore>['freezeDevelopment']>>,
@@ -230,7 +286,7 @@ const toProposalResult = (
       accepted: true,
       requestId: storeResult.proposal.requestId,
       proposalId: storeResult.proposal.proposalId,
-      state: 'submitted',
+      state: storeResult.proposal.state === 'deferred' ? 'deferred' : 'submitted',
       deduplicated: storeResult.deduplicated,
       createdAt: storeResult.proposal.createdAt,
     };
@@ -270,6 +326,32 @@ const toProposalDecisionResult = (
       decisionKind: storeResult.decision.decisionKind,
       deduplicated: storeResult.deduplicated,
       createdAt: storeResult.decision.createdAt,
+    };
+  }
+
+  return {
+    accepted: false,
+    requestId,
+    reason: storeResult.reason,
+  };
+};
+
+const toProposalExecutionOutcomeResult = (
+  storeResult: Awaited<
+    ReturnType<ReturnType<typeof createDevelopmentGovernorStore>['recordProposalExecutionOutcome']>
+  >,
+  requestId: string,
+): DevelopmentProposalExecutionOutcomeResult => {
+  if (storeResult.accepted) {
+    return {
+      accepted: true,
+      requestId: storeResult.outcome.requestId,
+      proposalId: storeResult.proposal.proposalId,
+      outcomeId: storeResult.outcome.outcomeId,
+      state: storeResult.outcome.outcomeKind,
+      outcomeKind: storeResult.outcome.outcomeKind,
+      deduplicated: storeResult.deduplicated,
+      createdAt: storeResult.outcome.createdAt,
     };
   }
 
@@ -326,8 +408,76 @@ const materializeProposalDecisionCommand = (input: ProposalDecisionCommandMateri
   payloadJson: input.payloadJson,
 });
 
+const materializeProposalExecutionOutcomeCommand = (
+  input: ProposalExecutionOutcomeCommandMaterial,
+) => ({
+  outcomeId: `development-proposal-outcome:${randomUUID()}`,
+  ledgerId: `development-ledger:${randomUUID()}`,
+  proposalId: input.proposalId,
+  outcomeKind: input.outcomeKind,
+  outcomeOrigin: input.outcomeOrigin,
+  originSurface: input.originSurface,
+  requestId: input.requestId,
+  normalizedRequestHash: hashProposalExecutionOutcomeCommand(input),
+  targetRef: input.targetRef,
+  evidenceRefs: input.storeEvidenceRefs,
+  createdAt: input.createdAt,
+  payloadJson: input.payloadJson,
+});
+
 const isSupportedProposalKind = (kind: DevelopmentProposalKind): boolean =>
   Object.values(DEVELOPMENT_PROPOSAL_KIND).includes(kind);
+
+const proposalKindForWorkshopCandidate = (
+  candidateKind: WorkshopPromotionPackage['candidateKind'],
+): DevelopmentProposalKind =>
+  candidateKind === WORKSHOP_CANDIDATE_KIND.SHARED_ADAPTER
+    ? DEVELOPMENT_PROPOSAL_KIND.MODEL_ADAPTER
+    : DEVELOPMENT_PROPOSAL_KIND.SPECIALIST_MODEL;
+
+const workshopPromotionEvidenceRefs = (
+  promotionPackage: WorkshopPromotionPackage,
+  packageUri: string,
+): string[] =>
+  uniqueSorted([
+    `workshop:candidate:${promotionPackage.candidateId}`,
+    `workshop:promotion-package:${packageUri}`,
+    `workshop:artifact:${promotionPackage.artifactUri}`,
+    promotionPackage.lastKnownGoodEvalReportUri
+      ? `workshop:eval-report:${promotionPackage.lastKnownGoodEvalReportUri}`
+      : '',
+  ]);
+
+export const buildWorkshopPromotionProposalCommand = (input: {
+  requestId: string;
+  promotionPackage: WorkshopPromotionPackage;
+  packageUri: string;
+  requestedAt: string;
+}) => {
+  const { promotionPackage } = input;
+  const targetRef =
+    promotionPackage.targetProfileId ?? `workshop:candidate:${promotionPackage.candidateId}`;
+
+  return {
+    requestId: input.requestId,
+    proposalKind: proposalKindForWorkshopCandidate(promotionPackage.candidateKind),
+    originSurface: DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.WORKSHOP,
+    submitterOwner: 'F-0015',
+    problemSignature: `workshop promotion package ${promotionPackage.candidateId}`,
+    summary: `Review workshop promotion package ${promotionPackage.candidateId} for governor approval.`,
+    rollbackPlanRef: promotionPackage.rollbackTarget,
+    targetRef,
+    hashEvidenceRefs: workshopPromotionEvidenceRefs(promotionPackage, input.packageUri),
+    storeEvidenceRefs: workshopPromotionEvidenceRefs(promotionPackage, input.packageUri),
+    createdAt: input.requestedAt,
+    payloadJson: {
+      handoffSource: 'workshop_promotion_package',
+      candidateId: promotionPackage.candidateId,
+      packageUri: input.packageUri,
+      candidateKind: promotionPackage.candidateKind,
+    },
+  };
+};
 
 export const createDbBackedDevelopmentGovernorService = (
   config: Pick<CoreRuntimeConfig, 'postgresUrl'>,
@@ -360,6 +510,17 @@ export const createDbBackedDevelopmentGovernorService = (
         materializeProposalDecisionCommand(command),
       );
       return toProposalDecisionResult(result, command.requestId);
+    });
+
+  const runProposalExecutionOutcome = async (
+    command: ProposalExecutionOutcomeCommandMaterial,
+  ): Promise<DevelopmentProposalExecutionOutcomeResult> =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createDevelopmentGovernorStore(client);
+      const result = await store.recordProposalExecutionOutcome(
+        materializeProposalExecutionOutcomeCommand(command),
+      );
+      return toProposalExecutionOutcomeResult(result, command.requestId);
     });
 
   return {
@@ -447,6 +608,55 @@ export const createDbBackedDevelopmentGovernorService = (
           executionBoundary: 'downstream_owner',
         },
       });
+    },
+
+    recordProposalExecutionOutcome: (input) => {
+      const evidenceRefs = uniqueSorted(input.evidenceRefs);
+      if (evidenceRefs.length === 0 || input.targetRef.trim().length === 0) {
+        return Promise.resolve({
+          accepted: false,
+          requestId: input.requestId,
+          reason: 'insufficient_evidence',
+        });
+      }
+
+      const createdAt = input.recordedAt ?? now().toISOString();
+      return runProposalExecutionOutcome({
+        requestId: input.requestId,
+        proposalId: input.proposalId,
+        outcomeKind: input.outcomeKind,
+        outcomeOrigin: input.outcomeOrigin,
+        originSurface: input.outcomeOrigin,
+        targetRef: input.targetRef,
+        hashEvidenceRefs: evidenceRefs,
+        storeEvidenceRefs: evidenceRefs,
+        createdAt,
+        payloadJson: {
+          evidenceOnly: true,
+          executionBoundary: 'downstream_owner',
+          targetRef: input.targetRef,
+        },
+      });
+    },
+
+    submitWorkshopPromotionProposal: (input) => {
+      if (!input.promotionPackage.rollbackTarget) {
+        return Promise.resolve({
+          accepted: false,
+          requestId: input.requestId,
+          reason: 'insufficient_evidence',
+        });
+      }
+
+      const createdAt = input.requestedAt ?? now().toISOString();
+      return runProposal(
+        buildWorkshopPromotionProposalCommand({
+          requestId: input.requestId,
+          promotionPackage: input.promotionPackage,
+          packageUri: input.packageUri,
+          requestedAt: createdAt,
+        }),
+      );
     },
 
     applyHomeostatReaction: (request) => {

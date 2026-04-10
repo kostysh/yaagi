@@ -2,13 +2,16 @@ import type { Client } from 'pg';
 import {
   DEVELOPMENT_FREEZE_STATE,
   DEVELOPMENT_GOVERNOR_LEDGER_ENTRY_KIND,
+  DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE,
   DEVELOPMENT_PROPOSAL_DECISION_KIND,
+  DEVELOPMENT_PROPOSAL_EXECUTION_OUTCOME_KIND,
   DEVELOPMENT_PROPOSAL_STATE,
   type DevelopmentFreezeState,
   type DevelopmentFreezeTriggerKind,
   type DevelopmentGovernorLedgerEntryKind,
   type DevelopmentGovernorOriginSurface,
   type DevelopmentProposalDecisionKind,
+  type DevelopmentProposalExecutionOutcomeKind,
   type DevelopmentProposalKind,
   type DevelopmentProposalState,
 } from '@yaagi/contracts/governor';
@@ -24,6 +27,9 @@ const runtimeSchemaTable = (table: string): string => `${RUNTIME_SCHEMA}.${table
 const freezesTable = runtimeSchemaTable('development_freezes');
 const proposalsTable = runtimeSchemaTable('development_proposals');
 const proposalDecisionsTable = runtimeSchemaTable('development_proposal_decisions');
+const proposalExecutionOutcomesTable = runtimeSchemaTable(
+  'development_proposal_execution_outcomes',
+);
 const ledgerTable = runtimeSchemaTable('development_ledger');
 
 const asUtcIso = (column: string, alias: string): string =>
@@ -133,6 +139,20 @@ export type DevelopmentProposalDecisionRow = {
   createdAt: string;
 };
 
+export type DevelopmentProposalExecutionOutcomeRow = {
+  outcomeId: string;
+  proposalId: string;
+  outcomeKind: DevelopmentProposalExecutionOutcomeKind;
+  outcomeOrigin: DevelopmentGovernorOriginSurface;
+  originSurface: DevelopmentGovernorOriginSurface;
+  requestId: string;
+  normalizedRequestHash: string;
+  targetRef: string;
+  evidenceRefsJson: string[];
+  payloadJson: Record<string, unknown>;
+  createdAt: string;
+};
+
 export type FreezeDevelopmentInput = {
   freezeId: string;
   ledgerId: string;
@@ -175,6 +195,10 @@ export type SubmitDevelopmentProposalInput = {
   evidenceRefs: string[];
   createdAt: string;
   payloadJson?: Record<string, unknown>;
+  initialState?: Extract<
+    DevelopmentProposalState,
+    typeof DEVELOPMENT_PROPOSAL_STATE.SUBMITTED | typeof DEVELOPMENT_PROPOSAL_STATE.DEFERRED
+  >;
 };
 
 export type SubmitDevelopmentProposalResult =
@@ -229,6 +253,40 @@ export type RecordDevelopmentProposalDecisionResult =
       proposal?: DevelopmentProposalRow;
     };
 
+export type RecordDevelopmentProposalExecutionOutcomeInput = {
+  outcomeId: string;
+  ledgerId: string;
+  proposalId: string;
+  outcomeKind: DevelopmentProposalExecutionOutcomeKind;
+  outcomeOrigin: DevelopmentGovernorOriginSurface;
+  originSurface: DevelopmentGovernorOriginSurface;
+  requestId: string;
+  normalizedRequestHash: string;
+  targetRef: string;
+  evidenceRefs: string[];
+  createdAt: string;
+  payloadJson?: Record<string, unknown>;
+};
+
+export type RecordDevelopmentProposalExecutionOutcomeResult =
+  | {
+      accepted: true;
+      deduplicated: boolean;
+      proposal: DevelopmentProposalRow;
+      outcome: DevelopmentProposalExecutionOutcomeRow;
+      ledgerEntry: DevelopmentLedgerRow | null;
+    }
+  | {
+      accepted: false;
+      reason: 'conflicting_request_id';
+      outcome: DevelopmentProposalExecutionOutcomeRow;
+    }
+  | {
+      accepted: false;
+      reason: 'proposal_not_found' | 'invalid_state_transition' | 'target_ref_mismatch';
+      proposal?: DevelopmentProposalRow;
+    };
+
 export type DevelopmentGovernorStore = {
   freezeDevelopment(input: FreezeDevelopmentInput): Promise<FreezeDevelopmentResult>;
   submitDevelopmentProposal(
@@ -237,6 +295,9 @@ export type DevelopmentGovernorStore = {
   recordProposalDecision(
     input: RecordDevelopmentProposalDecisionInput,
   ): Promise<RecordDevelopmentProposalDecisionResult>;
+  recordProposalExecutionOutcome(
+    input: RecordDevelopmentProposalExecutionOutcomeInput,
+  ): Promise<RecordDevelopmentProposalExecutionOutcomeResult>;
   loadActiveFreeze(): Promise<DevelopmentFreezeRow | null>;
 };
 
@@ -297,6 +358,20 @@ const proposalDecisionColumns = `
   ${asUtcIso('created_at', 'createdAt')}
 `;
 
+const proposalExecutionOutcomeColumns = `
+  outcome_id as "outcomeId",
+  proposal_id as "proposalId",
+  outcome_kind as "outcomeKind",
+  outcome_origin as "outcomeOrigin",
+  origin_surface as "originSurface",
+  request_id as "requestId",
+  normalized_request_hash as "normalizedRequestHash",
+  target_ref as "targetRef",
+  evidence_refs_json as "evidenceRefsJson",
+  payload_json as "payloadJson",
+  ${asUtcIso('created_at', 'createdAt')}
+`;
+
 const normalizeFreezeRow = (row: DevelopmentFreezeRow): DevelopmentFreezeRow => ({
   freezeId: row.freezeId,
   state: row.state,
@@ -353,6 +428,22 @@ const normalizeProposalDecisionRow = (
   normalizedRequestHash: row.normalizedRequestHash,
   rationale: row.rationale,
   evidenceRefsJson: toStringArray(row.evidenceRefsJson),
+  createdAt: normalizeTimestamp(row.createdAt, 'createdAt'),
+});
+
+const normalizeProposalExecutionOutcomeRow = (
+  row: DevelopmentProposalExecutionOutcomeRow,
+): DevelopmentProposalExecutionOutcomeRow => ({
+  outcomeId: row.outcomeId,
+  proposalId: row.proposalId,
+  outcomeKind: row.outcomeKind,
+  outcomeOrigin: row.outcomeOrigin,
+  originSurface: row.originSurface,
+  requestId: row.requestId,
+  normalizedRequestHash: row.normalizedRequestHash,
+  targetRef: row.targetRef,
+  evidenceRefsJson: toStringArray(row.evidenceRefsJson),
+  payloadJson: toRecord(row.payloadJson),
   createdAt: normalizeTimestamp(row.createdAt, 'createdAt'),
 });
 
@@ -419,6 +510,22 @@ const loadDecisionByRequestId = async (
 
   const row = result.rows[0];
   return row ? normalizeProposalDecisionRow(row) : null;
+};
+
+const loadExecutionOutcomeByRequestId = async (
+  db: DevelopmentGovernorDbExecutor,
+  requestId: string,
+): Promise<DevelopmentProposalExecutionOutcomeRow | null> => {
+  const result = await db.query<DevelopmentProposalExecutionOutcomeRow>(
+    `select ${proposalExecutionOutcomeColumns}
+     from ${proposalExecutionOutcomesTable}
+     where request_id = $1
+     limit 1`,
+    [requestId],
+  );
+
+  const row = result.rows[0];
+  return row ? normalizeProposalExecutionOutcomeRow(row) : null;
 };
 
 const insertFreeze = async (
@@ -494,7 +601,7 @@ const insertProposal = async (
     [
       input.proposalId,
       input.proposalKind,
-      DEVELOPMENT_PROPOSAL_STATE.SUBMITTED,
+      input.initialState ?? DEVELOPMENT_PROPOSAL_STATE.SUBMITTED,
       input.originSurface,
       input.requestId,
       input.normalizedRequestHash,
@@ -633,6 +740,49 @@ const insertProposalDecision = async (
   return normalizeProposalDecisionRow(row);
 };
 
+const insertProposalExecutionOutcome = async (
+  db: DevelopmentGovernorDbExecutor,
+  input: RecordDevelopmentProposalExecutionOutcomeInput,
+): Promise<DevelopmentProposalExecutionOutcomeRow> => {
+  const result = await db.query<DevelopmentProposalExecutionOutcomeRow>(
+    `insert into ${proposalExecutionOutcomesTable} (
+       outcome_id,
+       proposal_id,
+       outcome_kind,
+       outcome_origin,
+       origin_surface,
+       request_id,
+       normalized_request_hash,
+       target_ref,
+       evidence_refs_json,
+       payload_json,
+       created_at
+     )
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11::timestamptz)
+     returning ${proposalExecutionOutcomeColumns}`,
+    [
+      input.outcomeId,
+      input.proposalId,
+      input.outcomeKind,
+      input.outcomeOrigin,
+      input.originSurface,
+      input.requestId,
+      input.normalizedRequestHash,
+      input.targetRef,
+      JSON.stringify(input.evidenceRefs),
+      JSON.stringify(input.payloadJson ?? {}),
+      input.createdAt,
+    ],
+  );
+
+  const row = result.rows[0];
+  if (!row) {
+    throw new Error('failed to insert development proposal execution outcome');
+  }
+
+  return normalizeProposalExecutionOutcomeRow(row);
+};
+
 const updateProposalState = async (
   db: DevelopmentGovernorDbExecutor,
   proposalId: string,
@@ -641,6 +791,8 @@ const updateProposalState = async (
     | typeof DEVELOPMENT_PROPOSAL_STATE.APPROVED
     | typeof DEVELOPMENT_PROPOSAL_STATE.REJECTED
     | typeof DEVELOPMENT_PROPOSAL_STATE.DEFERRED
+    | typeof DEVELOPMENT_PROPOSAL_STATE.EXECUTED
+    | typeof DEVELOPMENT_PROPOSAL_STATE.ROLLED_BACK
   >,
   updatedAt: string,
 ): Promise<DevelopmentProposalRow> => {
@@ -695,6 +847,48 @@ const insertProposalDecisionLedgerEntry = async (
   const row = result.rows[0];
   if (!row) {
     throw new Error('failed to insert development proposal decision ledger entry');
+  }
+
+  return normalizeLedgerRow(row);
+};
+
+const insertProposalExecutionOutcomeLedgerEntry = async (
+  db: DevelopmentGovernorDbExecutor,
+  input: RecordDevelopmentProposalExecutionOutcomeInput,
+): Promise<DevelopmentLedgerRow> => {
+  const result = await db.query<DevelopmentLedgerRow>(
+    `insert into ${ledgerTable} (
+       ledger_id,
+       entry_kind,
+       origin_surface,
+       request_id,
+       proposal_id,
+       evidence_refs_json,
+       payload_json,
+       created_at
+     )
+     values ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::timestamptz)
+     returning ${ledgerColumns}`,
+    [
+      input.ledgerId,
+      DEVELOPMENT_GOVERNOR_LEDGER_ENTRY_KIND.PROPOSAL_EXECUTION_RECORDED,
+      input.originSurface,
+      input.requestId,
+      input.proposalId,
+      JSON.stringify(input.evidenceRefs),
+      JSON.stringify({
+        ...(input.payloadJson ?? {}),
+        outcomeId: input.outcomeId,
+        outcomeKind: input.outcomeKind,
+        targetRef: input.targetRef,
+      }),
+      input.createdAt,
+    ],
+  );
+
+  const row = result.rows[0];
+  if (!row) {
+    throw new Error('failed to insert development proposal execution ledger entry');
   }
 
   return normalizeLedgerRow(row);
@@ -757,7 +951,10 @@ export const createDevelopmentGovernorStore = (
       }
 
       const activeFreeze = await loadActiveFreeze(db);
-      if (activeFreeze) {
+      if (
+        activeFreeze &&
+        input.originSurface === DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.OPERATOR_API
+      ) {
         return {
           accepted: false,
           reason: 'development_frozen',
@@ -765,7 +962,11 @@ export const createDevelopmentGovernorStore = (
         };
       }
 
-      const proposal = await insertProposal(db, input);
+      const proposalInput = activeFreeze
+        ? { ...input, initialState: DEVELOPMENT_PROPOSAL_STATE.DEFERRED }
+        : input;
+
+      const proposal = await insertProposal(db, proposalInput);
       const ledgerEntry = await insertProposalLedgerEntry(db, input);
 
       return {
@@ -840,6 +1041,99 @@ export const createDevelopmentGovernorStore = (
         deduplicated: false,
         proposal: updatedProposal,
         decision,
+        ledgerEntry,
+      };
+    }),
+
+  recordProposalExecutionOutcome: (input) =>
+    transaction(db, async () => {
+      const replayExistingOutcome = async (
+        existingOutcome: DevelopmentProposalExecutionOutcomeRow,
+      ): Promise<RecordDevelopmentProposalExecutionOutcomeResult> => {
+        if (existingOutcome.normalizedRequestHash !== input.normalizedRequestHash) {
+          return {
+            accepted: false,
+            reason: 'conflicting_request_id',
+            outcome: existingOutcome,
+          };
+        }
+
+        const proposal = await loadProposalById(db, existingOutcome.proposalId);
+        if (!proposal) {
+          return {
+            accepted: false,
+            reason: 'proposal_not_found',
+          };
+        }
+
+        return {
+          accepted: true,
+          deduplicated: true,
+          proposal,
+          outcome: existingOutcome,
+          ledgerEntry: null,
+        };
+      };
+
+      const existingOutcome = await loadExecutionOutcomeByRequestId(db, input.requestId);
+      if (existingOutcome) {
+        return await replayExistingOutcome(existingOutcome);
+      }
+
+      const proposal = await loadProposalById(db, input.proposalId, { lockForUpdate: true });
+      if (!proposal) {
+        return {
+          accepted: false,
+          reason: 'proposal_not_found',
+        };
+      }
+
+      const existingOutcomeAfterProposalLock = await loadExecutionOutcomeByRequestId(
+        db,
+        input.requestId,
+      );
+      if (existingOutcomeAfterProposalLock) {
+        return await replayExistingOutcome(existingOutcomeAfterProposalLock);
+      }
+
+      if (!proposal.targetRef || proposal.targetRef !== input.targetRef) {
+        return {
+          accepted: false,
+          reason: 'target_ref_mismatch',
+          proposal,
+        };
+      }
+
+      const acceptsExecutedOutcome =
+        input.outcomeKind === DEVELOPMENT_PROPOSAL_EXECUTION_OUTCOME_KIND.EXECUTED &&
+        proposal.state === DEVELOPMENT_PROPOSAL_STATE.APPROVED;
+      const acceptsRolledBackOutcome =
+        input.outcomeKind === DEVELOPMENT_PROPOSAL_EXECUTION_OUTCOME_KIND.ROLLED_BACK &&
+        (proposal.state === DEVELOPMENT_PROPOSAL_STATE.APPROVED ||
+          proposal.state === DEVELOPMENT_PROPOSAL_STATE.EXECUTED);
+
+      if (!acceptsExecutedOutcome && !acceptsRolledBackOutcome) {
+        return {
+          accepted: false,
+          reason: 'invalid_state_transition',
+          proposal,
+        };
+      }
+
+      const outcome = await insertProposalExecutionOutcome(db, input);
+      const updatedProposal = await updateProposalState(
+        db,
+        input.proposalId,
+        input.outcomeKind,
+        input.createdAt,
+      );
+      const ledgerEntry = await insertProposalExecutionOutcomeLedgerEntry(db, input);
+
+      return {
+        accepted: true,
+        deduplicated: false,
+        proposal: updatedProposal,
+        outcome,
         ledgerEntry,
       };
     }),
