@@ -812,6 +812,49 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
         assert.ok(Array.isArray(statePayload.snapshot.entities));
         assert.ok(Array.isArray(statePayload.snapshot.relationships));
 
+        const proposalResponse = await fetch(`${coreBaseUrl()}/control/development-proposals`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            requestId: 'smoke-proposal-1',
+            proposalKind: 'policy_change',
+            problemSignature: 'deployment-cell proposal route smoke',
+            summary: 'Record a durable advisory governor proposal before freeze.',
+            evidenceRefs: ['smoke:deployment-cell'],
+            rollbackPlanRef: 'rollback:smoke-policy',
+            targetRef: 'policy:development-governor',
+          }),
+        });
+        assert.equal(proposalResponse.status, 202);
+        const proposalPayload = (await proposalResponse.json()) as {
+          accepted: boolean;
+          requestId: string;
+          state: string;
+          deduplicated: boolean;
+        };
+        assert.deepEqual(
+          {
+            accepted: proposalPayload.accepted,
+            requestId: proposalPayload.requestId,
+            state: proposalPayload.state,
+            deduplicated: proposalPayload.deduplicated,
+          },
+          {
+            accepted: true,
+            requestId: 'smoke-proposal-1',
+            state: 'submitted',
+            deduplicated: false,
+          },
+        );
+        assert.equal(
+          await queryPostgres(
+            "select state || '|' || proposal_kind || '|' || origin_surface from polyphony_runtime.development_proposals where request_id = 'smoke-proposal-1';",
+          ),
+          'submitted|policy_change|operator_api',
+        );
+
         const freezeResponse = await fetch(`${coreBaseUrl()}/control/freeze-development`, {
           method: 'POST',
           headers: {
@@ -862,6 +905,29 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
           ),
           'true',
         );
+
+        const frozenProposalResponse = await fetch(
+          `${coreBaseUrl()}/control/development-proposals`,
+          {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              requestId: 'smoke-proposal-while-frozen',
+              proposalKind: 'policy_change',
+              problemSignature: 'development freeze blocks new proposal intake',
+              summary: 'New public proposal intake must be rejected while frozen.',
+              evidenceRefs: ['smoke:deployment-cell'],
+              rollbackPlanRef: 'rollback:smoke-policy',
+            }),
+          },
+        );
+        assert.equal(frozenProposalResponse.status, 409);
+        assert.deepEqual(await frozenProposalResponse.json(), {
+          accepted: false,
+          reason: 'development_frozen',
+        });
 
         await queryPostgres(
           'update polyphony_runtime.agent_state set development_freeze = false where id = 1;',

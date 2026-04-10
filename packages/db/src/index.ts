@@ -30,8 +30,14 @@ export {
   type DevelopmentGovernorDbExecutor,
   type DevelopmentGovernorStore,
   type DevelopmentLedgerRow,
+  type DevelopmentProposalDecisionRow,
+  type DevelopmentProposalRow,
   type FreezeDevelopmentInput,
   type FreezeDevelopmentResult,
+  type RecordDevelopmentProposalDecisionInput,
+  type RecordDevelopmentProposalDecisionResult,
+  type SubmitDevelopmentProposalInput,
+  type SubmitDevelopmentProposalResult,
 } from './development-governor.ts';
 export {
   applyTickStateDelta,

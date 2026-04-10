@@ -2,6 +2,10 @@ import { z } from 'zod';
 
 export const DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH = 200;
 export const DEVELOPMENT_GOVERNOR_REASON_MAX_LENGTH = 2_000;
+export const DEVELOPMENT_GOVERNOR_PROBLEM_SIGNATURE_MAX_LENGTH = 500;
+export const DEVELOPMENT_GOVERNOR_SUMMARY_MAX_LENGTH = 2_000;
+export const DEVELOPMENT_GOVERNOR_OWNER_MAX_LENGTH = 100;
+export const DEVELOPMENT_GOVERNOR_REF_MAX_LENGTH = 500;
 export const DEVELOPMENT_GOVERNOR_EVIDENCE_REF_MAX_LENGTH = 500;
 export const DEVELOPMENT_GOVERNOR_EVIDENCE_REF_MAX_COUNT = 100;
 
@@ -89,10 +93,39 @@ export const developmentFreezeTriggerKindSchema = z.enum([
 
 export const developmentFreezeStateSchema = z.literal(DEVELOPMENT_FREEZE_STATE.FROZEN);
 
+export const developmentProposalKindSchema = z.enum([
+  DEVELOPMENT_PROPOSAL_KIND.MODEL_ADAPTER,
+  DEVELOPMENT_PROPOSAL_KIND.SPECIALIST_MODEL,
+  DEVELOPMENT_PROPOSAL_KIND.CODE_CHANGE,
+  DEVELOPMENT_PROPOSAL_KIND.POLICY_CHANGE,
+]);
+
+export const developmentProposalStateSchema = z.enum([
+  DEVELOPMENT_PROPOSAL_STATE.SUBMITTED,
+  DEVELOPMENT_PROPOSAL_STATE.APPROVED,
+  DEVELOPMENT_PROPOSAL_STATE.REJECTED,
+  DEVELOPMENT_PROPOSAL_STATE.DEFERRED,
+  DEVELOPMENT_PROPOSAL_STATE.SUPERSEDED,
+  DEVELOPMENT_PROPOSAL_STATE.EXECUTED,
+  DEVELOPMENT_PROPOSAL_STATE.ROLLED_BACK,
+]);
+
+export const developmentProposalDecisionKindSchema = z.enum([
+  DEVELOPMENT_PROPOSAL_DECISION_KIND.APPROVED,
+  DEVELOPMENT_PROPOSAL_DECISION_KIND.REJECTED,
+  DEVELOPMENT_PROPOSAL_DECISION_KIND.DEFERRED,
+]);
+
 export const developmentGovernorEvidenceRefSchema = z
   .string()
   .min(1)
   .max(DEVELOPMENT_GOVERNOR_EVIDENCE_REF_MAX_LENGTH);
+
+const nullableGovernorRefSchema = z
+  .string()
+  .min(1)
+  .max(DEVELOPMENT_GOVERNOR_REF_MAX_LENGTH)
+  .nullable();
 
 export const developmentFreezeCommandSchema = z.object({
   requestId: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH),
@@ -108,6 +141,44 @@ export const developmentFreezeCommandSchema = z.object({
 });
 
 export type DevelopmentFreezeCommand = z.infer<typeof developmentFreezeCommandSchema>;
+
+export const developmentProposalCommandSchema = z.object({
+  requestId: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH),
+  originSurface: developmentGovernorOriginSurfaceSchema,
+  submitterOwner: z.string().min(1).max(DEVELOPMENT_GOVERNOR_OWNER_MAX_LENGTH),
+  proposalKind: developmentProposalKindSchema,
+  problemSignature: z.string().min(1).max(DEVELOPMENT_GOVERNOR_PROBLEM_SIGNATURE_MAX_LENGTH),
+  summary: z.string().min(1).max(DEVELOPMENT_GOVERNOR_SUMMARY_MAX_LENGTH),
+  evidenceRefs: z
+    .array(developmentGovernorEvidenceRefSchema)
+    .min(1)
+    .max(DEVELOPMENT_GOVERNOR_EVIDENCE_REF_MAX_COUNT),
+  rollbackPlanRef: nullableGovernorRefSchema,
+  targetRef: nullableGovernorRefSchema,
+  payload: z.record(z.string(), z.unknown()).default({}),
+  requestedAt: z.string().datetime({ offset: true }),
+});
+
+export type DevelopmentProposalCommand = z.infer<typeof developmentProposalCommandSchema>;
+
+export const developmentProposalDecisionCommandSchema = z.object({
+  requestId: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH),
+  proposalId: z.string().min(1),
+  decisionKind: developmentProposalDecisionKindSchema,
+  originSurface: developmentGovernorOriginSurfaceSchema,
+  decisionOrigin: developmentGovernorOriginSurfaceSchema,
+  rationale: z.string().min(1).max(DEVELOPMENT_GOVERNOR_SUMMARY_MAX_LENGTH),
+  evidenceRefs: z
+    .array(developmentGovernorEvidenceRefSchema)
+    .min(1)
+    .max(DEVELOPMENT_GOVERNOR_EVIDENCE_REF_MAX_COUNT),
+  payload: z.record(z.string(), z.unknown()).default({}),
+  decidedAt: z.string().datetime({ offset: true }),
+});
+
+export type DevelopmentProposalDecisionCommand = z.infer<
+  typeof developmentProposalDecisionCommandSchema
+>;
 
 export const developmentFreezeAcceptedSchema = z.object({
   accepted: z.literal(true),
@@ -136,6 +207,77 @@ export const developmentFreezeResultSchema = z.discriminatedUnion('accepted', [
   developmentFreezeRejectedSchema,
 ]);
 
+export const developmentProposalAcceptedSchema = z.object({
+  accepted: z.literal(true),
+  requestId: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH),
+  proposalId: z.string().min(1),
+  state: z.literal(DEVELOPMENT_PROPOSAL_STATE.SUBMITTED),
+  deduplicated: z.boolean(),
+  createdAt: z.string().datetime({ offset: true }),
+});
+
+export const developmentProposalRejectedSchema = z.object({
+  accepted: z.literal(false),
+  requestId: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH).optional(),
+  reason: z.enum([
+    'invalid_request',
+    'unsupported_proposal_kind',
+    'development_frozen',
+    'insufficient_evidence',
+    'conflicting_request_id',
+    'persistence_unavailable',
+  ]),
+});
+
+export const developmentProposalResultSchema = z.discriminatedUnion('accepted', [
+  developmentProposalAcceptedSchema,
+  developmentProposalRejectedSchema,
+]);
+
+export const developmentProposalDecisionAcceptedSchema = z.object({
+  accepted: z.literal(true),
+  requestId: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH),
+  proposalId: z.string().min(1),
+  decisionId: z.string().min(1),
+  state: z.enum([
+    DEVELOPMENT_PROPOSAL_STATE.APPROVED,
+    DEVELOPMENT_PROPOSAL_STATE.REJECTED,
+    DEVELOPMENT_PROPOSAL_STATE.DEFERRED,
+  ]),
+  decisionKind: developmentProposalDecisionKindSchema,
+  deduplicated: z.boolean(),
+  createdAt: z.string().datetime({ offset: true }),
+});
+
+export const developmentProposalDecisionRejectedSchema = z.object({
+  accepted: z.literal(false),
+  requestId: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH).optional(),
+  reason: z.enum([
+    'invalid_request',
+    'proposal_not_found',
+    'invalid_state_transition',
+    'conflicting_request_id',
+    'persistence_unavailable',
+  ]),
+});
+
+export const developmentProposalDecisionResultSchema = z.discriminatedUnion('accepted', [
+  developmentProposalDecisionAcceptedSchema,
+  developmentProposalDecisionRejectedSchema,
+]);
+
 export type DevelopmentFreezeAccepted = z.infer<typeof developmentFreezeAcceptedSchema>;
 export type DevelopmentFreezeRejected = z.infer<typeof developmentFreezeRejectedSchema>;
 export type DevelopmentFreezeResult = z.infer<typeof developmentFreezeResultSchema>;
+export type DevelopmentProposalAccepted = z.infer<typeof developmentProposalAcceptedSchema>;
+export type DevelopmentProposalRejected = z.infer<typeof developmentProposalRejectedSchema>;
+export type DevelopmentProposalResult = z.infer<typeof developmentProposalResultSchema>;
+export type DevelopmentProposalDecisionAccepted = z.infer<
+  typeof developmentProposalDecisionAcceptedSchema
+>;
+export type DevelopmentProposalDecisionRejected = z.infer<
+  typeof developmentProposalDecisionRejectedSchema
+>;
+export type DevelopmentProposalDecisionResult = z.infer<
+  typeof developmentProposalDecisionResultSchema
+>;

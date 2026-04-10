@@ -106,6 +106,16 @@ type RuntimeLifecycle = {
     requestedBy: 'operator_api';
     requestedAt: string;
   }): ReturnType<DevelopmentGovernorService['freezeDevelopment']>;
+  submitDevelopmentProposal(input: {
+    requestId: string;
+    proposalKind: 'model_adapter' | 'specialist_model' | 'code_change' | 'policy_change';
+    problemSignature: string;
+    summary: string;
+    evidenceRefs: string[];
+    rollbackPlanRef: string | null;
+    targetRef: string | null;
+    requestedAt: string;
+  }): ReturnType<DevelopmentGovernorService['submitDevelopmentProposal']>;
   ingestHttpStimulus(input: HttpIngestStimulusInput): Promise<StimulusIngestResult>;
   health(): Promise<PerceptionHealthSnapshot>;
   getSubjectStateSnapshot(input?: SubjectStateSnapshotInput): Promise<SubjectStateSnapshot>;
@@ -1397,6 +1407,10 @@ export function createPhase0RuntimeLifecycle(
 
     freezeDevelopment(input) {
       return developmentGovernor.freezeDevelopment(input);
+    },
+
+    submitDevelopmentProposal(input) {
+      return developmentGovernor.submitDevelopmentProposal(input);
     },
 
     ingestHttpStimulus(input) {

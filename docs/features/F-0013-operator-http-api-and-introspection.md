@@ -254,7 +254,7 @@ type OperatorTickRejected = {
     - `503` for `boot_inactive`
 
 - `POST /control/freeze-development`
-  - Future owner: `CF-016`
+  - Semantic owner: `F-0016` / backlog `CF-016`
   - Response contract before `CF-016` delivery:
 
 ```ts
@@ -267,13 +267,15 @@ type OperatorUnavailableControlResponse = {
 ```
 
   - HTTP mapping: `501` until the governor seam exists.
+  - After `F-0016` governor freeze delivery, this route stays in the `F-0013` Hono namespace but delegates all durable freeze semantics to the governor owner gate.
 
 - `POST /control/development-proposals`
-  - Future owner: `CF-016`
-  - Reservation contract before `CF-016` delivery:
+  - Semantic owner: `F-0016` / backlog `CF-016`
+  - Reservation contract before `CF-016` proposal delivery:
     - the path belongs to the operator HTTP namespace owned by `F-0013`;
     - before `CF-016` implementation, the route may remain absent;
     - no other seam may expose the same operator submission over a parallel HTTP surface.
+  - After `F-0016` proposal lifecycle delivery, this route delegates submission to the governor owner gate and does not write proposal rows directly.
 
 ### 5.2 Runtime and deployment surface
 
@@ -488,3 +490,4 @@ Tasks:
 - **v1.4 (2026-03-25):** Realigned future `/models` owner references after `F-0014 spec-compact`: richer model ecology now points to `F-0014` as the source seam, while this dossier remains the owner only of the bounded operator projection over that source state.
 - **v1.5 (2026-03-25):** Realigned delivered `/models` behavior after `F-0014 implementation`: the route now projects the bounded richer summary from `F-0014` when source diagnostics exist, while preserving explicit unavailable/degraded semantics and leaving the richer source state itself outside `F-0013` ownership.
 - **v1.6 (2026-04-10):** [dependency realignment] Reserved future `POST /control/development-proposals` inside the `F-0013` operator namespace so `F-0016` proposal submission remains HTTP-owner-routed instead of drifting into a parallel server surface.
+- **v1.7 (2026-04-10):** [F-0016 implementation realignment] `POST /control/freeze-development` and `POST /control/development-proposals` are now allowed to be live through this Hono namespace when they delegate to the `F-0016` governor gate; the HTTP boundary remains `F-0013`-owned and direct governor writes from handlers remain forbidden.

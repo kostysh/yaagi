@@ -290,6 +290,9 @@ Minimal durable field set:
   - `decision_id`
   - `proposal_id`
   - `decision_kind`
+  - `origin_surface`
+  - `request_id`
+  - `normalized_request_hash`
   - `decision_origin`
   - `rationale`
   - `evidence_refs_json`
@@ -431,12 +434,12 @@ Verification: `apps/core/test/workshop/governor-evidence-handoff.integration.tes
 | AC-F0016-01 | `apps/core/test/runtime/development-governor-boundary.test.ts`; `packages/db/test/development-governor-store.integration.test.ts`; `packages/contracts/test/governor/freeze-contract.contract.test.ts` | implemented for `SL-F0016-01` freeze path |
 | AC-F0016-02 | `apps/core/test/runtime/development-governor-boundary.test.ts`; `apps/core/test/workshop/governor-evidence-handoff.integration.test.ts` | implemented for freeze write boundary; workshop evidence still planned |
 | AC-F0016-03 | `apps/core/test/runtime/homeostat-governor-freeze.integration.test.ts` | implemented for critical auto-freeze; warning remains advisory |
-| AC-F0016-04 | `apps/core/test/platform/operator-governor-gating.contract.test.ts`; `apps/core/test/platform/operator-development-proposals.integration.test.ts` | implemented for `POST /control/freeze-development`; proposal route still planned |
-| AC-F0016-05 | `apps/core/test/platform/operator-development-proposals.integration.test.ts` | planned |
-| AC-F0016-06 | `packages/contracts/test/governor/freeze-contract.contract.test.ts`; `packages/db/test/development-governor-store.integration.test.ts`; `packages/contracts/test/governor/proposal-contract.test.ts` | implemented for freeze requests; proposal evidence still planned |
-| AC-F0016-07 | `packages/contracts/test/governor/proposal-contract.test.ts`; `packages/db/test/development-proposal-lifecycle.integration.test.ts` | planned |
+| AC-F0016-04 | `apps/core/test/platform/operator-governor-gating.contract.test.ts`; `apps/core/test/platform/operator-development-proposals.integration.test.ts` | implemented for `POST /control/freeze-development` and `POST /control/development-proposals` |
+| AC-F0016-05 | `apps/core/test/platform/operator-development-proposals.integration.test.ts` | implemented for operator-only external proposal submission |
+| AC-F0016-06 | `packages/contracts/test/governor/freeze-contract.contract.test.ts`; `packages/db/test/development-governor-store.integration.test.ts`; `packages/contracts/test/governor/proposal-contract.test.ts`; `packages/db/test/development-proposal-lifecycle.integration.test.ts` | implemented for freeze, proposal and proposal-decision writes |
+| AC-F0016-07 | `packages/contracts/test/governor/proposal-contract.test.ts`; `packages/db/test/development-proposal-lifecycle.integration.test.ts` | implemented for the four canonical proposal classes and decision states |
 | AC-F0016-08 | `infra/docker/deployment-cell.smoke.ts`; `apps/core/test/runtime/homeostat-governor-freeze.integration.test.ts`; `packages/db/test/development-governor-store.integration.test.ts` | implemented for freeze creation, auto-freeze handoff and active-freeze recovery |
-| AC-F0016-09 | `packages/db/test/development-proposal-lifecycle.integration.test.ts`; `apps/core/test/runtime/development-governor-execution-evidence.test.ts` | planned |
+| AC-F0016-09 | `packages/db/test/development-proposal-lifecycle.integration.test.ts`; `apps/core/test/runtime/development-governor-execution-evidence.test.ts` | implemented for advisory proposal decisions; execution-outcome evidence remains `SL-F0016-03` |
 | AC-F0016-10 | `apps/core/test/workshop/governor-evidence-handoff.integration.test.ts`; `packages/db/test/development-governor-evidence.integration.test.ts` | planned |
 
 ## 10. Contract risks and mitigations
@@ -463,7 +466,7 @@ Verification: `apps/core/test/workshop/governor-evidence-handoff.integration.tes
 
 - Backlog item key: CF-016
 - Status progression: `proposed -> shaped -> planned -> in_progress -> done`
-- Current implementation package: `SL-F0016-01` in progress; freeze-control path implemented and verified, proposal/evidence slices remain.
+- Current implementation package: `SL-F0016-02` in progress; proposal submission and advisory decision lifecycle are implemented locally, while workshop/evidence handoff remains `SL-F0016-03`.
 - Issue:
 - PRs:
 
@@ -483,3 +486,4 @@ Verification: `apps/core/test/workshop/governor-evidence-handoff.integration.tes
 - 2026-04-10: [spec-compact] Expanded `CF-016` into a shaped first-governor spec with explicit operator routes, internal evidence gates, freeze/proposal lifecycles, advisory-approval boundary and backlog-actualization target `specified`.
 - 2026-04-10: [plan-slice] [scope realignment] Resolved planning questions, set dossier status to `planned`, sequenced three implementation slices and defined task/test/drift-guard coverage for backlog actualization target `planned`.
 - 2026-04-10: [implementation] Started `SL-F0016-01` and implemented the governor freeze path: contracts, PostgreSQL surfaces, store/service write gate, operator freeze route, homeostat critical auto-freeze handoff, active-freeze recovery and boundary/smoke tests.
+- 2026-04-10: [implementation] Implemented `SL-F0016-02` proposal lifecycle: live operator proposal submission route, proposal contracts, idempotent proposal persistence, active-freeze rejection, proposal decision records and advisory-only approval semantics without downstream execution mutation.

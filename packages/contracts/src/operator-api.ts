@@ -1,9 +1,13 @@
 import { z } from 'zod';
 import {
   DEVELOPMENT_GOVERNOR_EVIDENCE_REF_MAX_COUNT,
+  DEVELOPMENT_GOVERNOR_PROBLEM_SIGNATURE_MAX_LENGTH,
   DEVELOPMENT_GOVERNOR_REASON_MAX_LENGTH,
+  DEVELOPMENT_GOVERNOR_REF_MAX_LENGTH,
   DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH,
+  DEVELOPMENT_GOVERNOR_SUMMARY_MAX_LENGTH,
   developmentGovernorEvidenceRefSchema,
+  developmentProposalKindSchema,
 } from './governor.ts';
 import { TICK_KIND } from './runtime.ts';
 
@@ -84,4 +88,26 @@ export const operatorFreezeDevelopmentRequestSchema = z.object({
 
 export type OperatorFreezeDevelopmentRequest = z.infer<
   typeof operatorFreezeDevelopmentRequestSchema
+>;
+
+export const operatorDevelopmentProposalRequestSchema = z.object({
+  requestId: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH),
+  proposalKind: developmentProposalKindSchema,
+  problemSignature: z.string().min(1).max(DEVELOPMENT_GOVERNOR_PROBLEM_SIGNATURE_MAX_LENGTH),
+  summary: z.string().min(1).max(DEVELOPMENT_GOVERNOR_SUMMARY_MAX_LENGTH),
+  evidenceRefs: z
+    .array(developmentGovernorEvidenceRefSchema)
+    .max(DEVELOPMENT_GOVERNOR_EVIDENCE_REF_MAX_COUNT)
+    .default([]),
+  rollbackPlanRef: z
+    .string()
+    .min(1)
+    .max(DEVELOPMENT_GOVERNOR_REF_MAX_LENGTH)
+    .nullable()
+    .default(null),
+  targetRef: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REF_MAX_LENGTH).nullable().default(null),
+});
+
+export type OperatorDevelopmentProposalRequest = z.infer<
+  typeof operatorDevelopmentProposalRequestSchema
 >;

@@ -25,7 +25,8 @@ This file contains repo-specific overlays only.
 5. If implementation reveals a missing prerequisite seam or a cross-cutting invariant, make the backlog/dossier/ADR realignment explicit before continuing.
 6. Before starting `spec-compact` or `plan-slice`, perform and surface an explicit assessment of whether Codex Plan mode is needed. If planning mode is required, ask using the canonical skill prompt in the user's language and wait for the user's decision. After any accepted Plan mode phase, the normal dossier step artifacts and checks are still required.
 7. Backlog and dossier automation must call the canonical installed skill scripts directly; checked-in local CLI copies or wrappers are not valid.
-8. Keep this file overlay-only. Default dossier workflow, independent-review rules, and step-closure protocol live in the `dossier-engineer` skill and should not be duplicated here unless this repository intentionally tightens them.
+8. Dossier implementation logs, including package-based logs under `.dossier/implementation/`, must be written in the operator's language for the current session.
+9. Keep this file overlay-only. Default dossier workflow, independent-review rules, and step-closure protocol live in the `dossier-engineer` skill and should not be duplicated here unless this repository intentionally tightens them.
 
 ## Skill automation
 - Use the installed canonical `backlog-engineer` and `dossier-engineer` runtimes directly.

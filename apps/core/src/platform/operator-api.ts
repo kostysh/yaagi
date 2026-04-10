@@ -1,6 +1,7 @@
 import type { Hono } from 'hono';
 import { ZodError } from 'zod';
 import {
+  operatorDevelopmentProposalRequestSchema,
   operatorEpisodeCursorSchema,
   operatorEpisodesQuerySchema,
   operatorFreezeDevelopmentRequestSchema,
@@ -8,11 +9,16 @@ import {
   operatorTickControlRequestSchema,
   operatorTimelineCursorSchema,
   operatorTimelineQuerySchema,
+  type OperatorDevelopmentProposalRequest,
   type OperatorEpisodeCursor,
   type OperatorFreezeDevelopmentRequest,
   type OperatorTimelineCursor,
 } from '@yaagi/contracts/operator-api';
-import type { DevelopmentFreezeResult } from '@yaagi/contracts/governor';
+import {
+  DEVELOPMENT_PROPOSAL_KIND,
+  type DevelopmentFreezeResult,
+  type DevelopmentProposalResult,
+} from '@yaagi/contracts/governor';
 import type { OperatorRicherRegistryHealthSummary } from '@yaagi/contracts/models';
 import type {
   RuntimeEpisodePageInput,
@@ -54,6 +60,16 @@ export type OperatorRuntimeLifecycle = {
     requestedBy: 'operator_api';
     requestedAt: string;
   }): Promise<DevelopmentFreezeResult>;
+  submitDevelopmentProposal?(input: {
+    requestId: string;
+    proposalKind: 'model_adapter' | 'specialist_model' | 'code_change' | 'policy_change';
+    problemSignature: string;
+    summary: string;
+    evidenceRefs: string[];
+    rollbackPlanRef: string | null;
+    targetRef: string | null;
+    requestedAt: string;
+  }): Promise<DevelopmentProposalResult>;
 };
 
 const encodeCursor = (value: OperatorTimelineCursor | OperatorEpisodeCursor): string =>
@@ -74,6 +90,35 @@ const toValidationError = (error: unknown): string => {
   }
 
   return error instanceof Error ? error.message : String(error);
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const hasUnsupportedProposalKind = (payload: unknown): boolean =>
+  isRecord(payload) &&
+  typeof payload['proposalKind'] === 'string' &&
+  !Object.values(DEVELOPMENT_PROPOSAL_KIND).includes(
+    payload[
+      'proposalKind'
+    ] as (typeof DEVELOPMENT_PROPOSAL_KIND)[keyof typeof DEVELOPMENT_PROPOSAL_KIND],
+  );
+
+const proposalStatusForReason = (
+  reason: Exclude<DevelopmentProposalResult, { accepted: true }>['reason'],
+): 400 | 409 | 422 | 503 => {
+  switch (reason) {
+    case 'invalid_request':
+      return 400;
+    case 'conflicting_request_id':
+    case 'development_frozen':
+      return 409;
+    case 'insufficient_evidence':
+    case 'unsupported_proposal_kind':
+      return 422;
+    case 'persistence_unavailable':
+      return 503;
+  }
 };
 
 const buildPage = <TItem extends RuntimeTimelineEventRow | RuntimeEpisodeRow>(
@@ -112,7 +157,8 @@ export function registerOperatorApiRoutes(
     runtimeLifecycle.listEpisodes !== undefined ||
     runtimeLifecycle.getModelRoutingDiagnostics !== undefined ||
     runtimeLifecycle.requestTick !== undefined ||
-    runtimeLifecycle.freezeDevelopment !== undefined;
+    runtimeLifecycle.freezeDevelopment !== undefined ||
+    runtimeLifecycle.submitDevelopmentProposal !== undefined;
 
   if (!operatorApiEnabled) {
     return;
@@ -352,6 +398,77 @@ export function registerOperatorApiRoutes(
             ? 422
             : 503;
       return context.json(result, status);
+    } catch (error) {
+      return context.json(
+        {
+          accepted: false,
+          requestId: parsed.requestId,
+          reason: 'persistence_unavailable',
+          error: toValidationError(error),
+        },
+        503,
+      );
+    }
+  });
+
+  app.post('/control/development-proposals', async (context) => {
+    if (!runtimeLifecycle.submitDevelopmentProposal) {
+      return context.json(
+        {
+          accepted: false,
+          reason: 'persistence_unavailable',
+        },
+        503,
+      );
+    }
+
+    let payload: unknown;
+    try {
+      payload = await context.req.json();
+    } catch (error) {
+      return context.json(
+        { accepted: false, reason: 'invalid_request', error: toValidationError(error) },
+        400,
+      );
+    }
+
+    if (hasUnsupportedProposalKind(payload)) {
+      return context.json(
+        {
+          accepted: false,
+          reason: 'unsupported_proposal_kind',
+        },
+        422,
+      );
+    }
+
+    let parsed: OperatorDevelopmentProposalRequest;
+    try {
+      parsed = operatorDevelopmentProposalRequestSchema.parse(payload);
+    } catch (error) {
+      return context.json(
+        { accepted: false, reason: 'invalid_request', error: toValidationError(error) },
+        400,
+      );
+    }
+
+    try {
+      const result = await runtimeLifecycle.submitDevelopmentProposal({
+        requestId: parsed.requestId,
+        proposalKind: parsed.proposalKind,
+        problemSignature: parsed.problemSignature,
+        summary: parsed.summary,
+        evidenceRefs: parsed.evidenceRefs,
+        rollbackPlanRef: parsed.rollbackPlanRef,
+        targetRef: parsed.targetRef,
+        requestedAt: new Date().toISOString(),
+      });
+
+      if (result.accepted) {
+        return context.json(result, 202);
+      }
+
+      return context.json(result, proposalStatusForReason(result.reason));
     } catch (error) {
       return context.json(
         {
