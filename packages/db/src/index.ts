@@ -25,6 +25,15 @@ export {
   type PersistHomeostatSnapshotInput,
 } from './homeostat.ts';
 export {
+  createDevelopmentGovernorStore,
+  type DevelopmentFreezeRow,
+  type DevelopmentGovernorDbExecutor,
+  type DevelopmentGovernorStore,
+  type DevelopmentLedgerRow,
+  type FreezeDevelopmentInput,
+  type FreezeDevelopmentResult,
+} from './development-governor.ts';
+export {
   applyTickStateDelta,
   appendRuntimeTimelineEvent,
   createRuntimeDbClient,

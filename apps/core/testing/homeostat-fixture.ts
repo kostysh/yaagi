@@ -79,6 +79,7 @@ export const createBaseHomeostatContext = (
     },
   ],
   narrativeRewriteCountLast24h: 1,
+  developmentProposalCountLast24h: null,
   futureSourceStates: {
     developmentProposalRate: 'missing',
     organErrorRate: 'missing',

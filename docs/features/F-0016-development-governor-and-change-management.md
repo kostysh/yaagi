@@ -1,7 +1,7 @@
 ---
 id: F-0016
 title: Development Governor и управление изменениями
-status: planned
+status: in_progress
 coverage_gate: deferred
 owners: ["@codex"]
 area: governance
@@ -274,6 +274,8 @@ Minimal durable field set:
 - `development_proposals`
   - `proposal_id`
   - `proposal_kind`
+  - `request_id`
+  - `normalized_request_hash`
   - `origin_surface`
   - `submitter_owner`
   - `problem_signature`
@@ -296,8 +298,11 @@ Minimal durable field set:
   - `freeze_id`
   - `state`
   - `trigger_kind`
+  - `origin_surface`
   - `request_id`
+  - `normalized_request_hash`
   - `reason`
+  - `requested_by`
   - `evidence_refs_json`
   - `created_at`
 
@@ -423,14 +428,14 @@ Verification: `apps/core/test/workshop/governor-evidence-handoff.integration.tes
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0016-01 | `apps/core/test/runtime/development-governor-boundary.test.ts`; `packages/db/test/development-governor-store.integration.test.ts` | planned |
-| AC-F0016-02 | `apps/core/test/runtime/development-governor-boundary.test.ts`; `apps/core/test/workshop/governor-evidence-handoff.integration.test.ts` | planned |
-| AC-F0016-03 | `apps/core/test/runtime/homeostat-governor-freeze.integration.test.ts` | planned |
-| AC-F0016-04 | `apps/core/test/platform/operator-governor-control.integration.test.ts`; `apps/core/test/platform/operator-development-proposals.integration.test.ts` | planned |
+| AC-F0016-01 | `apps/core/test/runtime/development-governor-boundary.test.ts`; `packages/db/test/development-governor-store.integration.test.ts`; `packages/contracts/test/governor/freeze-contract.contract.test.ts` | implemented for `SL-F0016-01` freeze path |
+| AC-F0016-02 | `apps/core/test/runtime/development-governor-boundary.test.ts`; `apps/core/test/workshop/governor-evidence-handoff.integration.test.ts` | implemented for freeze write boundary; workshop evidence still planned |
+| AC-F0016-03 | `apps/core/test/runtime/homeostat-governor-freeze.integration.test.ts` | implemented for critical auto-freeze; warning remains advisory |
+| AC-F0016-04 | `apps/core/test/platform/operator-governor-gating.contract.test.ts`; `apps/core/test/platform/operator-development-proposals.integration.test.ts` | implemented for `POST /control/freeze-development`; proposal route still planned |
 | AC-F0016-05 | `apps/core/test/platform/operator-development-proposals.integration.test.ts` | planned |
-| AC-F0016-06 | `packages/contracts/test/governor/governor-contract.test.ts`; `packages/db/test/development-governor-store.integration.test.ts`; `packages/contracts/test/governor/proposal-contract.test.ts` | planned |
+| AC-F0016-06 | `packages/contracts/test/governor/freeze-contract.contract.test.ts`; `packages/db/test/development-governor-store.integration.test.ts`; `packages/contracts/test/governor/proposal-contract.test.ts` | implemented for freeze requests; proposal evidence still planned |
 | AC-F0016-07 | `packages/contracts/test/governor/proposal-contract.test.ts`; `packages/db/test/development-proposal-lifecycle.integration.test.ts` | planned |
-| AC-F0016-08 | `packages/db/test/development-governor-recovery.integration.test.ts`; `apps/core/test/runtime/homeostat-governor-freeze.integration.test.ts` | planned |
+| AC-F0016-08 | `infra/docker/deployment-cell.smoke.ts`; `apps/core/test/runtime/homeostat-governor-freeze.integration.test.ts`; `packages/db/test/development-governor-store.integration.test.ts` | implemented for freeze creation, auto-freeze handoff and active-freeze recovery |
 | AC-F0016-09 | `packages/db/test/development-proposal-lifecycle.integration.test.ts`; `apps/core/test/runtime/development-governor-execution-evidence.test.ts` | planned |
 | AC-F0016-10 | `apps/core/test/workshop/governor-evidence-handoff.integration.test.ts`; `packages/db/test/development-governor-evidence.integration.test.ts` | planned |
 
@@ -458,6 +463,7 @@ Verification: `apps/core/test/workshop/governor-evidence-handoff.integration.tes
 
 - Backlog item key: CF-016
 - Status progression: `proposed -> shaped -> planned -> in_progress -> done`
+- Current implementation package: `SL-F0016-01` in progress; freeze-control path implemented and verified, proposal/evidence slices remain.
 - Issue:
 - PRs:
 
@@ -476,3 +482,4 @@ Verification: `apps/core/test/workshop/governor-evidence-handoff.integration.tes
 - 2026-04-10: [intake] Initial dossier created from backlog item `CF-016` at backlog delivery state `defined`.
 - 2026-04-10: [spec-compact] Expanded `CF-016` into a shaped first-governor spec with explicit operator routes, internal evidence gates, freeze/proposal lifecycles, advisory-approval boundary and backlog-actualization target `specified`.
 - 2026-04-10: [plan-slice] [scope realignment] Resolved planning questions, set dossier status to `planned`, sequenced three implementation slices and defined task/test/drift-guard coverage for backlog actualization target `planned`.
+- 2026-04-10: [implementation] Started `SL-F0016-01` and implemented the governor freeze path: contracts, PostgreSQL surfaces, store/service write gate, operator freeze route, homeostat critical auto-freeze handoff, active-freeze recovery and boundary/smoke tests.

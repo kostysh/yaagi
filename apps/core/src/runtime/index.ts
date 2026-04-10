@@ -41,6 +41,10 @@ export {
   type PeriodicHomeostatWorker,
 } from './homeostat.ts';
 export {
+  createDbBackedDevelopmentGovernorService,
+  type DevelopmentGovernorService,
+} from './development-governor.ts';
+export {
   createDbBackedWorkshopService,
   createWorkshopJobGateway,
   createWorkshopService,

@@ -3,13 +3,16 @@ import { ZodError } from 'zod';
 import {
   operatorEpisodeCursorSchema,
   operatorEpisodesQuerySchema,
+  operatorFreezeDevelopmentRequestSchema,
   operatorStateQuerySchema,
   operatorTickControlRequestSchema,
   operatorTimelineCursorSchema,
   operatorTimelineQuerySchema,
   type OperatorEpisodeCursor,
+  type OperatorFreezeDevelopmentRequest,
   type OperatorTimelineCursor,
 } from '@yaagi/contracts/operator-api';
+import type { DevelopmentFreezeResult } from '@yaagi/contracts/governor';
 import type { OperatorRicherRegistryHealthSummary } from '@yaagi/contracts/models';
 import type {
   RuntimeEpisodePageInput,
@@ -44,6 +47,13 @@ export type OperatorRuntimeLifecycle = {
     accepted: boolean;
     reason?: 'boot_inactive' | 'lease_busy' | 'unsupported_tick_kind';
   }>;
+  freezeDevelopment?(input: {
+    requestId: string;
+    reason: string;
+    evidenceRefs: string[];
+    requestedBy: 'operator_api';
+    requestedAt: string;
+  }): Promise<DevelopmentFreezeResult>;
 };
 
 const encodeCursor = (value: OperatorTimelineCursor | OperatorEpisodeCursor): string =>
@@ -101,7 +111,8 @@ export function registerOperatorApiRoutes(
     runtimeLifecycle.listTimelineEvents !== undefined ||
     runtimeLifecycle.listEpisodes !== undefined ||
     runtimeLifecycle.getModelRoutingDiagnostics !== undefined ||
-    runtimeLifecycle.requestTick !== undefined;
+    runtimeLifecycle.requestTick !== undefined ||
+    runtimeLifecycle.freezeDevelopment !== undefined;
 
   if (!operatorApiEnabled) {
     return;
@@ -290,15 +301,67 @@ export function registerOperatorApiRoutes(
     }
   });
 
-  app.post('/control/freeze-development', (context) =>
-    context.json(
-      {
-        available: false,
-        action: 'freeze-development',
-        owner: 'CF-016',
-        reason: 'future_owned',
-      },
-      501,
-    ),
-  );
+  app.post('/control/freeze-development', async (context) => {
+    if (!runtimeLifecycle.freezeDevelopment) {
+      return context.json(
+        {
+          accepted: false,
+          reason: 'persistence_unavailable',
+        },
+        503,
+      );
+    }
+
+    let payload: unknown;
+    try {
+      payload = await context.req.json();
+    } catch (error) {
+      return context.json(
+        { accepted: false, reason: 'invalid_request', error: toValidationError(error) },
+        400,
+      );
+    }
+
+    let parsed: OperatorFreezeDevelopmentRequest;
+    try {
+      parsed = operatorFreezeDevelopmentRequestSchema.parse(payload);
+    } catch (error) {
+      return context.json(
+        { accepted: false, reason: 'invalid_request', error: toValidationError(error) },
+        400,
+      );
+    }
+
+    try {
+      const result = await runtimeLifecycle.freezeDevelopment({
+        requestId: parsed.requestId,
+        reason: parsed.reason,
+        evidenceRefs: parsed.evidenceRefs,
+        requestedBy: 'operator_api',
+        requestedAt: new Date().toISOString(),
+      });
+
+      if (result.accepted) {
+        return context.json(result, 202);
+      }
+
+      const status =
+        result.reason === 'conflicting_request_id'
+          ? 409
+          : result.reason === 'unsupported_reaction'
+            ? 422
+            : 503;
+      return context.json(result, status);
+    } catch (error) {
+      return context.json(
+        {
+          accepted: false,
+          requestId: parsed.requestId,
+          reason: 'persistence_unavailable',
+          error: toValidationError(error),
+        },
+        503,
+      );
+    }
+  });
 }

@@ -1,4 +1,10 @@
 import { z } from 'zod';
+import {
+  DEVELOPMENT_GOVERNOR_EVIDENCE_REF_MAX_COUNT,
+  DEVELOPMENT_GOVERNOR_REASON_MAX_LENGTH,
+  DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH,
+  developmentGovernorEvidenceRefSchema,
+} from './governor.ts';
 import { TICK_KIND } from './runtime.ts';
 
 const isoTimestampSchema = z.string().datetime({ offset: true });
@@ -66,3 +72,16 @@ export const operatorTickControlRequestSchema = z.object({
 });
 
 export type OperatorTickControlRequest = z.infer<typeof operatorTickControlRequestSchema>;
+
+export const operatorFreezeDevelopmentRequestSchema = z.object({
+  requestId: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH),
+  reason: z.string().min(1).max(DEVELOPMENT_GOVERNOR_REASON_MAX_LENGTH),
+  evidenceRefs: z
+    .array(developmentGovernorEvidenceRefSchema)
+    .max(DEVELOPMENT_GOVERNOR_EVIDENCE_REF_MAX_COUNT)
+    .default([]),
+});
+
+export type OperatorFreezeDevelopmentRequest = z.infer<
+  typeof operatorFreezeDevelopmentRequestSchema
+>;

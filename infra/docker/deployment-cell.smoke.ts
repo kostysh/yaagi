@@ -47,6 +47,10 @@ truncate table
   polyphony_runtime.beliefs,
   polyphony_runtime.goals,
   polyphony_runtime.homeostat_snapshots,
+  polyphony_runtime.development_ledger,
+  polyphony_runtime.development_proposal_decisions,
+  polyphony_runtime.development_proposals,
+  polyphony_runtime.development_freezes,
   polyphony_runtime.candidate_stage_events,
   polyphony_runtime.model_candidates,
   polyphony_runtime.eval_runs,
@@ -810,14 +814,66 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
 
         const freezeResponse = await fetch(`${coreBaseUrl()}/control/freeze-development`, {
           method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            requestId: 'smoke-freeze-1',
+            reason: 'deployment-cell governor freeze smoke',
+            evidenceRefs: ['smoke:deployment-cell'],
+          }),
         });
-        assert.equal(freezeResponse.status, 501);
-        assert.deepEqual(await freezeResponse.json(), {
-          available: false,
-          action: 'freeze-development',
-          owner: 'CF-016',
-          reason: 'future_owned',
-        });
+        assert.equal(freezeResponse.status, 202);
+        const freezePayload = (await freezeResponse.json()) as {
+          accepted: boolean;
+          requestId: string;
+          state: string;
+          triggerKind: string;
+          decisionOrigin: string;
+          deduplicated: boolean;
+        };
+        assert.deepEqual(
+          {
+            accepted: freezePayload.accepted,
+            requestId: freezePayload.requestId,
+            state: freezePayload.state,
+            triggerKind: freezePayload.triggerKind,
+            decisionOrigin: freezePayload.decisionOrigin,
+            deduplicated: freezePayload.deduplicated,
+          },
+          {
+            accepted: true,
+            requestId: 'smoke-freeze-1',
+            state: 'frozen',
+            triggerKind: 'operator',
+            decisionOrigin: 'operator',
+            deduplicated: false,
+          },
+        );
+        assert.equal(
+          await queryPostgres(
+            "select state || '|' || trigger_kind || '|' || origin_surface from polyphony_runtime.development_freezes where request_id = 'smoke-freeze-1';",
+          ),
+          'frozen|operator|operator_api',
+        );
+        assert.equal(
+          await queryPostgres(
+            'select development_freeze::text from polyphony_runtime.agent_state where id = 1;',
+          ),
+          'true',
+        );
+
+        await queryPostgres(
+          'update polyphony_runtime.agent_state set development_freeze = false where id = 1;',
+        );
+        await compose(['restart', 'core']);
+        await waitForHttp(coreHealthUrl());
+        assert.equal(
+          await queryPostgres(
+            'select development_freeze::text from polyphony_runtime.agent_state where id = 1;',
+          ),
+          'true',
+        );
       },
     );
 

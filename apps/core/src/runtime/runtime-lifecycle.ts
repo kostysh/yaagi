@@ -75,6 +75,10 @@ import {
   type HomeostatService,
   type PeriodicHomeostatWorker,
 } from './homeostat.ts';
+import {
+  createDbBackedDevelopmentGovernorService,
+  type DevelopmentGovernorService,
+} from './development-governor.ts';
 import { createExpandedModelEcologyService } from './model-ecology.ts';
 import {
   createDbBackedWorkshopService,
@@ -95,6 +99,13 @@ type RuntimeLifecycle = {
     accepted: boolean;
     reason?: 'boot_inactive' | 'lease_busy' | 'unsupported_tick_kind';
   }>;
+  freezeDevelopment(input: {
+    requestId: string;
+    reason: string;
+    evidenceRefs: string[];
+    requestedBy: 'operator_api';
+    requestedAt: string;
+  }): ReturnType<DevelopmentGovernorService['freezeDevelopment']>;
   ingestHttpStimulus(input: HttpIngestStimulusInput): Promise<StimulusIngestResult>;
   health(): Promise<PerceptionHealthSnapshot>;
   getSubjectStateSnapshot(input?: SubjectStateSnapshotInput): Promise<SubjectStateSnapshot>;
@@ -1027,7 +1038,13 @@ export function createPhase0RuntimeLifecycle(
   } = {},
 ): RuntimeLifecycle {
   let tickRuntime: TickRuntime | null = null;
-  const homeostatService: HomeostatService = createDbBackedHomeostatService(config);
+  const developmentGovernor: DevelopmentGovernorService =
+    createDbBackedDevelopmentGovernorService(config);
+  const homeostatService: HomeostatService = createDbBackedHomeostatService(config, {
+    handleReactionRequest: async (request) => {
+      await developmentGovernor.applyHomeostatReaction(request);
+    },
+  });
   const periodicHomeostatWorker: PeriodicHomeostatWorker = createPeriodicHomeostatWorker(
     config,
     homeostatService,
@@ -1329,6 +1346,7 @@ export function createPhase0RuntimeLifecycle(
           throw result.error;
         }
 
+        await developmentGovernor.recoverActiveFreeze();
         await expandedModelEcology.syncRicherSourceDiagnostics();
         await startBoundedWorkshopWorker(workshopWorker);
         await periodicHomeostatWorker.start();
@@ -1375,6 +1393,10 @@ export function createPhase0RuntimeLifecycle(
         accepted: false,
         reason: result.reason,
       };
+    },
+
+    freezeDevelopment(input) {
+      return developmentGovernor.freezeDevelopment(input);
     },
 
     ingestHttpStimulus(input) {

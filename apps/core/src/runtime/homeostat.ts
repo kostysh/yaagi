@@ -48,6 +48,7 @@ export type HomeostatEvaluationContext = {
   recentFieldJournalEntries: FieldJournalEntryRow[];
   recentCompletedTicks: RecentCompletedTick[];
   narrativeRewriteCountLast24h: number;
+  developmentProposalCountLast24h: number | null;
   futureSourceStates: {
     developmentProposalRate: HomeostatFutureSourceState;
     organErrorRate: HomeostatFutureSourceState;
@@ -102,6 +103,7 @@ type HomeostatServiceOptions = {
     reactionRequestRefs: string[];
   }) => Promise<void>;
   enqueueReactionRequest: (request: HomeostatReactionRequest) => Promise<void>;
+  handleReactionRequest?: (request: HomeostatReactionRequest) => Promise<void>;
 };
 
 type PeriodicHomeostatWorkerOptions = {
@@ -253,11 +255,11 @@ const metricToSeverity = (
     return HOMEOSTAT_ALERT_SEVERITY.NONE;
   }
 
-  if (metricValue > threshold.critical) {
+  if (metricValue >= threshold.critical) {
     return HOMEOSTAT_ALERT_SEVERITY.CRITICAL;
   }
 
-  if (metricValue > threshold.warning) {
+  if (metricValue >= threshold.warning) {
     return HOMEOSTAT_ALERT_SEVERITY.WARNING;
   }
 
@@ -371,6 +373,7 @@ const evaluateDeliveredSignal = (input: {
     | 'goal_churn'
     | 'coalition_dominance'
     | 'narrative_rewrite_rate'
+    | 'development_proposal_rate'
     | 'resource_pressure'
   >;
   metricValue: number;
@@ -453,11 +456,17 @@ export const evaluateHomeostatSignals = (
         ? [`narrative:${input.latestNarrativeVersion.versionId}`]
         : ['narrative:latest:none'],
     }),
-    evaluateFutureSignal({
-      signalFamily: HOMEOSTAT_SIGNAL_FAMILY.DEVELOPMENT_PROPOSAL_RATE,
-      sourceState: input.futureSourceStates.developmentProposalRate,
-      evidenceRefs: ['future:CF-016:development-ledger'],
-    }),
+    input.developmentProposalCountLast24h == null
+      ? evaluateFutureSignal({
+          signalFamily: HOMEOSTAT_SIGNAL_FAMILY.DEVELOPMENT_PROPOSAL_RATE,
+          sourceState: input.futureSourceStates.developmentProposalRate,
+          evidenceRefs: ['future:CF-016:development-ledger'],
+        })
+      : evaluateDeliveredSignal({
+          signalFamily: HOMEOSTAT_SIGNAL_FAMILY.DEVELOPMENT_PROPOSAL_RATE,
+          metricValue: input.developmentProposalCountLast24h,
+          evidenceRefs: ['development-governor:proposals:last-24h'],
+        }),
     evaluateDeliveredSignal({
       signalFamily: HOMEOSTAT_SIGNAL_FAMILY.RESOURCE_PRESSURE,
       metricValue: calculateResourcePressure(input.resourcePostureJson),
@@ -593,6 +602,7 @@ export function createHomeostatService(options: HomeostatServiceOptions): Homeos
     const enqueuedReactionRefs: string[] = [];
     for (const reaction of reactionsToEnqueue) {
       await options.enqueueReactionRequest(reaction);
+      await options.handleReactionRequest?.(reaction);
       enqueuedReactionRefs.push(reaction.reactionRequestId);
       await options.updateReactionRequestRefs({
         snapshotId,
@@ -658,6 +668,18 @@ const loadNarrativeRewriteCount = async (client: Client, createdAt: string): Pro
   return toNumber(result.rows[0]?.count ?? 0);
 };
 
+const loadDevelopmentProposalCount = async (client: Client, createdAt: string): Promise<number> => {
+  const result = await client.query<{ count: string }>(
+    `select count(*)::text as count
+     from ${runtimeSchemaTable('development_proposals')}
+     where created_at >= $1::timestamptz - interval '1 day'
+       and created_at <= $1::timestamptz`,
+    [createdAt],
+  );
+
+  return toNumber(result.rows[0]?.count ?? 0);
+};
+
 const loadDbBackedHomeostatContext = async (
   client: Client,
   input: { cadenceKind: HomeostatCadenceKind; tickId: string | null; createdAt: string },
@@ -688,8 +710,9 @@ const loadDbBackedHomeostatContext = async (
     recentFieldJournalEntries: narrativeSnapshot.recentFieldJournalEntries,
     recentCompletedTicks: await loadRecentCompletedTicks(client),
     narrativeRewriteCountLast24h: await loadNarrativeRewriteCount(client, input.createdAt),
+    developmentProposalCountLast24h: await loadDevelopmentProposalCount(client, input.createdAt),
     futureSourceStates: {
-      developmentProposalRate: 'missing',
+      developmentProposalRate: 'available',
       organErrorRate: 'missing',
       rollbackFrequency: 'missing',
     },
@@ -698,6 +721,9 @@ const loadDbBackedHomeostatContext = async (
 
 export const createDbBackedHomeostatService = (
   config: Pick<CoreRuntimeConfig, 'postgresUrl' | 'pgBossSchema'>,
+  options: {
+    handleReactionRequest?: (request: HomeostatReactionRequest) => Promise<void>;
+  } = {},
 ): HomeostatService => {
   const enqueueReactionRequest = createRuntimeJobEnqueuer({
     connectionString: config.postgresUrl,
@@ -727,6 +753,9 @@ export const createDbBackedHomeostatService = (
     enqueueReactionRequest: async (request) => {
       await enqueueReactionRequest(HOMEOSTAT_REACTION_QUEUE, request);
     },
+    ...(options.handleReactionRequest
+      ? { handleReactionRequest: options.handleReactionRequest }
+      : {}),
   });
 };
 
