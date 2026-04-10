@@ -1,7 +1,7 @@
 ---
 id: F-0017
 title: Git-управляемая эволюция тела и стабильные снапшоты
-status: planned
+status: in_progress
 coverage_gate: deferred
 owners: ["@codex"]
 area: body
@@ -104,7 +104,7 @@ links:
 - **AC-F0017-03:** Запрос body change без approved governor proposal и без owner-approved override evidence ref отклоняется до создания worktree.
 - **AC-F0017-04:** Повтор body change request с тем же normalized request hash возвращает существующий body change proposal.
 - **AC-F0017-05:** Повтор body change request с тем же request id при другом normalized request hash отклоняется как conflict.
-- **AC-F0017-06:** Worktree creation размещает worktree под materialized writable body root.
+- **AC-F0017-06:** Persisted worktree path resolution for future worktree creation размещает proposal worktree под materialized writable body root.
 - **AC-F0017-07:** Попытка записи в tracked `/seed/body` отклоняется до file mutation.
 - **AC-F0017-08:** Symlink traversal escape за materialized writable body root отклоняется до file mutation.
 - **AC-F0017-09:** Body change proposal record содержит proposal id.
@@ -137,7 +137,7 @@ links:
 
 - **Safety:** Observable signal: boundary tests include 0 successful `/seed/body` writes and 0 successful worktree-root escapes.
 - **Recoverability:** Observable signal: `snapshot_ready` transition is covered by a manifest validation event plus rollback-evidence creation for the same proposal id.
-- **Traceability:** Observable signal: each lifecycle transition event stores proposal id, governor ref, branch/worktree path, candidate commit or snapshot id, eval result, actor/source.
+- **Traceability:** Observable signal: each lifecycle transition event stores proposal id, governor ref, branch/worktree path, candidate commit or snapshot id, eval result, actor/source, where unavailable fields are recorded explicitly as `null`.
 - **Determinism:** Observable signal: repeated normalized request hashing across process restarts yields the same hash in the idempotency test.
 - **Operational proof:** Observable signal: any runtime/startup/deployment-affecting closure bundle includes `pnpm smoke:cell` evidence.
 
@@ -243,7 +243,7 @@ Ownership limits:
 
 - AC-F0017-01, AC-F0017-02, AC-F0017-03: contract/integration tests for governor approval intake plus owner override intake.
 - AC-F0017-04, AC-F0017-05: idempotency/replay conflict tests for request hash replay.
-- AC-F0017-06, AC-F0017-07, AC-F0017-08: boundary tests for worktree root, seed immutability, symlink escape.
+- AC-F0017-06, AC-F0017-07, AC-F0017-08: boundary tests for collision-resistant worktree root placement, seed immutability, worktree-root symlink escape and target-path symlink escape.
 - AC-F0017-09, AC-F0017-10, AC-F0017-11, AC-F0017-12, AC-F0017-13, AC-F0017-14, AC-F0017-15: persistence/contract tests for proposal record fields.
 - AC-F0017-16, AC-F0017-17, AC-F0017-18: integration tests for quality/eval/smoke gate enforcement.
 - AC-F0017-19, AC-F0017-20, AC-F0017-21, AC-F0017-22, AC-F0017-23, AC-F0017-24: snapshot manifest tests plus boot/recovery boundary test.
@@ -331,7 +331,7 @@ Forecast policy: slices below are implementation forecast, not separate product 
 Deliverable:
 
 - Internal body-change service/source module with request normalization, authority validation, proposal/event persistence and fail-closed path guards.
-- Worktree-root resolver that accepts only materialized writable body paths.
+- Collision-resistant worktree-root resolver that accepts only materialized writable body paths for future worktree creation.
 - Boundary guards rejecting tracked `/seed/body` targets and symlink/path escapes before file mutation.
 
 AC coverage:
@@ -344,7 +344,7 @@ Verification artifacts:
 
 - Contract tests for `BodyChangeAuthority`, idempotent replay and conflict rejection.
 - Persistence tests for proposal/event fields.
-- Boundary tests for worktree root placement, `/seed/body` rejection and symlink/path escape rejection.
+- Boundary tests for worktree root placement, worktree-root symlink escape, `/seed/body` rejection and symlink/path escape rejection.
 - Changed-source gate: `pnpm format`, `pnpm typecheck`, `pnpm lint`.
 
 Depends on:
@@ -474,7 +474,7 @@ Rollback limits:
 
 ## 7. Task list (implementation units)
 
-- **T-F0017-01:** Implement `SL-F0017-01`.
+- **T-F0017-01:** Implement `SL-F0017-01`. — implemented
 - **T-F0017-02:** Implement `SL-F0017-02`.
 - **T-F0017-03:** Implement `SL-F0017-03`.
 - **T-F0017-04:** Run `SL-F0017-03` real usage audit and classify corrective findings as `docs-only`, `runtime`, `schema/help`, `cross-skill` or `audit-only`.
@@ -483,21 +483,21 @@ Rollback limits:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0017-01 | `SL-F0017-01` governor approval intake contract test | planned |
-| AC-F0017-02 | `SL-F0017-01` owner override intake contract test | planned |
-| AC-F0017-03 | `SL-F0017-01` missing authorization rejection test | planned |
-| AC-F0017-04 | `SL-F0017-01` same-hash replay idempotency test | planned |
-| AC-F0017-05 | `SL-F0017-01` changed-hash replay conflict test | planned |
-| AC-F0017-06 | `SL-F0017-01` worktree root integration test | planned |
-| AC-F0017-07 | `SL-F0017-01` seed write rejection boundary test | planned |
-| AC-F0017-08 | `SL-F0017-01` symlink/path escape rejection boundary test | planned |
-| AC-F0017-09 | `SL-F0017-01` proposal id persistence contract test | planned |
-| AC-F0017-10 | `SL-F0017-01` governor ref persistence contract test | planned |
-| AC-F0017-11 | `SL-F0017-01` branch name persistence contract test | planned |
-| AC-F0017-12 | `SL-F0017-01` worktree path persistence contract test | planned |
-| AC-F0017-13 | `SL-F0017-01` lifecycle status persistence contract test | planned |
-| AC-F0017-14 | `SL-F0017-01` required eval suite persistence contract test | planned |
-| AC-F0017-15 | `SL-F0017-01` provenance refs persistence contract test | planned |
+| AC-F0017-01 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` authority intake |
+| AC-F0017-02 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` owner override intake |
+| AC-F0017-03 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` fail-closed authority rejection before persistence/worktree planning |
+| AC-F0017-04 | `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` same-hash replay idempotency |
+| AC-F0017-05 | `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` changed-hash replay conflict rejection |
+| AC-F0017-06 | `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` collision-resistant persisted worktree path invariant under materialized writable body |
+| AC-F0017-07 | `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` tracked `/seed/body` write rejection before persistence |
+| AC-F0017-08 | `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` symlink/path escape rejection before persistence |
+| AC-F0017-09 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` proposal id persistence |
+| AC-F0017-10 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` governor/override authority refs |
+| AC-F0017-11 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` branch name persistence |
+| AC-F0017-12 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` worktree path persistence |
+| AC-F0017-13 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` lifecycle status persistence |
+| AC-F0017-14 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` required eval suite persistence |
+| AC-F0017-15 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` provenance evidence refs |
 | AC-F0017-16 | `SL-F0017-02` repository quality gate integration test | planned |
 | AC-F0017-17 | `SL-F0017-02` proposal eval suite gate integration test | planned |
 | AC-F0017-18 | `SL-F0017-02` smoke-required gate test for runtime/startup/deployment changes | planned |
@@ -531,7 +531,7 @@ Rollback limits:
 - Status progression: `proposed -> shaped -> planned -> in_progress -> done`
 - Issue:
 - PRs:
-- Current workflow stage: `plan-slice` closed; next stage is `implementation`.
+- Current workflow stage: `implementation`; current package `SL-F0017-01` implemented and awaiting implementation audits/closure. Next package after closure: `SL-F0017-02`.
 
 ## 11. Change log
 
@@ -541,3 +541,5 @@ Rollback limits:
 - 2026-04-10: [scope realignment] `spec-compact` completed: ACs, NFRs, compact design, state/gate representations, verification surface and rollout cap are defined for the internal safe body-evolution mechanism.
 - 2026-04-10: [scope realignment] `plan-slice` drafted: three coherent implementation slices cover authority/path guards, eval-gated candidate commits, and stable snapshot/rollback/outcome handoff without public RBAC or deploy activation.
 - 2026-04-10: [scope realignment] `plan-slice` closed after verification, independent review and backlog actualization of `CF-012` to `planned`.
+- 2026-04-10: [implementation] `SL-F0017-01` implemented the internal body-evolution authority/persistence/path-guard seam: contracts, DB source surfaces, store, core service, deterministic request hash replay including concurrent request-id race recovery, collision-resistant persisted worktree path resolver under materialized writable body, self-describing proposal lifecycle event payloads, `/seed/body` rejection and symlink/path escape rejection.
+- 2026-04-11: [clarification] `AC-F0017-06` was narrowed from implicit immediate worktree creation to explicit worktree path resolution plus later creation, matching the approved slice split between `SL-F0017-01` and `SL-F0017-02`.

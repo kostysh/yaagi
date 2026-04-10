@@ -43,6 +43,15 @@ export {
   type SubmitDevelopmentProposalResult,
 } from './development-governor.ts';
 export {
+  createBodyEvolutionStore,
+  type BodyChangeEventRow,
+  type BodyChangeProposalRow,
+  type BodyEvolutionDbExecutor,
+  type BodyEvolutionStore,
+  type RecordBodyChangeProposalInput,
+  type RecordBodyChangeProposalResult,
+} from './body-evolution.ts';
+export {
   applyTickStateDelta,
   appendRuntimeTimelineEvent,
   createRuntimeDbClient,

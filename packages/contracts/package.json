@@ -27,6 +27,10 @@
       "types": "./src/governor.ts",
       "default": "./src/governor.ts"
     },
+    "./body-evolution": {
+      "types": "./src/body-evolution.ts",
+      "default": "./src/body-evolution.ts"
+    },
     "./operator-api": {
       "types": "./src/operator-api.ts",
       "default": "./src/operator-api.ts"

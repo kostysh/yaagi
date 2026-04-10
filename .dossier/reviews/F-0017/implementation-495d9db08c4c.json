@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "created_at": "2026-04-10T22:35:22.121Z",
+  "reviewer": "external-agents:spec-code-security",
+  "step": "implementation",
+  "dossier": "docs/features/F-0017-git-managed-body-evolution-and-stable-snapshots.md",
+  "feature_id": "F-0017",
+  "event_commit": "495d9db08c4cf8fc7f86c6d59df74cd509adebbd",
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "spec re-audit PASS: AC-F0017-06 now matches the approved slice split and the traceability NFR explicitly records null for unavailable lifecycle fields",
+      "code re-audit PASS: worktreePath uses normalized-hash suffix, passes the same boundary guard as target paths, and regression tests cover worktree-root symlink escape plus path collision resistance",
+      "security re-audit PASS: the previous worktree_path collision gap is closed with collision-resistant path derivation plus a DB unique constraint, and no new trust-boundary findings remain"
+    ]
+  },
+  "notes": "SL-F0017-01 external audits initially found three blockers: AC-F0017-06 overclaim vs slice split, worktree-path symlink escape through worktree root, and worktree_path collision risk; they also noted a traceability payload gap. The scope was fixed by narrowing AC-F0017-06 to persisted path resolution, making worktreePath collision-resistant and DB-unique, validating worktreePath through the same fail-closed boundary guard as target paths, and enriching proposal_recorded payload traceability. Narrow spec/code/security re-audits all passed."
+}

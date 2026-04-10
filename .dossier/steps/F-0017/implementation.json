@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "created_at": "2026-04-10T22:35:27.250Z",
+  "feature_id": "F-0017",
+  "dossier": "docs/features/F-0017-git-managed-body-evolution-and-stable-snapshots.md",
+  "step": "implementation",
+  "dossier_status": "in_progress",
+  "event_commit": "495d9db08c4cf8fc7f86c6d59df74cd509adebbd",
+  "review_trace_commit": "495d9db08c4cf8fc7f86c6d59df74cd509adebbd",
+  "verification_trace_commit": "495d9db08c4cf8fc7f86c6d59df74cd509adebbd",
+  "verification_artifact": ".dossier/verification/F-0017/implementation-495d9db08c4c.json",
+  "review_artifact": ".dossier/reviews/F-0017/implementation-495d9db08c4c.json",
+  "review_freshness": "pass",
+  "process_complete": true,
+  "blockers": [],
+  "next_step": "implementation"
+}
