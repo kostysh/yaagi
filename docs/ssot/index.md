@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-10T17:26:12.786Z_
+_Last sync: 2026-04-10T18:01:06.631Z_
 
 ## Features
 
@@ -26,7 +26,7 @@ _Last sync: 2026-04-10T17:26:12.786Z_
 | F-0014 | Расширенная модельная экология и здоровье реестра | done | strict | models | F-0002, F-0008, F-0013 | runtime,db,models,observability,api | `../features/F-0014-expanded-model-ecology-and-registry-health.md` |
 | F-0015 | Контур workshop для датасетов, обучения, оценки и promotion | done | strict | workshop | F-0002, F-0003, F-0014 | runtime,db,models,workshop,artifacts,observability | `../features/F-0015-workshop-datasets-training-eval-and-promotion.md` |
 | F-0016 | Development Governor и управление изменениями | done | strict | governance | F-0004, F-0011, F-0012, F-0013, F-0015 | runtime,db,governance,api,models,workspace,workshop | `../features/F-0016-development-governor-and-change-management.md` |
-| F-0017 | Git-управляемая эволюция тела и стабильные снапшоты | proposed | deferred | body | F-0001, F-0002, F-0010, F-0015, F-0016 | runtime,db,governance,workspace,tooling,recovery | `../features/F-0017-git-managed-body-evolution-and-stable-snapshots.md` |
+| F-0017 | Git-управляемая эволюция тела и стабильные снапшоты | shaped | deferred | body | F-0001, F-0002, F-0010, F-0015, F-0016 | runtime,db,governance,workspace,tooling,recovery | `../features/F-0017-git-managed-body-evolution-and-stable-snapshots.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -190,6 +190,4 @@ graph TD
 - **WARN** F-0015 — Change log shows mature replanning, but no short reason tags were found. Prefer tags like `[clarification]`, `[scope realignment]`, `[dependency realignment]`, `[risk discovery]`, or `[contract drift]`.
 - **WARN** F-0015 — Potential compound ACs detected: AC-F0015-01, AC-F0015-02, AC-F0015-03, AC-F0015-04, AC-F0015-05, AC-F0015-06, AC-F0015-07, AC-F0015-08, AC-F0015-09, AC-F0015-02, AC-F0015-02, AC-F0015-04, AC-F0015-05, AC-F0015-07, AC-F0015-02, AC-F0015-08, AC-F0015-05, AC-F0015-01, AC-F0015-02, AC-F0015-03, AC-F0015-04, AC-F0015-05, AC-F0015-06, AC-F0015-08, AC-F0015-09. Prefer one obligation per AC.
 - **WARN** F-0016 — Potential compound ACs detected: AC-F0016-01, AC-F0016-02, AC-F0016-03, AC-F0016-04, AC-F0016-05, AC-F0016-06, AC-F0016-07, AC-F0016-08, AC-F0016-09, AC-F0016-10, AC-F0016-01, AC-F0016-03, AC-F0016-04, AC-F0016-07, AC-F0016-02, AC-F0016-01, AC-F0016-02, AC-F0016-04, AC-F0016-06, AC-F0016-07, AC-F0016-08, AC-F0016-09, AC-F0016-10. Prefer one obligation per AC.
-- **WARN** F-0017 — No acceptance criteria IDs found yet. Add at least one AC-F....-.. entry before leaving the proposed intake state.
-- **WARN** F-0017 — Coverage map rows are recommended even when coverage is deferred.
 <!-- END GENERATED RED_FLAGS -->

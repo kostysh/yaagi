@@ -1,7 +1,7 @@
 ---
 id: F-0017
 title: Git-управляемая эволюция тела и стабильные снапшоты
-status: proposed
+status: shaped
 coverage_gate: deferred
 owners: ["@codex"]
 area: body
@@ -43,90 +43,268 @@ links:
     - CF-007
     - CF-011
     - CF-016
-- **User problem:** После delivery `F-0016` у системы есть governor approval/outcome surface, но все еще нет отдельного owner seam, который безопасно исполняет body/code evolution. Без такого seam self-modification рискует мутировать live body или tracked `/seed`, обходить governor gates, производить code proposals без body eval suites и оставлять boot/recovery без надежной stable snapshot точки возврата.
-- **Goal:** Зафиксировать один dossier-owner для Git-governed body evolution: заметные body changes идут через isolated worktrees поверх materialized writable body, проходят bounded proposal/eval/review flow, могут выпускать stable snapshot manifests/tags и возвращают governor-compatible execution/rollback evidence без захвата ownership у boot, workshop, governor, reporting или deploy/release seams.
-- **Non-goals:** Этот intake не реализует public auth/RBAC (`CF-024`), deploy/release automation (`CF-025`), mature perimeter hardening (`CF-014`), read-only reporting/stable-snapshot inventories (`CF-015`), workshop candidate lifecycle (`F-0015`) или governor source tables/decision policy (`F-0016`). `CF-024` and `CF-025` remain required later for the full public/operator-controlled and deployable mechanism; they are not erased from the final architecture.
-- **Current substrate / baseline:** `F-0001` уже владеет boot/recovery boundary и last-stable rollback refs; `F-0002` поставляет canonical monorepo/deployment cell и materialized runtime/workspace paths; `F-0010` владеет bounded action layer и Git/tool wrappers; `F-0015` поставляет workshop evidence/promotion-package handoff; `F-0016` поставляет freeze/proposal/decision/execution-outcome governor gates. Architecture and concept sources additionally require Git worktrees, stable tags/snapshots, eval/review gates and rollback as body-governance discipline.
+- **User problem:** После delivery `F-0016` у системы есть governor approval/outcome surface, но нет owner seam, который безопасно исполняет body/code evolution. Без такого seam self-modification может мутировать live body или tracked `/seed`, обходить governor gates, производить code proposals без body eval suites и оставлять boot/recovery без надежной stable snapshot точки возврата.
+- **Goal:** Зафиксировать внутренний Git-governed body-evolution path: заметные body changes идут через isolated worktrees поверх materialized writable body, проходят bounded proposal/eval/review flow, выпускают stable snapshot manifests/tags и возвращают governor-compatible execution/rollback evidence без захвата ownership у boot, workshop, governor, reporting или deploy/release seams.
+- **Non-goals:** Этот dossier не реализует public auth/RBAC (`CF-024`), deploy/release automation (`CF-025`), mature perimeter hardening (`CF-014`), read-only reporting/stable-snapshot inventories (`CF-015`), workshop candidate lifecycle (`F-0015`) или governor source tables/decision policy (`F-0016`). `CF-024` и `CF-025` остаются будущими обязательными capabilities для полного public/operator-controlled и deployable механизма.
+- **Current substrate / baseline:** `F-0001` уже владеет boot/recovery boundary и last-stable rollback refs; `F-0002` поставляет canonical monorepo/deployment cell и materialized runtime/workspace paths; `F-0010` владеет bounded action layer и Git/tool wrappers; `F-0015` поставляет workshop evidence/promotion-package handoff; `F-0016` поставляет freeze/proposal/decision/execution-outcome governor gates. Architecture and concept sources require Git worktrees, stable tags/snapshots, eval/review gates and rollback as body-governance discipline.
+
+### Terms & thresholds
+
+- `materialized writable body`: runtime/workspace copy of body code derived from immutable `/seed/body`; all automated body edits target this copy, not tracked seed.
+- `body change proposal`: body-owned execution record for an approved code/body change request, linked to governor approval and local worktree/eval evidence.
+- `stable snapshot`: validated rollback unit tying together git tag, schema version, active model profile map, critical configuration hash and eval summary.
+- `internal safe mechanism`: non-public owner path for preparing, evaluating and snapshotting body changes; it is not a public operator execution API.
+- `full mechanism`: later public/operator RBAC plus deploy/release/rollback automation delivered by `CF-024` and `CF-025`.
 
 ## 2. Scope
 
 ### In scope
 
-- Intake-level ownership for code/body change proposals, isolated worktree orchestration, body eval suite handoff, stable snapshot manifest/tag production and rollback evidence handoff.
-- Explicit boundary that worktree automation operates only on the materialized writable body derived from immutable `/seed/body`; tracked seed remains canonical input, not a mutation target.
-- Integration contract with `F-0016`: body evolution may consume approvals and emit bounded execution/rollback evidence through governor-owned gates, but does not own governor proposal, decision or ledger source surfaces.
-- Integration contract with `F-0001`: stable snapshot outputs and rollback refs must be consumable by boot/recovery without letting body evolution back-write boot continuity state directly.
-- Initial classification of what belongs to this seam versus future `CF-014`, `CF-015`, `CF-024` and `CF-025`.
+- Body-owned code change proposal records and lifecycle states for approved internal body changes.
+- Isolated branch/worktree orchestration inside materialized writable body.
+- Explicit read-only consumption of governor approvals and bounded write-back of execution/rollback evidence through `F-0016` owner gates.
+- Proposal-specific eval suite execution plus canonical repository quality gates before candidate commits and stable snapshots.
+- Stable snapshot manifest/tag production for body-owned rollback units.
+- Rollback evidence handoff that boot/recovery and future reporting can consume without granting body evolution ownership over their source surfaces.
+- Operator-facing documentation of the current cap: internal safe body evolution now, public RBAC and full deploy pipeline later.
 
 ### Out of scope
 
 - Direct mutation of tracked `/seed` sources or live runtime body outside isolated worktree flow.
 - Direct writes into governor tables, boot/recovery continuity fields, workshop lifecycle rows or read-only reporting surfaces.
-- Public operator authentication/authorization, stronger human gates and perimeter hardening.
+- Public operator authentication/authorization, role checks and stronger human gates.
 - Environment promotion, release orchestration, smoke-on-deploy and production rollback automation.
-- Full compact specification, acceptance criteria and implementation slices; those belong to `spec-compact` and `plan-slice`.
+- Specialist rollout/retirement, model candidate lifecycle and workshop dataset/training/eval ownership.
 
 ### Constraints
 
-- `/seed/body` is immutable tracked source for this seam; all automated body changes must target a materialized writable body/worktree.
-- Serious body changes require branch/worktree isolation, structural diff analysis, tests/eval suite evidence, review gate and rollback availability.
-- Stable snapshot is the rollback unit: it must bind at least git tag, schema version, active model profiles, critical configuration hash and eval summary when the compact spec confirms the exact contract.
-- Runtime/startup/deployment behavior changes must follow repo gates from `AGENTS.md`, including source-level verification and `pnpm smoke:cell` when applicable.
-- Governor approval/outcome semantics remain owner-routed through `F-0016`; body evolution must not create a parallel governance regime.
+- `/seed/body` is immutable tracked source for this seam; body-evolution automation must fail closed if a requested write targets `/seed/body`.
+- Every non-trivial body change must use an isolated branch/worktree under materialized writable body.
+- Symlink traversal must not allow writes outside the materialized writable body root.
+- Candidate commit creation requires passing canonical repository quality gates and the proposal-declared eval suite.
+- Runtime, startup or deployment contract changes require `pnpm smoke:cell` before the proposal can reach `candidate_committed`.
+- Stable snapshot creation requires a validated manifest containing git tag, schema version, active model profile map, critical configuration hash and eval summary.
+- Governor approval/outcome semantics remain owner-routed through `F-0016`; this dossier may call owner gates but must not write governor source tables directly.
 
 ### Assumptions
 
-- Current backlog truth marks `CF-012` as `defined`, ready for the next dossier step, with no gaps or blockers.
-- Delivered prerequisites listed in frontmatter are sufficient for intake and specification. Operator decision during intake classifies legacy roadmap references to `CF-024` and `CF-025` as later capability constraints, not hard blockers for the internal `CF-012` owner seam.
-- Body-evolution implementation can start from repository-local Git/workspace mechanics and does not require changing the installed skill automation paths.
+- Current backlog truth marks `CF-012` as `defined`, ready for specification, with no gaps or blockers.
+- Delivered prerequisites listed in frontmatter are sufficient for the internal safe mechanism.
+- Body-evolution implementation starts from repository-local Git/workspace mechanics and uses installed skill runtimes directly when dossier/backlog automation is needed.
+- `CF-024` and `CF-025` are later capability constraints, not blockers for the internal owner seam.
 
 ### Open questions
 
-- **OQ-F0017-01:** Resolved during intake: `CF-024` auth/RBAC and `CF-025` deploy/release automation are not hard blockers for the internal safe body-evolution mechanism in `CF-012`. They are required later to expose a full public/operator-controlled mechanism and complete deploy/release/rollback automation. `spec-compact` must preserve this cap explicitly rather than turning the internal mechanism into final maturity.
-- **OQ-F0017-02:** What is the minimal stable snapshot manifest for this project: architecture lists git tag, schema version, active model profiles, critical config hash and eval summary, but the compact spec must decide whether body-evolution owns all fields or only writes a body-owned projection for `F-0001`/`CF-015` consumers. Owner: dossier operator. Needed by: `before_planned`.
-- **OQ-F0017-03:** Which body eval suite is mandatory for a code/body proposal before governor execution evidence can be recorded: existing repo quality gates only, targeted body evals, or both? Owner: dossier operator. Needed by: `before_planned`.
+- None after `spec-compact`. Dependency classification, stable snapshot ownership and mandatory eval expectations are fixed in the decision log below.
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
 
-Acceptance criteria intentionally remain unset at intake. They must be authored during `spec-compact` after the open dependency and snapshot-contract questions are resolved.
+- **AC-F0017-01:** Запрос body change допускается в lifecycle при ссылке на approved governor proposal.
+- **AC-F0017-02:** Запрос body change допускается в lifecycle при явно записанном owner-approved override evidence ref.
+- **AC-F0017-03:** Запрос body change без approved governor proposal и без owner-approved override evidence ref отклоняется до создания worktree.
+- **AC-F0017-04:** Повтор body change request с тем же normalized request hash возвращает существующий body change proposal.
+- **AC-F0017-05:** Повтор body change request с тем же request id при другом normalized request hash отклоняется как conflict.
+- **AC-F0017-06:** Worktree creation размещает worktree под materialized writable body root.
+- **AC-F0017-07:** Попытка записи в tracked `/seed/body` отклоняется до file mutation.
+- **AC-F0017-08:** Symlink traversal escape за materialized writable body root отклоняется до file mutation.
+- **AC-F0017-09:** Body change proposal record содержит proposal id.
+- **AC-F0017-10:** Body change proposal record содержит governor ref.
+- **AC-F0017-11:** Body change proposal record содержит branch name.
+- **AC-F0017-12:** Body change proposal record содержит worktree path.
+- **AC-F0017-13:** Body change proposal record содержит lifecycle status.
+- **AC-F0017-14:** Body change proposal record содержит required eval suite.
+- **AC-F0017-15:** Body change proposal record содержит provenance evidence refs.
+- **AC-F0017-16:** Candidate commit creation блокируется до прохождения canonical repository quality gates.
+- **AC-F0017-17:** Candidate commit creation блокируется до прохождения proposal-declared eval suite.
+- **AC-F0017-18:** Runtime/startup/deployment contract change не достигает `candidate_committed` без успешного `pnpm smoke:cell`.
+- **AC-F0017-19:** Stable snapshot creation валидирует git tag.
+- **AC-F0017-20:** Stable snapshot record содержит schema version.
+- **AC-F0017-21:** Stable snapshot record содержит active model profile map.
+- **AC-F0017-22:** Stable snapshot record содержит critical configuration hash.
+- **AC-F0017-23:** Stable snapshot record содержит eval summary.
+- **AC-F0017-24:** Stable snapshot publication не обновляет boot/recovery continuity fields напрямую.
+- **AC-F0017-25:** Rollback evidence содержит proposal id.
+- **AC-F0017-26:** Rollback evidence содержит snapshot id.
+- **AC-F0017-27:** Rollback evidence содержит rollback reason.
+- **AC-F0017-28:** Rollback evidence содержит verification result.
+- **AC-F0017-29:** Execution outcome evidence отправляется только через `F-0016` owner gate.
+- **AC-F0017-30:** Rollback outcome evidence отправляется только через `F-0016` owner gate.
+- **AC-F0017-31:** F-0017 не предоставляет public/operator execution route до `CF-024`.
+- **AC-F0017-32:** F-0017 не выполняет environment promotion до `CF-025`.
+- **AC-F0017-33:** F-0017 не выполняет release activation до `CF-025`.
 
 ## 4. Non-functional requirements (NFR)
 
-Normative NFRs intentionally remain unset at intake. `spec-compact` must add measurable safety, recoverability and observability constraints if they are required for `done`.
+- **Safety:** Observable signal: boundary tests include 0 successful `/seed/body` writes and 0 successful worktree-root escapes.
+- **Recoverability:** Observable signal: `snapshot_ready` transition is covered by a manifest validation event plus rollback-evidence creation for the same proposal id.
+- **Traceability:** Observable signal: each lifecycle transition event stores proposal id, governor ref, branch/worktree path, candidate commit or snapshot id, eval result, actor/source.
+- **Determinism:** Observable signal: repeated normalized request hashing across process restarts yields the same hash in the idempotency test.
+- **Operational proof:** Observable signal: any runtime/startup/deployment-affecting closure bundle includes `pnpm smoke:cell` evidence.
 
 ## 5. Design (compact)
 
 ### 5.1 API surface
 
-Pending `spec-compact`. Likely boundaries: internal body proposal commands, governor execution-outcome handoff and stable snapshot inventory handoff.
+F-0017 exposes internal service/command surfaces, not a public HTTP route.
+
+```ts
+type BodyChangeAuthority =
+  | {
+      requestedByOwner: "governor";
+      governorProposalId: string;
+      governorDecisionRef: string;
+      ownerOverrideEvidenceRef?: never;
+    }
+  | {
+      requestedByOwner: "human_override";
+      ownerOverrideEvidenceRef: string;
+      governorProposalId?: never;
+      governorDecisionRef?: never;
+    };
+
+type BodyChangeRequest = BodyChangeAuthority & {
+  requestId: string;
+  scopeKind: "code" | "config" | "body_manifest";
+  rationale: string;
+  requiredEvalSuite: string;
+  targetPaths: string[];
+  rollbackPlanRef: string;
+  evidenceRefs: string[];
+};
+
+type BodyChangeProposal = {
+  proposalId: string;
+  requestId: string;
+  normalizedRequestHash: string;
+  requestedByOwner: "governor" | "human_override";
+  governorProposalId?: string;
+  governorDecisionRef?: string;
+  ownerOverrideEvidenceRef?: string;
+  branchName: string;
+  worktreePath: string;
+  candidateCommitSha?: string;
+  stableSnapshotId?: string;
+  status: BodyChangeStatus;
+  evidenceRefs: string[];
+};
+```
+
+Error model:
+
+- `governor_not_approved`: missing approved governor ref for governor-sourced requests.
+- `override_not_recorded`: missing owner-approved override evidence for human-override requests.
+- `request_hash_conflict`: same request id with different normalized payload.
+- `seed_write_rejected`: target path resolves under `/seed/body`.
+- `worktree_escape_rejected`: target path or symlink resolves outside writable body root.
+- `eval_failed`: required quality/eval suite did not pass.
+- `smoke_required`: runtime/startup/deployment change lacks `pnpm smoke:cell` evidence.
+- `snapshot_manifest_invalid`: stable snapshot manifest is incomplete or inconsistent.
+
+Retry/idempotency:
+
+- same `requestId + normalizedRequestHash` returns the existing proposal;
+- same `requestId` with different hash rejects fail-closed;
+- snapshot publication is idempotent only when the manifest hash matches the existing snapshot record.
 
 ### 5.2 Runtime / deployment surface
 
-Pending `spec-compact`. Intake assumption: work runs inside the canonical repo/workspace path, not through ad hoc shell access or mutation of tracked seed.
+- Runs inside the canonical repo/workspace path from `README.md`.
+- Uses Git operations through the bounded action/tool layer, not through unrestricted shell writes.
+- Creates worktrees only under materialized writable body.
+- Does not publish public operator routes in this feature.
+- Does not perform environment promotion or release activation in this feature.
 
 ### 5.3 Data model changes
 
-Pending `spec-compact`. Source architecture already names `code_proposals` and `stable_snapshots`; ownership and migration details are not yet specified here.
+F-0017 owns the body-evolution source surfaces:
+
+- `code_change_proposals`: proposal id, governor ref, request hash, branch/worktree path, candidate commit, required eval suite, status and provenance refs.
+- `body_change_events`: append-only lifecycle events for proposal transitions, eval results, snapshot publication and rollback evidence.
+- `stable_snapshots`: snapshot id, git tag, schema version, active model profile map, critical config hash, eval summary and manifest hash.
+
+Ownership limits:
+
+- `agent_state.last_stable_snapshot_id` and boot/recovery continuity remain `F-0001` owned.
+- `development_ledger`, governor proposal/decision/outcome tables remain `F-0016` owned.
+- reporting inventories remain future `CF-015` read-only projections.
 
 ### 5.4 Edge cases and failure modes
 
-Pending `spec-compact`. Known high-risk categories: dirty worktree, failed eval suite, governor approval drift, snapshot manifest mismatch, rollback evidence missing, and accidental seed mutation.
+- Dirty existing worktree: reject or require a new proposal/worktree; do not reuse implicitly.
+- Missing governor approval: reject before worktree creation.
+- Active freeze after approval: call governor owner gate and follow its result; do not bypass freeze locally.
+- Eval failure: preserve evidence, mark proposal as failed/rejected, do not create candidate commit or snapshot.
+- Snapshot manifest mismatch: reject publication and keep proposal below `snapshot_ready`.
+- Rollback failure: emit failed rollback evidence; do not claim governor execution outcome success.
+- Duplicate request replay: return existing record only when normalized hash matches.
+- Symlink/path escape: reject before write.
 
 ### 5.5 Verification surface / initial verification plan
 
-Pending `spec-compact`. Expected proof types include contract tests for proposal/snapshot schemas, integration tests for isolated worktree/eval flow, boundary tests against seed/governor direct writes, and smoke if boot/recovery behavior changes.
+- AC-F0017-01, AC-F0017-02, AC-F0017-03: contract/integration tests for governor approval intake plus owner override intake.
+- AC-F0017-04, AC-F0017-05: idempotency/replay conflict tests for request hash replay.
+- AC-F0017-06, AC-F0017-07, AC-F0017-08: boundary tests for worktree root, seed immutability, symlink escape.
+- AC-F0017-09, AC-F0017-10, AC-F0017-11, AC-F0017-12, AC-F0017-13, AC-F0017-14, AC-F0017-15: persistence/contract tests for proposal record fields.
+- AC-F0017-16, AC-F0017-17, AC-F0017-18: integration tests for quality/eval/smoke gate enforcement.
+- AC-F0017-19, AC-F0017-20, AC-F0017-21, AC-F0017-22, AC-F0017-23, AC-F0017-24: snapshot manifest tests plus boot/recovery boundary test.
+- AC-F0017-25, AC-F0017-26, AC-F0017-27, AC-F0017-28: rollback evidence contract tests.
+- AC-F0017-29, AC-F0017-30: governor owner-gate outcome tests.
+- AC-F0017-31, AC-F0017-32, AC-F0017-33: route/surface tests plus deployment-boundary tests proving the full public/deploy mechanism remains absent.
 
-### 5.6 Representation upgrades (triggered only when needed)
+### 5.6 Representation upgrades
 
-Triggered for `spec-compact`: this feature needs at least a state/transition table for body proposal lifecycle and a schema sketch for stable snapshot manifest/evidence payloads.
+#### Body change status
+
+| Status | Meaning | Terminal |
+|---|---|---|
+| `requested` | Approved request accepted and persisted. | no |
+| `worktree_ready` | Isolated branch/worktree exists under writable body root. | no |
+| `evaluating` | Required quality/eval suite is running or recorded. | no |
+| `evaluation_failed` | Required proof failed; no candidate commit or snapshot may be created. | yes |
+| `candidate_committed` | Candidate commit exists after required proofs passed. | no |
+| `snapshot_ready` | Stable snapshot manifest/tag validated and recorded. | no |
+| `rolled_back` | Rollback evidence recorded for a proposal/snapshot. | yes |
+| `rejected` | Request rejected before candidate commit. | yes |
+
+#### Gate decision list
+
+| Condition | Result |
+|---|---|
+| `requestedByOwner = "governor"` without approved governor ref | reject `governor_not_approved` |
+| `requestedByOwner = "human_override"` without owner override evidence | reject `override_not_recorded` |
+| Same request id plus same normalized hash exists | return existing proposal |
+| Same request id with different normalized hash exists | reject `request_hash_conflict` |
+| Target resolves under `/seed/body` | reject `seed_write_rejected` |
+| Target escapes writable body root through symlink/path resolution | reject `worktree_escape_rejected` |
+| Required quality/eval suite fails | set `evaluation_failed` |
+| Runtime/startup/deployment change lacks `pnpm smoke:cell` evidence | reject `smoke_required` |
+| Stable snapshot manifest is incomplete | reject `snapshot_manifest_invalid` |
 
 ### 5.7 Definition of Done
 
-Pending `spec-compact`. Done must not be claimed until stable snapshot rollback semantics, governor evidence handoff and worktree isolation are covered by executable proofs.
+- All ACs have executable proof references in the coverage map.
+- Boundary tests prove seed immutability and worktree root confinement.
+- Governor handoff tests prove F-0017 consumes approvals and emits outcomes only through owner gates.
+- Snapshot tests prove manifest validation and rollback evidence.
+- Public route and deploy activation tests prove `CF-024`/`CF-025` scope is not accidentally implemented here.
+- Dossier verification, independent review and step closure pass for implementation.
+- Backlog state is actualized through `backlog-engineer` at each truth-changing stage.
 
-### 5.8 Rollout / activation note (triggered only when needed)
+### 5.8 Rollout / activation note
 
-Triggered for `spec-compact`: body evolution changes rollback and recovery posture, so activation order and rollback limits must be explicit before planning.
+Activation order:
+
+1. Implement internal body-evolution source surfaces and path guards.
+2. Enable isolated worktree/eval/candidate commit flow for internal owner calls only.
+3. Enable stable snapshot manifest/tag production.
+4. Enable bounded governor execution/rollback evidence handoff.
+5. Leave public/operator execution blocked until `CF-024`.
+6. Leave environment promotion/release activation blocked until `CF-025`.
+
+Rollback limits:
+
+- F-0017 rollback restores body state through stable snapshot evidence and local Git refs.
+- F-0017 rollback is not a production release rollback; that belongs to `CF-025`.
 
 ## 6. Slicing plan (2–6 increments)
 
@@ -140,11 +318,47 @@ Pending `plan-slice`.
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| _pending_ | ACs are not authored yet; coverage map starts during `spec-compact`. | deferred |
+| AC-F0017-01 | Governor approval intake contract test | planned |
+| AC-F0017-02 | Owner override intake contract test | planned |
+| AC-F0017-03 | Missing authorization rejection test | planned |
+| AC-F0017-04 | Same-hash replay idempotency test | planned |
+| AC-F0017-05 | Changed-hash replay conflict test | planned |
+| AC-F0017-06 | Worktree root integration test | planned |
+| AC-F0017-07 | Seed write rejection boundary test | planned |
+| AC-F0017-08 | Symlink/path escape rejection boundary test | planned |
+| AC-F0017-09 | Proposal id persistence contract test | planned |
+| AC-F0017-10 | Governor ref persistence contract test | planned |
+| AC-F0017-11 | Branch name persistence contract test | planned |
+| AC-F0017-12 | Worktree path persistence contract test | planned |
+| AC-F0017-13 | Lifecycle status persistence contract test | planned |
+| AC-F0017-14 | Required eval suite persistence contract test | planned |
+| AC-F0017-15 | Provenance refs persistence contract test | planned |
+| AC-F0017-16 | Repository quality gate integration test | planned |
+| AC-F0017-17 | Proposal eval suite gate integration test | planned |
+| AC-F0017-18 | Smoke-required gate test for runtime/startup/deployment changes | planned |
+| AC-F0017-19 | Stable snapshot git tag validation test | planned |
+| AC-F0017-20 | Stable snapshot schema version persistence test | planned |
+| AC-F0017-21 | Stable snapshot model profile map persistence test | planned |
+| AC-F0017-22 | Stable snapshot config hash persistence test | planned |
+| AC-F0017-23 | Stable snapshot eval summary persistence test | planned |
+| AC-F0017-24 | Boot/recovery back-write boundary test | planned |
+| AC-F0017-25 | Rollback proposal id evidence test | planned |
+| AC-F0017-26 | Rollback snapshot id evidence test | planned |
+| AC-F0017-27 | Rollback reason evidence test | planned |
+| AC-F0017-28 | Rollback verification result evidence test | planned |
+| AC-F0017-29 | Execution outcome owner-gate integration test | planned |
+| AC-F0017-30 | Rollback outcome owner-gate integration test | planned |
+| AC-F0017-31 | Public route absence test | planned |
+| AC-F0017-32 | Environment promotion absence test | planned |
+| AC-F0017-33 | Release activation absence test | planned |
 
 ## 9. Decision log (ADR blocks)
 
-- **PD-F0017-01 [normative now]:** Intake proceeds from current backlog truth: `CF-012` is ready for `feature-intake` with dependencies `CF-001`, `CF-007`, `CF-011` and `CF-016`. Operator decision: current `CF-012` scope should deliver an internal safe body-evolution mechanism without public RBAC and without the full deploy pipeline; later `CF-024` and `CF-025` must extend that into the full public/operator-controlled and deployable mechanism.
+- **PD-F0017-01 [normative now]:** Current `CF-012` scope delivers an internal safe body-evolution mechanism without public RBAC and without the full deploy pipeline. Later `CF-024` and `CF-025` must extend it into the full public/operator-controlled and deployable mechanism.
+- **PD-F0017-02 [normative now]:** F-0017 owns stable snapshot record/tag production for body changes, but it does not own boot/recovery continuity pointers or reporting inventories.
+- **PD-F0017-03 [normative now]:** Candidate commit creation requires both canonical repo gates and the proposal-declared eval suite; runtime/startup/deployment changes additionally require `pnpm smoke:cell`.
+- **PD-F0017-04 [normative now]:** Worktree automation must target materialized writable body only; tracked `/seed/body` is read-only canonical input.
+- **PD-F0017-05 [normative now]:** `human_override` is an alternative authority path with `ownerOverrideEvidenceRef`; it does not also require governor proposal ids.
 
 ## 10. Progress & links
 
@@ -152,10 +366,11 @@ Pending `plan-slice`.
 - Status progression: `proposed -> shaped -> planned -> in_progress -> done`
 - Issue:
 - PRs:
-- Current workflow stage: `feature-intake` complete enough for review; next stage should be `spec-compact` if intake closes.
+- Current workflow stage: `spec-compact` ready for review; next stage should be `plan-slice` if this stage closes and backlog is actualized to `specified`.
 
 ## 11. Change log
 
 - 2026-04-10: Initial dossier created from backlog item `CF-012` at backlog delivery state `defined`.
-- 2026-04-10: Intake context expanded with body/worktree ownership, immutable seed constraint, governor/boot boundaries and open dependency classification questions.
+- 2026-04-10: [clarification] Intake context expanded with body/worktree ownership, immutable seed constraint, governor/boot boundaries and open dependency classification questions.
 - 2026-04-10: [clarification] Operator resolved `CF-024`/`CF-025` classification: they are later full-mechanism capabilities, not hard blockers for the internal safe `CF-012` body-evolution seam.
+- 2026-04-10: [scope realignment] `spec-compact` completed: ACs, NFRs, compact design, state/gate representations, verification surface and rollout cap are defined for the internal safe body-evolution mechanism.
