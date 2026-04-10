@@ -1,0 +1,67 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-10-007-close-cf-016-planned-dependency-review",
+    "created_at": "2026-04-10T10:32:54Z",
+    "sequence": 7,
+    "target_item_keys": [
+      "CF-012",
+      "CF-014",
+      "CF-015",
+      "CF-019",
+      "CF-025",
+      "CF-026",
+      "CF-027"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-012",
+      "action": "remove_todo",
+      "todo_ids": [
+        "f9eeac24-fba6-43fb-9b73-712808077893"
+      ]
+    },
+    {
+      "item_key": "CF-014",
+      "action": "remove_todo",
+      "todo_ids": [
+        "39e9c0b8-1255-4b9c-bcaf-7a6f945752b3"
+      ]
+    },
+    {
+      "item_key": "CF-015",
+      "action": "remove_todo",
+      "todo_ids": [
+        "c753d406-cddc-403b-9562-a082cc892e19"
+      ]
+    },
+    {
+      "item_key": "CF-019",
+      "action": "remove_todo",
+      "todo_ids": [
+        "501bb858-fd4c-4a24-8514-0e580d55b6fe"
+      ]
+    },
+    {
+      "item_key": "CF-025",
+      "action": "remove_todo",
+      "todo_ids": [
+        "e3c9fea8-dcf9-46f8-9657-b18041b91e98"
+      ]
+    },
+    {
+      "item_key": "CF-026",
+      "action": "remove_todo",
+      "todo_ids": [
+        "6efd57a3-67ba-4691-877c-c9156f5c7ec6"
+      ]
+    },
+    {
+      "item_key": "CF-027",
+      "action": "remove_todo",
+      "todo_ids": [
+        "855f7926-6d05-4c77-b670-7cfe3ba76c16"
+      ]
+    }
+  ]
+}

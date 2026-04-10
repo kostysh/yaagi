@@ -1,7 +1,7 @@
 ---
 id: F-0016
 title: Development Governor и управление изменениями
-status: shaped
+status: planned
 coverage_gate: deferred
 owners: ["@codex"]
 area: governance
@@ -95,8 +95,13 @@ links:
 
 ### Open questions
 
-- `OQ-F0016-01` (owner `F-0016`, target `2026-04-12`, needed_by `before_implementation`): choose the initial numeric/default policy thresholds that trigger `auto-freeze`, using `F-0012` signal semantics as the upstream anchor. Next decision path: resolve during `plan-slice`.
-- `OQ-F0016-02` (owner `F-0016`, target `2026-04-12`, needed_by `before_implementation`): choose the first bounded execution-outcome intake path for approved code/model proposals before `CF-012` and `CF-025` are delivered. Next decision path: resolve during `plan-slice` with adjacent-seam review.
+- None before implementation.
+
+### Plan-slice decisions
+
+- `PD-F0016-01` resolves `OQ-F0016-01`: `F-0016` uses the existing `F-0012` `development_proposal_rate` semantics as the first policy anchor instead of inventing a second threshold scale. `warning >= 3` remains advisory evidence only and never freezes development by itself. `critical >= 6` plus a valid `FREEZE_DEVELOPMENT_PROPOSALS` requested action may create a `policy_auto` freeze through the governor write gate when provenance/evidence is present and no active freeze already exists.
+- `PD-F0016-02` resolves `OQ-F0016-02`: before `CF-012`, `CF-019` and `CF-025` deliver their execution seams, execution-outcome intake is limited to governor-owned evidence records from `human_override` and future owner-routed seams. It may move a governor proposal to `executed` or `rolled_back` only when the evidence contains stable `proposalId`, target refs and evidence refs. Governor still does not execute code, activate models, mutate release state or mutate body/worktree state.
+- Planning-mode assessment: Codex Plan mode was not required for this `plan-slice` because `F-0016` was already shaped, no `before_planned` open question remained unresolved after the two decisions above, and this stage produces a forecast implementation plan rather than code execution.
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
 
@@ -113,10 +118,16 @@ links:
 
 ## 4. Non-functional requirements (NFR)
 
-- **Auditability:** A governor write is invalid unless the persisted record contains `origin_surface`, `request_id`, `evidence_refs_json`, `created_at`, and for approval-bearing proposal classes a rollback-plan or rollback-link field.
-- **Idempotency:** Replaying the same normalized request with the same `requestId` must return the same canonical `freeze_id` or `proposal_id`; replaying a different normalized payload on the same `requestId` must return a conflict result and create no new durable row.
-- **Recoverability:** A restart/reclaim verification must be able to reconstruct the same active freeze state and the same proposal/decision state from governor-owned PostgreSQL rows only, without process-local caches.
-- **Boundary safety:** Verification must prove that non-governor code paths cannot insert or update governor-owned writable surfaces through route handlers, runtime helpers or workshop helpers.
+Observable NFR signals and budgets:
+
+- `governor_write_audit_coverage` threshold: 100% of accepted writes contain the required audit fields below.
+- `governor_idempotency_duplicate_rows` budget: 0 duplicate durable rows for the same normalized `requestId`.
+- `governor_boundary_violation_count` budget: 0 non-governor write call sites in boundary audit.
+
+- **Auditability:** 100% of accepted governor writes persist `origin_surface`, `request_id`, `evidence_refs_json`, `created_at`, and for approval-bearing proposal classes a rollback-plan or rollback-link field; missing fields reject the write.
+- **Idempotency:** Replaying the same normalized request with the same `requestId` returns exactly one canonical `freeze_id` or `proposal_id`; replaying a different normalized payload on the same `requestId` returns one conflict result and creates zero new durable rows.
+- **Recoverability:** Restart/reclaim verification reconstructs the active freeze state and proposal/decision state from governor-owned PostgreSQL rows only, with zero process-local cache dependency.
+- **Boundary safety:** Boundary tests and audit must find zero non-governor call sites that insert or update governor-owned writable surfaces through route handlers, runtime helpers or workshop helpers.
 
 ## 5. Design (compact)
 
@@ -346,7 +357,7 @@ Implementation freedom:
 
 Temporary assumptions:
 
-- Numeric/default auto-freeze thresholds are deferred to `plan-slice`.
+- Numeric/default auto-freeze thresholds follow `PD-F0016-01` until a later policy-profile feature makes them configurable.
 - First implementation stays inside the existing `core` monolith and does not split out a separate governor service.
 
 ### 5.9 Verification surface / initial verification plan
@@ -362,80 +373,106 @@ Temporary assumptions:
 - `F-0016` is the canonical owner of governor-side writable surfaces and no adjacent seam needs to infer or invent that ownership.
 - The two bounded operator submission routes have explicit contracts, error semantics and idempotency rules.
 - Internal evidence/proposal gates are explicit for homeostat, workshop, runtime, recovery and human override.
-- Freeze and proposal lifecycles are shaped well enough for `plan-slice` without leaving hidden execution ambiguity.
+- Freeze and proposal lifecycles are planned enough for implementation without leaving hidden execution ambiguity.
 - `F-0012`, `F-0013`, `F-0015`, `CF-012`, `CF-019` and `CF-025` boundaries remain explicit in dossier and backlog truth.
 
 ## 7. Slicing plan (2–6 increments)
 
-Forecast only; real slice commitments belong to `plan-slice`.
+Forecast only. Commitment remains in the ACs, DoD, verification gates and rollout constraints.
 
-### Slice SL-F0016-01: Governor-owned source surfaces and write guards
+### Slice SL-F0016-01: Governor core and freeze control
 
-Delivers: canonical governor persistence surfaces, provenance/idempotency rules and explicit write-authority guards.
-Covers: AC-F0016-01, AC-F0016-02, AC-F0016-06
-Depends on: delivered `F-0004`, `F-0011`, `F-0012`
-Verification: `contract`, `db`
+Delivers: canonical contract types, PostgreSQL surfaces, governor write gate, owner-boundary guards, `POST /control/freeze-development`, durable active-freeze recovery and `F-0012` critical-policy auto-freeze.
+Covers: AC-F0016-01, AC-F0016-02, AC-F0016-03, AC-F0016-04, AC-F0016-06, AC-F0016-08
+Depends on: delivered `F-0004`, `F-0011`, `F-0012`, `F-0013`; unblock condition is stable PostgreSQL/test harness and the current operator route boundary.
+Assumes: governor surfaces can be added as repo-owned `packages/contracts`, `packages/db` and `apps/core` seams without a new service process; current `development_proposal_rate` thresholds (`warning >= 3`, `critical >= 6`) remain the first default policy source.
+Fallback: if automatic reaction wiring is unsafe in the first implementation bundle, keep the governor write gate and operator freeze live, but leave `policy_auto` freeze disabled until evidence mapping tests pass.
+Approval path: architecture owner review through this dossier plus adjacent owner review for `F-0012` signal semantics and `F-0013` route contracts.
+Verification: `packages/contracts/test/governor/governor-contract.test.ts`, `packages/db/test/development-governor-store.integration.test.ts`, `packages/db/test/development-governor-recovery.integration.test.ts`, `apps/core/test/runtime/development-governor-boundary.test.ts`, `apps/core/test/platform/operator-governor-control.integration.test.ts`, `apps/core/test/runtime/homeostat-governor-freeze.integration.test.ts`.
 
-### Slice SL-F0016-02: Freeze state and freeze-route handoff
+### Slice SL-F0016-02: Proposal lifecycle and advisory decisions
 
-Delivers: bounded `freeze-development` route handoff, policy-backed auto-freeze and durable active-freeze state.
-Covers: AC-F0016-03, AC-F0016-04, AC-F0016-08
-Depends on: `SL-F0016-01`, delivered `F-0012`, delivered `F-0013`
-Verification: `contract`, `integration`, `db`
+Delivers: `POST /control/development-proposals`, proposal schemas, idempotent submission, freeze-time rejection, four canonical proposal classes, advisory decision transitions and non-execution approval semantics.
+Covers: AC-F0016-04, AC-F0016-05, AC-F0016-06, AC-F0016-07, AC-F0016-09
+Depends on: `SL-F0016-01`, delivered `F-0013`; unblock condition is a tested active-freeze read path.
+Assumes: external submission remains operator-only until `CF-024` changes public auth/RBAC semantics.
+Fallback: if decision lifecycle creates too much review surface, keep the single slice boundary but land the commit series as "submission/frozen rejection" followed by "decision transitions" before requesting slice review.
+Approval path: operator API contract review because this slice introduces a new machine-facing route and error set.
+Verification: `packages/contracts/test/governor/proposal-contract.test.ts`, `apps/core/test/platform/operator-development-proposals.integration.test.ts`, `packages/db/test/development-proposal-lifecycle.integration.test.ts`.
 
-### Slice SL-F0016-03: Proposal submission and decision lifecycle
+### Slice SL-F0016-03: Evidence handoff, drift audit and activation proof
 
-Delivers: public proposal submission, internal proposal/evidence gates and canonical proposal-state transitions.
-Covers: AC-F0016-04, AC-F0016-05, AC-F0016-07, AC-F0016-09
-Depends on: `SL-F0016-01`, delivered `F-0013`
-Verification: `contract`, `integration`
-
-### Slice SL-F0016-04: Workshop/downstream handoff evidence
-
-Delivers: workshop-candidate evidence intake, downstream execution-outcome intake and explicit non-execution boundary with release/body/specialist seams.
-Covers: AC-F0016-09, AC-F0016-10
-Depends on: `SL-F0016-03`, delivered `F-0015`
-Verification: `integration`, `db`
+Delivers: internal evidence/proposal gates for workshop candidate/package evidence, bounded execution-outcome evidence intake, usage audit across docs/contracts/runtime call sites, drift guards and final quality/smoke proof.
+Covers: AC-F0016-02, AC-F0016-06, AC-F0016-09, AC-F0016-10, plus DoD as regression guard
+Depends on: `SL-F0016-02`, delivered `F-0015`; unblock condition is stable candidate/package evidence identifiers from workshop.
+Assumes: before `CF-012`, `CF-019` and `CF-025`, execution outcomes arrive only as `human_override` or owner-routed future evidence with stable target refs; route behavior changes are runtime-impacting and require both source-level verification and container smoke.
+Fallback: if workshop evidence shape is not stable enough, accept only explicit operator/manual evidence refs and record the owner-routed workshop normalization as follow-up without changing governor execution boundaries.
+Approval path: adjacent owner review for `F-0015` lifecycle, future owner notes for `CF-012`, `CF-019`, `CF-025`, repo-level implementation review and dossier independent review before `implementation` close-out.
+Verification: `apps/core/test/workshop/governor-evidence-handoff.integration.test.ts`, `apps/core/test/runtime/development-governor-execution-evidence.test.ts`, `packages/db/test/development-governor-evidence.integration.test.ts`, `pnpm quality:check`, `pnpm test`, `pnpm smoke:cell`, `dossier-engineer debt-audit --changed-only`.
 
 ## 8. Task list (implementation units)
 
-- To be defined during `plan-slice` after slice sequencing and open-question resolution.
+- `T-F0016-01` (`SL-F0016-01`): add governor contracts, DB surfaces, service write gate, owner-boundary tests and freeze/idempotency persistence. Covers AC-F0016-01, AC-F0016-02, AC-F0016-04, AC-F0016-06, AC-F0016-08.
+- `T-F0016-02` (`SL-F0016-01`): wire operator freeze and `F-0012` critical advisory auto-freeze through the governor gate. Covers AC-F0016-03, AC-F0016-04, AC-F0016-08.
+- `T-F0016-03` (`SL-F0016-02`): implement operator proposal submission, frozen rejection, proposal classes and idempotent conflict behavior. Covers AC-F0016-04, AC-F0016-05, AC-F0016-06, AC-F0016-07.
+- `T-F0016-04` (`SL-F0016-02`): implement proposal decision lifecycle and advisory approval records without execution-side mutations. Covers AC-F0016-07, AC-F0016-09.
+- `T-F0016-05` (`SL-F0016-03`): add workshop candidate/package evidence and downstream/manual execution-outcome evidence intake without cloning foreign lifecycle truth. Covers AC-F0016-02, AC-F0016-06, AC-F0016-09, AC-F0016-10.
+- `T-F0016-06` (`SL-F0016-03`): run usage audit, docs/runtime parity checks, route drift guards, quality gates and smoke verification. Covers DoD and AC-F0016-01 through AC-F0016-10.
 
 ## 9. Test plan & Coverage map
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0016-01 | Schema/owner-boundary verification for canonical governor writable surfaces. | planned |
-| AC-F0016-02 | Boundary tests proving foreign seams cannot write governor rows directly. | planned |
-| AC-F0016-03 | Integration coverage for `F-0012` advisory freeze requests staying non-executing until governor acts. | planned |
-| AC-F0016-04 | Contract coverage for `POST /control/freeze-development` and `POST /control/development-proposals`. | planned |
-| AC-F0016-05 | Contract coverage proving non-operator external submission is unsupported in this phase. | planned |
-| AC-F0016-06 | Replay/idempotency coverage for external and internal governor writes. | planned |
-| AC-F0016-07 | Contract/state coverage for the four canonical proposal classes. | planned |
-| AC-F0016-08 | Persistence/recovery coverage for durable auto-freeze and operator-triggered freeze evidence. | planned |
-| AC-F0016-09 | Boundary and integration coverage proving approval stays advisory and does not execute foreign mutations directly. | planned |
-| AC-F0016-10 | Integration coverage proving workshop/downstream evidence is consumed without a second rollout state machine. | planned |
+| AC-F0016-01 | `apps/core/test/runtime/development-governor-boundary.test.ts`; `packages/db/test/development-governor-store.integration.test.ts` | planned |
+| AC-F0016-02 | `apps/core/test/runtime/development-governor-boundary.test.ts`; `apps/core/test/workshop/governor-evidence-handoff.integration.test.ts` | planned |
+| AC-F0016-03 | `apps/core/test/runtime/homeostat-governor-freeze.integration.test.ts` | planned |
+| AC-F0016-04 | `apps/core/test/platform/operator-governor-control.integration.test.ts`; `apps/core/test/platform/operator-development-proposals.integration.test.ts` | planned |
+| AC-F0016-05 | `apps/core/test/platform/operator-development-proposals.integration.test.ts` | planned |
+| AC-F0016-06 | `packages/contracts/test/governor/governor-contract.test.ts`; `packages/db/test/development-governor-store.integration.test.ts`; `packages/contracts/test/governor/proposal-contract.test.ts` | planned |
+| AC-F0016-07 | `packages/contracts/test/governor/proposal-contract.test.ts`; `packages/db/test/development-proposal-lifecycle.integration.test.ts` | planned |
+| AC-F0016-08 | `packages/db/test/development-governor-recovery.integration.test.ts`; `apps/core/test/runtime/homeostat-governor-freeze.integration.test.ts` | planned |
+| AC-F0016-09 | `packages/db/test/development-proposal-lifecycle.integration.test.ts`; `apps/core/test/runtime/development-governor-execution-evidence.test.ts` | planned |
+| AC-F0016-10 | `apps/core/test/workshop/governor-evidence-handoff.integration.test.ts`; `packages/db/test/development-governor-evidence.integration.test.ts` | planned |
 
-## 10. Decision log (ADR blocks)
+## 10. Contract risks and mitigations
 
-- No new ADR at `spec-compact` time. The cross-cutting invariant "all development-governance writes are governor-owned and evidence-linked" is currently captured in this dossier plus `docs/architecture/system.md` without requiring a repo-level ADR split.
+- Route ownership drift: `F-0013` owns the Hono boundary, while `F-0016` owns governor semantics and durable writes. Mitigation: route handlers delegate to governor service and route contract tests assert the two allowed submission routes.
+- Hidden freeze policy: `F-0012` thresholds could accidentally become a second governor policy. Mitigation: `F-0016` consumes only critical `FREEZE_DEVELOPMENT_PROPOSALS` evidence for auto-freeze and records `policy_auto` provenance.
+- Approval mistaken for execution: approved proposals could be treated as live mutations. Mitigation: separate decision records from execution-outcome evidence and forbid governor writes to model pointers, release state or body/worktree state.
+- Workshop handoff becomes a second rollout machine: governor could duplicate candidate lifecycle truth. Mitigation: store evidence refs and proposal state only; `F-0015` remains the lifecycle owner.
+- Direct DB writes from adjacent code: route/runtime/workshop helpers could bypass the owner seam. Mitigation: store APIs are not exported as generic helpers and boundary tests inspect allowed write call paths.
+- No public thaw path: operational freeze may persist until a later feature provides explicit lift semantics. Mitigation: document this as intentional and do not create hidden clear-state helpers.
 
-## 11. Progress & links
+## 11. Drift guard and usage audit
+
+- Before implementation close-out, compare `docs/architecture/system.md`, `docs/features/F-0012-homeostat-and-operational-guardrails.md`, `docs/features/F-0013-operator-http-api-and-introspection.md`, `docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md` and this dossier for route, owner and policy drift.
+- Inspect `packages/contracts` exports, `apps/core/src/platform/operator-api.ts`, governor service call sites and DB store exports for contract/runtime parity.
+- Classify audit findings as `docs-only`, `runtime`, `schema/help`, `cross-skill` or `audit-only`; only runtime/schema findings block implementation close-out.
+- Actualize backlog `CF-016` when dossier stage evidence changes delivery state, dependencies, blockers or context.
+
+## 12. Decision log (ADR blocks)
+
+- No new ADR at `plan-slice` time. The cross-cutting invariant "all development-governance writes are governor-owned and evidence-linked" is currently captured in this dossier plus `docs/architecture/system.md` without requiring a repo-level ADR split.
+
+## 13. Progress & links
 
 - Backlog item key: CF-016
 - Status progression: `proposed -> shaped -> planned -> in_progress -> done`
 - Issue:
 - PRs:
 
-## 12. Rollout / activation note
+## 14. Rollout / activation note
 
 - Activation order matters:
-  - governor-owned persistence and internal gates must exist before operator routes stop returning future-owned placeholders;
-  - `freeze-development` becomes executable at the same time as governor freeze state exists;
-  - proposal submission may land before any downstream execution seam consumes approvals, but approvals remain advisory until that downstream owner exists.
-- This phase intentionally does not introduce a public thaw route or a public governor read API.
+  - contracts, DB schema/store and governor service write gate land before any public route stops returning `future_owned`;
+  - `POST /control/freeze-development` becomes live before or with proposal submission because proposal submission depends on active-freeze rejection;
+  - `POST /control/development-proposals` becomes live only after persistence, idempotency and frozen rejection are tested;
+  - homeostat auto-freeze activates only after explicit `development_proposal_rate` critical-policy mapping tests pass;
+  - workshop and execution-evidence intake activates after proposal lifecycle exists;
+  - no public thaw route or public governor read API is introduced in this phase.
 
-## 13. Change log
+## 15. Change log
 
 - 2026-04-10: [intake] Initial dossier created from backlog item `CF-016` at backlog delivery state `defined`.
 - 2026-04-10: [spec-compact] Expanded `CF-016` into a shaped first-governor spec with explicit operator routes, internal evidence gates, freeze/proposal lifecycles, advisory-approval boundary and backlog-actualization target `specified`.
+- 2026-04-10: [plan-slice] [scope realignment] Resolved planning questions, set dossier status to `planned`, sequenced three implementation slices and defined task/test/drift-guard coverage for backlog actualization target `planned`.

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "created_at": "2026-04-10T10:40:10.967Z",
+  "feature_id": "F-0016",
+  "dossier": "docs/features/F-0016-development-governor-and-change-management.md",
+  "step": "plan-slice",
+  "dossier_status": "planned",
+  "event_commit": "4d560830f37281b74727f2b181411c2d121213be",
+  "review_trace_commit": "4d560830f37281b74727f2b181411c2d121213be",
+  "verification_trace_commit": "4d560830f37281b74727f2b181411c2d121213be",
+  "verification_artifact": ".dossier/verification/F-0016/plan-slice-4d560830f372.json",
+  "review_artifact": ".dossier/reviews/F-0016/plan-slice-4d560830f372.json",
+  "review_freshness": "pass",
+  "process_complete": true,
+  "blockers": [],
+  "next_step": "implementation"
+}

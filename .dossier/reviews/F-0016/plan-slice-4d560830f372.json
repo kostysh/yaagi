@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "created_at": "2026-04-10T10:40:05.719Z",
+  "reviewer": "default independent reviewer",
+  "step": "plan-slice",
+  "dossier": "docs/features/F-0016-development-governor-and-change-management.md",
+  "feature_id": "F-0016",
+  "event_commit": "4d560830f37281b74727f2b181411c2d121213be",
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "dossier-verify PASS: .dossier/verification/F-0016/plan-slice-4d560830f372.json",
+      "backlog status clean: gaps=0 needs_attention=0 open_todo=0; CF-016 planned",
+      "sensitive-path scan found no /home/kostysh, .codex/skills, scripts/dossier.mjs, or scripts/backlog matches in reviewed repo docs"
+    ]
+  },
+  "notes": "Independent audit PASS after fixing absolute installed-skill path. Findings: none blocking or non-blocking. Residual risks: non-blocking compound-AC warnings and deferred coverage gate until implementation."
+}
