@@ -48,6 +48,13 @@ type SubmitDevelopmentProposalInput = {
   requestedAt?: string;
 };
 
+type InternalGovernorProposalOwner = 'runtime' | 'recovery' | 'F-0015' | 'human_override';
+
+type SubmitInternalDevelopmentProposalInput = SubmitDevelopmentProposalInput & {
+  sourceOwner: InternalGovernorProposalOwner;
+  payload?: Record<string, unknown>;
+};
+
 type RecordDevelopmentProposalDecisionInput = {
   requestId: string;
   proposalId: string;
@@ -79,6 +86,9 @@ export type DevelopmentGovernorService = {
   freezeDevelopment(input: FreezeDevelopmentInput): Promise<DevelopmentFreezeResult>;
   submitDevelopmentProposal(
     input: SubmitDevelopmentProposalInput,
+  ): Promise<DevelopmentProposalResult>;
+  submitInternalDevelopmentProposal(
+    input: SubmitInternalDevelopmentProposalInput,
   ): Promise<DevelopmentProposalResult>;
   recordProposalDecision(
     input: RecordDevelopmentProposalDecisionInput,
@@ -479,6 +489,21 @@ export const buildWorkshopPromotionProposalCommand = (input: {
   };
 };
 
+const originSurfaceForInternalProposalOwner = (
+  sourceOwner: InternalGovernorProposalOwner,
+): DevelopmentGovernorOriginSurface => {
+  switch (sourceOwner) {
+    case 'runtime':
+      return DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.RUNTIME;
+    case 'recovery':
+      return DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.RECOVERY;
+    case 'F-0015':
+      return DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.WORKSHOP;
+    case 'human_override':
+      return DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.HUMAN_OVERRIDE;
+  }
+};
+
 export const createDbBackedDevelopmentGovernorService = (
   config: Pick<CoreRuntimeConfig, 'postgresUrl'>,
   options: { now?: () => Date } = {},
@@ -578,6 +603,47 @@ export const createDbBackedDevelopmentGovernorService = (
           route: '/control/development-proposals',
           rollbackPlanRef: input.rollbackPlanRef,
           ...(input.targetRef ? { targetRef: input.targetRef } : {}),
+        },
+      });
+    },
+
+    submitInternalDevelopmentProposal: (input) => {
+      if (!isSupportedProposalKind(input.proposalKind)) {
+        return Promise.resolve({
+          accepted: false,
+          requestId: input.requestId,
+          reason: 'unsupported_proposal_kind',
+        });
+      }
+
+      const evidenceRefs = uniqueSorted(input.evidenceRefs);
+      if (evidenceRefs.length === 0 || !input.rollbackPlanRef) {
+        return Promise.resolve({
+          accepted: false,
+          requestId: input.requestId,
+          reason: 'insufficient_evidence',
+        });
+      }
+
+      const createdAt = input.requestedAt ?? now().toISOString();
+      const originSurface = originSurfaceForInternalProposalOwner(input.sourceOwner);
+      return runProposal({
+        requestId: input.requestId,
+        proposalKind: input.proposalKind,
+        originSurface,
+        submitterOwner: input.sourceOwner,
+        problemSignature: input.problemSignature,
+        summary: input.summary,
+        rollbackPlanRef: input.rollbackPlanRef,
+        targetRef: input.targetRef,
+        hashEvidenceRefs: evidenceRefs,
+        storeEvidenceRefs: evidenceRefs,
+        createdAt,
+        payloadJson: {
+          internalSourceOwner: input.sourceOwner,
+          rollbackPlanRef: input.rollbackPlanRef,
+          ...(input.targetRef ? { targetRef: input.targetRef } : {}),
+          ...(input.payload ?? {}),
         },
       });
     },

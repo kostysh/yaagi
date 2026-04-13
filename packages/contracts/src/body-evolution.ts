@@ -41,10 +41,24 @@ export type BodyChangeStatus = (typeof BODY_CHANGE_STATUS)[keyof typeof BODY_CHA
 export const BODY_CHANGE_EVENT_KIND = Object.freeze({
   PROPOSAL_RECORDED: 'proposal_recorded',
   BOUNDARY_CHECKED: 'boundary_checked',
+  WORKTREE_PREPARED: 'worktree_prepared',
+  EVALUATION_STARTED: 'evaluation_started',
+  EVALUATION_FAILED: 'evaluation_failed',
+  CANDIDATE_COMMITTED: 'candidate_committed',
+  STABLE_SNAPSHOT_PUBLISHED: 'stable_snapshot_published',
+  ROLLBACK_EVIDENCE_RECORDED: 'rollback_evidence_recorded',
 } as const);
 
 export type BodyChangeEventKind =
   (typeof BODY_CHANGE_EVENT_KIND)[keyof typeof BODY_CHANGE_EVENT_KIND];
+
+export const BODY_CHANGE_GATE_KIND = Object.freeze({
+  REPO: 'repo',
+  EVAL: 'eval',
+  SMOKE: 'smoke',
+} as const);
+
+export type BodyChangeGateKind = (typeof BODY_CHANGE_GATE_KIND)[keyof typeof BODY_CHANGE_GATE_KIND];
 
 export const bodyChangeRequestedByOwnerSchema = z.enum([
   BODY_CHANGE_REQUESTED_BY_OWNER.GOVERNOR,
@@ -71,6 +85,18 @@ export const bodyChangeStatusSchema = z.enum([
 export const bodyChangeEventKindSchema = z.enum([
   BODY_CHANGE_EVENT_KIND.PROPOSAL_RECORDED,
   BODY_CHANGE_EVENT_KIND.BOUNDARY_CHECKED,
+  BODY_CHANGE_EVENT_KIND.WORKTREE_PREPARED,
+  BODY_CHANGE_EVENT_KIND.EVALUATION_STARTED,
+  BODY_CHANGE_EVENT_KIND.EVALUATION_FAILED,
+  BODY_CHANGE_EVENT_KIND.CANDIDATE_COMMITTED,
+  BODY_CHANGE_EVENT_KIND.STABLE_SNAPSHOT_PUBLISHED,
+  BODY_CHANGE_EVENT_KIND.ROLLBACK_EVIDENCE_RECORDED,
+]);
+
+export const bodyChangeGateKindSchema = z.enum([
+  BODY_CHANGE_GATE_KIND.REPO,
+  BODY_CHANGE_GATE_KIND.EVAL,
+  BODY_CHANGE_GATE_KIND.SMOKE,
 ]);
 
 export const bodyChangeEvidenceRefSchema = z
@@ -153,6 +179,31 @@ export const bodyChangeEventSchema = z.object({
 });
 
 export type BodyChangeEvent = z.infer<typeof bodyChangeEventSchema>;
+
+export const bodyChangeGateCheckSchema = z.object({
+  kind: bodyChangeGateKindSchema,
+  label: z.string().min(1).max(BODY_CHANGE_REF_MAX_LENGTH),
+  ok: z.boolean(),
+  evidenceRef: z.string().min(1).max(BODY_CHANGE_REF_MAX_LENGTH).nullable(),
+  detail: z.string().min(1).max(BODY_CHANGE_REASON_MAX_LENGTH).nullable(),
+});
+
+export type BodyChangeGateCheck = z.infer<typeof bodyChangeGateCheckSchema>;
+
+export const bodyStableSnapshotSchema = z.object({
+  snapshotId: z.string().min(1).max(BODY_CHANGE_REF_MAX_LENGTH),
+  proposalId: z.string().min(1).max(BODY_CHANGE_REF_MAX_LENGTH),
+  gitTag: z.string().min(1).max(BODY_CHANGE_REF_MAX_LENGTH),
+  schemaVersion: z.string().min(1).max(BODY_CHANGE_REF_MAX_LENGTH),
+  modelProfileMapJson: z.record(z.string(), z.string()),
+  criticalConfigHash: z.string().min(1).max(BODY_CHANGE_REF_MAX_LENGTH),
+  evalSummaryJson: z.record(z.string(), z.unknown()),
+  manifestHash: z.string().min(1).max(BODY_CHANGE_REF_MAX_LENGTH),
+  manifestPath: z.string().min(1).max(BODY_CHANGE_PATH_MAX_LENGTH),
+  createdAt: z.string().datetime({ offset: true }),
+});
+
+export type BodyStableSnapshot = z.infer<typeof bodyStableSnapshotSchema>;
 
 export const bodyChangeProposalAcceptedSchema = z.object({
   accepted: z.literal(true),

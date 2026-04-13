@@ -1,14 +1,14 @@
 ---
 id: F-0017
 title: Git-управляемая эволюция тела и стабильные снапшоты
-status: in_progress
-coverage_gate: deferred
+status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: body
 depends_on: ["F-0001", "F-0002", "F-0010", "F-0015", "F-0016"]
 impacts: ["runtime", "db", "governance", "workspace", "tooling", "recovery"]
 created: 2026-04-10
-updated: 2026-04-10
+updated: 2026-04-13
 links:
   issue: ""
   pr: []
@@ -475,9 +475,9 @@ Rollback limits:
 ## 7. Task list (implementation units)
 
 - **T-F0017-01:** Implement `SL-F0017-01`. — implemented
-- **T-F0017-02:** Implement `SL-F0017-02`.
-- **T-F0017-03:** Implement `SL-F0017-03`.
-- **T-F0017-04:** Run `SL-F0017-03` real usage audit and classify corrective findings as `docs-only`, `runtime`, `schema/help`, `cross-skill` or `audit-only`.
+- **T-F0017-02:** Implement `SL-F0017-02`. — implemented
+- **T-F0017-03:** Implement `SL-F0017-03`. — implemented
+- **T-F0017-04:** Run `SL-F0017-03` real usage audit and classify corrective findings as `docs-only`, `runtime`, `schema/help`, `cross-skill` or `audit-only`. — implemented
 
 ## 8. Test plan & Coverage map
 
@@ -498,24 +498,24 @@ Rollback limits:
 | AC-F0017-13 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` lifecycle status persistence |
 | AC-F0017-14 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` required eval suite persistence |
 | AC-F0017-15 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-01` provenance evidence refs |
-| AC-F0017-16 | `SL-F0017-02` repository quality gate integration test | planned |
-| AC-F0017-17 | `SL-F0017-02` proposal eval suite gate integration test | planned |
-| AC-F0017-18 | `SL-F0017-02` smoke-required gate test for runtime/startup/deployment changes | planned |
-| AC-F0017-19 | `SL-F0017-03` stable snapshot git tag validation test | planned |
-| AC-F0017-20 | `SL-F0017-03` stable snapshot schema version persistence test | planned |
-| AC-F0017-21 | `SL-F0017-03` stable snapshot model profile map persistence test | planned |
-| AC-F0017-22 | `SL-F0017-03` stable snapshot config hash persistence test | planned |
-| AC-F0017-23 | `SL-F0017-03` stable snapshot eval summary persistence test | planned |
-| AC-F0017-24 | `SL-F0017-03` boot/recovery back-write boundary test | planned |
-| AC-F0017-25 | `SL-F0017-03` rollback proposal id evidence test | planned |
-| AC-F0017-26 | `SL-F0017-03` rollback snapshot id evidence test | planned |
-| AC-F0017-27 | `SL-F0017-03` rollback reason evidence test | planned |
-| AC-F0017-28 | `SL-F0017-03` rollback verification result evidence test | planned |
-| AC-F0017-29 | `SL-F0017-03` execution outcome owner-gate integration test | planned |
-| AC-F0017-30 | `SL-F0017-03` rollback outcome owner-gate integration test | planned |
-| AC-F0017-31 | `SL-F0017-03` public route absence test | planned |
-| AC-F0017-32 | `SL-F0017-03` environment promotion absence test | planned |
-| AC-F0017-33 | `SL-F0017-03` release activation absence test | planned |
+| AC-F0017-16 | `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-02` canonical repository gate enforcement before candidate commit |
+| AC-F0017-17 | `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-02` proposal-declared eval suite enforcement before candidate commit |
+| AC-F0017-18 | `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-02` `pnpm smoke:cell` requirement on runtime/startup/deployment-sensitive target paths |
+| AC-F0017-19 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `apps/core/test/body/body-git-gateway.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-03` git tag validation during stable snapshot publication |
+| AC-F0017-20 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-03` schema version persistence in stable snapshot record |
+| AC-F0017-21 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-03` active model profile map persistence in stable snapshot record |
+| AC-F0017-22 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-03` critical configuration hash persistence in stable snapshot record |
+| AC-F0017-23 | `packages/contracts/test/body-evolution/body-change-contract.test.ts`; `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-03` eval summary persistence in stable snapshot record |
+| AC-F0017-24 | `packages/db/test/body-evolution-store.integration.test.ts`; `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-03` no direct boot/recovery continuity back-write during snapshot publication |
+| AC-F0017-25 | `apps/core/test/body/body-evolution-service.contract.test.ts`; `apps/core/test/body/body-evolution-usage-audit.integration.test.ts` | implemented for `SL-F0017-03` rollback evidence proposal-id linkage |
+| AC-F0017-26 | `apps/core/test/body/body-evolution-service.contract.test.ts`; `apps/core/test/body/body-evolution-usage-audit.integration.test.ts` | implemented for `SL-F0017-03` rollback evidence snapshot-id linkage |
+| AC-F0017-27 | `apps/core/test/body/body-evolution-service.contract.test.ts`; `apps/core/test/body/body-evolution-usage-audit.integration.test.ts` | implemented for `SL-F0017-03` rollback reason capture |
+| AC-F0017-28 | `apps/core/test/body/body-evolution-service.contract.test.ts`; `apps/core/test/body/body-evolution-usage-audit.integration.test.ts` | implemented for `SL-F0017-03` rollback verification-result capture |
+| AC-F0017-29 | `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-03` execution outcome emission only through `F-0016` owner gate |
+| AC-F0017-30 | `apps/core/test/body/body-evolution-service.contract.test.ts` | implemented for `SL-F0017-03` rollback outcome emission only through `F-0016` owner gate |
+| AC-F0017-31 | `apps/core/test/platform/body-evolution-operator-boundary.integration.test.ts` | implemented for `SL-F0017-03` public/operator execution route absence |
+| AC-F0017-32 | `apps/core/test/platform/body-evolution-operator-boundary.integration.test.ts` | implemented for `SL-F0017-03` environment promotion route absence |
+| AC-F0017-33 | `apps/core/test/platform/body-evolution-operator-boundary.integration.test.ts` | implemented for `SL-F0017-03` release activation route absence |
 
 ## 9. Decision log (ADR blocks)
 
@@ -531,7 +531,7 @@ Rollback limits:
 - Status progression: `proposed -> shaped -> planned -> in_progress -> done`
 - Issue:
 - PRs:
-- Current workflow stage: `implementation`; current package `SL-F0017-01` implemented and awaiting implementation audits/closure. Next package after closure: `SL-F0017-02`.
+- Current workflow stage: `implementation`; `SL-F0017-01`, `SL-F0017-02`, `SL-F0017-03` and usage audit `T-F0017-04` are implemented in source and test coverage, with final implementation verification/review/backlog close-out in progress.
 
 ## 11. Change log
 
@@ -543,3 +543,6 @@ Rollback limits:
 - 2026-04-10: [scope realignment] `plan-slice` closed after verification, independent review and backlog actualization of `CF-012` to `planned`.
 - 2026-04-10: [implementation] `SL-F0017-01` implemented the internal body-evolution authority/persistence/path-guard seam: contracts, DB source surfaces, store, core service, deterministic request hash replay including concurrent request-id race recovery, collision-resistant persisted worktree path resolver under materialized writable body, self-describing proposal lifecycle event payloads, `/seed/body` rejection and symlink/path escape rejection.
 - 2026-04-11: [clarification] `AC-F0017-06` was narrowed from implicit immediate worktree creation to explicit worktree path resolution plus later creation, matching the approved slice split between `SL-F0017-01` and `SL-F0017-02`.
+- 2026-04-13: [implementation] `SL-F0017-02` implemented bounded Git worktree preparation, canonical `format -> typecheck -> lint` gate enforcement, proposal-declared eval execution, runtime-sensitive `pnpm smoke:cell` requirement and `worktree_ready -> evaluating -> evaluation_failed|candidate_committed` lifecycle transitions.
+- 2026-04-13: [implementation] `SL-F0017-03` implemented stable snapshot contracts/store/migration, git tag + manifest publication, rollback evidence recording, governor-compatible executed/rolled_back outcome emission only through the `F-0016` owner gate, and negative boundary tests proving `CF-024`/`CF-025` scope remains absent.
+- 2026-04-13: [audit] `T-F0017-04` exercised the internal non-public body-change flow end-to-end in a local usage audit. Findings were classified as `audit-only`: no additional runtime, schema/help, cross-skill or docs-only corrective work was required before implementation close-out.

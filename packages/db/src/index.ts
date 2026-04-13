@@ -46,8 +46,13 @@ export {
   createBodyEvolutionStore,
   type BodyChangeEventRow,
   type BodyChangeProposalRow,
+  type BodyStableSnapshotRow,
   type BodyEvolutionDbExecutor,
   type BodyEvolutionStore,
+  type PublishBodyStableSnapshotInput,
+  type PublishBodyStableSnapshotResult,
+  type RecordBodyChangeLifecycleEventInput,
+  type RecordBodyChangeLifecycleEventResult,
   type RecordBodyChangeProposalInput,
   type RecordBodyChangeProposalResult,
 } from './body-evolution.ts';

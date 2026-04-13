@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-10T18:44:55.698Z",
+  "updated_at": "2026-04-13T15:07:46.786Z",
   "last_refresh_at": "2026-04-10T01:45:43.494Z",
   "context": {
     "glossary": [
@@ -593,7 +593,7 @@
       "item_key": "CF-012",
       "title": "Git-управляемая эволюция тела и стабильные снапшоты",
       "type": "feature",
-      "delivery_state": "planned",
+      "delivery_state": "implemented",
       "gaps": [],
       "depends_on_keys": [
         "CF-001",
@@ -613,8 +613,12 @@
       "plan_source_ids": [
         "4ffa2197-8f9f-4d98-a615-36b03c2cc660"
       ],
-      "implementation_source_ids": [],
-      "test_source_ids": [],
+      "implementation_source_ids": [
+        "30e1204b-b08d-4f15-8fa2-99d2ac2dffd0"
+      ],
+      "test_source_ids": [
+        "30e1204b-b08d-4f15-8fa2-99d2ac2dffd0"
+      ],
       "claim_keys": [],
       "contract_keys": [],
       "data_domain_keys": [],
@@ -627,7 +631,7 @@
       "needs_attention": false,
       "attention_reason_codes": [],
       "attention_reasons": [],
-      "ready_for_next_step": true
+      "ready_for_next_step": false
     },
     {
       "item_key": "CF-013",

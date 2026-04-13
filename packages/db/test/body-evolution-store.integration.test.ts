@@ -10,11 +10,14 @@ import {
   createBodyEvolutionStore,
   type BodyChangeEventRow,
   type BodyChangeProposalRow,
+  type BodyStableSnapshotRow,
   type BodyEvolutionDbExecutor,
 } from '../src/body-evolution.ts';
 
 // Coverage refs: AC-F0017-04 AC-F0017-05 AC-F0017-09 AC-F0017-10 AC-F0017-11
 // Coverage refs: AC-F0017-12 AC-F0017-13 AC-F0017-14 AC-F0017-15
+// Coverage refs: AC-F0017-16 AC-F0017-17 AC-F0017-19 AC-F0017-20 AC-F0017-21
+// Coverage refs: AC-F0017-22 AC-F0017-23 AC-F0017-25 AC-F0017-26 AC-F0017-27 AC-F0017-28
 
 const createdAt = '2026-04-10T18:00:00.000Z';
 
@@ -56,10 +59,12 @@ const createBodyEvolutionDbHarness = (): {
   db: BodyEvolutionDbExecutor;
   proposals: BodyChangeProposalRow[];
   events: BodyChangeEventRow[];
+  snapshots: BodyStableSnapshotRow[];
   queries: string[];
 } => {
   const proposals: BodyChangeProposalRow[] = [];
   const events: BodyChangeEventRow[] = [];
+  const snapshots: BodyStableSnapshotRow[] = [];
   const queries: string[] = [];
 
   const query = (sqlText: unknown, params: unknown[] = []) => {
@@ -130,12 +135,58 @@ const createBodyEvolutionDbHarness = (): {
       return Promise.resolve({ rows: [row] });
     }
 
+    if (sql.startsWith('update polyphony_runtime.code_change_proposals')) {
+      const row = proposals.find((entry) => entry.proposalId === params[0]);
+      if (!row) {
+        return Promise.resolve({ rows: [] });
+      }
+
+      row.status = params[1] as BodyChangeProposalRow['status'];
+      row.candidateCommitSha = typeof params[2] === 'string' ? params[2] : null;
+      row.stableSnapshotId = typeof params[3] === 'string' ? params[3] : null;
+      row.updatedAt = new Date(String(params[4])).toISOString();
+      return Promise.resolve({ rows: [row] });
+    }
+
     if (
       sql.includes('from polyphony_runtime.body_change_events') &&
       sql.includes('where proposal_id = $1')
     ) {
       const rows = events.filter((entry) => entry.proposalId === params[0]);
       return Promise.resolve({ rows });
+    }
+
+    if (
+      sql.includes('from polyphony_runtime.stable_snapshots') &&
+      sql.includes('where proposal_id = $1')
+    ) {
+      const row = snapshots.find((entry) => entry.proposalId === params[0]);
+      return Promise.resolve({ rows: row ? [row] : [] });
+    }
+
+    if (
+      sql.includes('from polyphony_runtime.stable_snapshots') &&
+      sql.includes('where snapshot_id = $1')
+    ) {
+      const row = snapshots.find((entry) => entry.snapshotId === params[0]);
+      return Promise.resolve({ rows: row ? [row] : [] });
+    }
+
+    if (sql.startsWith('insert into polyphony_runtime.stable_snapshots')) {
+      const row: BodyStableSnapshotRow = {
+        snapshotId: String(params[0]),
+        proposalId: String(params[1]),
+        gitTag: String(params[2]),
+        schemaVersion: String(params[3]),
+        modelProfileMapJson: JSON.parse(String(params[4])) as Record<string, string>,
+        criticalConfigHash: String(params[5]),
+        evalSummaryJson: JSON.parse(String(params[6])) as Record<string, unknown>,
+        manifestHash: String(params[7]),
+        manifestPath: String(params[8]),
+        createdAt: new Date(String(params[9])).toISOString(),
+      };
+      snapshots.push(row);
+      return Promise.resolve({ rows: [row] });
     }
 
     throw new Error(`unexpected body evolution query: ${sql}`);
@@ -145,6 +196,7 @@ const createBodyEvolutionDbHarness = (): {
     db: { query } as BodyEvolutionDbExecutor,
     proposals,
     events,
+    snapshots,
     queries,
   };
 };
@@ -345,4 +397,238 @@ void test('AC-F0017-05 recovers concurrent request_id insert race as hash confli
   assert.equal(conflict.accepted, false);
   assert.equal(conflict.reason, 'request_hash_conflict');
   assert.equal(conflict.proposal.proposalId, existingRow.proposalId);
+});
+
+void test('AC-F0017-16 / AC-F0017-17 transition lifecycle events update proposal status and candidate commit sha', async () => {
+  const harness = createBodyEvolutionDbHarness();
+  const store = createBodyEvolutionStore(harness.db);
+
+  await store.recordProposal(createProposalInput());
+  const worktreeReady = await store.recordLifecycleEvent({
+    proposalId: 'body-change-proposal:1',
+    eventId: 'body-change-event:worktree-ready',
+    eventKind: BODY_CHANGE_EVENT_KIND.WORKTREE_PREPARED,
+    status: BODY_CHANGE_STATUS.WORKTREE_READY,
+    evidenceRefs: ['body-change:worktree:1'],
+    createdAt,
+    expectedCurrentStatuses: [BODY_CHANGE_STATUS.REQUESTED],
+    payloadJson: {
+      branchName: 'agent/proposals/body-change-request-1',
+    },
+  });
+  const evaluating = await store.recordLifecycleEvent({
+    proposalId: 'body-change-proposal:1',
+    eventId: 'body-change-event:evaluating',
+    eventKind: BODY_CHANGE_EVENT_KIND.EVALUATION_STARTED,
+    status: BODY_CHANGE_STATUS.EVALUATING,
+    evidenceRefs: ['body-change:evaluating:1'],
+    createdAt,
+    expectedCurrentStatuses: [BODY_CHANGE_STATUS.WORKTREE_READY],
+    payloadJson: {
+      requiredEvalSuite: 'body-evolution.boundary',
+    },
+  });
+  const candidateCommitted = await store.recordLifecycleEvent({
+    proposalId: 'body-change-proposal:1',
+    eventId: 'body-change-event:candidate-committed',
+    eventKind: BODY_CHANGE_EVENT_KIND.CANDIDATE_COMMITTED,
+    status: BODY_CHANGE_STATUS.CANDIDATE_COMMITTED,
+    evidenceRefs: ['body-change:candidate:1'],
+    createdAt,
+    expectedCurrentStatuses: [BODY_CHANGE_STATUS.EVALUATING],
+    candidateCommitSha: 'abcdef123456',
+    payloadJson: {
+      candidateCommitSha: 'abcdef123456',
+    },
+  });
+
+  assert.equal(worktreeReady.accepted, true);
+  assert.equal(evaluating.accepted, true);
+  assert.equal(candidateCommitted.accepted, true);
+  assert.equal(candidateCommitted.proposal.status, BODY_CHANGE_STATUS.CANDIDATE_COMMITTED);
+  assert.equal(candidateCommitted.proposal.candidateCommitSha, 'abcdef123456');
+  assert.equal(harness.events.length, 4);
+});
+
+void test('recordLifecycleEvent rejects invalid status transitions before mutating proposal state', async () => {
+  const harness = createBodyEvolutionDbHarness();
+  const store = createBodyEvolutionStore(harness.db);
+
+  await store.recordProposal(createProposalInput());
+  const invalid = await store.recordLifecycleEvent({
+    proposalId: 'body-change-proposal:1',
+    eventId: 'body-change-event:invalid',
+    eventKind: BODY_CHANGE_EVENT_KIND.CANDIDATE_COMMITTED,
+    status: BODY_CHANGE_STATUS.CANDIDATE_COMMITTED,
+    evidenceRefs: ['body-change:candidate:1'],
+    createdAt,
+    expectedCurrentStatuses: [BODY_CHANGE_STATUS.EVALUATING],
+    candidateCommitSha: 'abcdef123456',
+  });
+
+  assert.equal(invalid.accepted, false);
+  assert.equal(invalid.reason, 'invalid_status');
+  assert.equal(harness.events.length, 1);
+  assert.equal(harness.proposals[0]?.status, BODY_CHANGE_STATUS.REQUESTED);
+});
+
+void test('AC-F0017-19 through AC-F0017-23 publish stable snapshots and persist manifest fields', async () => {
+  const harness = createBodyEvolutionDbHarness();
+  const store = createBodyEvolutionStore(harness.db);
+
+  await store.recordProposal(createProposalInput());
+  const persistedProposal = harness.proposals[0];
+  assert.ok(persistedProposal);
+  persistedProposal.status = BODY_CHANGE_STATUS.CANDIDATE_COMMITTED;
+  persistedProposal.candidateCommitSha = 'abcdef123456';
+  const result = await store.publishStableSnapshot({
+    snapshotId: 'stable-snapshot:1',
+    proposalId: 'body-change-proposal:1',
+    eventId: 'body-change-event:snapshot',
+    gitTag: 'stable/stable-snapshot:1',
+    schemaVersion: '2026-04-13',
+    modelProfileMapJson: {
+      reflex: 'model-profile:reflex.fast@baseline',
+    },
+    criticalConfigHash: 'deadbeef',
+    evalSummaryJson: {
+      suite: 'body-evolution.boundary',
+      verdict: 'pass',
+    },
+    manifestHash: 'hash:snapshot:1',
+    manifestPath: '/runtime/data/snapshots/stable-snapshot-1.json',
+    evidenceRefs: ['body-change:snapshot:1'],
+    createdAt,
+    expectedCurrentStatuses: [BODY_CHANGE_STATUS.CANDIDATE_COMMITTED],
+    payloadJson: {
+      snapshotId: 'stable-snapshot:1',
+    },
+  });
+
+  assert.equal(result.accepted, true);
+  assert.equal(result.deduplicated, false);
+  assert.equal(result.snapshot.gitTag, 'stable/stable-snapshot:1');
+  assert.equal(result.snapshot.schemaVersion, '2026-04-13');
+  assert.equal(result.snapshot.modelProfileMapJson['reflex'], 'model-profile:reflex.fast@baseline');
+  assert.equal(result.snapshot.criticalConfigHash, 'deadbeef');
+  assert.equal(result.snapshot.evalSummaryJson['verdict'], 'pass');
+  assert.equal(result.proposal.status, BODY_CHANGE_STATUS.SNAPSHOT_READY);
+  assert.equal(result.proposal.stableSnapshotId, 'stable-snapshot:1');
+  assert.equal(harness.snapshots.length, 1);
+  assert.equal(
+    harness.queries.some((sql) => sql.includes('polyphony_runtime.agent_state')),
+    false,
+  );
+});
+
+void test('publishStableSnapshot deduplicates same manifest hash for the same proposal', async () => {
+  const harness = createBodyEvolutionDbHarness();
+  const store = createBodyEvolutionStore(harness.db);
+
+  await store.recordProposal(createProposalInput());
+  const persistedProposal = harness.proposals[0];
+  assert.ok(persistedProposal);
+  persistedProposal.status = BODY_CHANGE_STATUS.CANDIDATE_COMMITTED;
+  persistedProposal.candidateCommitSha = 'abcdef123456';
+
+  await store.publishStableSnapshot({
+    snapshotId: 'stable-snapshot:1',
+    proposalId: 'body-change-proposal:1',
+    eventId: 'body-change-event:snapshot-1',
+    gitTag: 'stable/stable-snapshot:1',
+    schemaVersion: '2026-04-13',
+    modelProfileMapJson: {
+      reflex: 'model-profile:reflex.fast@baseline',
+    },
+    criticalConfigHash: 'deadbeef',
+    evalSummaryJson: {
+      verdict: 'pass',
+    },
+    manifestHash: 'hash:snapshot:1',
+    manifestPath: '/runtime/data/snapshots/stable-snapshot-1.json',
+    evidenceRefs: ['body-change:snapshot:1'],
+    createdAt,
+    expectedCurrentStatuses: [BODY_CHANGE_STATUS.CANDIDATE_COMMITTED],
+  });
+  const replay = await store.publishStableSnapshot({
+    snapshotId: 'stable-snapshot:1',
+    proposalId: 'body-change-proposal:1',
+    eventId: 'body-change-event:snapshot-2',
+    gitTag: 'stable/stable-snapshot:1',
+    schemaVersion: '2026-04-13',
+    modelProfileMapJson: {
+      reflex: 'model-profile:reflex.fast@baseline',
+    },
+    criticalConfigHash: 'deadbeef',
+    evalSummaryJson: {
+      verdict: 'pass',
+    },
+    manifestHash: 'hash:snapshot:1',
+    manifestPath: '/runtime/data/snapshots/stable-snapshot-1.json',
+    evidenceRefs: ['body-change:snapshot:1'],
+    createdAt,
+    expectedCurrentStatuses: [BODY_CHANGE_STATUS.CANDIDATE_COMMITTED],
+  });
+
+  assert.equal(replay.accepted, true);
+  assert.equal(replay.deduplicated, true);
+  assert.equal(harness.snapshots.length, 1);
+  assert.equal(harness.events.length, 2);
+});
+
+void test('publishStableSnapshot fails closed when the proposal was already rolled back', async () => {
+  const harness = createBodyEvolutionDbHarness();
+  const store = createBodyEvolutionStore(harness.db);
+
+  await store.recordProposal(createProposalInput());
+  const persistedProposal = harness.proposals[0];
+  assert.ok(persistedProposal);
+  persistedProposal.status = BODY_CHANGE_STATUS.CANDIDATE_COMMITTED;
+  persistedProposal.candidateCommitSha = 'abcdef123456';
+
+  await store.publishStableSnapshot({
+    snapshotId: 'stable-snapshot:1',
+    proposalId: 'body-change-proposal:1',
+    eventId: 'body-change-event:snapshot-1',
+    gitTag: 'stable/stable-snapshot:1',
+    schemaVersion: '2026-04-13',
+    modelProfileMapJson: {
+      reflex: 'model-profile:reflex.fast@baseline',
+    },
+    criticalConfigHash: 'deadbeef',
+    evalSummaryJson: {
+      verdict: 'pass',
+    },
+    manifestHash: 'hash:snapshot:1',
+    manifestPath: '/runtime/data/snapshots/stable-snapshot-1.json',
+    evidenceRefs: ['body-change:snapshot:1'],
+    createdAt,
+    expectedCurrentStatuses: [BODY_CHANGE_STATUS.CANDIDATE_COMMITTED],
+  });
+  persistedProposal.status = BODY_CHANGE_STATUS.ROLLED_BACK;
+
+  const replay = await store.publishStableSnapshot({
+    snapshotId: 'stable-snapshot:1',
+    proposalId: 'body-change-proposal:1',
+    eventId: 'body-change-event:snapshot-2',
+    gitTag: 'stable/stable-snapshot:1',
+    schemaVersion: '2026-04-13',
+    modelProfileMapJson: {
+      reflex: 'model-profile:reflex.fast@baseline',
+    },
+    criticalConfigHash: 'deadbeef',
+    evalSummaryJson: {
+      verdict: 'pass',
+    },
+    manifestHash: 'hash:snapshot:1',
+    manifestPath: '/runtime/data/snapshots/stable-snapshot-1.json',
+    evidenceRefs: ['body-change:snapshot:1'],
+    createdAt,
+    expectedCurrentStatuses: [BODY_CHANGE_STATUS.CANDIDATE_COMMITTED],
+  });
+
+  assert.equal(replay.accepted, false);
+  assert.equal(replay.reason, 'invalid_status');
+  assert.equal(harness.proposals[0]?.status, BODY_CHANGE_STATUS.ROLLED_BACK);
+  assert.equal(harness.events.length, 2);
 });

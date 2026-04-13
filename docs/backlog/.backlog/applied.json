@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-10T18:44:55.699Z",
-  "next_apply_index": 15,
+  "updated_at": "2026-04-13T15:07:46.788Z",
+  "next_apply_index": 17,
   "packets": [
     {
       "packet_id": "f0947cdd-67be-4f98-9cbd-bec31fce4589",
@@ -236,6 +236,32 @@
       "applied_at": "2026-04-10T18:44:55.699Z",
       "kind": "patch-item",
       "target_item_keys": [
+        "CF-014",
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-13-014-cf012-implemented",
+      "apply_index": 15,
+      "canonical_path": "patches/f5d52781de13--014-patch.template.json",
+      "content_hash": "f5d52781de13f48609f25ae8c7d04b46d539fdb07c82b3d7fb176e9f8d2ea6d8",
+      "sequence": 14,
+      "applied_at": "2026-04-13T15:06:48.563Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-012"
+      ]
+    },
+    {
+      "patch_id": "2026-04-13-015-close-reviewed-mutation-todos",
+      "apply_index": 16,
+      "canonical_path": "patches/868e448e8a8a--015-close-mutation-todos.template.json",
+      "content_hash": "868e448e8a8adaa063396c4de5bc11fb158d8e5e9753b7920de1ef1683d649cc",
+      "sequence": 15,
+      "applied_at": "2026-04-13T15:07:46.788Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-012",
         "CF-014",
         "CF-027"
       ]

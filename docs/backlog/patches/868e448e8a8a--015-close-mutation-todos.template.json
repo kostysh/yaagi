@@ -1,0 +1,35 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-13-015-close-reviewed-mutation-todos",
+    "created_at": "2026-04-13T15:07:22.689Z",
+    "sequence": 15,
+    "target_item_keys": [
+      "CF-012",
+      "CF-014",
+      "CF-027"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-012",
+      "action": "remove_todo",
+      "todo_ids": ["314c9ee5-7dfb-42ae-a189-146a1eb1c0f2"]
+    },
+    {
+      "item_key": "CF-014",
+      "action": "remove_todo",
+      "todo_ids": [
+        "47590645-9d49-4f30-addf-ac622fc6cc84",
+        "6c469854-c8e4-479c-8be0-8cb4ca1fdc42"
+      ]
+    },
+    {
+      "item_key": "CF-027",
+      "action": "remove_todo",
+      "todo_ids": [
+        "4416e313-4824-4100-a43b-52bc74a6d865",
+        "c681aa5c-1485-42cf-bf2e-bbaf886e1786"
+      ]
+    }
+  ]
+}
