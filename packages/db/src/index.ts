@@ -43,6 +43,13 @@ export {
   type SubmitDevelopmentProposalResult,
 } from './development-governor.ts';
 export {
+  createPerimeterStore,
+  type PerimeterDbExecutor,
+  type PerimeterStore,
+  type RecordPerimeterDecisionInput,
+  type RecordPerimeterDecisionResult,
+} from './perimeter.ts';
+export {
   createBodyEvolutionStore,
   type BodyChangeEventRow,
   type BodyChangeProposalRow,

@@ -35,6 +35,10 @@
       "types": "./src/operator-api.ts",
       "default": "./src/operator-api.ts"
     },
+    "./perimeter": {
+      "types": "./src/perimeter.ts",
+      "default": "./src/perimeter.ts"
+    },
     "./models": {
       "types": "./src/models.ts",
       "default": "./src/models.ts"

@@ -1,7 +1,7 @@
 ---
 id: F-0018
 title: Профиль безопасности и изоляции
-status: planned
+status: in_progress
 coverage_gate: deferred
 owners: ["@codex"]
 area: safety
@@ -422,13 +422,13 @@ Approval / decision path:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0018-01 | `planned: spec + integration review for trusted-path-only perimeter ownership` | planned |
-| AC-F0018-02 | `planned: unit/integration coverage for safety-kernel rule families` | planned |
-| AC-F0018-03 | `planned: unit/integration coverage for perimeter verdict mapping` | planned |
-| AC-F0018-04 | `planned: integration coverage for fail-closed refusal on missing admission/evidence` | planned |
-| AC-F0018-05 | `planned: integration/spec coverage for gate-policy-only rollback/network ownership split` | planned |
-| AC-F0018-06 | `planned: integration coverage for accepted-verdict provenance and authority validation` | planned |
-| AC-F0018-07 | `planned: integration/spec coverage for read-only reuse of governor or human-override evidence` | planned |
+| AC-F0018-01 | `implemented foundation: perimeter contracts + decision service/ledger; adjacent ingress integration still pending` | in_progress |
+| AC-F0018-02 | `implemented foundation: separately reviewable safety-kernel config + contract coverage` | in_progress |
+| AC-F0018-03 | `implemented foundation: contract/service/store coverage for verdict mapping and durable decision persistence` | in_progress |
+| AC-F0018-04 | `implemented foundation: fail-closed denial for missing trusted ingress, conflicting request replay and unconfirmed authority refs` | in_progress |
+| AC-F0018-05 | `implemented foundation: refusal-only semantics for force_rollback / disable_external_network; downstream owner integration still pending` | in_progress |
+| AC-F0018-06 | `implemented foundation: durable perimeter decision audit with request/evidence refs and read-only authority validation hooks` | in_progress |
+| AC-F0018-07 | `implemented foundation: no-second-ledger contract/service path plus read-only governor / human_override lookup` | in_progress |
 | AC-F0018-08 | `planned: unit/integration coverage for plaintext-secret non-persistence across bounded surfaces` | planned |
 | AC-F0018-09 | `planned: unit/integration coverage for secret-bearing export redaction and fail-closed refusal` | planned |
 | AC-F0018-10 | `planned: integration coverage for external secret-source contract` | planned |
@@ -466,6 +466,8 @@ Approval / decision path:
 
 - Backlog item key: CF-014
 - Status progression: `proposed -> shaped -> planned -> in_progress -> done`
+- Implementation status: `SL-F0018-01` started; landed perimeter contracts, safety kernel, durable decision ledger, `db`-backed read-only authority lookup and contract/store/service coverage.
+- Remaining work before `SL-F0018-01` close-out: wire adjacent `F-0013` / `F-0016` trusted ingress paths and add explicit no-second-ledger boundary coverage against the real owner seams.
 - Issue:
 - PRs:
 
@@ -474,3 +476,4 @@ Approval / decision path:
 - 2026-04-14: Initial dossier created from backlog item `CF-014` at backlog delivery state `defined`.
 - 2026-04-14 [clarification]: `spec-compact` completed; authority split with `CF-024`, `F-0016`, `F-0017`, `CF-025` and `CF-027` is now explicit, ACs/NFRs are grounded, and the dossier is ready for planning.
 - 2026-04-14 [plan-slice]: implementation plan closed with three slices, explicit `CF-015` reporting-hook dependency, reround review `PASS`, and next step `implementation`.
+- 2026-04-14 [implementation-start]: started `SL-F0018-01` with perimeter contracts, safety-kernel policy source, durable perimeter-decision ledger, `db`-backed read-only authority lookup for governor / `human_override`, and refusal-only semantics for rollback/network classes without a new public route or second approval ledger.

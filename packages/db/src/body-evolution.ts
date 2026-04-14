@@ -209,6 +209,9 @@ export type BodyEvolutionStore = {
   ): Promise<PublishBodyStableSnapshotResult>;
   getProposal(proposalId: string): Promise<BodyChangeProposalRow | null>;
   getProposalByRequestId(requestId: string): Promise<BodyChangeProposalRow | null>;
+  getProposalByOwnerOverrideEvidenceRef(
+    ownerOverrideEvidenceRef: string,
+  ): Promise<BodyChangeProposalRow | null>;
   getStableSnapshot(snapshotId: string): Promise<BodyStableSnapshotRow | null>;
   getStableSnapshotByProposalId(proposalId: string): Promise<BodyStableSnapshotRow | null>;
   listProposalEvents(input: { proposalId: string }): Promise<BodyChangeEventRow[]>;
@@ -348,6 +351,21 @@ export const createBodyEvolutionStore = (db: BodyEvolutionDbExecutor): BodyEvolu
         where request_id = $1
       `,
       [requestId],
+    );
+    const row = result.rows[0] as Record<string, unknown> | undefined;
+    return row ? mapProposalRow(row) : null;
+  };
+
+  const getProposalByOwnerOverrideEvidenceRef = async (
+    ownerOverrideEvidenceRef: string,
+  ): Promise<BodyChangeProposalRow | null> => {
+    const result = await db.query(
+      `
+        select ${proposalColumns}
+        from ${proposalsTable}
+        where owner_override_evidence_ref = $1
+      `,
+      [ownerOverrideEvidenceRef],
     );
     const row = result.rows[0] as Record<string, unknown> | undefined;
     return row ? mapProposalRow(row) : null;
@@ -775,6 +793,7 @@ export const createBodyEvolutionStore = (db: BodyEvolutionDbExecutor): BodyEvolu
 
     getProposal,
     getProposalByRequestId,
+    getProposalByOwnerOverrideEvidenceRef,
     getStableSnapshot,
     getStableSnapshotByProposalId,
     listProposalEvents,

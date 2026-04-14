@@ -344,6 +344,12 @@ const createMemoryStore = (): BodyEvolutionStore & {
     getProposalByRequestId(requestId) {
       return Promise.resolve(proposals.find((entry) => entry.requestId === requestId) ?? null);
     },
+    getProposalByOwnerOverrideEvidenceRef(ownerOverrideEvidenceRef) {
+      return Promise.resolve(
+        proposals.find((entry) => entry.ownerOverrideEvidenceRef === ownerOverrideEvidenceRef) ??
+          null,
+      );
+    },
     getStableSnapshot(snapshotId) {
       return Promise.resolve(snapshots.find((entry) => entry.snapshotId === snapshotId) ?? null);
     },

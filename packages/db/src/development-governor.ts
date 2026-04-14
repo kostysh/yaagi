@@ -298,6 +298,7 @@ export type DevelopmentGovernorStore = {
   recordProposalExecutionOutcome(
     input: RecordDevelopmentProposalExecutionOutcomeInput,
   ): Promise<RecordDevelopmentProposalExecutionOutcomeResult>;
+  getProposalDecision(decisionId: string): Promise<DevelopmentProposalDecisionRow | null>;
   loadActiveFreeze(): Promise<DevelopmentFreezeRow | null>;
 };
 
@@ -506,6 +507,22 @@ const loadDecisionByRequestId = async (
      where request_id = $1
      limit 1`,
     [requestId],
+  );
+
+  const row = result.rows[0];
+  return row ? normalizeProposalDecisionRow(row) : null;
+};
+
+const loadDecisionById = async (
+  db: DevelopmentGovernorDbExecutor,
+  decisionId: string,
+): Promise<DevelopmentProposalDecisionRow | null> => {
+  const result = await db.query<DevelopmentProposalDecisionRow>(
+    `select ${proposalDecisionColumns}
+     from ${proposalDecisionsTable}
+     where decision_id = $1
+     limit 1`,
+    [decisionId],
   );
 
   const row = result.rows[0];
@@ -1137,6 +1154,10 @@ export const createDevelopmentGovernorStore = (
         ledgerEntry,
       };
     }),
+
+  async getProposalDecision(decisionId: string) {
+    return await loadDecisionById(db, decisionId);
+  },
 
   async loadActiveFreeze() {
     return await loadActiveFreeze(db);
