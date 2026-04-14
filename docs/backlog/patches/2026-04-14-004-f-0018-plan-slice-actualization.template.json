@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-14-019-f-0018-plan-slice-actualization",
+    "created_at": "2026-04-14T21:20:48.111Z",
+    "sequence": 19,
+    "target_item_keys": [
+      "CF-014"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-014",
+      "action": "replace_fields",
+      "fields": {
+        "delivery_state": "planned"
+      }
+    }
+  ]
+}

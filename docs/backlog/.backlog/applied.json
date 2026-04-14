@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-14T21:05:13.045Z",
-  "next_apply_index": 20,
+  "updated_at": "2026-04-14T21:30:22.064Z",
+  "next_apply_index": 24,
   "packets": [
     {
       "packet_id": "f0947cdd-67be-4f98-9cbd-bec31fce4589",
@@ -297,6 +297,54 @@
       "content_hash": "c55d59e73174b8fc18a13727234c1abd4313b1a6654ac4213edc341219f96796",
       "sequence": 18,
       "applied_at": "2026-04-14T21:05:13.045Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-14-019-f-0018-plan-slice-actualization",
+      "apply_index": 20,
+      "canonical_path": "patches/f62c9fc3a195--2026-04-14-004-f-0018-plan-slice-actualization.template.json",
+      "content_hash": "f62c9fc3a195832632b6381e85b0e8d5348af91373ad12a20f74d86ff07ea431",
+      "sequence": 19,
+      "applied_at": "2026-04-14T21:21:07.312Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-014"
+      ]
+    },
+    {
+      "patch_id": "2026-04-14-020-f-0018-clear-cf-027-plan-review",
+      "apply_index": 21,
+      "canonical_path": "patches/72fc566cdd74--2026-04-14-005-f-0018-clear-cf-027-plan-review.template.json",
+      "content_hash": "72fc566cdd740df271ca593a60b17d9d39c1c0b7d4c88371d96e80bd2c25256a",
+      "sequence": 20,
+      "applied_at": "2026-04-14T21:21:39.466Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-14-021-f-0018-add-cf-015-dependency",
+      "apply_index": 22,
+      "canonical_path": "patches/3c70de1e1bdf--2026-04-14-021-f-0018-add-cf-015-dependency.template.json",
+      "content_hash": "3c70de1e1bdf57bdf77e44fbbf930ac0924698cf7633e5d2e775f88c16eb779b",
+      "sequence": 21,
+      "applied_at": "2026-04-14T21:29:55.222Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-014"
+      ]
+    },
+    {
+      "patch_id": "2026-04-14-022-f-0018-clear-cf-027-after-cf-015-dependency",
+      "apply_index": 23,
+      "canonical_path": "patches/cd803cfc1b6b--2026-04-14-022-f-0018-clear-cf-027-after-cf-015-dependency.template.json",
+      "content_hash": "cd803cfc1b6ba6f59a99506978aee1f5ad4c3469a9993d9816e16ca7090efe52",
+      "sequence": 22,
+      "applied_at": "2026-04-14T21:30:22.064Z",
       "kind": "patch-item",
       "target_item_keys": [
         "CF-027"

@@ -1,7 +1,7 @@
 ---
 id: F-0018
 title: Профиль безопасности и изоляции
-status: shaped
+status: planned
 coverage_gate: deferred
 owners: ["@codex"]
 area: safety
@@ -232,7 +232,7 @@ type PerimeterControlRequest = PerimeterAuthorityRef & {
 |---|---|---|---|---|
 | `freeze_development` | `F-0013` `POST /control/freeze-development` delegating into the `F-0016` governor gate | `F-0016` freeze/governor evidence, or explicit `human_override` evidence routed through that gate | `allow` / `deny` / `require_human_review` | `F-0016` |
 | `force_rollback` | Adjacent rollback request gate owned by `F-0017` / `CF-025`; `F-0018` introduces no new public route | Existing `governorDecisionRef` or owner-routed `humanOverrideEvidenceRef` already defined by the downstream rollback authority contract | `allow` / `deny` / `require_human_review` | `F-0017` / `CF-025` / downstream runtime owner |
-| `disable_external_network` | Adjacent external-control gate owned by the platform/runtime control seam; `F-0018` introduces no new public route | Existing governor or `human_override` evidence refs attached by that adjacent control owner | `allow` / `deny` / `require_human_review` | platform/runtime downstream owner |
+| `disable_external_network` | No named ingress owner is allocated in the current backlog; until one exists, `F-0018` supports only explicit-unavailable refusal semantics and introduces no new public route | Existing governor or `human_override` evidence may be validated, but no actuation handoff is allowed until a named owner seam exists | `deny` / `require_human_review` / explicit unavailable refusal | no actuation owner in this dossier; future seam required before enablement |
 | `code_or_promotion_change` | `F-0016` proposal/approval gate plus adjacent workshop/body execution owner flow | `F-0016` proposal/decision evidence plus adjacent owner evidence packages | `allow` / `deny` / `require_human_review` | `F-0010` / `F-0017` / `F-0016` adjacent owner flow |
 
 #### Decision classification
@@ -258,11 +258,165 @@ type PerimeterControlRequest = PerimeterAuthorityRef & {
 
 ## 6. Slicing plan (2–6 increments)
 
-- To be defined in `plan-slice` after `spec-compact` closure.
+Forecast policy: slices below are implementation forecast, not separate product commitments. Commitment remains in ACs, Definition of Done, verification gates and rollout constraints.
+
+### Dependency visibility
+
+- Depends on: `F-0002`; owner: `@codex`; unblock condition: delivered deployment-cell topology, writable runtime roots and Docker-secret path remain the canonical substrate for perimeter policy attachment.
+- Depends on: `F-0010`; owner: `@codex`; unblock condition: bounded shell/tool execution remains the only write-capable execution path for workspace and egress-sensitive actions.
+- Depends on: `F-0013`; owner: `@codex`; unblock condition: existing control-route boundary remains the only operator-facing ingress for freeze and adjacent control delegation.
+- Depends on: `F-0016`; owner: `@codex`; unblock condition: governor decision/freeze evidence remains the canonical approval source for perimeter checks.
+- Depends on: `F-0017`; owner: `@codex`; unblock condition: body-evolution authority contracts continue exposing bounded `human_override` evidence and rollback-adjacent owner flow.
+- Depends on: `CF-015`; owner: `@codex`; unblock condition: report/export publication surfaces either expose bounded redaction hooks or remain explicit unavailable to this seam.
+- Depends on: `CF-024`; owner: `@codex`; unblock condition: trusted caller admission and route permissions exist for any operator-reachable high-risk control path.
+- Depends on: `CF-025`; owner: `@codex`; unblock condition: rollback request owners expose stable bounded ingress/target refs for perimeter gating.
+
+### Contract risks to kill before implementation close-out
+
+- Approval-source ambiguity: perimeter must validate adjacent governor / `human_override` evidence read-only and must not mint a second approval ledger.
+- Ingress ambiguity: each high-risk action must keep one canonical ingress owner and one canonical downstream executor.
+- Secret leakage ambiguity: artifact/report/dataset/export paths must prove redaction or fail closed.
+- Escape ambiguity: bounded shell, Git/body and workspace flows must reject `/seed` writes, path traversal, unauthorized egress and privilege escalation before side effect.
+- Activation ambiguity: fail-closed rollout must not strand rollback, recovery or already trusted owner flows while adjacent ingress seams are still partial.
+
+### SL-F0018-01 — Safety kernel, authority intake and perimeter decision ledger
+
+Deliverable:
+
+- Canonical perimeter contracts, `safety kernel` policy source and decision service for trusted high-risk actions.
+- Read-only authority validation against adjacent governor / `human_override` evidence without a second approval ledger.
+- Perimeter decision audit facts with one verdict per request before side effect.
+
+AC coverage:
+
+- AC-F0018-01, AC-F0018-02, AC-F0018-06, AC-F0018-07, AC-F0018-13
+- AC-F0018-03, AC-F0018-04 for `freeze_development` and `code_or_promotion_change`
+
+Verification artifacts:
+
+- Contract tests for `PerimeterControlRequest`, authority-source exclusivity and verdict mapping.
+- Integration tests proving read-only reuse of `F-0016` and adjacent `human_override` evidence.
+- Negative boundary tests proving no second approval/evidence surface is created.
+- Changed-source gate: `pnpm format`, `pnpm typecheck`, `pnpm lint`.
+
+Depends on:
+
+- `F-0013`; owner: `@codex`; unblock condition: freeze-control ingress remains delegated through the existing control boundary.
+- `F-0016`; owner: `@codex`; unblock condition: governor decision/freeze refs remain stable and readable.
+- `F-0017`; owner: `@codex`; unblock condition: adjacent `human_override` evidence contract stays stable.
+
+Assumes:
+
+- Early implementation can ship against already-trusted internal or owner-routed ingress even if `CF-024` has not yet exposed the final caller-admission path.
+
+Fallback:
+
+- If trusted caller admission is not yet available for an operator-reachable path, keep that path explicit unavailable and ship the decision engine only for internal/adjacent owner flows.
+
+Approval / decision path:
+
+- Architecture/ADR realignment required if implementation needs a new approval ledger, a new writable owner surface, or a new public control route.
+
+### SL-F0018-02 — Secret hygiene and bounded execution hardening
+
+Deliverable:
+
+- Secret-source enforcement and redaction/fail-closed publication gates for runtime-local generated artifacts plus bounded workshop/report publication hooks where adjacent owners expose them.
+- Bounded execution policy layer for shell, workspace, Git/body and egress-sensitive actions over the delivered `F-0010` / `F-0017` seams.
+- Runtime/deployment-sensitive verification hooks that escalate to `pnpm smoke:cell` when perimeter changes affect startup, deployment, container or network posture.
+
+AC coverage:
+
+- AC-F0018-08, AC-F0018-09, AC-F0018-10
+- AC-F0018-11, AC-F0018-12
+
+Verification artifacts:
+
+- Unit/integration tests for plaintext-secret non-persistence and secret-bearing export refusal/redaction.
+- Boundary tests for `/seed` rejection, path traversal rejection, unauthorized egress denial and privilege-escalation denial.
+- Smoke verification when runtime/startup/deployment or network posture changes.
+- Changed-source gate: `pnpm format`, `pnpm typecheck`, `pnpm lint`.
+
+Depends on:
+
+- `F-0002`; owner: `@codex`; unblock condition: Docker-secret and deployment-cell substrate remain the canonical secret/runtime path.
+- `F-0010`; owner: `@codex`; unblock condition: bounded tool execution remains the only shell/tool mutation path.
+- `F-0015`; owner: `@codex`; unblock condition: workshop artifact publication remains behind bounded repo-owned service hooks.
+- `F-0017`; owner: `@codex`; unblock condition: body/workspace authority contracts remain bounded and internal.
+- `CF-015`; owner: `@codex`; unblock condition: report/export publication surfaces expose bounded redaction interception hooks or remain explicit unavailable.
+
+Assumes:
+
+- Runtime-local and workshop/report publication surfaces in scope can be intercepted through repo-owned service boundaries rather than ad hoc per-caller hooks.
+
+Fallback:
+
+- If a workshop or report publication surface does not yet expose a bounded redaction hook, keep that surface explicit unavailable and ship only the already interceptable runtime-local publication paths.
+
+Approval / decision path:
+
+- Adjacent owner review from `F-0015` and `CF-015` is required when implementation touches workshop/report publication hooks.
+- Architecture/ADR realignment required if a new writable root or non-canonical secret source becomes necessary.
+
+### SL-F0018-03 — Adjacent rollback/network gate integration, activation proof and usage audit
+
+Deliverable:
+
+- Perimeter gating integrated with adjacent rollback request owners without introducing a new public route or a second actuation plane.
+- `disable_external_network` remains explicit unavailable in this dossier until a named ingress/actuation owner is created through future backlog realignment; this slice hardens only the refusal semantics for that class.
+- Activation-order proof showing fail-closed rollout over `F-0013` / `F-0016` / `F-0010` / `F-0017` and explicit refusal while downstream gates are unavailable.
+- Real usage audit over one non-public/local end-to-end high-risk control flow, with corrective findings triaged.
+
+AC coverage:
+
+- AC-F0018-03, AC-F0018-04, AC-F0018-05 for `force_rollback` and `disable_external_network`
+- AC-F0018-06, AC-F0018-07, AC-F0018-11, AC-F0018-12, AC-F0018-13
+
+Verification artifacts:
+
+- Integration tests for adjacent rollback ingress owners and explicit `unavailable` / refusal semantics when the downstream gate is absent.
+- Negative tests proving `disable_external_network` stays explicit unavailable until a named ingress owner exists.
+- Negative boundary tests proving no new public control route or actuation owner is created by `F-0018`.
+- Usage-audit integration run and corrective classification record.
+- Changed-source gate: `pnpm format`, `pnpm typecheck`, `pnpm lint`; add `pnpm smoke:cell` when runtime/deployment behavior changes.
+
+Depends on:
+
+- `SL-F0018-01`; owner: `@codex`; unblock condition: decision engine and authority validation are merged.
+- `SL-F0018-02`; owner: `@codex`; unblock condition: secret/bounded-execution hardening exists for the same perimeter flow.
+- `CF-024`; owner: `@codex`; unblock condition: trusted caller admission exists for any operator-facing high-risk path.
+- `CF-025`; owner: `@codex`; unblock condition: bounded rollback request contracts expose stable target/authority refs.
+
+Assumes:
+
+- Adjacent rollback owners can expose bounded request contracts without transferring execution ownership to `F-0018`.
+
+Fallback:
+
+- Keep rollback perimeter integration internal-only until the bounded rollback request contract exists; keep `disable_external_network` explicit unavailable and do not create a stopgap public route.
+
+Approval / decision path:
+
+- Cross-cutting owner approval from the adjacent `F-0013` / `F-0016` / `F-0017` / `CF-025` seams is required if implementation changes rollback ingress ownership, refusal semantics or activation order.
+- Any future enablement of `disable_external_network` requires backlog/dossier realignment first, because no named ingress owner exists in the current seam map.
+
+### Drift guard and usage audit
+
+- Drift guard: before each implementation slice, re-read `F-0018`, `F-0010`, `F-0013`, `F-0016`, `F-0017`, `README.md` and the applicable ADRs to ensure no second ledger, no new public control path and no substrate re-ownership slip in.
+- Real usage audit: after `SL-F0018-03`, exercise one non-public/local high-risk control flow and classify findings as `docs-only`, `runtime`, `schema/help`, `cross-skill` or `audit-only`.
+- Activation proof target:
+  1. merge `SL-F0018-01` with trusted/internal owner paths only;
+  2. merge `SL-F0018-02` with secret/export and bounded execution hardening fail-closed by default;
+  3. merge `SL-F0018-03` only after adjacent rollback/network ingress owners exist or remain explicit unavailable.
 
 ## 7. Task list (implementation units)
 
-- To be defined in `plan-slice` after `spec-compact` closure.
+- **T-F0018-01** (`SL-F0018-01`): add perimeter contracts, safety-kernel config, authority-source validation and verdict persistence. Covers AC-F0018-01, AC-F0018-02, AC-F0018-03, AC-F0018-06, AC-F0018-07.
+- **T-F0018-02** (`SL-F0018-01`): wire trusted freeze/code-promotion ingress through adjacent `F-0013` / `F-0016` seams and add no-second-ledger boundary tests. Covers AC-F0018-03, AC-F0018-04, AC-F0018-13 for `freeze_development` and `code_or_promotion_change`.
+- **T-F0018-03** (`SL-F0018-02`): implement plaintext-secret non-persistence rules plus secret-bearing export redaction/fail-closed publication gates for runtime-local paths and adjacent workshop/report hooks when available. Covers AC-F0018-08, AC-F0018-09, AC-F0018-10.
+- **T-F0018-04** (`SL-F0018-02`): implement bounded execution hardening over `F-0010` / `F-0017`, including `/seed`, path, privilege and egress denial plus smoke escalation hook. Covers AC-F0018-11, AC-F0018-12.
+- **T-F0018-05** (`SL-F0018-03`): integrate adjacent rollback ingress owners and keep `disable_external_network` explicit unavailable until future realignment, without adding a new public route or actuation owner. Covers AC-F0018-03, AC-F0018-04, AC-F0018-05, AC-F0018-13 for `force_rollback` and `disable_external_network`.
+- **T-F0018-06** (`SL-F0018-03`): run usage audit, docs/runtime parity checks, drift guards and activation-proof verification. Covers DoD plus AC-F0018-06 through AC-F0018-13.
 
 ## 8. Test plan & Coverage map
 
@@ -319,3 +473,4 @@ type PerimeterControlRequest = PerimeterAuthorityRef & {
 
 - 2026-04-14: Initial dossier created from backlog item `CF-014` at backlog delivery state `defined`.
 - 2026-04-14 [clarification]: `spec-compact` completed; authority split with `CF-024`, `F-0016`, `F-0017`, `CF-025` and `CF-027` is now explicit, ACs/NFRs are grounded, and the dossier is ready for planning.
+- 2026-04-14 [plan-slice]: implementation plan closed with three slices, explicit `CF-015` reporting-hook dependency, reround review `PASS`, and next step `implementation`.

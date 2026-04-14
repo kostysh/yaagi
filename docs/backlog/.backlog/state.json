@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-14T21:05:13.044Z",
+  "updated_at": "2026-04-14T21:30:22.061Z",
   "last_refresh_at": "2026-04-10T01:45:43.494Z",
   "context": {
     "glossary": [
@@ -674,14 +674,15 @@
       "item_key": "CF-014",
       "title": "Профиль безопасности и изоляции",
       "type": "feature",
-      "delivery_state": "specified",
+      "delivery_state": "planned",
       "gaps": [],
       "depends_on_keys": [
         "CF-020",
         "CF-007",
         "CF-012",
         "CF-016",
-        "CF-024"
+        "CF-024",
+        "CF-015"
       ],
       "origin_source_ids": [
         "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
@@ -745,6 +746,7 @@
       "quality_attribute_keys": [],
       "policy_decision_keys": [],
       "reverse_dependency_keys": [
+        "CF-014",
         "CF-025",
         "CF-026",
         "CF-027"
