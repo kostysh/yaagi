@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "created_at": "2026-04-14T21:14:18.039Z",
+  "reviewer": "Averroes+Sagan",
+  "step": "spec-compact",
+  "dossier": "docs/features/F-0018-security-and-isolation-profile.md",
+  "feature_id": "F-0018",
+  "event_commit": "2c0afcee72498ea5c706c537fcda9c7332194ba7",
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [
+      "In plan-slice, keep disable_external_network integration early and fail-closed because the concrete platform/runtime control seam is still downstream-owned.",
+      "In plan-slice, preserve the no-second-ledger rule when shaping perimeter audit and storage slices."
+    ],
+    "evidence": []
+  },
+  "notes": "Reround PASS after fixing human-override authority ownership, explicit ingress/authority contracts, secret AC split, and stage-log telemetry."
+}
