@@ -1,0 +1,25 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-14-016-cf-014-intake-boundary-realignment",
+    "created_at": "2026-04-14T20:49:45.337Z",
+    "sequence": 16,
+    "target_item_keys": [
+      "CF-014"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-014",
+      "action": "replace_fields",
+      "fields": {
+        "depends_on_keys": [
+          "CF-020",
+          "CF-007",
+          "CF-012",
+          "CF-016",
+          "CF-024"
+        ]
+      }
+    }
+  ]
+}

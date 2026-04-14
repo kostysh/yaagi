@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-13T13:13:05.431Z_
+_Last sync: 2026-04-14T20:41:21.294Z_
 
 ## Features
 
@@ -27,6 +27,7 @@ _Last sync: 2026-04-13T13:13:05.431Z_
 | F-0015 | Контур workshop для датасетов, обучения, оценки и promotion | done | strict | workshop | F-0002, F-0003, F-0014 | runtime,db,models,workshop,artifacts,observability | `../features/F-0015-workshop-datasets-training-eval-and-promotion.md` |
 | F-0016 | Development Governor и управление изменениями | done | strict | governance | F-0004, F-0011, F-0012, F-0013, F-0015 | runtime,db,governance,api,models,workspace,workshop | `../features/F-0016-development-governor-and-change-management.md` |
 | F-0017 | Git-управляемая эволюция тела и стабильные снапшоты | done | strict | body | F-0001, F-0002, F-0010, F-0015, F-0016 | runtime,db,governance,workspace,tooling,recovery | `../features/F-0017-git-managed-body-evolution-and-stable-snapshots.md` |
+| F-0018 | Профиль безопасности и изоляции | proposed | deferred | safety | F-0002, F-0010, F-0013, F-0016, F-0017 | runtime,infra,governance,api,workspace,network,safety | `../features/F-0018-security-and-isolation-profile.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -51,6 +52,7 @@ graph TD
   F0015["F-0015 Контур workshop для датасетов, обучения, оценки и promotion"]
   F0016["F-0016 Development Governor и управление изменениями"]
   F0017["F-0017 Git-управляемая эволюция тела и стабильные снапшоты"]
+  F0018["F-0018 Профиль безопасности и изоляции"]
   F0001 --> F0002
   F0003 --> F0001
   F0003 --> F0002
@@ -110,6 +112,11 @@ graph TD
   F0017 --> F0010
   F0017 --> F0015
   F0017 --> F0016
+  F0018 --> F0002
+  F0018 --> F0010
+  F0018 --> F0013
+  F0018 --> F0016
+  F0018 --> F0017
 ```
 <!-- END GENERATED DEP_GRAPH -->
 
@@ -191,4 +198,6 @@ graph TD
 - **WARN** F-0015 — Potential compound ACs detected: AC-F0015-01, AC-F0015-02, AC-F0015-03, AC-F0015-04, AC-F0015-05, AC-F0015-06, AC-F0015-07, AC-F0015-08, AC-F0015-09, AC-F0015-02, AC-F0015-02, AC-F0015-04, AC-F0015-05, AC-F0015-07, AC-F0015-02, AC-F0015-08, AC-F0015-05, AC-F0015-01, AC-F0015-02, AC-F0015-03, AC-F0015-04, AC-F0015-05, AC-F0015-06, AC-F0015-08, AC-F0015-09. Prefer one obligation per AC.
 - **WARN** F-0016 — Potential compound ACs detected: AC-F0016-01, AC-F0016-02, AC-F0016-03, AC-F0016-04, AC-F0016-05, AC-F0016-06, AC-F0016-07, AC-F0016-08, AC-F0016-09, AC-F0016-10, AC-F0016-01, AC-F0016-03, AC-F0016-04, AC-F0016-07, AC-F0016-02, AC-F0016-01, AC-F0016-02, AC-F0016-04, AC-F0016-06, AC-F0016-07, AC-F0016-08, AC-F0016-09, AC-F0016-10. Prefer one obligation per AC.
 - **WARN** F-0017 — Potential compound ACs detected: AC-F0017-06, AC-F0017-06. Prefer one obligation per AC.
+- **WARN** F-0018 — No acceptance criteria IDs found yet. Add at least one AC-F....-.. entry before leaving the proposed intake state.
+- **WARN** F-0018 — Coverage map rows are recommended even when coverage is deferred.
 <!-- END GENERATED RED_FLAGS -->

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-13T15:07:46.786Z",
+  "updated_at": "2026-04-14T20:50:16.940Z",
   "last_refresh_at": "2026-04-10T01:45:43.494Z",
   "context": {
     "glossary": [
@@ -680,7 +680,8 @@
         "CF-020",
         "CF-007",
         "CF-012",
-        "CF-016"
+        "CF-016",
+        "CF-024"
       ],
       "origin_source_ids": [
         "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
@@ -1110,6 +1111,7 @@
       "quality_attribute_keys": [],
       "policy_decision_keys": [],
       "reverse_dependency_keys": [
+        "CF-014",
         "CF-026",
         "CF-027"
       ],
@@ -1234,12 +1236,31 @@
       "quality_attribute_keys": [],
       "policy_decision_keys": [],
       "reverse_dependency_keys": [],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
-      "ready_for_next_step": true
+      "open_todo_ids": [
+        "a1c645f0-1630-4500-868c-82519cf3f77f"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "dependency_changed"
+      ],
+      "attention_reasons": [
+        "Dependency changed: review CF-014."
+      ],
+      "ready_for_next_step": false
     }
   ],
-  "todos": []
+  "todos": [
+    {
+      "todo_id": "a1c645f0-1630-4500-868c-82519cf3f77f",
+      "item_key": "CF-027",
+      "type": "review_dependency_change",
+      "managed_by": "mutation",
+      "message": "Upstream task changed: CF-014. Review whether this task needs updates.",
+      "created_at": "2026-04-14T20:50:16.936Z",
+      "related_sources": [],
+      "related_item_keys": [
+        "CF-014"
+      ]
+    }
+  ]
 }

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-13T15:07:46.788Z",
-  "next_apply_index": 17,
+  "updated_at": "2026-04-14T20:50:16.942Z",
+  "next_apply_index": 18,
   "packets": [
     {
       "packet_id": "f0947cdd-67be-4f98-9cbd-bec31fce4589",
@@ -264,6 +264,18 @@
         "CF-012",
         "CF-014",
         "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-14-016-cf-014-intake-boundary-realignment",
+      "apply_index": 17,
+      "canonical_path": "patches/1e083e086ac6--2026-04-14-001-cf-014-intake-boundary-realignment.json",
+      "content_hash": "1e083e086ac6d77d179dd758e51215b160ad6a055950f268f0c4e17d504cf4e4",
+      "sequence": 16,
+      "applied_at": "2026-04-14T20:50:16.942Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-014"
       ]
     }
   ]
