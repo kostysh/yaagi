@@ -1,7 +1,7 @@
 ---
 id: F-0019
 title: Консолидация, event envelope и graceful shutdown
-status: shaped
+status: planned
 coverage_gate: deferred
 owners: ["@codex"]
 area: lifecycle
@@ -302,11 +302,88 @@ Invariants:
 
 ## 6. Slicing plan (2–6 increments)
 
-- To be forecast in `plan-slice`.
+Срезы ниже являются forecast-планом. Commitment остаётся в AC, Definition of Done, verification gates и rollout constraints.
+
+### План контрактных рисков до implementation close-out
+
+- **Риск event contract:** закрывается в `SL-F0019-01` через schema/contract/idempotency tests до любых destructive retention paths.
+- **Риск foreign-owner mutation:** закрывается в `SL-F0019-01` и `SL-F0019-02` через fail-closed guards против таблиц и source surfaces из AC-F0019-02.
+- **Риск version linkage:** закрывается в `SL-F0019-03` до включения deletion/aggregation mode.
+- **Риск runtime shutdown:** закрывается в `SL-F0019-04`; если меняется startup/shutdown behavior, обязательны root quality gates и `pnpm smoke:cell`.
+- **Риск consumer proxy:** закрывается в `SL-F0019-05`; Homeostat/governor/reporting не создают replacement evidence.
+
+### SL-F0019-01: Lifecycle event envelope и owner boundary foundation
+
+- **Результат:** PostgreSQL-backed lifecycle event store плюс internal service contract для обязательных envelope fields, idempotency, conflict handling и foreign-owner write rejection.
+- **Покрывает:** AC-F0019-01, AC-F0019-02, AC-F0019-03, AC-F0019-04, AC-F0019-05, AC-F0019-06.
+- **Проверка:** lifecycle event contract tests, idempotency/conflict tests, foreign-owner write rejection tests, migration tests.
+- Depends on: `F-0003`, `F-0004`, `F-0011`; owner `@codex`; unblock condition: delivered tick refs, subject-state refs и narrative/memetic source refs остаются readable через canonical boundaries.
+- **Предположение:** первый implementation может добавить append-only lifecycle tables без переписывания существующих timeline rows.
+- **Fallback:** если нужна migration существующей timeline, остановиться на этом срезе и добавить migration/backfill note до включения downstream slices.
+
+### SL-F0019-02: Consolidation transition allowlist и provenance guards
+
+- **Результат:** consolidation transition ledger плюс owner-routed execution path: принимает только классы из AC-F0019-07, отклоняет unsupported classes и записывает accepted/rejected evidence.
+- **Покрывает:** AC-F0019-07, AC-F0019-08, AC-F0019-09, AC-F0019-18.
+- **Проверка:** transition allowlist tests, unsupported-transition rejection tests, memetic promotion provenance tests, workshop projection boundary tests.
+- Depends on: `F-0011`, `F-0015`; owner `@codex`; unblock condition: durable memetic source refs и workshop candidate handoff contract видимы без передачи `F-0019` workshop ownership.
+- **Предположение:** `prepare_dataset_candidate` может выпускать bounded candidate projections с lifecycle refs до их потребления workshop.
+- **Fallback:** держать `prepare_dataset_candidate` disabled, если workshop projection contract недостаточен; остальные transition classes сохранить.
+
+### SL-F0019-03: Retention/compaction policy и versioned-state compatibility
+
+- **Результат:** retention/compaction policy runner сначала в non-destructive или aggregate-only mode, с evidence rows и сохранением version refs.
+- **Покрывает:** AC-F0019-10, AC-F0019-11, AC-F0019-12.
+- **Проверка:** permanence tests для biography/development ledger records, deletion-policy tests, versioned state linkage tests.
+- Depends on: `F-0004`, `F-0011`, `F-0016`, `F-0017`; owner `@codex`; unblock condition: subject-state schema version refs, narrative evidence refs, governor/development ledger refs и stable snapshot refs остаются linkable.
+- **Предположение:** destructive compaction не требуется для первого delivered increment.
+- **Fallback:** если destructive compaction станет необходимой, остановиться до activation и добавить явное dossier/backlog realignment для rollout limits.
+
+### SL-F0019-04: Graceful shutdown biography
+
+- **Результат:** graceful shutdown lifecycle path внутри `core`: выставляет `shutting_down`, закрывает tick admission, bounded образом ждёт/cancel active work, сохраняет terminal shutdown evidence перед exit.
+- **Покрывает:** AC-F0019-13, AC-F0019-14, AC-F0019-15.
+- **Проверка:** graceful-shutdown state transition tests, admission-closure tests, terminal-evidence integration tests, `pnpm smoke:cell` при изменении runtime/startup behavior.
+- Depends on: `F-0003`; owner `@codex`; unblock condition: tick admission плюс scheduler lease APIs остаются canonical active tick boundary.
+- **Предположение:** shutdown может использовать existing lease reclaim без введения второго scheduler/runtime.
+- **Fallback:** если current runtime не может сохранить evidence перед exit, держать shutdown activation за feature gate и realign runtime boundary до close-out.
+
+### SL-F0019-05: Downstream read contracts, rollback-frequency source и usage audit
+
+- **Результат:** read-only lifecycle evidence queries для `F-0012` `rollback_frequency`, governor/reporting consumers и bounded candidate/projection checks; финальный usage audit consumer behavior.
+- **Покрывает:** AC-F0019-16, AC-F0019-17, AC-F0019-18.
+- **Проверка:** Homeostat rollback-frequency integration tests, degraded/not-evaluable tests для missing lifecycle evidence, read-only consumer boundary tests, projection-boundary tests, real usage audit.
+- Depends on: `F-0012`, `CF-015`, `CF-025`; owner `@codex`; unblock condition: consumers сохраняют read-only contracts без требования, чтобы `F-0019` materialize reports или orchestrate releases.
+- **Предположение:** `CF-015` и `CF-025` могут оставаться future-owned, пока `F-0019` уже раскрывает canonical facts.
+- **Fallback:** раскрыть только durable read contracts и держать report/release consumers degraded до планирования их owner seams.
+
+### Allowed stop points
+
+| Stop point | Безопасная причина остановки | Ожидаемая проверка | Вне остановки |
+|---|---|---|---|
+| After `SL-F0019-01` | Append-only event contract существует без включения consolidation, compaction и shutdown behavior. | Event contract, idempotency и foreign-owner rejection tests pass. | Consolidation, retention/compaction, graceful shutdown и downstream reads remain disabled. |
+| After `SL-F0019-03` | Lifecycle events, consolidation и non-destructive compaction доступны без runtime shutdown changes. | Slices `SL-F0019-01` through `SL-F0019-03` pass their tests; destructive compaction remains off. | Graceful shutdown biography и rollback-frequency consumer wiring remain pending. |
+| After `SL-F0019-04` | Shutdown lifecycle durable до раскрытия downstream consumer reads. | Graceful-shutdown integration tests и required smoke path pass. | Homeostat/governor/reporting read contracts remain pending. |
+| After `SL-F0019-05` | Весь planned feature scope implemented, а consumer behavior прошёл audit. | Full AC coverage, usage audit и step-close artifacts pass. | Future report materialization и release orchestration остаются за `CF-015` и `CF-025`. |
+
+### Аудит реального использования
+
+- Запустить после `SL-F0019-05` на real lifecycle evidence records, не только на mocked unit paths.
+- Audit categories: `docs-only`, `runtime`, `schema/help`, `cross-skill`, `audit-only`.
+- Ожидаемые проверки: missing lifecycle evidence degrades cleanly, duplicate events reuse или reject корректно, consumers не создают rollback/shutdown evidence, workshop/reporting/release boundaries остаются read-only или future-owned.
 
 ## 7. Task list (implementation units)
 
-- To be forecast in `plan-slice`.
+- **T-F0019-01:** Добавить lifecycle event storage, envelope validation плюс idempotency conflict handling для `SL-F0019-01`. Covers: AC-F0019-01, AC-F0019-03, AC-F0019-04, AC-F0019-05, AC-F0019-06.
+- **T-F0019-02:** Добавить foreign-owner write rejection guards для `SL-F0019-01`. Covers: AC-F0019-02.
+- **T-F0019-03:** Добавить consolidation transition ledger плюс allowlist execution для `SL-F0019-02`. Covers: AC-F0019-07, AC-F0019-08.
+- **T-F0019-04:** Добавить provenance checks для durable memetic promotion плюс bounded dataset/eval candidate projection для `SL-F0019-02`. Covers: AC-F0019-09, AC-F0019-18.
+- **T-F0019-05:** Добавить retention/compaction policy runner с permanence guards плюс deletion-policy guards для `SL-F0019-03`. Covers: AC-F0019-10, AC-F0019-11.
+- **T-F0019-06:** Добавить versioned state linkage checks для retention/compaction traces в `SL-F0019-03`. Covers: AC-F0019-12.
+- **T-F0019-07:** Добавить graceful-shutdown lifecycle state transition плюс tick-admission closure для `SL-F0019-04`. Covers: AC-F0019-13, AC-F0019-14.
+- **T-F0019-08:** Добавить graceful-shutdown terminal evidence persistence плюс restart/reclaim interpretation для `SL-F0019-04`. Covers: AC-F0019-15.
+- **T-F0019-09:** Добавить read-only lifecycle evidence queries для rollback-frequency consumers в `SL-F0019-05`. Covers: AC-F0019-16, AC-F0019-17.
+- **T-F0019-10:** Запустить real usage audit и классифицировать corrective findings для `SL-F0019-05`. Covers: SL-F0019-05.
 
 ## 8. Test plan & Coverage map
 
@@ -314,22 +391,22 @@ Invariants:
 |---|---|---|
 | AC-F0019-01 | Lifecycle/consolidation boundary tests | planned |
 | AC-F0019-02 | Foreign-owner write rejection tests | planned |
-| AC-F0019-03 | Lifecycle event envelope contract tests | planned |
-| AC-F0019-04 | Lifecycle event envelope contract tests | planned |
-| AC-F0019-05 | Lifecycle event idempotency tests | planned |
-| AC-F0019-06 | Lifecycle event conflict tests | planned |
-| AC-F0019-07 | Consolidation transition allowlist tests | planned |
-| AC-F0019-08 | Unsupported transition rejection tests | planned |
-| AC-F0019-09 | Memetic promotion provenance tests | planned |
-| AC-F0019-10 | Retention/compaction permanence tests | planned |
-| AC-F0019-11 | Retention/compaction deletion policy tests | planned |
-| AC-F0019-12 | Versioned state linkage tests | planned |
-| AC-F0019-13 | Graceful-shutdown state transition tests | planned |
-| AC-F0019-14 | Graceful-shutdown admission-closure tests | planned |
-| AC-F0019-15 | Graceful-shutdown terminal evidence tests | planned |
-| AC-F0019-16 | Homeostat rollback-frequency integration tests | planned |
-| AC-F0019-17 | Read-only consumer boundary tests | planned |
-| AC-F0019-18 | Workshop projection boundary tests | planned |
+| AC-F0019-03 | `SL-F0019-01` lifecycle event envelope contract tests | planned |
+| AC-F0019-04 | `SL-F0019-01` lifecycle event envelope contract tests | planned |
+| AC-F0019-05 | `SL-F0019-01` lifecycle event idempotency tests | planned |
+| AC-F0019-06 | `SL-F0019-01` lifecycle event conflict tests | planned |
+| AC-F0019-07 | `SL-F0019-02` consolidation transition allowlist tests | planned |
+| AC-F0019-08 | `SL-F0019-02` unsupported transition rejection tests | planned |
+| AC-F0019-09 | `SL-F0019-02` memetic promotion provenance tests | planned |
+| AC-F0019-10 | `SL-F0019-03` retention/compaction permanence tests | planned |
+| AC-F0019-11 | `SL-F0019-03` retention/compaction deletion policy tests | planned |
+| AC-F0019-12 | `SL-F0019-03` versioned state linkage tests | planned |
+| AC-F0019-13 | `SL-F0019-04` graceful-shutdown state transition tests | planned |
+| AC-F0019-14 | `SL-F0019-04` graceful-shutdown admission-closure tests | planned |
+| AC-F0019-15 | `SL-F0019-04` graceful-shutdown terminal evidence tests | planned |
+| AC-F0019-16 | `SL-F0019-05` Homeostat rollback-frequency integration tests | planned |
+| AC-F0019-17 | `SL-F0019-05` read-only consumer boundary tests | planned |
+| AC-F0019-18 | `SL-F0019-02` / `SL-F0019-05` workshop projection boundary tests | planned |
 
 ## 9. Decision log (ADR blocks)
 
@@ -371,3 +448,4 @@ Invariants:
 
 - 2026-04-15: Initial dossier created from backlog item `CF-018` at backlog delivery state `defined`.
 - 2026-04-15: [clarification] `spec-compact` shaped `F-0019`: resolved intake open questions, fixed event-envelope fields, first-phase consolidation allowlist, lifecycle owner split, ACs, NFRs, initial coverage plan and activation notes.
+- 2026-04-15: [clarification] `plan-slice` forecasted five implementation slices, allowed stop points, consumer usage audit and backlog actualization path.
