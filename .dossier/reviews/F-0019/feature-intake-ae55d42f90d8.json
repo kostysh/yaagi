@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "created_at": "2026-04-15T14:59:34.142Z",
+  "reviewer": "Zeno",
+  "step": "feature-intake",
+  "dossier": "docs/features/F-0019-consolidation-event-envelope-graceful-shutdown.md",
+  "feature_id": "F-0019",
+  "event_commit": "ae55d42f90d8995181c87ca63e5af6e7dd7e2204",
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [
+      "Verification artifact command metadata records node scripts/dossier.mjs while repo overlay requires installed canonical skill scripts directly; reviewer reran equivalent checks through the installed canonical runtime and did not treat this as a closure blocker."
+    ],
+    "evidence": [
+      "Independent reviewer agent 019d91a4-fd76-7cc1-97fb-c14ac490e399 returned PASS with no must-fix findings.",
+      "Checked F-0019 dossier, docs/ssot/index.md, verification artifact, backlog CF-018 state, lint-dossiers, coverage-audit, next-step, debt-audit, and git diff check."
+    ]
+  },
+  "notes": ""
+}
