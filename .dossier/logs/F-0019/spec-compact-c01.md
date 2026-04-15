@@ -51,7 +51,7 @@ review_events:
     verdict_ts: 2026-04-15T17:26:45+02:00
     verdict: pass
     rerun_reason: review_findings
-    scope: F-0019 spec-compact, backlog actualization, verification artifact and stage log
+    scope: F-0019 spec-compact, актуализация backlog, артефакт verification и stage log
 verification_artifact: .dossier/verification/F-0019/spec-compact-a135569cccd2.json
 review_artifact: .dossier/reviews/F-0019/spec-compact-a135569cccd2.json
 step_artifact: .dossier/steps/F-0019/spec-compact.json
@@ -69,58 +69,58 @@ operator_review_interventions_total: 0
 
 # spec-compact c01
 
-## Scope
+## Область
 
-`spec-compact` для `F-0019`, созданного из backlog item `CF-018`. Цель цикла: превратить intake-boundary в shaped feature spec, закрыть intake open questions и actualize backlog state до `specified`.
+`spec-compact` для `F-0019`, созданного из backlog item `CF-018`. Цель цикла: превратить intake-границу в сформированную спецификацию фичи, закрыть открытые intake-вопросы и актуализировать состояние backlog до `specified`.
 
-## Inputs actually used
+## Фактически использованные входы
 
-- Backlog truth: `CF-018` = `defined`, gaps/todo отсутствуют, ready for next step.
-- Architecture: identity-bearing write authority matrix, retention/compaction policy, event envelope, graceful shutdown, Homeostat `rollback_frequency`, architecture coverage map.
-- Adjacent dossiers: `F-0011` оставляет durable promotion/compaction за `CF-018`; `F-0012` требует lifecycle evidence для `rollback_frequency`; `F-0016`/`F-0017` фиксируют governor/body rollback evidence boundaries.
-- Repo overlays: документация в `docs/` пишется на русском; automation запускается из installed skill runtimes; Plan mode gate обязателен перед `spec-compact`.
+- Состояние backlog: `CF-018` = `defined`, gaps/todo отсутствуют, задача готова к следующему шагу.
+- Архитектура: матрица write-authority для identity-bearing surfaces, политика retention/compaction, event envelope, graceful shutdown, Homeostat `rollback_frequency`, карта покрытия архитектуры.
+- Соседние dossiers: `F-0011` оставляет durable promotion/compaction за `CF-018`; `F-0012` требует lifecycle evidence для `rollback_frequency`; `F-0016`/`F-0017` фиксируют границы governor/body rollback evidence.
+- Repo overlays: документация в `docs/` пишется на русском; automation запускается из установленных skill runtimes; Plan mode gate обязателен перед `spec-compact`.
 
-## Decisions / reclassifications
+## Решения / реклассификации
 
-### Spec gap decisions
+### Решения по spec gaps
 
-- `OQ-F0019-01` resolved as normative now: first-phase consolidation transition classes are an explicit allowlist.
-- `OQ-F0019-02` resolved as normative now: lifecycle event envelope has mandatory identity, source, evidence, idempotency and schema-version fields.
-- `OQ-F0019-03` resolved as normative now: `F-0019` owns lifecycle facts, `CF-015` owns reporting materialization, `CF-025` owns release/deploy rollback orchestration.
+- `OQ-F0019-01` закрыт как `normative now`: first-phase consolidation transition classes фиксируются явным allowlist.
+- `OQ-F0019-02` закрыт как `normative now`: lifecycle event envelope получает обязательные поля identity, source, evidence, idempotency, schema-version.
+- `OQ-F0019-03` закрыт как `normative now`: `F-0019` владеет lifecycle facts, `CF-015` владеет материализацией отчётов, `CF-025` владеет release/deploy rollback orchestration.
 
-### Implementation freedom decisions
+### Решения по implementation freedom
 
-- Physical table names remain forecast-level design until implementation, as long as the source surfaces and invariants are preserved.
-- Consolidation may run as a job family or internal service path on the existing runtime substrate, provided it does not introduce a new service/container topology.
+- Физические имена таблиц остаются forecast-level design до implementation, если сохраняются source surfaces и invariants.
+- Consolidation может быть job family или internal service path на существующем runtime substrate, если это не вводит новую service/container topology.
 
-### Temporary assumptions
+### Временные предположения
 
-- Existing history backfill can be non-destructive or evidence-only; if implementation discovers that destructive compaction is required for first delivery, the rollout note must be revised before implementation closure.
+- Backfill существующей истории может быть non-destructive или evidence-only; если implementation обнаружит, что для первой поставки нужна destructive compaction, rollout note нужно пересмотреть до закрытия implementation.
 
-## Operator feedback
+## Обратная связь оператора
 
 - `cmd-001`: оператор попросил после intake-коммита приступить к `spec-compact`.
-- Plan mode assessment surfaced: Plan mode не требуется, потому что canonical ownership boundary уже задан архитектурой и соседними dossiers; новые пользовательские развилки не выявлены.
+- Оценка Plan mode была явно вынесена в user update: Plan mode не требуется, потому что canonical ownership boundary уже задан архитектурой и соседними dossiers; новые пользовательские развилки не выявлены.
 
-## Review events
+## События ревью
 
-- Independent reviewer `Boyle` returned PASS with one should-fix: add missing adjacency links to `F-0015` and `F-0017`.
-- Should-fix was resolved by adding both dossier links to `F-0019` metadata; `dossier-verify` was rerun and passed.
-- Delta review confirmed no new must-fix or should-fix and marked the PASS fresh for the current tree.
+- Независимый reviewer `Boyle` вернул PASS с одним should-fix: добавить отсутствующие adjacency links на `F-0015` и `F-0017`.
+- Should-fix закрыт добавлением обеих dossier-ссылок в metadata `F-0019`; `dossier-verify` был перезапущен и прошёл.
+- Delta review подтвердил отсутствие новых must-fix/should-fix и свежесть PASS для текущего дерева.
 
-## Backlog actualization
+## Актуализация backlog
 
 - Выполнено через `backlog-engineer patch-item`: `CF-018.delivery_state` изменён с `defined` на `specified`.
-- Patch draft: `docs/backlog/patches/2026-04-15-025-f-0019-spec-compact-actualization.template.json`.
-- Canonical patch: `docs/backlog/patches/1664c7c62a83--2026-04-15-025-f-0019-spec-compact-actualization.template.json`.
+- Черновик patch: `docs/backlog/patches/2026-04-15-025-f-0019-spec-compact-actualization.template.json`.
+- Каноническая копия patch: `docs/backlog/patches/1664c7c62a83--2026-04-15-025-f-0019-spec-compact-actualization.template.json`.
 - Follow-up attention создан runtime-ом для downstream items `CF-014`, `CF-015`, `CF-019`, `CF-025`, `CF-026`, `CF-027` из-за dependency change на `CF-018`.
 
-## Process misses
+## Процессные сбои
 
-- none
+- Нет.
 
-## Close-out
+## Закрытие
 
-- Verification artifact: `.dossier/verification/F-0019/spec-compact-a135569cccd2.json`.
-- Review artifact: `.dossier/reviews/F-0019/spec-compact-a135569cccd2.json`.
-- Step artifact: `.dossier/steps/F-0019/spec-compact.json`, `process_complete=yes`.
+- Артефакт verification: `.dossier/verification/F-0019/spec-compact-a135569cccd2.json`.
+- Артефакт review: `.dossier/reviews/F-0019/spec-compact-a135569cccd2.json`.
+- Артефакт step-close: `.dossier/steps/F-0019/spec-compact.json`, `process_complete=yes`.
