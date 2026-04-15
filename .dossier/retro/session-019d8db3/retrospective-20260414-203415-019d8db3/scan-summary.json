@@ -1,0 +1,360 @@
+{
+  "schema": "manual-retrospective-scan-summary/v1",
+  "generatedBy": "retrospective-phase-analysis evidence-first workflow",
+  "cliDraftsManuallyReviewed": true,
+  "generatedAt": "2026-04-15T08:12:24.525Z",
+  "manualReviewedAt": "2026-04-15T08:23:05.753Z",
+  "session": {
+    "id": "019d8db3-3b85-7153-ae96-2aed5f70c721",
+    "trace": "<session-trace:019d8db3>",
+    "projectRoot": "<project-root>",
+    "phaseFeature": "F-0018",
+    "backlogItem": "CF-014",
+    "phaseStart": "2026-04-14T20:37:32.381Z",
+    "phaseEnd": "2026-04-15T00:29:31.462Z",
+    "phaseEndTraceLine": 5269,
+    "excludedAfterTraceLine": 5272,
+    "excludedReason": "Тот же canonical trace содержит текущий запрос на ретроспективу начиная с trace line 5272, поэтому phase metrics исключают более поздние строки.",
+    "cliEventCountAtScan": 5353,
+    "cliLastTimestampAtScan": "2026-04-15T08:09:58.624Z"
+  },
+  "cliRuns": [
+    {
+      "command": "retro-cli.mjs scan",
+      "output": "<project-root>/.dossier/retro/session-019d8db3/retrospective-20260414-203415-019d8db3/scan-summary.json",
+      "status": "ran_then_manually_corrected",
+      "notes": [
+        "CLI scan включил текущие retrospective events, потому что trace является trace текущей сессии.",
+        "CLI stage-log count был равен нулю, потому что правило candidate-stage-log не приняло logs, найденные только через trace scope; manual review использовал F-0018 stage logs и artifacts."
+      ]
+    },
+    {
+      "command": "retro-cli.mjs report",
+      "output": "<project-root>/.dossier/retro/session-019d8db3/retrospective-20260414-203415-019d8db3/retrospective-report.md",
+        "status": "ran_then_rewritten_from_evidence"
+    },
+    {
+      "command": "retro-cli.mjs skill-audit",
+      "output": "<project-root>/.dossier/retro/session-019d8db3/retrospective-20260414-203415-019d8db3/skill-audit.md",
+        "status": "ran_then_rewritten_from_evidence"
+    },
+    {
+      "command": "retro-cli.mjs logging-review",
+      "output": "<project-root>/.dossier/retro/session-019d8db3/retrospective-20260414-203415-019d8db3/logging-review.md",
+        "status": "ran_then_rewritten_from_evidence"
+    }
+  ],
+  "evidenceInventory": {
+    "repoInstructions": [
+      {
+        "path": "AGENTS.md",
+        "lines": "21-28",
+        "signal": "Plan-mode assessment, canonical quality gates, container smoke, backlog/dossier realignment, installed skill runtimes и logs на языке оператора."
+      },
+      {
+        "path": "AGENTS.md",
+        "lines": "31-35",
+        "signal": "Backlog и dossier automation должны использовать installed canonical runtimes, а не local wrappers."
+      },
+      {
+        "path": "AGENTS.md",
+        "lines": "37-45",
+        "signal": "Canonical commands: pnpm format, typecheck, lint, test, smoke:cell."
+      }
+    ],
+    "skillReferences": [
+      {
+        "path": "<skills-root>/dossier-engineer/SKILL.md",
+        "lines": "168, 179-180, 239-251, 519-535",
+        "signal": "Mutating step closure требует verify, independent review, review-artifact и dossier-step-close; reviews fail closed."
+      },
+      {
+        "path": "<skills-root>/dossier-engineer/references/workflow-stage-implementation.md",
+        "lines": "9-16",
+        "signal": "Completeness review, external audits, backlog actualization, stage-log updates и commit metadata."
+      },
+      {
+        "path": "<skills-root>/dossier-engineer/references/implementation-audit-policy.md",
+        "signal": "Порядок spec, code, security и independent review; telemetry для spawned-agent review."
+      },
+      {
+        "path": "<skills-root>/backlog-engineer/SKILL.md",
+        "signal": "Patch workflow является authoritative для изменений существующего backlog; utility truth и canonical imports должны оставаться согласованными."
+      },
+      {
+        "path": "<skills-root>/backlog-engineer/references/packet-and-patch.md",
+        "signal": "Patch-item workflow и lifecycle для utility-owned todo."
+      }
+    ],
+    "stageLogs": [
+      {
+        "path": ".dossier/logs/F-0018/spec-compact-security-perimeter.md",
+        "start": "2026-04-14T22:57:43+02:00",
+        "finalPass": "2026-04-14T23:14:04+02:00",
+        "reviewRetryCount": 1,
+        "processMisses": [
+          "Round-1 process review нашёл неоднозначность telemetry/runtime-command; rerun исправил её до close."
+        ]
+      },
+      {
+        "path": ".dossier/logs/F-0018/plan-slice-perimeter-hardening.md",
+        "start": "2026-04-14T23:17:51+02:00",
+        "finalPass": "2026-04-14T23:32:23+02:00",
+        "reviewRetryCount": 1,
+        "processMisses": [
+          "Две mutating backlog commands были запущены параллельно и упёрлись в backlog mutation lock."
+        ]
+      },
+      {
+        "path": ".dossier/logs/F-0018/implementation-sl-f0018-01.md",
+        "start": "2026-04-14T23:49:58+02:00",
+        "finalPass": "2026-04-15T02:25:26+02:00",
+        "commit": "1b42da5",
+        "processMisses": [
+          "Агент остановился после первого foundation increment, хотя implementation plan не был завершён."
+        ]
+      },
+      {
+        "path": ".dossier/logs/F-0018/implementation-sl-f0018-02.md",
+        "start": "2026-04-14T23:49:58+02:00",
+        "finalPass": "2026-04-15T02:25:26+02:00",
+        "commit": "1b42da5",
+        "processMisses": [
+          "Оператор явно потребовал продолжить до полного plan после partial stop."
+        ]
+      },
+      {
+        "path": ".dossier/logs/F-0018/implementation-sl-f0018-03.md",
+        "start": "2026-04-14T23:49:58+02:00",
+        "finalPass": "2026-04-15T02:25:26+02:00",
+        "commit": "1b42da5",
+        "processMisses": [
+          "Smoke поймал missing migration 017; canonical hashed backlog patch artifacts были удалены, хотя applied.json всё ещё ссылался на них; commit metadata был backfilled в follow-up closure commit."
+        ]
+      }
+    ],
+    "durableArtifacts": [
+      ".dossier/steps/F-0018/feature-intake.json",
+      ".dossier/steps/F-0018/spec-compact.json",
+      ".dossier/steps/F-0018/plan-slice.json",
+      ".dossier/steps/F-0018/implementation.json",
+      ".dossier/reviews/F-0018/feature-intake-46d79fbf39de.json",
+      ".dossier/reviews/F-0018/spec-compact-2c0afcee7249.json",
+      ".dossier/reviews/F-0018/plan-slice-a31d49c9b3e3.json",
+      ".dossier/reviews/F-0018/implementation-93307e0aaf00.json",
+      ".dossier/reviews/F-0018/implementation-1b42da50618e.json",
+      ".dossier/verification/F-0018/implementation-1b42da50618e.json"
+    ],
+    "commits": [
+      {
+        "commit": "93307e0",
+        "subject": "feat(perimeter): add decision safety-kernel foundation",
+        "role": "Первый partial implementation increment; оставил implementation stage открытым."
+      },
+      {
+        "commit": "1b42da5",
+        "subject": "feat(perimeter): close F-0018 implementation",
+        "role": "Основной implementation commit после security realignment и полного набора quality gates."
+      },
+      {
+        "commit": "9e3e6e6",
+        "subject": "docs(dossier): record F-0018 implementation closure",
+        "role": "Commit для closure и artifact alignment после backfill/regeneration."
+      }
+    ]
+  },
+  "keyTraceAnchors": [
+    {
+      "line": 98,
+      "timestamp": "2026-04-14T20:37:32.381Z",
+      "event": "Оператор начинает с просьбы закоммитить текущие изменения и начать CF-014 intake."
+    },
+    {
+      "line": 354,
+      "timestamp": "2026-04-14T20:44:01Z",
+      "event": "Агент достигает technical intake pass, но не может формально закрыть step без разрешения на reviewer."
+    },
+    {
+      "line": 428,
+      "timestamp": "2026-04-14T20:48:53Z",
+      "event": "Intake architecture review падает на missing fail-closed CF-024 boundary и rollback/kill-switch ownership."
+    },
+    {
+      "line": 580,
+      "timestamp": "2026-04-14T20:53:23.984Z",
+      "event": "Feature-intake закрыт после reround и backlog realignment."
+    },
+    {
+      "line": 1041,
+      "timestamp": "2026-04-14T21:09:36Z",
+      "event": "Spec content review падает на human_override source of truth и ingress contract gaps."
+    },
+    {
+      "line": 1051,
+      "timestamp": "2026-04-14T21:09:54Z",
+      "event": "Spec process review падает на verification/runtime-command и telemetry gaps."
+    },
+    {
+      "line": 1828,
+      "timestamp": "2026-04-14T21:46:37Z",
+      "event": "Оператор просит закоммитить и начать implementation."
+    },
+    {
+      "line": 2693,
+      "timestamp": "2026-04-14T22:13:15Z",
+      "event": "Агент даёт final answer после первого implementation increment и сообщает, что implementation не закрыт."
+    },
+    {
+      "line": 2721,
+      "timestamp": "2026-04-14T23:17:56Z",
+      "event": "Агент признаёт, что остановка была вызвана узкой интерпретацией, а не blocker."
+    },
+    {
+      "line": 2727,
+      "timestamp": "2026-04-14T23:19:37Z",
+      "event": "Оператор поручает агенту выполнить весь plan полностью."
+    },
+    {
+      "line": 4262,
+      "timestamp": "2026-04-14T23:59:56Z",
+      "event": "Security review находит high trust-boundary bypass через public operator routes и trusted_ingress auto-acceptance."
+    },
+    {
+      "line": 4480,
+      "timestamp": "2026-04-15T00:05:18Z",
+      "event": "Агент realigns поведение: public high-risk routes становятся explicitly unavailable до CF-024, trusted_ingress hardening усилен."
+    },
+    {
+      "line": 4899,
+      "timestamp": "2026-04-15T00:17:39Z",
+      "event": "Process checks ловят missing coverage reference и backlog applied.json, который ссылается на удалённые canonical patch files."
+    },
+    {
+      "line": 4950,
+      "timestamp": "2026-04-15T00:18:51Z",
+      "event": "Начинается final external review orchestration; некоторые reviewer spawns падают с not_found и требуют redirect."
+    },
+    {
+      "line": 5041,
+      "timestamp": "2026-04-15T00:20:36Z",
+      "event": "Final independent verdicts: spec/security/holistic PASS."
+    },
+    {
+      "line": 5144,
+      "timestamp": "2026-04-15T00:25:34Z",
+      "event": "Step-close падает, потому что review-artifact и step-close были запущены параллельно."
+    },
+    {
+      "line": 5218,
+      "timestamp": "2026-04-15T00:27:58Z",
+      "event": "Агент регенерирует review/verification/step artifacts для alignment с main commit 1b42da5."
+    },
+    {
+      "line": 5261,
+      "timestamp": "2026-04-15T00:29:18Z",
+      "event": "next-step сообщает process_complete true; event_commit 9e3e6e6 и review_trace_commit 1b42da5."
+    }
+  ],
+  "incidents": [
+    {
+      "id": "R-01",
+      "severity": "high",
+      "title": "Агент остановился после partial implementation вместо выполнения всего plan.",
+      "evidence": [
+        "trace:2693",
+        "trace:2721",
+        "trace:2727",
+        ".dossier/logs/F-0018/implementation-sl-f0018-01.md:111"
+      ],
+      "disposition": "Восстановлено после вмешательства оператора; process gap остаётся, потому что skill допустил естественный final answer на незавершённой implementation boundary."
+    },
+    {
+      "id": "R-02",
+      "severity": "medium",
+      "title": "External review многократно ловил boundary ownership gaps во время intake/spec/plan.",
+      "evidence": [
+        "trace:428",
+        "trace:1041",
+        "trace:1051",
+        ".dossier/logs/F-0018/spec-compact-security-perimeter.md:81"
+      ],
+      "disposition": "Восстановлено через rerounds и backlog/dossier realignment."
+    },
+    {
+      "id": "R-03",
+      "severity": "high",
+      "title": "External security review нашёл trust-boundary bypass в public high-risk route и trusted_ingress.",
+      "evidence": [
+        "trace:4262",
+        "apps/core/src/platform/operator-api.ts:331",
+        "apps/core/src/perimeter/service.ts:217",
+        "apps/core/src/runtime/development-governor.ts:635"
+      ],
+      "disposition": "Восстановлено через fail-closed public routes до CF-024 и раздельную обработку trusted_ingress."
+    },
+    {
+      "id": "R-04",
+      "severity": "medium",
+      "title": "Зависимые closure steps были запущены параллельно, и step-close обогнал review artifact.",
+      "evidence": [
+        "trace:5134",
+        "trace:5144"
+      ],
+      "disposition": "Восстановлено последовательным rerun; нужен non-parallel close-out invariant."
+    },
+    {
+      "id": "R-05",
+      "severity": "high",
+      "title": "Backlog patch artifact integrity сломалась: applied.json ссылался на удалённые canonical hashed patch files.",
+      "evidence": [
+        "trace:4899",
+        ".dossier/logs/F-0018/implementation-sl-f0018-03.md:102",
+        "docs/backlog/.backlog/applied.json:353"
+      ],
+      "disposition": "Восстановлено через возврат hashed patch artifacts; перед closure нужен automated integrity check."
+    },
+    {
+      "id": "R-06",
+      "severity": "medium",
+      "title": "Review и verification artifacts изначально были stale относительно wrong commit и потребовали backfill.",
+      "evidence": [
+        "trace:5195",
+        "trace:5218",
+        ".dossier/reviews/F-0018/implementation-93307e0aaf00.json",
+        ".dossier/reviews/F-0018/implementation-1b42da50618e.json"
+      ],
+      "disposition": "Восстановлено в commit 9e3e6e6; closure flow должен детерминированно регенерировать post-commit artifacts."
+    },
+    {
+      "id": "R-07",
+      "severity": "medium",
+      "title": "External review orchestration столкнулся с authorization и capacity friction.",
+      "evidence": [
+        "trace:354",
+        "trace:388",
+        "trace:4950",
+        "trace:4954",
+        "trace:4958"
+      ],
+      "disposition": "Восстановлено через preauthorization и redirect reviewers; нужны review-agent lifecycle cleanup и transport-failure logging."
+    },
+    {
+      "id": "R-08",
+      "severity": "medium",
+      "title": "Stage logs были полезны, но имели слабые trace anchors и ненадёжную review timing telemetry.",
+      "evidence": [
+        ".dossier/logs/F-0018/implementation-sl-f0018-01.md:1",
+        ".dossier/logs/F-0018/implementation-sl-f0018-03.md:1",
+        "trace:4950",
+        "trace:5041"
+      ],
+      "disposition": "Потребовался manual trace parsing; logging schema должен фиксировать trace lines/event ids и реальные wait intervals."
+    }
+  ],
+  "dataQualityLimits": [
+    "Canonical trace содержит и анализируемое выполнение F-0018, и текущий retrospective turn; phase metrics вручную ограничены trace line 5269.",
+    "CLI scan недообнаружил F-0018 stage logs и переоценил touched paths, потому что работал по полному текущему trace.",
+    "Некоторые stage-log timestamps выглядят backfilled или округлёнными до closure time, поэтому duration и review-wait numbers менее надёжны, чем event ordering.",
+    "Trace содержит compacted segments; direct command stdout иногда представлен через assistant messages и artifacts, а не как raw terminal output."
+  ]
+}
