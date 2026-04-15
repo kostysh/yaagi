@@ -52,6 +52,7 @@ export type TickRuntimeOptions = {
 
 export type TickRuntime = {
   start(): Promise<void>;
+  closeAdmission(): Promise<void>;
   stop(): Promise<void>;
   requestTick(input: TickRequest): Promise<TickRequestResult>;
   reclaimStaleTicks(): Promise<number>;
@@ -116,6 +117,7 @@ export function createTickRuntime(options: TickRuntimeOptions): TickRuntime {
 
   let started = false;
   const inFlight = new Set<Promise<unknown>>();
+  const admissionsInFlight = new Set<Promise<StartTickResult>>();
 
   const runTick = async (
     input: TickRequest,
@@ -151,7 +153,11 @@ export function createTickRuntime(options: TickRuntimeOptions): TickRuntime {
       payload: input.payload,
     };
 
-    const admission = await options.store.startTick(startedTick);
+    const admissionRequest = options.store.startTick(startedTick);
+    admissionsInFlight.add(admissionRequest);
+    const admission = await admissionRequest.finally(() => {
+      admissionsInFlight.delete(admissionRequest);
+    });
     if (!admission.accepted) {
       return {
         admission: {
@@ -205,6 +211,11 @@ export function createTickRuntime(options: TickRuntimeOptions): TickRuntime {
     return promise;
   };
 
+  const closeAdmission = async (): Promise<void> => {
+    started = false;
+    await Promise.allSettled(admissionsInFlight);
+  };
+
   return {
     async start(): Promise<void> {
       if (started) return;
@@ -241,8 +252,10 @@ export function createTickRuntime(options: TickRuntimeOptions): TickRuntime {
       }
     },
 
+    closeAdmission,
+
     async stop(): Promise<void> {
-      started = false;
+      await closeAdmission();
       await Promise.allSettled(inFlight);
     },
 

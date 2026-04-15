@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import type { Client } from 'pg';
 import { DEPENDENCY } from '@yaagi/contracts/boot';
@@ -26,6 +27,7 @@ import {
   createPerceptionStore,
   createRuntimeDbClient,
   createRuntimeModelProfileStore,
+  type LifecycleActiveWorkRef,
   createTickRuntimeStore,
   ensureRuntimeAgentStateRow,
   getRuntimeAgentStateRow,
@@ -40,6 +42,7 @@ import {
 } from '@yaagi/db';
 import type { SystemEvent } from '@yaagi/contracts/boot';
 import { TICK_STATUS, type TickTerminalResult } from '@yaagi/contracts/runtime';
+import { GRACEFUL_SHUTDOWN_STATE } from '@yaagi/contracts/lifecycle';
 import {
   createExecutiveCenter,
   createPhase0ToolGateway,
@@ -76,6 +79,10 @@ import {
   type PeriodicHomeostatWorker,
 } from './homeostat.ts';
 import {
+  createDbBackedLifecycleConsolidationService,
+  type LifecycleConsolidationService,
+} from './lifecycle-consolidation.ts';
+import {
   createDbBackedDevelopmentGovernorService,
   type DevelopmentGovernorService,
 } from './development-governor.ts';
@@ -98,7 +105,7 @@ type RuntimeLifecycle = {
     payload: Record<string, unknown>;
   }): Promise<{
     accepted: boolean;
-    reason?: 'boot_inactive' | 'lease_busy' | 'unsupported_tick_kind';
+    reason?: 'boot_inactive' | 'lease_busy' | 'unsupported_tick_kind' | 'shutdown_admission_closed';
   }>;
   freezeDevelopment(input: {
     requestId: string;
@@ -1041,6 +1048,124 @@ const createNoopLifecycleController = () => ({
   setState: (): Promise<void> => Promise.resolve(),
 });
 
+const buildShutdownWorkEvidenceRefs = (activeWork: LifecycleActiveWorkRef[]): string[] =>
+  activeWork.length === 0
+    ? ['runtime:shutdown:active-work:none']
+    : activeWork.map((work) => `tick:${work.tickId}`);
+
+const recordGracefulShutdownEvidence = async (
+  service: LifecycleConsolidationService,
+  input: {
+    shutdownEventId: string;
+    shutdownState: 'shutting_down' | 'completed';
+    reason: string;
+    schemaVersion: string;
+    recordedAt: string;
+    admittedInFlightWork: LifecycleActiveWorkRef[];
+    terminalTickOutcome: Record<string, unknown>;
+    flushedBufferResult: Record<string, unknown>;
+    openConcerns: string[];
+  },
+): Promise<void> => {
+  const result = await service.recordGracefulShutdown({
+    shutdownEventId: input.shutdownEventId,
+    shutdownState: input.shutdownState,
+    reason: input.reason,
+    subjectRef: 'runtime:polyphony-core',
+    admittedInFlightWork: input.admittedInFlightWork.map((work) => ({ ...work })),
+    terminalTickOutcome: input.terminalTickOutcome,
+    flushedBufferResult: input.flushedBufferResult,
+    openConcerns: input.openConcerns,
+    evidenceRefs: [
+      `runtime:shutdown:${input.shutdownState}`,
+      ...buildShutdownWorkEvidenceRefs(input.admittedInFlightWork),
+    ],
+    recordedAt: input.recordedAt,
+    schemaVersion: input.schemaVersion,
+    idempotencyKey: `runtime:shutdown:${input.shutdownEventId}`,
+  });
+
+  if (!result.accepted) {
+    throw new Error(`failed to persist graceful shutdown evidence: ${result.reason}`);
+  }
+};
+
+export type GracefulShutdownSequencePorts = {
+  closeAdmission(): void;
+  closeTickAdmission(): Promise<void>;
+  getSchemaVersion(): Promise<string>;
+  listActiveTickWork(): Promise<LifecycleActiveWorkRef[]>;
+  recordShutdownEvidence(input: {
+    shutdownEventId: string;
+    shutdownState: 'shutting_down' | 'completed';
+    reason: string;
+    schemaVersion: string;
+    recordedAt: string;
+    admittedInFlightWork: LifecycleActiveWorkRef[];
+    terminalTickOutcome: Record<string, unknown>;
+    flushedBufferResult: Record<string, unknown>;
+    openConcerns: string[];
+  }): Promise<void>;
+  stopWorkshopWorker(): Promise<void>;
+  stopPeriodicHomeostatWorker(): Promise<void>;
+  stopPerceptionController(): Promise<void>;
+  stopTickRuntime(): Promise<void>;
+  now(): string;
+  createShutdownId(): string;
+};
+
+export const runGracefulShutdownSequence = async (
+  ports: GracefulShutdownSequencePorts,
+): Promise<void> => {
+  const shutdownRequestedAt = ports.now();
+  const shutdownId = ports.createShutdownId();
+
+  ports.closeAdmission();
+  await ports.closeTickAdmission();
+
+  const schemaVersion = await ports.getSchemaVersion();
+  const admittedInFlightWork = await ports.listActiveTickWork();
+
+  await ports.recordShutdownEvidence({
+    shutdownEventId: `${shutdownId}:requested`,
+    shutdownState: GRACEFUL_SHUTDOWN_STATE.SHUTTING_DOWN,
+    reason: 'runtime.stop',
+    schemaVersion,
+    recordedAt: shutdownRequestedAt,
+    admittedInFlightWork,
+    terminalTickOutcome: {},
+    flushedBufferResult: {},
+    openConcerns: [],
+  });
+
+  await ports.stopWorkshopWorker();
+  await ports.stopPeriodicHomeostatWorker();
+  await ports.stopPerceptionController();
+  await ports.stopTickRuntime();
+
+  const remainingActiveWork = await ports.listActiveTickWork();
+  await ports.recordShutdownEvidence({
+    shutdownEventId: `${shutdownId}:completed`,
+    shutdownState: GRACEFUL_SHUTDOWN_STATE.COMPLETED,
+    reason: 'runtime.stop',
+    schemaVersion,
+    recordedAt: ports.now(),
+    admittedInFlightWork,
+    terminalTickOutcome: {
+      remainingActiveTickIds: remainingActiveWork.map((work) => work.tickId),
+      activeTickCountBeforeStop: admittedInFlightWork.length,
+      activeTickCountAfterStop: remainingActiveWork.length,
+    },
+    flushedBufferResult: {
+      workshopWorker: 'stopped',
+      periodicHomeostatWorker: 'stopped',
+      perceptionController: 'stopped',
+      tickRuntime: 'stopped',
+    },
+    openConcerns: remainingActiveWork.map((work) => `active_tick_remaining:${work.tickId}`),
+  });
+};
+
 const createUnsupportedRecoveryGateway = (label: string) => ({
   restoreGitTag: (gitTag: string): Promise<void> => {
     void gitTag;
@@ -1071,6 +1196,7 @@ export function createPhase0RuntimeLifecycle(
       await developmentGovernor.applyHomeostatReaction(request);
     },
   });
+  const lifecycleConsolidation = createDbBackedLifecycleConsolidationService(config);
   const periodicHomeostatWorker: PeriodicHomeostatWorker = createPeriodicHomeostatWorker(
     config,
     homeostatService,
@@ -1118,6 +1244,13 @@ export function createPhase0RuntimeLifecycle(
     config,
     store: createDbBackedPerceptionStore(config),
     requestReactiveTick: async (input) => {
+      if (shuttingDown) {
+        return {
+          accepted: false,
+          reason: 'shutdown_admission_closed',
+        };
+      }
+
       if (!tickRuntime) {
         return {
           accepted: false,
@@ -1289,6 +1422,8 @@ export function createPhase0RuntimeLifecycle(
   });
 
   let started = false;
+  let shuttingDown = false;
+  let runtimeSchemaVersion: string | null = null;
   const getRicherModelRegistryHealthSummary =
     async (): Promise<OperatorRicherRegistryHealthSummary> => {
       const summary = await expandedModelEcology.getOperatorRicherRegistryHealthSummary();
@@ -1318,12 +1453,14 @@ export function createPhase0RuntimeLifecycle(
   return {
     async start(): Promise<void> {
       if (started) return;
+      shuttingDown = false;
 
       await withRuntimeClient(config.postgresUrl, async (client) => {
         await ensureRuntimeAgentStateRow(client);
       });
 
       const expectedSchemaVersion = await withRuntimeClient(config.postgresUrl, readSchemaVersion);
+      runtimeSchemaVersion = expectedSchemaVersion;
 
       const bootService = new ConstitutionalBootService({
         expectedSchemaVersion,
@@ -1400,16 +1537,50 @@ export function createPhase0RuntimeLifecycle(
     },
 
     async stop(): Promise<void> {
-      started = false;
-      await workshopWorker.stop().catch(() => {});
-      await periodicHomeostatWorker.stop().catch(() => {});
-      await perceptionController.stop();
-      if (tickRuntime) {
-        await tickRuntime.stop();
+      if (shuttingDown && !started) {
+        return;
       }
+
+      await runGracefulShutdownSequence({
+        closeAdmission: () => {
+          shuttingDown = true;
+          started = false;
+        },
+        closeTickAdmission: async () => {
+          if (tickRuntime) {
+            await tickRuntime.closeAdmission();
+          }
+        },
+        getSchemaVersion: async () =>
+          runtimeSchemaVersion ?? (await withRuntimeClient(config.postgresUrl, readSchemaVersion)),
+        listActiveTickWork: () => lifecycleConsolidation.listActiveTickWork(),
+        recordShutdownEvidence: (input) =>
+          recordGracefulShutdownEvidence(lifecycleConsolidation, input),
+        stopWorkshopWorker: async () => {
+          await workshopWorker.stop().catch(() => {});
+        },
+        stopPeriodicHomeostatWorker: async () => {
+          await periodicHomeostatWorker.stop().catch(() => {});
+        },
+        stopPerceptionController: () => perceptionController.stop(),
+        stopTickRuntime: async () => {
+          if (tickRuntime) {
+            await tickRuntime.stop();
+          }
+        },
+        now: () => new Date().toISOString(),
+        createShutdownId: () => `shutdown:${randomUUID()}`,
+      });
     },
 
     async requestTick(input) {
+      if (shuttingDown) {
+        return {
+          accepted: false,
+          reason: 'shutdown_admission_closed',
+        };
+      }
+
       const result = await tickRuntime.requestTick(input);
       if (result.accepted) {
         return { accepted: true };

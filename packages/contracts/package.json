@@ -46,6 +46,10 @@
     "./workshop": {
       "types": "./src/workshop.ts",
       "default": "./src/workshop.ts"
+    },
+    "./lifecycle": {
+      "types": "./src/lifecycle.ts",
+      "default": "./src/lifecycle.ts"
     }
   },
   "dependencies": {

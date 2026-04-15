@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-14T23:51:56.806Z",
+  "updated_at": "2026-04-15T17:28:18.539Z",
   "sources": [
     {
       "source_id": "5b9f63ff-21ce-440c-a3a3-7416945dde4f",
@@ -131,9 +131,9 @@
       "kind": "architecture",
       "authority": "authoritative",
       "note": "Canonical system architecture",
-      "hash": "2c2638670ab0b32a07db5ecc541a287fd4bfa7ddcbe0887ece4fe68092521b6c",
+      "hash": "50712ab70d3002483ee648b616b4a998bb85c47e87d42f6644789a56e39eea21",
       "registered_at": "2026-04-09T23:44:44.538Z",
-      "last_checked_at": "2026-04-10T01:45:43.482Z"
+      "last_checked_at": "2026-04-15T17:28:18.539Z"
     },
     {
       "source_id": "ef27eeb6-7dfa-408b-a240-1712dd407575",
@@ -164,9 +164,20 @@
       "kind": "specification",
       "authority": "authoritative",
       "note": "Canonical Feature Dossier for CF-014 implementation closure",
-      "hash": "cd54f206fae548c0313a7f174b74c99d25c2c477b4bd8fb441d248f2d1d8da06",
+      "hash": "c7052f1e0b1e16601ae23f8187752367875ff6f6b1bd02b5c724a50ac1c604bf",
       "registered_at": "2026-04-14T23:51:56.806Z",
-      "last_checked_at": "2026-04-14T23:51:56.806Z"
+      "last_checked_at": "2026-04-15T17:28:18.539Z"
+    },
+    {
+      "source_id": "97f90f65-393f-455c-b7ea-9ec09da09343",
+      "source_label": "../features/F-0019-consolidation-event-envelope-graceful-shutdown.md",
+      "path": "../features/F-0019-consolidation-event-envelope-graceful-shutdown.md",
+      "kind": "specification",
+      "authority": "authoritative",
+      "note": "Canonical Feature Dossier for CF-018 implementation closure",
+      "hash": "3b20291d34043e39f2aca13e1eda6cacdb01a681a88fab82158a6ae618618e25",
+      "registered_at": "2026-04-15T17:19:58.072Z",
+      "last_checked_at": "2026-04-15T17:28:18.539Z"
     },
     {
       "source_id": "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
@@ -177,7 +188,7 @@
       "note": "Canonical Russian Polyphony concept",
       "hash": "c8030fe4d6e54c594c0b72c0cb628b1d9daf4aa81abef21742a84b205718a71a",
       "registered_at": "2026-04-09T23:44:44.599Z",
-      "last_checked_at": "2026-04-10T01:45:43.482Z"
+      "last_checked_at": "2026-04-15T17:28:18.539Z"
     },
     {
       "source_id": "97107644-d070-4cb0-bfe3-aa581331229c",
@@ -188,7 +199,7 @@
       "note": "Legacy candidate backlog used for migration and legacy CF traceability",
       "hash": "136d786fff392aa470a6313d13b81736eafdbf5d914330a5f774c194eab66b9a",
       "registered_at": "2026-04-09T23:44:45.352Z",
-      "last_checked_at": "2026-04-10T01:45:43.482Z"
+      "last_checked_at": "2026-04-15T17:28:18.539Z"
     },
     {
       "source_id": "9d061028-1d37-4f85-9919-f6321ed1f995",
@@ -210,7 +221,7 @@
       "note": "Legacy roadmap matrix used to normalize non-intaken delivery states",
       "hash": "a0a725f8e0d2c80467a64544198cfd833a4acb6b62efd2bc3fc264dafd8f7c7f",
       "registered_at": "2026-04-09T23:44:45.414Z",
-      "last_checked_at": "2026-04-10T01:45:43.482Z"
+      "last_checked_at": "2026-04-15T17:28:18.539Z"
     }
   ]
 }

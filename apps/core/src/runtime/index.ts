@@ -22,7 +22,9 @@ export {
 export {
   createPhase0RuntimeLifecycle,
   createPhase0TickExecution,
+  runGracefulShutdownSequence,
   startBoundedWorkshopWorker,
+  type GracefulShutdownSequencePorts,
 } from './runtime-lifecycle.ts';
 export {
   createExpandedModelEcologyService,
@@ -44,6 +46,10 @@ export {
   createDbBackedDevelopmentGovernorService,
   type DevelopmentGovernorService,
 } from './development-governor.ts';
+export {
+  createDbBackedLifecycleConsolidationService,
+  type LifecycleConsolidationService,
+} from './lifecycle-consolidation.ts';
 export {
   createDbBackedWorkshopService,
   createWorkshopJobGateway,

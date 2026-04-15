@@ -129,6 +129,28 @@ export {
   type WorkshopTrainingRunRow,
 } from './workshop.ts';
 export {
+  createLifecycleStore,
+  type ConsolidationTransitionRow,
+  type GracefulShutdownEventRow,
+  type LifecycleActiveWorkRef,
+  type LifecycleDbExecutor,
+  type LifecycleEventRow,
+  type LifecycleRollbackFrequencySource,
+  type LifecycleStore,
+  type RecordConsolidationTransitionInput,
+  type RecordConsolidationTransitionResult,
+  type RecordGracefulShutdownInput,
+  type RecordGracefulShutdownResult,
+  type RecordLifecycleEventInput,
+  type RecordLifecycleEventResult,
+  type RecordRetentionCompactionInput,
+  type RecordRetentionCompactionResult,
+  type RecordRollbackIncidentInput,
+  type RecordRollbackIncidentResult,
+  type RetentionCompactionRunRow,
+  type RollbackIncidentRow,
+} from './lifecycle.ts';
+export {
   BASELINE_MODEL_PROFILE_ROLE,
   createRuntimeModelProfileStore,
   MODEL_PROFILE_ROLE,

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "created_at": "2026-04-15T18:08:35.688Z",
+  "reviewer": "gpt-5.4 code-reviewer+security-reviewer",
+  "step": "implementation",
+  "dossier": "docs/features/F-0019-consolidation-event-envelope-graceful-shutdown.md",
+  "feature_id": "F-0019",
+  "event_commit": "553147628a51dd6264adaac95b2ede831d9aaa48",
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "code review: concurrent lifecycle idempotency blocker closed; shutdown admission/snapshot blocker closed; stage log stale issue closed",
+      "security review: no confirmed vulnerabilities in ON CONFLICT idempotency handling, tickRuntime.closeAdmission barrier, shutdown evidence ordering, DB boundaries/provenance guards",
+      "local verification: pnpm format, pnpm typecheck, pnpm lint, pnpm test (281), pnpm smoke:cell (19), dossier-verify pass"
+    ]
+  },
+  "notes": "Fresh gpt-5.4/xhigh external reviews after race fixes: code review PASS with no findings; security review PASS with no confirmed vulnerabilities. Earlier gpt-5.4-mini audit results were invalidated and not used for this artifact."
+}

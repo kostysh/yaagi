@@ -45,7 +45,11 @@ export type TickRequest = {
   payload: Record<string, unknown>;
 };
 
-export type TickRequestRejectionReason = 'boot_inactive' | 'lease_busy' | 'unsupported_tick_kind';
+export type TickRequestRejectionReason =
+  | 'boot_inactive'
+  | 'lease_busy'
+  | 'unsupported_tick_kind'
+  | 'shutdown_admission_closed';
 
 export type TickRequestResult =
   | { accepted: true; tickId: string }

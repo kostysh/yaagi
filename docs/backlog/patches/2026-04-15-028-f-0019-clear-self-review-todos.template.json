@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-15-028-f-0019-clear-self-review-todos",
+    "created_at": "2026-04-15T17:24:00.000Z",
+    "sequence": 28,
+    "target_item_keys": [
+      "CF-018"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-018",
+      "action": "remove_todo",
+      "todo_ids": [
+        "2894e823-13e4-4605-b96a-cfad3180684d"
+      ]
+    }
+  ]
+}

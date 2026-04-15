@@ -23,7 +23,7 @@ const smokeLifecycleMetrics = {
   telegramFamilyTeardowns: 0,
   runtimeResets: 0,
 };
-const expectedRuntimeResets = 11;
+const expectedRuntimeResets = 12;
 
 function coreBaseUrl(port = defaultCoreHostPort): string {
   return `http://127.0.0.1:${port}`;
@@ -51,6 +51,11 @@ truncate table
   polyphony_runtime.development_proposal_decisions,
   polyphony_runtime.development_proposals,
   polyphony_runtime.development_freezes,
+  polyphony_runtime.retention_compaction_runs,
+  polyphony_runtime.graceful_shutdown_events,
+  polyphony_runtime.rollback_incidents,
+  polyphony_runtime.consolidation_transitions,
+  polyphony_runtime.lifecycle_events,
   polyphony_runtime.candidate_stage_events,
   polyphony_runtime.model_candidates,
   polyphony_runtime.eval_runs,
@@ -1000,6 +1005,96 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
             "select count(*)::text from pgboss.queue where name = 'homeostat.periodic-evaluation';",
           ),
           '1',
+        );
+      },
+    );
+
+    await prepareFreshRuntimeScenario();
+    await t.test(
+      'AC-F0019-16 AC-F0019-17 runs rollback-frequency usage audit on real lifecycle evidence records',
+      async () => {
+        const auditPayload = JSON.parse(
+          await execCoreScript(`
+            import { createRuntimeDbClient, createLifecycleStore } from './packages/db/src/index.ts';
+            import { createDbBackedHomeostatService } from './apps/core/src/runtime/index.ts';
+            import { HOMEOSTAT_SIGNAL_FAMILY } from './packages/contracts/src/runtime.ts';
+
+            const client = createRuntimeDbClient(process.env.YAAGI_POSTGRES_URL);
+            await client.connect();
+
+            try {
+              const store = createLifecycleStore(client);
+              await store.recordRollbackIncident({
+                rollbackIncidentId: 'rollback-smoke-f0019',
+                incidentKind: 'body_rollback',
+                severity: 'warning',
+                rollbackRef: 'body:snapshot-smoke-f0019',
+                subjectRef: 'runtime:polyphony-core',
+                evidenceRefs: ['body:snapshot-smoke-f0019'],
+                recordedAt: '2026-04-15T12:20:00.000Z',
+                schemaVersion: '018_lifecycle_consolidation.sql',
+                idempotencyKey: 'smoke:f0019:rollback',
+              });
+              await store.recordGracefulShutdown({
+                shutdownEventId: 'shutdown-smoke-f0019',
+                shutdownState: 'completed',
+                reason: 'smoke-audit',
+                subjectRef: 'runtime:polyphony-core',
+                admittedInFlightWork: [{ tickId: 'tick-smoke-f0019' }],
+                terminalTickOutcome: { activeTickCountAfterStop: 0 },
+                flushedBufferResult: { tickRuntime: 'stopped' },
+                openConcerns: [],
+                evidenceRefs: ['tick:tick-smoke-f0019'],
+                recordedAt: '2026-04-15T12:21:00.000Z',
+                schemaVersion: '018_lifecycle_consolidation.sql',
+                idempotencyKey: 'smoke:f0019:shutdown',
+              });
+            } finally {
+              await client.end();
+            }
+
+            const homeostat = createDbBackedHomeostatService({
+              postgresUrl: process.env.YAAGI_POSTGRES_URL,
+              pgBossSchema: process.env.YAAGI_PGBOSS_SCHEMA ?? 'pgboss',
+            });
+            const result = await homeostat.evaluatePeriodic({
+              createdAt: '2026-04-15T12:30:00.000Z',
+            });
+            const rollbackScore = result.snapshot.signalScores.find(
+              (score) => score.signalFamily === HOMEOSTAT_SIGNAL_FAMILY.ROLLBACK_FREQUENCY,
+            );
+
+            console.log(
+              JSON.stringify({
+                rollbackMetric: rollbackScore?.metricValue,
+                rollbackStatus: rollbackScore?.status,
+                rollbackEvidenceRefs: rollbackScore?.evidenceRefs ?? [],
+              }),
+            );
+          `),
+        ) as {
+          rollbackMetric: number;
+          rollbackStatus: string;
+          rollbackEvidenceRefs: string[];
+        };
+
+        assert.equal(auditPayload.rollbackMetric, 1);
+        assert.equal(auditPayload.rollbackStatus, 'evaluated');
+        assert.deepEqual(auditPayload.rollbackEvidenceRefs.sort(), [
+          'graceful_shutdown:shutdown-smoke-f0019',
+          'rollback_incident:rollback-smoke-f0019',
+        ]);
+        assert.equal(
+          await queryPostgres(
+            "select count(*)::text from polyphony_runtime.lifecycle_events where idempotency_key like 'smoke:f0019:%';",
+          ),
+          '2',
+        );
+        assert.equal(
+          await queryPostgres(
+            "select rollback_frequency::text from polyphony_runtime.homeostat_snapshots where cadence_kind = 'periodic' order by created_at desc limit 1;",
+          ),
+          '1.0000',
         );
       },
     );

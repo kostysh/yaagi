@@ -4,11 +4,13 @@ import type { CoreRuntimeConfig } from '../platform/core-config.ts';
 import {
   PgBoss,
   createHomeostatStore,
+  createLifecycleStore,
   createNarrativeMemeticStore,
   createRuntimeDbClient,
   createRuntimeJobEnqueuer,
   createTickRuntimeStore,
   type FieldJournalEntryRow,
+  type LifecycleRollbackFrequencySource,
   type NarrativeSpineVersionRow,
   type RuntimeTickRow,
   type SubjectGoal,
@@ -49,6 +51,7 @@ export type HomeostatEvaluationContext = {
   recentCompletedTicks: RecentCompletedTick[];
   narrativeRewriteCountLast24h: number;
   developmentProposalCountLast24h: number | null;
+  rollbackFrequencySource: LifecycleRollbackFrequencySource | null;
   futureSourceStates: {
     developmentProposalRate: HomeostatFutureSourceState;
     organErrorRate: HomeostatFutureSourceState;
@@ -375,6 +378,7 @@ const evaluateDeliveredSignal = (input: {
     | 'narrative_rewrite_rate'
     | 'development_proposal_rate'
     | 'resource_pressure'
+    | 'rollback_frequency'
   >;
   metricValue: number;
   evidenceRefs: string[];
@@ -477,11 +481,17 @@ export const evaluateHomeostatSignals = (
       sourceState: input.futureSourceStates.organErrorRate,
       evidenceRefs: ['future:CF-015:model-health-report'],
     }),
-    evaluateFutureSignal({
-      signalFamily: HOMEOSTAT_SIGNAL_FAMILY.ROLLBACK_FREQUENCY,
-      sourceState: input.futureSourceStates.rollbackFrequency,
-      evidenceRefs: ['future:CF-018:rollback-evidence'],
-    }),
+    input.rollbackFrequencySource
+      ? evaluateDeliveredSignal({
+          signalFamily: HOMEOSTAT_SIGNAL_FAMILY.ROLLBACK_FREQUENCY,
+          metricValue: input.rollbackFrequencySource.metricValue,
+          evidenceRefs: input.rollbackFrequencySource.evidenceRefs,
+        })
+      : evaluateFutureSignal({
+          signalFamily: HOMEOSTAT_SIGNAL_FAMILY.ROLLBACK_FREQUENCY,
+          sourceState: input.futureSourceStates.rollbackFrequency,
+          evidenceRefs: ['future:CF-018:rollback-evidence'],
+        }),
   ];
 
   const alerts: HomeostatAlert[] = signalScores
@@ -680,6 +690,18 @@ const loadDevelopmentProposalCount = async (client: Client, createdAt: string): 
   return toNumber(result.rows[0]?.count ?? 0);
 };
 
+const loadRollbackFrequencySource = async (
+  client: Client,
+  createdAt: string,
+): Promise<LifecycleRollbackFrequencySource | null> => {
+  const store = createLifecycleStore(client);
+  const until = createdAt;
+  const since = new Date(parseIsoDate(createdAt) - 7 * 24 * 60 * 60 * 1_000).toISOString();
+  const source = await store.loadRollbackFrequencySource({ since, until });
+
+  return source.evidenceRefs.length > 0 ? source : null;
+};
+
 const loadDbBackedHomeostatContext = async (
   client: Client,
   input: { cadenceKind: HomeostatCadenceKind; tickId: string | null; createdAt: string },
@@ -711,10 +733,11 @@ const loadDbBackedHomeostatContext = async (
     recentCompletedTicks: await loadRecentCompletedTicks(client),
     narrativeRewriteCountLast24h: await loadNarrativeRewriteCount(client, input.createdAt),
     developmentProposalCountLast24h: await loadDevelopmentProposalCount(client, input.createdAt),
+    rollbackFrequencySource: await loadRollbackFrequencySource(client, input.createdAt),
     futureSourceStates: {
       developmentProposalRate: 'available',
       organErrorRate: 'missing',
-      rollbackFrequency: 'missing',
+      rollbackFrequency: 'available',
     },
   };
 };

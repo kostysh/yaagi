@@ -1,8 +1,8 @@
 ---
 id: F-0019
 title: Консолидация, event envelope и graceful shutdown
-status: planned
-coverage_gate: deferred
+status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: lifecycle
 depends_on: ["F-0003", "F-0004", "F-0011"]
@@ -210,6 +210,7 @@ Owned source surfaces:
 - `consolidation_transitions`: accepted/rejected consolidation transition records with transition class, target refs, source refs and evidence refs.
 - `rollback_incidents`: rollback evidence rows suitable for `F-0012` `rollback_frequency`.
 - `graceful_shutdown_events`: shutdown request, terminal outcome and open-concern evidence.
+- `retention_compaction_runs`: retention/compaction evidence rows preserving derivative-trace policy, preserved refs and subject-state schema-version linkage.
 
 Invariants:
 
@@ -287,7 +288,7 @@ Invariants:
 - Graceful shutdown persists terminal evidence before process exit.
 - `F-0012` `rollback_frequency` consumes canonical lifecycle evidence or degrades without proxy metrics.
 - Backlog state for `CF-018` is actualized through `backlog-engineer` before step closure.
-- Dossier verification, independent review and step-close artifacts all pass for `spec-compact`.
+- Dossier verification, independent review and step-close artifacts all pass for `implementation`.
 
 ### 5.8 Rollout / activation note (triggered only when needed)
 
@@ -389,24 +390,24 @@ Invariants:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0019-01 | Lifecycle/consolidation boundary tests | planned |
-| AC-F0019-02 | Foreign-owner write rejection tests | planned |
-| AC-F0019-03 | `SL-F0019-01` lifecycle event envelope contract tests | planned |
-| AC-F0019-04 | `SL-F0019-01` lifecycle event envelope contract tests | planned |
-| AC-F0019-05 | `SL-F0019-01` lifecycle event idempotency tests | planned |
-| AC-F0019-06 | `SL-F0019-01` lifecycle event conflict tests | planned |
-| AC-F0019-07 | `SL-F0019-02` consolidation transition allowlist tests | planned |
-| AC-F0019-08 | `SL-F0019-02` unsupported transition rejection tests | planned |
-| AC-F0019-09 | `SL-F0019-02` memetic promotion provenance tests | planned |
-| AC-F0019-10 | `SL-F0019-03` retention/compaction permanence tests | planned |
-| AC-F0019-11 | `SL-F0019-03` retention/compaction deletion policy tests | planned |
-| AC-F0019-12 | `SL-F0019-03` versioned state linkage tests | planned |
-| AC-F0019-13 | `SL-F0019-04` graceful-shutdown state transition tests | planned |
-| AC-F0019-14 | `SL-F0019-04` graceful-shutdown admission-closure tests | planned |
-| AC-F0019-15 | `SL-F0019-04` graceful-shutdown terminal evidence tests | planned |
-| AC-F0019-16 | `SL-F0019-05` Homeostat rollback-frequency integration tests | planned |
-| AC-F0019-17 | `SL-F0019-05` read-only consumer boundary tests | planned |
-| AC-F0019-18 | `SL-F0019-02` / `SL-F0019-05` workshop projection boundary tests | planned |
+| AC-F0019-01 | `packages/contracts/test/lifecycle.contract.test.ts`; `packages/db/test/lifecycle-store.integration.test.ts` | covered |
+| AC-F0019-02 | `packages/contracts/test/lifecycle.contract.test.ts`; `packages/db/test/lifecycle-store.integration.test.ts` | covered |
+| AC-F0019-03 | `packages/contracts/test/lifecycle.contract.test.ts`; `packages/db/test/lifecycle-store.integration.test.ts` | covered |
+| AC-F0019-04 | `packages/contracts/test/lifecycle.contract.test.ts`; `packages/db/test/lifecycle-store.integration.test.ts` | covered |
+| AC-F0019-05 | `packages/db/test/lifecycle-store.integration.test.ts` | covered |
+| AC-F0019-06 | `packages/db/test/lifecycle-store.integration.test.ts` | covered |
+| AC-F0019-07 | `packages/contracts/test/lifecycle.contract.test.ts`; `packages/db/test/lifecycle-store.integration.test.ts` | covered |
+| AC-F0019-08 | `packages/db/test/lifecycle-store.integration.test.ts` | covered |
+| AC-F0019-09 | `packages/db/test/lifecycle-store.integration.test.ts` | covered |
+| AC-F0019-10 | `packages/db/test/lifecycle-store.integration.test.ts` | covered |
+| AC-F0019-11 | `packages/db/test/lifecycle-store.integration.test.ts` | covered |
+| AC-F0019-12 | `packages/db/test/lifecycle-store.integration.test.ts` | covered |
+| AC-F0019-13 | `apps/core/test/runtime/graceful-shutdown-sequence.integration.test.ts` | covered |
+| AC-F0019-14 | `apps/core/test/runtime/graceful-shutdown-sequence.integration.test.ts` | covered |
+| AC-F0019-15 | `apps/core/test/runtime/graceful-shutdown-sequence.integration.test.ts`; `packages/db/test/lifecycle-store.integration.test.ts`; `pnpm smoke:cell` | covered |
+| AC-F0019-16 | `packages/db/test/lifecycle-store.integration.test.ts`; `apps/core/test/runtime/homeostat-rollback-frequency.integration.test.ts` | covered |
+| AC-F0019-17 | `apps/core/test/runtime/homeostat-rollback-frequency.integration.test.ts` | covered |
+| AC-F0019-18 | `packages/db/test/lifecycle-store.integration.test.ts` | covered |
 
 ## 9. Decision log (ADR blocks)
 
@@ -444,8 +445,26 @@ Invariants:
 - Issue:
 - PRs:
 
+### Implementation result
+
+- `SL-F0019-01` delivered: lifecycle event contract, required field validation, sequential and concurrent idempotency replay/conflict handling, owned/foreign write surface guard.
+- `SL-F0019-02` delivered: first-phase consolidation transition allowlist, unsupported-class fail-closed behavior, promotion provenance guard, bounded dataset-candidate projection evidence without workshop source writes.
+- `SL-F0019-03` delivered: retention/compaction evidence storage with permanence, derivative-trace and subject-state schema-version guards.
+- `SL-F0019-04` delivered: graceful shutdown sequence closes public and tick-runtime admission, waits for in-progress admission writes before snapshot, records `shutting_down`, waits/stops runtime work, then persists terminal shutdown evidence.
+- `SL-F0019-05` delivered: read-only rollback-frequency source query and Homeostat integration that evaluates from lifecycle evidence or degrades without proxy metrics.
+
+### Verification
+
+- `pnpm format`: pass.
+- `pnpm typecheck`: pass.
+- `pnpm lint`: pass.
+- Focused F-0019 race tests: pass, 8 tests.
+- `pnpm test`: pass, 281 tests.
+- `pnpm smoke:cell`: pass, 19 smoke tests, including `AC-F0019-16 AC-F0019-17` real lifecycle evidence usage audit on containerized PostgreSQL.
+
 ## 11. Change log
 
 - 2026-04-15: Initial dossier created from backlog item `CF-018` at backlog delivery state `defined`.
 - 2026-04-15: [clarification] `spec-compact` shaped `F-0019`: resolved intake open questions, fixed event-envelope fields, first-phase consolidation allowlist, lifecycle owner split, ACs, NFRs, initial coverage plan and activation notes.
 - 2026-04-15: [clarification] `plan-slice` forecasted five implementation slices, allowed stop points, consumer usage audit and backlog actualization path.
+- 2026-04-15: [implementation] Delivered lifecycle/consolidation store, migration `018_lifecycle_consolidation.sql`, runtime graceful-shutdown biography, Homeostat rollback-frequency read contract and strict executable coverage for all ACs.

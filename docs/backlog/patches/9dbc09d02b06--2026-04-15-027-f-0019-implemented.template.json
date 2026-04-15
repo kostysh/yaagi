@@ -1,0 +1,35 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-15-027-f-0019-implemented",
+    "created_at": "2026-04-15T17:15:00.000Z",
+    "sequence": 27,
+    "target_item_keys": [
+      "CF-018"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-018",
+      "action": "replace_fields",
+      "fields": {
+        "delivery_state": "implemented"
+      }
+    },
+    {
+      "item_key": "CF-018",
+      "action": "append_unique",
+      "field": "implementation_source_ids",
+      "values": [
+        "97f90f65-393f-455c-b7ea-9ec09da09343"
+      ]
+    },
+    {
+      "item_key": "CF-018",
+      "action": "append_unique",
+      "field": "test_source_ids",
+      "values": [
+        "97f90f65-393f-455c-b7ea-9ec09da09343"
+      ]
+    }
+  ]
+}

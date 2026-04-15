@@ -70,7 +70,11 @@ export type CoreRuntimeDependencies = {
       payload: Record<string, unknown>;
     }): Promise<{
       accepted: boolean;
-      reason?: 'boot_inactive' | 'lease_busy' | 'unsupported_tick_kind';
+      reason?:
+        | 'boot_inactive'
+        | 'lease_busy'
+        | 'unsupported_tick_kind'
+        | 'shutdown_admission_closed';
     }>;
   };
 };

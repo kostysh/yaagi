@@ -16,11 +16,11 @@
 
 - Total items: 27
 - Items needing attention: 6
-- Ready for next step: 4
+- Ready for next step: 3
 - Items with gaps: 0
-- Open todo count: 6
+- Open todo count: 12
 - Items by type: feature=27
-- Items by delivery state: defined=7, implemented=18, planned=2
+- Items by delivery state: defined=7, implemented=19, planned=1
 
 ## Task Graph
 
@@ -152,46 +152,41 @@ flowchart TD
 
 ### CF-014 — Профиль безопасности и изоляции
 
-- Reason codes: dependency_changed
-- Reasons: Dependency changed: review CF-018.
+- Reason codes: source_changed, dependency_changed
+- Reasons: Source changed: review ../architecture/system.md.; Dependency changed: review CF-018.
 - Sources: ../architecture/system.md, ../features/F-0018-security-and-isolation-profile.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
 
 ### CF-015 — Наблюдаемость и диагностические отчёты
 
-- Reason codes: dependency_changed
-- Reasons: Dependency changed: review CF-018.
+- Reason codes: source_changed, dependency_changed
+- Reasons: Source changed: review ../architecture/system.md.; Dependency changed: review CF-018.
 - Sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
 
 ### CF-019 — Специализированные органы и политика вывода из эксплуатации
 
-- Reason codes: dependency_changed
-- Reasons: Dependency changed: review CF-018.
+- Reason codes: source_changed, dependency_changed
+- Reasons: Source changed: review ../architecture/system.md.; Dependency changed: review CF-018.
 - Sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
 
 ### CF-025 — Deploy/release automation и rollback orchestration
 
-- Reason codes: dependency_changed
-- Reasons: Dependency changed: review CF-018.
+- Reason codes: source_changed, dependency_changed
+- Reasons: Source changed: review ../architecture/system.md.; Dependency changed: review CF-018.
 - Sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
 
 ### CF-026 — Support / operability contract и incident discipline
 
-- Reason codes: dependency_changed
-- Reasons: Dependency changed: review CF-018.
+- Reason codes: source_changed, dependency_changed
+- Reasons: Source changed: review ../architecture/system.md.; Dependency changed: review CF-018.
 - Sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
 
 ### CF-027 — Policy profiles, consultant admission и phase-6 governance closure
 
-- Reason codes: dependency_changed
-- Reasons: Dependency changed: review CF-018.
+- Reason codes: source_changed, dependency_changed
+- Reasons: Source changed: review ../architecture/system.md.; Dependency changed: review CF-018.
 - Sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
 
 ## Ready For Next Step
-
-### Root: CF-018
-
-- Ordering rule: depth -> downstream_dependency_count -> item_key
-- Items: CF-018
 
 ### Root: CF-023
 
@@ -566,8 +561,8 @@ Item metrics:
 - Depends on: CF-020, CF-007, CF-012, CF-016, CF-024, CF-015
 - Reverse dependencies: CF-027
 - Related sources: ../architecture/system.md, ../features/F-0018-security-and-isolation-profile.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
-- Todo: Upstream task changed: CF-018. Review whether this task needs updates.
-- Attention reasons: Dependency changed: review CF-018.
+- Todo: Upstream task changed: CF-018. Review whether this task needs updates.; Review source change: ../architecture/system.md, ../features/F-0019-consolidation-event-envelope-graceful-shutdown.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md.
+- Attention reasons: Source changed: review ../architecture/system.md.; Dependency changed: review CF-018.
 
 Context:
 - Claims: none
@@ -593,8 +588,8 @@ Item metrics:
 - Depends on: CF-002, CF-003, CF-007, CF-010, CF-016, CF-018
 - Reverse dependencies: CF-014, CF-025, CF-026, CF-027
 - Related sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
-- Todo: Upstream task changed: CF-018. Review whether this task needs updates.
-- Attention reasons: Dependency changed: review CF-018.
+- Todo: Review source change: ../architecture/system.md, ../features/F-0019-consolidation-event-envelope-graceful-shutdown.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md.; Upstream task changed: CF-018. Review whether this task needs updates.
+- Attention reasons: Source changed: review ../architecture/system.md.; Dependency changed: review CF-018.
 
 Context:
 - Claims: none
@@ -667,13 +662,13 @@ Item metrics:
 ### CF-018 — Консолидация, event envelope и graceful shutdown
 
 - Type: feature
-- Delivery state: planned
+- Delivery state: implemented
 - Needs attention: false
-- Ready for next step: true
+- Ready for next step: false
 - Gaps: none
 - Depends on: CF-002, CF-003, CF-005
 - Reverse dependencies: CF-015, CF-025
-- Related sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
+- Related sources: ../architecture/system.md, ../features/F-0019-consolidation-event-envelope-graceful-shutdown.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
 - Todo: none
 - Attention reasons: none
 
@@ -688,7 +683,7 @@ Item metrics:
 - Dependency count: 3
 - Reverse dependency count: 2
 - Gap count: 0
-- Related source count: 4
+- Related source count: 5
 - Related context element count: 0
 
 ### CF-019 — Специализированные органы и политика вывода из эксплуатации
@@ -701,8 +696,8 @@ Item metrics:
 - Depends on: CF-010, CF-011, CF-016, CF-023, CF-025
 - Reverse dependencies: none
 - Related sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
-- Todo: Upstream task changed: CF-018. Review whether this task needs updates.
-- Attention reasons: Dependency changed: review CF-018.
+- Todo: Review source change: ../architecture/system.md, ../features/F-0019-consolidation-event-envelope-graceful-shutdown.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md.; Upstream task changed: CF-018. Review whether this task needs updates.
+- Attention reasons: Source changed: review ../architecture/system.md.; Dependency changed: review CF-018.
 
 Context:
 - Claims: none
@@ -863,8 +858,8 @@ Item metrics:
 - Depends on: CF-020, CF-022, CF-023, CF-015, CF-016, CF-018
 - Reverse dependencies: CF-019, CF-026
 - Related sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
-- Todo: Upstream task changed: CF-018. Review whether this task needs updates.
-- Attention reasons: Dependency changed: review CF-018.
+- Todo: Review source change: ../architecture/system.md, ../features/F-0019-consolidation-event-envelope-graceful-shutdown.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md.; Upstream task changed: CF-018. Review whether this task needs updates.
+- Attention reasons: Source changed: review ../architecture/system.md.; Dependency changed: review CF-018.
 
 Context:
 - Claims: none
@@ -890,8 +885,8 @@ Item metrics:
 - Depends on: CF-009, CF-015, CF-024, CF-025
 - Reverse dependencies: none
 - Related sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
-- Todo: Upstream task changed: CF-018. Review whether this task needs updates.
-- Attention reasons: Dependency changed: review CF-018.
+- Todo: Review source change: ../architecture/system.md, ../features/F-0019-consolidation-event-envelope-graceful-shutdown.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md.; Upstream task changed: CF-018. Review whether this task needs updates.
+- Attention reasons: Source changed: review ../architecture/system.md.; Dependency changed: review CF-018.
 
 Context:
 - Claims: none
@@ -917,8 +912,8 @@ Item metrics:
 - Depends on: CF-004, CF-006, CF-014, CF-015, CF-016, CF-024
 - Reverse dependencies: none
 - Related sources: ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md
-- Todo: Upstream task changed: CF-018. Review whether this task needs updates.
-- Attention reasons: Dependency changed: review CF-018.
+- Todo: Review source change: ../architecture/system.md, ../features/F-0019-consolidation-event-envelope-graceful-shutdown.md, ../polyphony_concept.md, feature-candidates.md, working-system-roadmap-matrix-2026-03-26.md.; Upstream task changed: CF-018. Review whether this task needs updates.
+- Attention reasons: Source changed: review ../architecture/system.md.; Dependency changed: review CF-018.
 
 Context:
 - Claims: none

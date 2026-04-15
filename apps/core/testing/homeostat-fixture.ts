@@ -80,6 +80,7 @@ export const createBaseHomeostatContext = (
   ],
   narrativeRewriteCountLast24h: 1,
   developmentProposalCountLast24h: null,
+  rollbackFrequencySource: null,
   futureSourceStates: {
     developmentProposalRate: 'missing',
     organErrorRate: 'missing',
