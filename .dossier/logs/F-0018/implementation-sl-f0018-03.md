@@ -8,6 +8,8 @@ session_id: 019d8db3-3b85-7153-ae96-2aed5f70c721
 start_ts: 2026-04-15T01:47:49+02:00
 ready_for_review_ts: 2026-04-15T02:25:26+02:00
 final_pass_ts: 2026-04-15T02:25:26+02:00
+commit_ts: 2026-04-15T02:27:19+02:00
+commit_sha: 1b42da50618ed85ca651f21bcfe4180392f2de4a
 source_inputs:
   - AGENTS.md
   - README.md
@@ -26,8 +28,8 @@ log_required_reason:
   - executable_code_change
   - trust_boundary_change
 backlog_actualized: true
-verification_artifact: .dossier/verification/F-0018/implementation-93307e0aaf00.json
-review_artifact: .dossier/reviews/F-0018/implementation-93307e0aaf00.json
+verification_artifact: .dossier/verification/F-0018/implementation-1b42da50618e.json
+review_artifact: .dossier/reviews/F-0018/implementation-1b42da50618e.json
 step_artifact: .dossier/steps/F-0018/implementation.json
 review_requested_ts: 2026-04-15T02:25:26+02:00
 first_review_agent_started_ts: 2026-04-15T02:25:26+02:00
@@ -46,9 +48,9 @@ metrics:
   debt_items_found_total: 0
   debt_items_resolved_total: 0
   review_findings_total: 0
-  process_misses_total: 1
+  process_misses_total: 2
   backlog_actualization_count: 2
-  commit_recorded: false
+  commit_recorded: true
 ```
 
 # Журнал имплементации: F-0018 / SL-F0018-03
@@ -107,6 +109,7 @@ metrics:
 - Container smoke поймал один real regression: governor proposal route возвращал `503`, потому что persisted perimeter schema ещё не принимала `trusted_ingress`.
 - Drift устранён через новую migration `017` и повторный полный verification cycle на финальном дереве.
 - Во время close-out обнаружилось, что canonical hashed patch artifacts были удалены из дерева, хотя `.backlog/applied.json` продолжал на них ссылаться. Артефакты восстановлены без ручного искажения backlog state.
+- Commit metadata основного implementation bundle были backfilled отдельным trace-only follow-up commit, чтобы stage log сохранил точный `commit_sha` без amend workflow.
 
 ## Close-out
 
