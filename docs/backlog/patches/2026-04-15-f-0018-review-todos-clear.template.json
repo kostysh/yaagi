@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-15-024-f-0018-review-todos-clear",
+    "created_at": "2026-04-14T23:52:51.652Z",
+    "sequence": 24,
+    "target_item_keys": [
+      "CF-014",
+      "CF-027"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-014",
+      "action": "remove_todo",
+      "todo_ids": [
+        "7060d4f0-fbb6-4604-a05a-94911b935350"
+      ]
+    },
+    {
+      "item_key": "CF-027",
+      "action": "remove_todo",
+      "todo_ids": [
+        "096d3d6f-ebc4-4804-8c64-e37000de2441",
+        "d9190810-a6a3-4d0c-bd1e-bdf5828ea938"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "created_at": "2026-04-15T00:25:26.493Z",
+  "reviewer": "independent-multi-agent-review",
+  "step": "implementation",
+  "dossier": "docs/features/F-0018-security-and-isolation-profile.md",
+  "feature_id": "F-0018",
+  "event_commit": "93307e0aaf0016bc607aad1eb210cb449c9816c5",
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "apps/core/src/platform/operator-api.ts:87-103",
+      "apps/core/src/platform/operator-api.ts:331-337",
+      "apps/core/src/perimeter/service.ts:187-230",
+      "apps/core/src/runtime/development-governor.ts:635-740",
+      "apps/core/src/workshop/service.ts:202-239",
+      "docs/features/F-0018-security-and-isolation-profile.md"
+    ]
+  },
+  "notes": "Spec PASS (Popper), security PASS (Jason), holistic/code PASS (Parfit) on the final perimeter tree after external high-risk routes were restored to explicit-unavailable until CF-024 and trusted_ingress was made fail-closed for F-0013."
+}

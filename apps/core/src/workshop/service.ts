@@ -3,6 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { CoreRuntimeConfig } from '../platform/core-config.ts';
+import { createSecretHygieneGuard } from '../security/secret-hygiene.ts';
 import {
   createRuntimeDbClient,
   createWorkshopStore,
@@ -50,6 +51,7 @@ type WorkshopServiceOptions = {
   store: WorkshopStore;
   dataPath: string;
   modelsPath: string;
+  secretHygieneGuard?: (payload: unknown, surface: string) => void;
 };
 
 type WorkshopJobGatewayOptions = {
@@ -197,10 +199,15 @@ const splitSourceRefs = (
 
 const toFileUri = (filePath: string): string => pathToFileURL(filePath).toString();
 
+const toArtifactFailureUri = (filePath: string): string =>
+  `urn:yaagi:artifact-write-failed:${encodeURIComponent(path.basename(filePath))}`;
+
 const writeJsonArtifact = async (
   filePath: string,
   payload: Record<string, unknown>,
+  secretHygieneGuard?: (payload: unknown, surface: string) => void,
 ): Promise<string> => {
+  secretHygieneGuard?.(payload, path.basename(filePath));
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
   return toFileUri(filePath);
@@ -223,11 +230,12 @@ const describeError = (error: unknown): { name: string; message: string } => {
 const writeFailureArtifact = async (
   filePath: string,
   payload: Record<string, unknown>,
+  secretHygieneGuard?: (payload: unknown, surface: string) => void,
 ): Promise<string> => {
   try {
-    return await writeJsonArtifact(filePath, payload);
+    return await writeJsonArtifact(filePath, payload, secretHygieneGuard);
   } catch {
-    return toFileUri(filePath);
+    return toArtifactFailureUri(filePath);
   }
 };
 
@@ -364,7 +372,11 @@ export const createWorkshopService = (options: WorkshopServiceOptions): Workshop
           splitManifest,
           createdAt: requestedAt,
         };
-        const manifestUri = await writeJsonArtifact(manifestPath, manifestPayload);
+        const manifestUri = await writeJsonArtifact(
+          manifestPath,
+          manifestPayload,
+          options.secretHygieneGuard,
+        );
 
         const dataset = await options.store.persistDataset({
           datasetId,
@@ -392,20 +404,24 @@ export const createWorkshopService = (options: WorkshopServiceOptions): Workshop
         };
       } catch (error) {
         const failure = describeError(error);
-        const manifestUri = await writeFailureArtifact(manifestPath, {
-          owner: 'F-0015',
-          datasetId,
-          datasetKind: input.datasetKind,
-          sourceRefs,
-          sourceEpisodeIds: input.sourceEpisodeIds,
-          sourceEvalRunIds: input.sourceEvalRunIds,
-          sourceHumanLabelIds: input.sourceHumanLabelIds,
-          redactionProfile: input.redactionProfile,
-          splitManifest,
-          status: 'failed',
-          failure,
-          createdAt: requestedAt,
-        });
+        const manifestUri = await writeFailureArtifact(
+          manifestPath,
+          {
+            owner: 'F-0015',
+            datasetId,
+            datasetKind: input.datasetKind,
+            sourceRefs,
+            sourceEpisodeIds: input.sourceEpisodeIds,
+            sourceEvalRunIds: input.sourceEvalRunIds,
+            sourceHumanLabelIds: input.sourceHumanLabelIds,
+            redactionProfile: input.redactionProfile,
+            splitManifest,
+            status: 'failed',
+            failure,
+            createdAt: requestedAt,
+          },
+          options.secretHygieneGuard,
+        );
 
         await options.store
           .persistDataset({
@@ -454,7 +470,11 @@ export const createWorkshopService = (options: WorkshopServiceOptions): Workshop
           method: input.method,
           startedAt,
         };
-        const artifactUri = await writeJsonArtifact(artifactPath, artifactPayload);
+        const artifactUri = await writeJsonArtifact(
+          artifactPath,
+          artifactPayload,
+          options.secretHygieneGuard,
+        );
 
         const trainingRun = await options.store.persistTrainingRun({
           runId,
@@ -479,17 +499,21 @@ export const createWorkshopService = (options: WorkshopServiceOptions): Workshop
 
         return { trainingRun };
       } catch (error) {
-        const artifactUri = await writeFailureArtifact(artifactPath, {
-          owner: 'F-0015',
-          runId,
-          targetKind: input.targetKind,
-          targetProfileId: input.targetProfileId,
-          datasetId: input.datasetId,
-          method: input.method,
-          startedAt,
-          status: 'failed',
-          failure: describeError(error),
-        });
+        const artifactUri = await writeFailureArtifact(
+          artifactPath,
+          {
+            owner: 'F-0015',
+            runId,
+            targetKind: input.targetKind,
+            targetProfileId: input.targetProfileId,
+            datasetId: input.datasetId,
+            method: input.method,
+            startedAt,
+            status: 'failed',
+            failure: describeError(error),
+          },
+          options.secretHygieneGuard,
+        );
 
         await options.store
           .persistTrainingRun({
@@ -537,14 +561,18 @@ export const createWorkshopService = (options: WorkshopServiceOptions): Workshop
           throw new Error('workshop eval run requires a suiteName');
         }
 
-        const reportUri = await writeJsonArtifact(reportPath, {
-          owner: 'F-0015',
-          evalRunId,
-          subjectKind: input.subjectKind,
-          subjectRef: input.subjectRef,
-          suiteName: input.suiteName,
-          createdAt,
-        });
+        const reportUri = await writeJsonArtifact(
+          reportPath,
+          {
+            owner: 'F-0015',
+            evalRunId,
+            subjectKind: input.subjectKind,
+            subjectRef: input.subjectRef,
+            suiteName: input.suiteName,
+            createdAt,
+          },
+          options.secretHygieneGuard,
+        );
 
         const evalRun = await options.store.persistEvalRun({
           evalRunId,
@@ -562,16 +590,20 @@ export const createWorkshopService = (options: WorkshopServiceOptions): Workshop
 
         return { evalRun };
       } catch (error) {
-        const reportUri = await writeFailureArtifact(reportPath, {
-          owner: 'F-0015',
-          evalRunId,
-          subjectKind: input.subjectKind,
-          subjectRef: input.subjectRef,
-          suiteName: input.suiteName,
-          createdAt,
-          status: 'failed',
-          failure: describeError(error),
-        });
+        const reportUri = await writeFailureArtifact(
+          reportPath,
+          {
+            owner: 'F-0015',
+            evalRunId,
+            subjectKind: input.subjectKind,
+            subjectRef: input.subjectRef,
+            suiteName: input.suiteName,
+            createdAt,
+            status: 'failed',
+            failure: describeError(error),
+          },
+          options.secretHygieneGuard,
+        );
 
         await options.store
           .persistEvalRun({
@@ -769,6 +801,7 @@ export const createWorkshopService = (options: WorkshopServiceOptions): Workshop
           evidenceRefs: stageEvidence.evidenceJson['evidenceRefs'],
           generatedAt: now().toISOString(),
         },
+        options.secretHygieneGuard,
       );
 
       return {
@@ -862,6 +895,7 @@ export const createDbBackedWorkshopService = (config: CoreRuntimeConfig): Worksh
     },
     dataPath: config.dataPath,
     modelsPath: config.modelsPath,
+    secretHygieneGuard: createSecretHygieneGuard(config),
   });
 
 export const runWorkshopJobEnvelope = async (

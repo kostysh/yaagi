@@ -10,6 +10,11 @@ import {
   BODY_CHANGE_STATUS,
   type BodyChangeGateCheck,
 } from '@yaagi/contracts/body-evolution';
+import {
+  PERIMETER_ACTION_CLASS,
+  type PerimeterControlRequest,
+  PERIMETER_VERDICT,
+} from '@yaagi/contracts/perimeter';
 import type {
   BodyChangeEventRow,
   BodyChangeProposalRow,
@@ -23,6 +28,7 @@ import {
   type BodyChangeGovernorOutcomeRecorder,
   type BodyChangeHumanOverrideGovernorApprover,
 } from '../../src/body/body-evolution.ts';
+import type { PerimeterDecisionService } from '../../src/perimeter/index.ts';
 import type { BodyEvolutionGitGateway } from '../../src/body/git-gateway.ts';
 
 // Coverage refs: AC-F0017-01 AC-F0017-02 AC-F0017-03 AC-F0017-04 AC-F0017-05
@@ -113,6 +119,20 @@ const acceptGovernorOutcome: BodyChangeGovernorOutcomeRecorder = (input) =>
     createdAt: input.recordedAt,
   });
 
+const allowPerimeterDecisions: PerimeterDecisionService = {
+  evaluateControlRequest: (input: PerimeterControlRequest) =>
+    Promise.resolve({
+      accepted: true,
+      requestId: input.requestId,
+      decisionId: `perimeter-decision:${input.requestId}`,
+      actionClass: input.actionClass,
+      verdict: PERIMETER_VERDICT.ALLOW,
+      decisionReason: 'verified_authority',
+      deduplicated: false,
+      createdAt,
+    }),
+};
+
 const createTestBodyEvolutionService = (
   options: Omit<
     Parameters<typeof createBodyEvolutionService>[0],
@@ -128,6 +148,7 @@ const createTestBodyEvolutionService = (
   createBodyEvolutionService({
     ensureHumanOverrideGovernorApproval: approveHumanOverride,
     recordGovernorOutcome: acceptGovernorOutcome,
+    perimeterDecisionService: allowPerimeterDecisions,
     ...options,
   });
 
@@ -470,6 +491,51 @@ void test('AC-F0017-03 rejects requests without approved authority before persis
   assert.equal(store.proposals.length, 0);
 });
 
+void test('AC-F0018-07 reuses adjacent authority refs read-only when forwarding body-change ingress into perimeter', async () => {
+  const { config } = await createRuntimeRoots();
+  const store = createMemoryStore();
+  const capturedRequests: Array<Record<string, unknown>> = [];
+  const service = createTestBodyEvolutionService({
+    config,
+    store,
+    now: () => new Date(createdAt),
+    createId: () => 'adjacent-authority',
+    perimeterDecisionService: {
+      evaluateControlRequest: (input) => {
+        capturedRequests.push(input as unknown as Record<string, unknown>);
+        return Promise.resolve({
+          accepted: true,
+          requestId: input.requestId,
+          decisionId: `perimeter-decision:${input.requestId}`,
+          actionClass: input.actionClass,
+          verdict: PERIMETER_VERDICT.ALLOW,
+          decisionReason: 'verified_authority',
+          deduplicated: false,
+          createdAt,
+        });
+      },
+    },
+  });
+
+  const result = await service.submitBodyChangeRequest(
+    createBodyChangeRequest({
+      requestedByOwner: BODY_CHANGE_REQUESTED_BY_OWNER.HUMAN_OVERRIDE,
+      governorProposalId: undefined,
+      governorDecisionRef: undefined,
+      ownerOverrideEvidenceRef: 'owner-override:adjacent',
+      requestId: 'body-change-request:adjacent-authority',
+      evidenceRefs: ['owner-override:adjacent'],
+    }),
+  );
+
+  assert.equal(result.accepted, true);
+  assert.equal(capturedRequests.length, 1);
+  assert.equal(capturedRequests[0]?.['authorityOwner'], 'human_override');
+  assert.equal(capturedRequests[0]?.['humanOverrideEvidenceRef'], 'owner-override:adjacent');
+  assert.equal('governorProposalId' in (capturedRequests[0] ?? {}), false);
+  assert.equal('governorDecisionRef' in (capturedRequests[0] ?? {}), false);
+});
+
 void test('AC-F0017-03 rejects governor approvals that were approved for a different body-change target', async () => {
   const { config } = await createRuntimeRoots();
   const store = createMemoryStore();
@@ -490,6 +556,38 @@ void test('AC-F0017-03 rejects governor approvals that were approved for a diffe
   assert.equal(result.accepted, false);
   assert.equal(result.reason, 'governor_not_approved');
   assert.match(result.detail ?? '', /target does not match/i);
+  assert.equal(store.proposals.length, 0);
+});
+
+void test('AC-F0018-03 / AC-F0018-07 fail closed when perimeter denies the approved body-change ingress', async () => {
+  const { config } = await createRuntimeRoots();
+  const store = createMemoryStore();
+  const service = createTestBodyEvolutionService({
+    config,
+    store,
+    now: () => new Date(createdAt),
+    createId: () => 'perimeter-submit-deny',
+    verifyGovernorApproval: approveGovernor,
+    perimeterDecisionService: {
+      evaluateControlRequest: (input) =>
+        Promise.resolve({
+          accepted: true,
+          requestId: input.requestId,
+          decisionId: 'perimeter-decision:submit-denied',
+          actionClass: PERIMETER_ACTION_CLASS.CODE_OR_PROMOTION_CHANGE,
+          verdict: PERIMETER_VERDICT.DENY,
+          decisionReason: 'trusted_ingress_missing',
+          deduplicated: false,
+          createdAt,
+        }),
+    },
+  });
+
+  const result = await service.submitBodyChangeRequest(createBodyChangeRequest());
+
+  assert.equal(result.accepted, false);
+  assert.equal(result.reason, 'governor_not_approved');
+  assert.match(result.detail ?? '', /perimeter refused code_or_promotion_change/i);
   assert.equal(store.proposals.length, 0);
 });
 
@@ -1246,6 +1344,117 @@ void test('AC-F0017-25..28 / AC-F0017-30 record rollback evidence linked to snap
   assert.equal(rollbackEvent?.payloadJson['snapshotId'], snapshot.snapshot.snapshotId);
   assert.equal(rollbackEvent?.payloadJson['rollbackReason'], 'post-audit regression');
   assert.equal(rollbackEvent?.payloadJson['verificationResult'], 'rollback verification passed');
+});
+
+void test('AC-F0018-05 fails closed when perimeter denies rollback actuation handoff', async () => {
+  const { config } = await createRuntimeRoots();
+  const store = createMemoryStore();
+  const governorOutcomes: Array<Record<string, unknown>> = [];
+  const service = createTestBodyEvolutionService({
+    config,
+    store,
+    now: (() => {
+      let call = 0;
+      return () => new Date(Date.parse(createdAt) + call++ * 1_000);
+    })(),
+    createId: (() => {
+      let counter = 0;
+      return () => `rollback-deny-${++counter}`;
+    })(),
+    verifyGovernorApproval: approveGovernor,
+    recordGovernorOutcome: async (input) => {
+      governorOutcomes.push(input as unknown as Record<string, unknown>);
+      return acceptGovernorOutcome(input);
+    },
+    gitGateway: createGitGateway({
+      commitCandidate: () =>
+        Promise.resolve({
+          commitSha: 'abcdef123456',
+        }),
+      createStableTag: ({ snapshotId }) =>
+        Promise.resolve({
+          gitTag: `stable/${snapshotId}`,
+        }),
+    }),
+    commandRunner: ({ command }) =>
+      Promise.resolve({
+        kind: command.kind,
+        label: command.label,
+        ok: true,
+        evidenceRef: command.evidenceRef ?? null,
+        detail: null,
+      } satisfies BodyChangeGateCheck),
+    perimeterDecisionService: {
+      evaluateControlRequest: (input) =>
+        Promise.resolve({
+          accepted: true,
+          requestId: input.requestId,
+          decisionId: 'perimeter-decision:rollback-denied',
+          actionClass: input.actionClass,
+          verdict:
+            input.actionClass === PERIMETER_ACTION_CLASS.FORCE_ROLLBACK
+              ? PERIMETER_VERDICT.REQUIRE_HUMAN_REVIEW
+              : PERIMETER_VERDICT.ALLOW,
+          decisionReason:
+            input.actionClass === PERIMETER_ACTION_CLASS.FORCE_ROLLBACK
+              ? 'downstream_owner_required'
+              : 'verified_authority',
+          deduplicated: false,
+          createdAt,
+        }),
+    },
+  });
+
+  const submitted = await service.submitBodyChangeRequest(createBodyChangeRequest());
+  assert.equal(submitted.accepted, true);
+  const worktree = await service.prepareProposalWorktree({
+    proposalId: submitted.proposal.proposalId,
+    requestId: 'prepare-rollback-denied',
+    evidenceRefs: ['body-change:prepare:rollback-denied'],
+  });
+  assert.equal(worktree.accepted, true);
+  const candidate = await service.evaluateProposalForCandidate({
+    proposalId: submitted.proposal.proposalId,
+    requestId: 'evaluate-rollback-denied',
+    candidateCommitMessage: 'feat(body): rollback denied test',
+    evalCommand: {
+      label: 'body-evolution.boundary',
+      command: 'pnpm',
+      args: ['test'],
+    },
+    evidenceRefs: ['body-change:evaluate:rollback-denied'],
+  });
+  assert.equal(candidate.accepted, true);
+  const snapshot = await service.publishStableSnapshot({
+    proposalId: submitted.proposal.proposalId,
+    requestId: 'publish-rollback-denied',
+    schemaVersion: '2026-04-13',
+    modelProfileMapJson: {
+      reflex: 'model-profile:reflex.fast@baseline',
+    },
+    criticalConfigJson: {
+      bootTimeoutMs: 60_000,
+    },
+    evalSummaryJson: {
+      verdict: 'pass',
+    },
+    evidenceRefs: ['body-change:snapshot:rollback-denied'],
+  });
+  assert.equal(snapshot.accepted, true);
+
+  const rollback = await service.recordRollbackEvidence({
+    proposalId: submitted.proposal.proposalId,
+    requestId: 'rollback-denied',
+    snapshotId: snapshot.snapshot.snapshotId,
+    rollbackReason: 'perimeter denial',
+    verificationResult: 'rollback blocked',
+    evidenceRefs: ['body-change:rollback:denied'],
+  });
+
+  assert.equal(rollback.accepted, false);
+  assert.equal(rollback.reason, 'perimeter_denied');
+  assert.equal(governorOutcomes.length, 1);
+  assert.equal(store.proposals[0]?.status, BODY_CHANGE_STATUS.SNAPSHOT_READY);
 });
 
 void test('snapshot publication replay fails closed after rollback and does not emit a second executed outcome', async () => {

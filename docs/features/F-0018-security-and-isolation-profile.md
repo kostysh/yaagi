@@ -1,14 +1,14 @@
 ---
 id: F-0018
 title: Профиль безопасности и изоляции
-status: in_progress
-coverage_gate: deferred
+status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: safety
 depends_on: ["F-0002", "F-0010", "F-0013", "F-0016", "F-0017"]
 impacts: ["runtime", "infra", "governance", "api", "workspace", "network", "safety"]
 created: 2026-04-14
-updated: 2026-04-14
+updated: 2026-04-15
 links:
   issue: ""
   pr: []
@@ -117,7 +117,7 @@ links:
 - **AC-F0018-04:** Missing trusted-path admission, missing human-override provenance, stale adjacent evidence or unsupported action class fail closed before side effect and return an explicit refusal outcome instead of falling back to best-effort execution.
 - **AC-F0018-05:** For `force rollback` and `disable external network`, `F-0018` owns only gate policy, approval conditions and refusal semantics; rollback execution, network-actuation and release orchestration remain downstream-owner responsibilities.
 - **AC-F0018-06:** `F-0018` requires durable provenance and evidence refs for every accepted high-risk approval verdict, and it rejects unverifiable authority claims before side effect.
-- **AC-F0018-07:** `F-0018` does not introduce a second human-approval source surface: stronger human gates reuse adjacent owner evidence (`F-0016` governor decision/freeze evidence or owner-routed `human_override` evidence such as the `F-0017` body-change authority contract) and validate those refs read-only before issuing a perimeter verdict.
+- **AC-F0018-07:** `F-0018` does not introduce a second human-approval source surface: governor- or `human_override`-backed flows reuse adjacent owner evidence (`F-0016` governor decision/freeze evidence or owner-routed `human_override` evidence such as the `F-0017` body-change authority contract) and validate those refs read-only before issuing a perimeter verdict, while pre-approval request-creation paths may use `trusted_ingress` only as an admission marker for an already-admitted adjacent owner seam and canonical request evidence, never as a new approval fact.
 - **AC-F0018-08:** Secrets do not persist in dossier prose, narrative/episode state, datasets, reports or generated artifacts as plaintext runtime payload.
 - **AC-F0018-09:** Secret-bearing exports require mandatory redaction or fail closed before publication.
 - **AC-F0018-10:** Production/runtime secret material is sourced through Docker secrets or an equivalent external secret source, not from repo-tracked content, feature dossiers, or narrative state.
@@ -143,6 +143,12 @@ links:
 
 ```ts
 type PerimeterAuthorityRef =
+  | {
+      authorityOwner: "trusted_ingress";
+      governorProposalId?: never;
+      governorDecisionRef?: never;
+      humanOverrideEvidenceRef?: never;
+    }
   | {
       authorityOwner: "governor";
       governorProposalId: string;
@@ -170,6 +176,7 @@ type PerimeterControlRequest = PerimeterAuthorityRef & {
 ```
 
 - `F-0018` validates this envelope and records the perimeter verdict, but it does not mint a second approval ledger.
+- `trusted_ingress` is valid only for pre-approval request-creation paths that are already inside a bounded adjacent owner seam such as `F-0013 -> F-0016` freeze/proposal intake or internal governor/runtime ingress; it is not a substitute for later governor or `human_override` evidence on downstream execution-backed flows.
 - `governorDecisionRef` / `governorProposalId` stay owned by `F-0016`.
 - `humanOverrideEvidenceRef` stays owned by the adjacent owner seam that already exposes `human_override` authority, such as `F-0017` body-evolution authority or the downstream platform/runtime control seam.
 
@@ -230,10 +237,10 @@ type PerimeterControlRequest = PerimeterAuthorityRef & {
 
 | Action class | Canonical ingress owner | Authority source of truth | Perimeter verdicts | Execution owner after `allow` |
 |---|---|---|---|---|
-| `freeze_development` | `F-0013` `POST /control/freeze-development` delegating into the `F-0016` governor gate | `F-0016` freeze/governor evidence, or explicit `human_override` evidence routed through that gate | `allow` / `deny` / `require_human_review` | `F-0016` |
+| `freeze_development` | Internal `platform-runtime` path is live now; public `F-0013` `POST /control/freeze-development` remains explicit unavailable until `CF-024` caller admission exists | `trusted_ingress` for already-admitted internal request-creation paths; any later execution-backed flow still reuses `F-0016` governor/freeze evidence or explicit `human_override` evidence read-only | `allow` / `deny` / `require_human_review` | `F-0016` |
 | `force_rollback` | Adjacent rollback request gate owned by `F-0017` / `CF-025`; `F-0018` introduces no new public route | Existing `governorDecisionRef` or owner-routed `humanOverrideEvidenceRef` already defined by the downstream rollback authority contract | `allow` / `deny` / `require_human_review` | `F-0017` / `CF-025` / downstream runtime owner |
 | `disable_external_network` | No named ingress owner is allocated in the current backlog; until one exists, `F-0018` supports only explicit-unavailable refusal semantics and introduces no new public route | Existing governor or `human_override` evidence may be validated, but no actuation handoff is allowed until a named owner seam exists | `deny` / `require_human_review` / explicit unavailable refusal | no actuation owner in this dossier; future seam required before enablement |
-| `code_or_promotion_change` | `F-0016` proposal/approval gate plus adjacent workshop/body execution owner flow | `F-0016` proposal/decision evidence plus adjacent owner evidence packages | `allow` / `deny` / `require_human_review` | `F-0010` / `F-0017` / `F-0016` adjacent owner flow |
+| `code_or_promotion_change` | Internal `F-0016` proposal/approval gate plus adjacent workshop/body execution owner flow; public `F-0013` proposal route remains explicit unavailable until `CF-024` caller admission exists | `trusted_ingress` for already-admitted internal proposal request creation inside the `F-0016` seam; `F-0016` proposal/decision evidence plus adjacent owner evidence packages for downstream execution-backed flows | `allow` / `deny` / `require_human_review` | `F-0010` / `F-0017` / `F-0016` adjacent owner flow |
 
 #### Decision classification
 
@@ -254,7 +261,7 @@ type PerimeterControlRequest = PerimeterAuthorityRef & {
 
 - Hardening changes must be introduced in a fail-closed but reversible order.
 - Network-disable and mandatory-human-review gates must not strand boot/recovery or already approved rollback paths.
-- Activation order must preserve existing trusted-path owners first (`CF-024`/`F-0013`, `F-0016`, `F-0010`, `F-0017`) and only then tighten perimeter policies on top of them.
+- Activation order must preserve existing trusted-path owners first (`CF-024` caller admission, then `F-0013` public exposure, `F-0016`, `F-0010`, `F-0017`) and only then tighten perimeter policies on top of them.
 
 ## 6. Slicing plan (2–6 increments)
 
@@ -422,19 +429,19 @@ Approval / decision path:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0018-01 | `implemented foundation: perimeter contracts + decision service/ledger; adjacent ingress integration still pending` | in_progress |
-| AC-F0018-02 | `implemented foundation: separately reviewable safety-kernel config + contract coverage` | in_progress |
-| AC-F0018-03 | `implemented foundation: contract/service/store coverage for verdict mapping and durable decision persistence` | in_progress |
-| AC-F0018-04 | `implemented foundation: fail-closed denial for missing trusted ingress, conflicting request replay and unconfirmed authority refs` | in_progress |
-| AC-F0018-05 | `implemented foundation: refusal-only semantics for force_rollback / disable_external_network; downstream owner integration still pending` | in_progress |
-| AC-F0018-06 | `implemented foundation: durable perimeter decision audit with request/evidence refs and read-only authority validation hooks` | in_progress |
-| AC-F0018-07 | `implemented foundation: no-second-ledger contract/service path plus read-only governor / human_override lookup` | in_progress |
-| AC-F0018-08 | `planned: unit/integration coverage for plaintext-secret non-persistence across bounded surfaces` | planned |
-| AC-F0018-09 | `planned: unit/integration coverage for secret-bearing export redaction and fail-closed refusal` | planned |
-| AC-F0018-10 | `planned: integration coverage for external secret-source contract` | planned |
-| AC-F0018-11 | `planned: unit/integration/smoke coverage for restricted-shell and workspace hardening` | planned |
-| AC-F0018-12 | `planned: spec/integration coverage for no topology re-ownership` | planned |
-| AC-F0018-13 | `planned: spec review coverage for explicit authority split matrix and ingress ownership` | planned |
+| AC-F0018-01 | `implemented perimeter owner seam over trusted governor/body/runtime paths via safety kernel + decision service wiring in development-governor and body-evolution, while keeping public high-risk operator routes explicit unavailable until CF-024 caller admission exists` | implemented |
+| AC-F0018-02 | `implemented separately reviewable safety-kernel policy source with explicit rule families and policy version audit` | implemented |
+| AC-F0018-03 | `implemented one durable perimeter verdict per in-scope high-risk request across governor intake, body-change ingress and rollback handoff; explicit-unavailable refusal remains the canonical disable_external_network behavior` | implemented |
+| AC-F0018-04 | `implemented fail-closed denial for missing trusted ingress, stale adjacent authority evidence, conflicting request replay, unsupported action classes and unavailable downstream activation owners` | implemented |
+| AC-F0018-05 | `implemented rollback gate integration through the adjacent F-0017 body-evolution seam while keeping disable_external_network gate-only and explicit unavailable with no new actuation plane` | implemented |
+| AC-F0018-06 | `implemented durable perimeter-decision audit with request identity, evidence refs, policy version and read-only authority validation` | implemented |
+| AC-F0018-07 | `implemented no-second-ledger boundary: trusted_ingress is limited to already-admitted internal adjacent request-creation seams, while governor and human_override execution-backed flows reuse existing adjacent evidence stores read-only and public operator high-risk routes stay explicit unavailable until CF-024` | implemented |
+| AC-F0018-08 | `implemented plaintext-secret non-persistence guard for runtime-local and workshop artifact writes through secret-hygiene interception` | implemented |
+| AC-F0018-09 | `implemented secret-bearing export fail-closed refusal before artifact publication when configured secret material or secret-bearing keys are detected` | implemented |
+| AC-F0018-10 | `implemented external secret-source contract for Telegram runtime credentials through mounted secret-file support and non-repo-tracked delivery paths` | implemented |
+| AC-F0018-11 | `implemented bounded execution hardening verification for restricted_shell and network_http egress allowlists plus existing seed/path escape guards on F-0010/F-0017 seams` | implemented |
+| AC-F0018-12 | `implemented no-topology-reownership discipline: delivery stays inside the canonical deployment cell and verifies through full root quality gates plus container smoke` | implemented |
+| AC-F0018-13 | `implemented explicit authority split in code and dossier: perimeter policy vs route admission vs governor evidence vs rollback execution/orchestration remain non-overlapping` | implemented |
 
 ## 9. Decision log (ADR blocks)
 
@@ -466,8 +473,14 @@ Approval / decision path:
 
 - Backlog item key: CF-014
 - Status progression: `proposed -> shaped -> planned -> in_progress -> done`
-- Implementation status: `SL-F0018-01` started; landed perimeter contracts, safety kernel, durable decision ledger, `db`-backed read-only authority lookup and contract/store/service coverage.
-- Remaining work before `SL-F0018-01` close-out: wire adjacent `F-0013` / `F-0016` trusted ingress paths and add explicit no-second-ledger boundary coverage against the real owner seams.
+- Implementation status: `SL-F0018-01`, `SL-F0018-02` and `SL-F0018-03` delivered.
+- Delivered code surfaces:
+  - trusted-ingress perimeter contracts, safety-kernel policy source, durable decision ledger and `db`-backed read-only authority validation;
+  - fail-closed public operator high-risk route posture that keeps `/control/freeze-development` and `/control/development-proposals` explicit unavailable until `CF-024` caller admission exists;
+  - real ingress wiring for governor proposal/freeze paths and body-evolution proposal/rollback handoff without a second approval ledger;
+  - runtime/workshop secret-hygiene guard, external secret-file contract for Telegram credentials, and bounded execution regression coverage for restricted shell/network egress;
+  - rollback gating activation proof in the canonical deployment cell plus corrective migration `017_perimeter_trusted_ingress.sql` for persisted trusted-ingress decisions.
+- Verification status: `pnpm format`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm smoke:cell` passed on the delivered tree.
 - Issue:
 - PRs:
 
@@ -477,3 +490,8 @@ Approval / decision path:
 - 2026-04-14 [clarification]: `spec-compact` completed; authority split with `CF-024`, `F-0016`, `F-0017`, `CF-025` and `CF-027` is now explicit, ACs/NFRs are grounded, and the dossier is ready for planning.
 - 2026-04-14 [plan-slice]: implementation plan closed with three slices, explicit `CF-015` reporting-hook dependency, reround review `PASS`, and next step `implementation`.
 - 2026-04-14 [implementation-start]: started `SL-F0018-01` with perimeter contracts, safety-kernel policy source, durable perimeter-decision ledger, `db`-backed read-only authority lookup for governor / `human_override`, and refusal-only semantics for rollback/network classes without a new public route or second approval ledger.
+- 2026-04-15 [implementation-close]: completed `SL-F0018-01` by wiring trusted ingress through `F-0016` and `F-0017`, closing the no-second-ledger boundary with contract/runtime coverage, and adding the corrective trusted-ingress SQL migration for durable perimeter persistence.
+- 2026-04-15 [clarification]: clarified the normative `trusted_ingress` contract for `freeze_development` and proposal-intake paths so dossier truth matches delivered behavior: admission marker for already-admitted adjacent owner seams, not a second approval fact.
+- 2026-04-15 [security realignment]: public `F-0013` high-risk routes were returned to explicit unavailable until `CF-024` caller admission exists, and perimeter trusted-ingress validation now fail-closes external operator paths instead of auto-accepting them.
+- 2026-04-15 [implementation-close]: completed `SL-F0018-02` with runtime/workshop secret-hygiene fail-closed guards, external secret-file loading for Telegram runtime credentials, and bounded execution regression coverage for restricted shell and bounded HTTP egress.
+- 2026-04-15 [implementation-close]: completed `SL-F0018-03` with rollback perimeter gating over the adjacent body-evolution owner seam, explicit-unavailable `disable_external_network` posture, usage-audit proof, and green root quality/smoke verification on the canonical deployment cell.

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
 
@@ -105,6 +106,24 @@ const resolvePathFromRoot = (
   fallbackRelativePath: string,
 ): string => path.resolve(cwd, value ?? path.join(rootPath, fallbackRelativePath));
 
+const readSecretFile = (
+  cwd: string,
+  filePath: string | undefined,
+  label: string,
+): string | null => {
+  if (!filePath) {
+    return null;
+  }
+
+  const resolvedPath = path.resolve(cwd, filePath);
+  const content = readFileSync(resolvedPath, 'utf8').trim();
+  if (content.length === 0) {
+    throw new Error(`${label} points to an empty secret file: ${resolvedPath}`);
+  }
+
+  return content;
+};
+
 const envSchema = z.object({
   YAAGI_POSTGRES_URL: z.string().optional(),
   YAAGI_FAST_MODEL_BASE_URL: z.string().optional(),
@@ -112,6 +131,7 @@ const envSchema = z.object({
   YAAGI_POOL_MODEL_BASE_URL: z.string().optional(),
   YAAGI_TELEGRAM_ENABLED: z.string().optional(),
   YAAGI_TELEGRAM_BOT_TOKEN: z.string().optional(),
+  YAAGI_TELEGRAM_BOT_TOKEN_FILE: z.string().optional(),
   YAAGI_TELEGRAM_ALLOWED_CHAT_IDS: z.string().optional(),
   YAAGI_TELEGRAM_API_BASE_URL: z.string().optional(),
   YAAGI_SEED_ROOT_PATH: z.string().optional(),
@@ -137,7 +157,9 @@ export function loadCoreRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Cor
   const parsedEnv = envSchema.parse(env);
   const seedRootPath = resolvePath(cwd, parsedEnv.YAAGI_SEED_ROOT_PATH, DEFAULT_SEED_ROOT_PATH);
   const telegramEnabled = parseBoolean(parsedEnv.YAAGI_TELEGRAM_ENABLED, false);
-  const telegramBotToken = parsedEnv.YAAGI_TELEGRAM_BOT_TOKEN?.trim() || null;
+  const telegramBotToken =
+    parsedEnv.YAAGI_TELEGRAM_BOT_TOKEN?.trim() ||
+    readSecretFile(cwd, parsedEnv.YAAGI_TELEGRAM_BOT_TOKEN_FILE, 'YAAGI_TELEGRAM_BOT_TOKEN_FILE');
   const telegramAllowedChatIds = parseCsv(parsedEnv.YAAGI_TELEGRAM_ALLOWED_CHAT_IDS);
 
   if (telegramEnabled && !telegramBotToken) {

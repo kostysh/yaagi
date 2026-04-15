@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-13T13:25:41.394Z",
+  "updated_at": "2026-04-14T23:51:56.806Z",
   "sources": [
     {
       "source_id": "5b9f63ff-21ce-440c-a3a3-7416945dde4f",
@@ -156,6 +156,17 @@
       "hash": "b0c04a4637ad08879774c3da94da152eb190cca758fb484a5ae40482bd52c3ba",
       "registered_at": "2026-04-13T13:25:41.394Z",
       "last_checked_at": "2026-04-13T13:25:41.394Z"
+    },
+    {
+      "source_id": "101e300d-dc80-4a8b-a11d-0a3f1849f368",
+      "source_label": "../features/F-0018-security-and-isolation-profile.md",
+      "path": "../features/F-0018-security-and-isolation-profile.md",
+      "kind": "specification",
+      "authority": "authoritative",
+      "note": "Canonical Feature Dossier for CF-014 implementation closure",
+      "hash": "cd54f206fae548c0313a7f174b74c99d25c2c477b4bd8fb441d248f2d1d8da06",
+      "registered_at": "2026-04-14T23:51:56.806Z",
+      "last_checked_at": "2026-04-14T23:51:56.806Z"
     },
     {
       "source_id": "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",

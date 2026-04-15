@@ -66,8 +66,8 @@ links:
 - `POST /control/tick` must route only through the existing runtime owner gate (`F-0003`). The HTTP seam may not create ticks or mutate continuity rows by direct DB writes.
 - Because the canonical tick trigger taxonomy is currently `boot | scheduler | system`, operator-triggered ticks in this seam must reuse the existing `system` trigger and carry operator provenance in the request payload/metadata. Introducing a new runtime trigger is out of scope for `F-0013`.
 - `GET /models` must stay bounded to delivered `F-0008` diagnostics plus the canonical bounded richer summary sourced from `F-0014`. It must not fabricate richer health, dump raw source tables or seize ownership of the richer source state.
-- `POST /control/freeze-development` must remain explicitly unavailable until `CF-016` owns the underlying governor/freeze surfaces; this seam may not invent direct governor writes or hidden backdoors.
-- `POST /control/development-proposals` is reserved for future `CF-016` proposal submission and may only appear through the `F-0013`-owned Hono boundary; before `CF-016` it may stay absent, but no other seam may publish the route or a parallel HTTP equivalent.
+- `POST /control/freeze-development` must remain explicitly unavailable until both the `F-0016` governor surface and the `CF-024` caller-admission seam exist; this seam may not invent direct governor writes, hidden backdoors or stopgap auth.
+- `POST /control/development-proposals` is reserved to the `F-0013`-owned Hono boundary and may delegate only to `F-0016`; before `CF-024` caller admission exists it must remain explicit unavailable rather than becoming a live public proposal-write path.
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
 
@@ -76,7 +76,7 @@ links:
 - **AC-F0013-03:** `GET /timeline` and `GET /episodes` expose bounded, stable-order read-only list contracts over `F-0003` continuity surfaces with explicit `limit` and cursor semantics, stable ordering keys, and machine-readable truncation/page metadata; they must not provide unbounded history dumps or bypass canonical event/episode contracts.
 - **AC-F0013-04:** `GET /models` consumes canonical baseline routing/profile diagnostics from `F-0008` and may later project a bounded richer summary sourced from `F-0014`; until richer source diagnostics are delivered, those absent capabilities must surface as explicit unavailable/degraded fields rather than fabricated data.
 - **AC-F0013-05:** `POST /control/tick` routes through the canonical `F-0003` runtime request gate with a required caller-supplied `requestId`, explicit HTTP mapping for `accepted`, `boot_inactive`, `lease_busy` and `unsupported_tick_kind`, and deterministic idempotent replay for repeated `requestId` submissions; the HTTP layer preserves operator provenance without introducing a new tick trigger taxonomy or direct state writes.
-- **AC-F0013-06:** Governance-sensitive routes such as `POST /control/freeze-development` remain explicitly future-owned by `CF-016`: before minimal governor surfaces exist, the route returns a bounded unavailable contract rather than silently mutating governor state or pretending the capability exists.
+- **AC-F0013-06:** Governance-sensitive routes such as `POST /control/freeze-development` and `POST /control/development-proposals` remain explicitly unavailable until the required governor semantics and caller-admission seam exist together; before that point, the routes return a bounded unavailable contract rather than silently mutating governor state, pretending public capability exists or inventing stopgap auth inside `F-0013`.
 - **AC-F0013-07:** `F-0013` preserves ownership separation at the HTTP boundary: it does not become a convenience writer for subject-state, narrative/memetic storage, `action_log`, development ledger, lifecycle evidence, model-registry internals or baseline `GET /health`.
 - **AC-F0013-08:** Route wiring stays on the canonical `AI SDK + Hono + core monolith` runtime path; if implementation materially changes public route wiring or runtime startup behavior, the deployment-cell smoke path becomes mandatory for closure.
 
@@ -254,28 +254,28 @@ type OperatorTickRejected = {
     - `503` for `boot_inactive`
 
 - `POST /control/freeze-development`
-  - Semantic owner: `F-0016` / backlog `CF-016`
-  - Response contract before `CF-016` delivery:
+  - Semantic owner: public caller admission `CF-024`, downstream durable semantics `F-0016` / backlog `CF-016`
+  - Response contract while caller admission is still missing:
 
 ```ts
 type OperatorUnavailableControlResponse = {
   available: false;
   action: "freeze-development";
-  owner: "CF-016";
-  reason: "future_owned";
+  owner: "CF-024";
+  reason: "caller_admission_required";
 };
 ```
 
-  - HTTP mapping: `501` until the governor seam exists.
-  - After `F-0016` governor freeze delivery, this route stays in the `F-0013` Hono namespace but delegates all durable freeze semantics to the governor owner gate.
+  - HTTP mapping: `501` until both the governor seam and `CF-024` caller-admission seam exist together.
+  - After `F-0016` governor freeze delivery but before `CF-024`, this route remains explicit unavailable at the public boundary; once `CF-024` exists, it may stay in the `F-0013` Hono namespace and delegate all durable freeze semantics to the governor owner gate.
 
 - `POST /control/development-proposals`
-  - Semantic owner: `F-0016` / backlog `CF-016`
-  - Reservation contract before `CF-016` proposal delivery:
+  - Semantic owner: public caller admission `CF-024`, downstream durable semantics `F-0016` / backlog `CF-016`
+  - Reservation contract before safe external admission exists:
     - the path belongs to the operator HTTP namespace owned by `F-0013`;
-    - before `CF-016` implementation, the route may remain absent;
+    - before both `F-0016` proposal delivery and `CF-024` caller admission, the route may remain explicit unavailable;
     - no other seam may expose the same operator submission over a parallel HTTP surface.
-  - After `F-0016` proposal lifecycle delivery, this route delegates submission to the governor owner gate and does not write proposal rows directly.
+  - After `F-0016` proposal lifecycle delivery, this route still remains explicit unavailable until `CF-024` admits callers; only then does it delegate submission to the governor owner gate and never write proposal rows directly.
 
 ### 5.2 Runtime and deployment surface
 
@@ -306,8 +306,8 @@ type OperatorUnavailableControlResponse = {
 - `/timeline` and `/episodes` are read-only projections over `F-0003`; they must not redefine event or episode semantics outside the canonical runtime continuity boundary.
 - `/models` is a bounded projection over `F-0008` baseline diagnostics and, later, a bounded richer summary sourced from `F-0014`; it does not own the richer source state itself.
 - `/control/tick` is an operator transport into `F-0003`, not an alternate runtime engine.
-- `/control/freeze-development` is an explicit unavailable placeholder for the future `CF-016` control seam, not an early governor implementation.
-- `/control/development-proposals` is a reserved future operator path for `CF-016`; the HTTP namespace stays `F-0013`-owned even before the route is implemented.
+- `/control/freeze-development` is an explicit unavailable placeholder until both `F-0016` and `CF-024` exist together, not an early governor implementation or a stopgap auth boundary.
+- `/control/development-proposals` is a reserved future operator path for `F-0016`, but it remains explicit unavailable until `CF-024` delivers caller admission; the HTTP namespace stays `F-0013`-owned throughout.
 - `/health` remains owned by platform/runtime seams and is intentionally outside this dossier even though it sits in the same Hono namespace.
 
 ### 5.5 Edge cases and failure modes
@@ -317,8 +317,8 @@ type OperatorUnavailableControlResponse = {
 - Repeated `POST /control/tick` submissions with the same `requestId` must remain idempotent and return the canonical accepted response shape instead of creating duplicate ticks.
 - `GET /models` may have baseline diagnostics available while richer registry health remains unavailable; the route must represent that split explicitly in-band.
 - `POST /control/tick` may legitimately reject `deliberative`, `contemplative`, `consolidation` or `developmental` kinds with `unsupported_tick_kind` until neighbouring seams deliver support; the API must not hide or remap that refusal.
-- `POST /control/freeze-development` must return the explicit unavailable contract before `CF-016`; 404-style silent absence is no longer the preferred shaped behavior.
-- `POST /control/development-proposals` must not appear outside the `F-0013` operator namespace before `CF-016`; if absent pre-`CF-016`, the absence must be understood as an owner-boundary reservation rather than a license for another seam to expose it elsewhere.
+- `POST /control/freeze-development` must return the explicit unavailable contract until both `F-0016` and `CF-024` exist; 404-style silent absence is no longer the preferred shaped behavior.
+- `POST /control/development-proposals` must not appear outside the `F-0013` operator namespace and must remain explicit unavailable until `CF-024` exists; absence or unavailability must be understood as an owner-boundary reservation rather than a license for another seam to expose it elsewhere.
 - Route handlers must not degrade into direct DB writes just because the server process already has database access.
 
 ### 5.6 Verification surface
@@ -330,7 +330,7 @@ type OperatorUnavailableControlResponse = {
   - `GET /episodes` stable pagination and canonical episode contract projection;
   - `GET /models` baseline diagnostics plus the bounded richer summary sourced from `F-0014`, including explicit unavailable/degraded semantics when optional organs are absent;
   - `POST /control/tick` accepted and rejected handoff semantics, including idempotent `requestId` replay;
-  - `POST /control/freeze-development` explicit unavailable contract before `CF-016`.
+  - governance-sensitive public routes explicit unavailable contract until `CF-024` caller admission exists.
 - If implementation changes the public Hono route wiring materially, deployment-cell smoke is mandatory before feature closure.
 
 ## 6. Definition of Done
@@ -339,7 +339,7 @@ type OperatorUnavailableControlResponse = {
 - `GET /state`, `GET /timeline`, `GET /episodes` and `GET /models` have explicit bounded DTO contracts, owner mappings and pagination/degradation semantics.
 - `POST /control/tick` is shaped as an owner-routed handoff through `F-0003` with required `requestId`, idempotent replay behavior and explicit rejection mapping.
 - Operator tick control does not extend the canonical runtime trigger taxonomy; operator provenance is preserved through forwarded payload/metadata instead.
-- `POST /control/freeze-development` is explicitly unavailable and future-owned by `CF-016`, not silently absent or prematurely implemented.
+- `POST /control/freeze-development` and `POST /control/development-proposals` remain explicitly unavailable until `CF-024` delivers caller admission, not silently absent or prematurely exposed as live public writes.
 - The feature does not seize ownership of baseline health, subject-state writes, narrative/memetic writes, model-registry internals, development ledger or lifecycle evidence.
 - Architecture coverage and SSOT index remain aligned with the shaped owner boundary.
 
@@ -375,7 +375,7 @@ Covers: AC-F0013-05, AC-F0013-06, AC-F0013-07
 Verification: `apps/core/test/platform/operator-control.integration.test.ts`, `apps/core/test/platform/operator-governor-gating.contract.test.ts`
 Exit criteria:
 - `POST /control/tick` calls the canonical runtime gate and preserves the existing trigger taxonomy.
-- Governance-sensitive control remains explicit but unavailable until `CF-016`.
+- Governance-sensitive control remains explicit but unavailable until `CF-024` caller admission exists, even though the downstream governor seam is delivered.
 Tasks:
 - `T-F0013-05`
 - `T-F0013-06`
@@ -399,7 +399,7 @@ Tasks:
 - **T-F0013-03 (SL-F0013-02):** Define the bounded `GET /models` contract over `F-0008` diagnostics and the canonical `F-0014` richer-summary adapter semantics. Covers: AC-F0013-04.
 - **T-F0013-04 (SL-F0013-02):** Realign delivered `F-0008` `/models`-absence assumption through an explicit linked change-proposal/update before enabling the new operator route. Covers: AC-F0013-04, AC-F0013-07.
 - **T-F0013-05 (SL-F0013-03):** Implement `POST /control/tick` request/response mapping, required `requestId` validation, forwarded operator provenance and request-id idempotency handling over the canonical runtime gate. Covers: AC-F0013-05.
-- **T-F0013-06 (SL-F0013-03):** Implement explicit unavailable semantics for `POST /control/freeze-development` before `CF-016`. Covers: AC-F0013-06.
+- **T-F0013-06 (SL-F0013-03):** Implement explicit unavailable semantics for governance-sensitive public routes until the required downstream owner seam and caller admission exist together. Covers: AC-F0013-06.
 - **T-F0013-07 (SL-F0013-04):** Add contract/integration coverage for bounded introspection, control rejection mapping and no-foreign-write boundaries. Covers: AC-F0013-01, AC-F0013-02, AC-F0013-03, AC-F0013-04, AC-F0013-05, AC-F0013-06, AC-F0013-07.
 - **T-F0013-08 (SL-F0013-04):** Align public route wiring, delivered-route realignment and deployment-cell smoke if implementation materially changes startup/runtime public behavior. Covers: AC-F0013-08.
 
@@ -412,7 +412,7 @@ Tasks:
 | AC-F0013-03 | `apps/core/test/platform/operator-history.integration.test.ts`, `packages/db/test/runtime-store.contract.test.ts` → `GET /timeline` / `GET /episodes` stable pagination, cursor semantics and db-boundary timestamp normalization `// Covers: AC-F0013-03` | done |
 | AC-F0013-04 | `apps/core/test/platform/operator-models.integration.test.ts` → bounded baseline model diagnostics and explicit `F-0014` future-gap / richer-summary contract `// Covers: AC-F0013-04` | done |
 | AC-F0013-05 | `apps/core/test/platform/operator-control.integration.test.ts` → `POST /control/tick` required-requestId validation, accepted/rejected mapping and request-id idempotency `// Covers: AC-F0013-05` | done |
-| AC-F0013-06 | `apps/core/test/platform/operator-governor-gating.contract.test.ts` → `POST /control/freeze-development` explicit unavailable contract before `CF-016` `// Covers: AC-F0013-06` | done |
+| AC-F0013-06 | `apps/core/test/platform/operator-governor-gating.contract.test.ts`; `apps/core/test/platform/operator-development-proposals.integration.test.ts` → governance-sensitive public routes stay explicit unavailable until `CF-024` caller admission exists `// Covers: AC-F0013-06` | done |
 | AC-F0013-07 | `apps/core/test/platform/operator-api-boundary.contract.test.ts` → no foreign write authority and no `/health` ownership grab `// Covers: AC-F0013-07` | done |
 | AC-F0013-08 | `apps/core/test/platform/operator-api-boundary.contract.test.ts`, `infra/docker/deployment-cell.smoke.ts` → operator route wiring stays on the canonical runtime boundary and deployment-cell smoke covers the live public surface `// Covers: AC-F0013-08` | done |
 
@@ -429,8 +429,8 @@ Tasks:
 ### ADR-F0013-02: Governance-sensitive control routes stay explicitly gated until governor ownership exists
 - Status: Accepted
 - Date: 2026-03-25
-- Context: Architecture names `POST /control/freeze-development` as part of the eventual external API, but `CF-016` is still only a backlog seam and no delivered governor write surface exists yet.
-- Decision: Record governance-sensitive control routes as part of the API boundary. `POST /control/freeze-development` stays explicitly unavailable until `CF-016` owns the underlying governor/freeze path, and `POST /control/development-proposals` is reserved to the same `F-0013`-owned namespace so future governor proposal submission cannot drift into a parallel server surface.
+- Context: Architecture names governance-sensitive control routes as part of the eventual external API, but safe public caller admission is still owned by `CF-024` and must not be faked inside `F-0013`.
+- Decision: Record governance-sensitive control routes as part of the API boundary. `/control/freeze-development` and `/control/development-proposals` stay explicitly unavailable until the downstream governor seam and `CF-024` caller admission exist together, and both paths remain reserved to the `F-0013`-owned namespace so future submission cannot drift into a parallel server surface.
 - Alternatives: Deliver the route now with ad hoc writes; postpone the route without documenting the boundary.
 - Consequences: The API seam can be shaped now without manufacturing fake governor ownership or leaving future governor submission routes ownerless at the HTTP boundary.
 
@@ -445,8 +445,8 @@ Tasks:
 ### ADR-F0013-04: Pre-governor control route is explicit unavailable, not silent 404
 - Status: Accepted
 - Date: 2026-03-25
-- Context: After intake, the seam already names `POST /control/freeze-development` as part of the future operator namespace. Leaving it silently absent until `CF-016` would force operators and tests to reverse-engineer whether the route is missing by accident or by ownership policy.
-- Decision: Before `CF-016` exists, the route remains present as an explicit unavailable contract returning `501` plus future-owner metadata.
+- Context: After intake, the seam already names governance-sensitive routes as part of the future operator namespace. Leaving them silently absent until the required downstream owner and caller-admission seam exist would force operators and tests to reverse-engineer whether the routes are missing by accident or by ownership policy.
+- Decision: Until both the downstream governor seam and `CF-024` caller admission exist, the routes remain present as explicit unavailable contracts returning `501` with bounded owner metadata.
 - Alternatives: Keep the route omitted with `404`; deliver a temporary ad hoc freeze action.
 - Consequences: Clients receive a machine-readable ownership boundary without granting early governor capability.
 
@@ -490,4 +490,5 @@ Tasks:
 - **v1.4 (2026-03-25):** Realigned future `/models` owner references after `F-0014 spec-compact`: richer model ecology now points to `F-0014` as the source seam, while this dossier remains the owner only of the bounded operator projection over that source state.
 - **v1.5 (2026-03-25):** Realigned delivered `/models` behavior after `F-0014 implementation`: the route now projects the bounded richer summary from `F-0014` when source diagnostics exist, while preserving explicit unavailable/degraded semantics and leaving the richer source state itself outside `F-0013` ownership.
 - **v1.6 (2026-04-10):** [dependency realignment] Reserved future `POST /control/development-proposals` inside the `F-0013` operator namespace so `F-0016` proposal submission remains HTTP-owner-routed instead of drifting into a parallel server surface.
-- **v1.7 (2026-04-10):** [F-0016 implementation realignment] `POST /control/freeze-development` and `POST /control/development-proposals` are now allowed to be live through this Hono namespace when they delegate to the `F-0016` governor gate; the HTTP boundary remains `F-0013`-owned and direct governor writes from handlers remain forbidden.
+- **v1.7 (2026-04-10):** [F-0016 implementation realignment] `POST /control/freeze-development` and `POST /control/development-proposals` became governor-backed behind the `F-0013` namespace at the runtime boundary, while direct governor writes from handlers remained forbidden.
+- **v1.8 (2026-04-15):** [security realignment] `F-0018` implementation proved that public high-risk operator routes still lack a `CF-024` caller-admission seam, so `/control/freeze-development` and `/control/development-proposals` were returned to explicit `501` unavailable contracts until safe caller admission exists; the routes remain `F-0013`-owned and no parallel HTTP surface is allowed.

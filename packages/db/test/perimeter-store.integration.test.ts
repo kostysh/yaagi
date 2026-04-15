@@ -90,7 +90,7 @@ void test('AC-F0018-03 / AC-F0018-06 persists one durable perimeter decision per
     evidenceRefs: ['governor:decision:1'],
     verdict: PERIMETER_VERDICT.ALLOW,
     decisionReason: PERIMETER_DECISION_REASON.VERIFIED_AUTHORITY,
-    policyVersion: '2026-04-14.f0018.sl-f0018-01',
+    policyVersion: '2026-04-15.f0018.external-fail-closed',
     payloadJson: { policyFamily: 'promotionChangeGates' },
     createdAt: '2026-04-14T21:00:00.000Z',
   });
@@ -110,15 +110,15 @@ void test('AC-F0018-03 reuses idempotent perimeter decisions when request id and
     normalizedRequestHash: 'hash-2',
     actionClass: PERIMETER_ACTION_CLASS.FREEZE_DEVELOPMENT,
     ingressOwner: PERIMETER_INGRESS_OWNER.F_0013,
-    authorityOwner: PERIMETER_AUTHORITY_OWNER.HUMAN_OVERRIDE,
+    authorityOwner: PERIMETER_AUTHORITY_OWNER.TRUSTED_INGRESS,
     governorProposalId: null,
     governorDecisionRef: null,
-    humanOverrideEvidenceRef: 'human-override:evidence:1',
+    humanOverrideEvidenceRef: null,
     targetRef: null,
     evidenceRefs: ['operator:manual-control'],
     verdict: PERIMETER_VERDICT.ALLOW,
     decisionReason: PERIMETER_DECISION_REASON.VERIFIED_AUTHORITY,
-    policyVersion: '2026-04-14.f0018.sl-f0018-01',
+    policyVersion: '2026-04-15.f0018.external-fail-closed',
     createdAt: '2026-04-14T21:00:00.000Z',
   };
 
@@ -152,7 +152,7 @@ void test('AC-F0018-04 rejects conflicting request id reuse across different per
     evidenceRefs: ['governor:decision:1'],
     verdict: PERIMETER_VERDICT.ALLOW,
     decisionReason: PERIMETER_DECISION_REASON.VERIFIED_AUTHORITY,
-    policyVersion: '2026-04-14.f0018.sl-f0018-01',
+    policyVersion: '2026-04-15.f0018.external-fail-closed',
     createdAt: '2026-04-14T21:00:00.000Z',
   });
 
@@ -170,7 +170,7 @@ void test('AC-F0018-04 rejects conflicting request id reuse across different per
     evidenceRefs: ['governor:decision:2'],
     verdict: PERIMETER_VERDICT.REQUIRE_HUMAN_REVIEW,
     decisionReason: PERIMETER_DECISION_REASON.EXPLICIT_UNAVAILABLE,
-    policyVersion: '2026-04-14.f0018.sl-f0018-01',
+    policyVersion: '2026-04-15.f0018.external-fail-closed',
     createdAt: '2026-04-14T21:05:00.000Z',
   });
 

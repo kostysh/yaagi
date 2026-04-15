@@ -2,30 +2,33 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPlatformTestRuntime } from '../../testing/platform-test-fixture.ts';
 
-void test('AC-F0016-01 forwards freeze-development through the runtime governor gate', async () => {
-  const forwardedInputs: Array<{
-    requestId: string;
-    reason: string;
-    evidenceRefs: string[];
-    requestedBy: string;
-    requestedAt: string;
-  }> = [];
+// Coverage refs: AC-F0013-06 AC-F0018-01
+
+const expectedUnavailableResponse = {
+  available: false,
+  action: 'freeze-development',
+  owner: 'CF-024',
+  reason: 'caller_admission_required',
+} as const;
+
+void test('AC-F0013-06 keeps freeze-development explicit unavailable until caller admission is delivered', async () => {
+  let callCount = 0;
   const { runtime, cleanup } = await createPlatformTestRuntime({
     dependencies: {
       createRuntimeLifecycle: () => ({
         start: () => Promise.resolve(),
         stop: () => Promise.resolve(),
-        freezeDevelopment: (input) => {
-          forwardedInputs.push(input);
+        freezeDevelopment: () => {
+          callCount += 1;
           return Promise.resolve({
             accepted: true,
-            requestId: input.requestId,
-            freezeId: 'development-freeze:operator-1',
+            requestId: 'should-not-run',
+            freezeId: 'should-not-run',
             state: 'frozen',
             triggerKind: 'operator',
             decisionOrigin: 'operator',
             deduplicated: false,
-            createdAt: '2026-04-10T12:00:00.000Z',
+            createdAt: '2026-04-15T12:00:00.000Z',
           });
         },
       }),
@@ -47,27 +50,15 @@ void test('AC-F0016-01 forwards freeze-development through the runtime governor 
       }),
     );
 
-    assert.equal(response.status, 202);
-    assert.deepEqual(await response.json(), {
-      accepted: true,
-      requestId: 'operator-freeze-1',
-      freezeId: 'development-freeze:operator-1',
-      state: 'frozen',
-      triggerKind: 'operator',
-      decisionOrigin: 'operator',
-      deduplicated: false,
-      createdAt: '2026-04-10T12:00:00.000Z',
-    });
-    assert.equal(forwardedInputs.length, 1);
-    assert.equal(forwardedInputs[0]?.requestedBy, 'operator_api');
-    assert.match(forwardedInputs[0]?.requestedAt ?? '', /^\d{4}-\d{2}-\d{2}T/);
-    assert.deepEqual(forwardedInputs[0]?.evidenceRefs, ['operator:manual-control']);
+    assert.equal(response.status, 501);
+    assert.deepEqual(await response.json(), expectedUnavailableResponse);
+    assert.equal(callCount, 0);
   } finally {
     await cleanup();
   }
 });
 
-void test('AC-F0016-01 rejects invalid freeze-development payloads before the governor gate', async () => {
+void test('AC-F0013-06 returns the same explicit unavailable contract even for invalid freeze payloads', async () => {
   let callCount = 0;
   const { runtime, cleanup } = await createPlatformTestRuntime({
     dependencies: {
@@ -78,6 +69,7 @@ void test('AC-F0016-01 rejects invalid freeze-development payloads before the go
           callCount += 1;
           return Promise.resolve({
             accepted: false,
+            requestId: 'should-not-run',
             reason: 'persistence_unavailable',
           });
         },
@@ -98,60 +90,15 @@ void test('AC-F0016-01 rejects invalid freeze-development payloads before the go
       }),
     );
 
-    assert.equal(response.status, 400);
+    assert.equal(response.status, 501);
+    assert.deepEqual(await response.json(), expectedUnavailableResponse);
     assert.equal(callCount, 0);
   } finally {
     await cleanup();
   }
 });
 
-void test('AC-F0016-02 maps governor conflict and unavailable states to explicit HTTP statuses', async () => {
-  const { runtime, cleanup } = await createPlatformTestRuntime({
-    dependencies: {
-      createRuntimeLifecycle: () => ({
-        start: () => Promise.resolve(),
-        stop: () => Promise.resolve(),
-        freezeDevelopment: (input) =>
-          Promise.resolve({
-            accepted: false,
-            requestId: input.requestId,
-            reason:
-              input.requestId === 'conflict-freeze'
-                ? 'conflicting_request_id'
-                : 'persistence_unavailable',
-          }),
-      }),
-    },
-  });
-
-  try {
-    for (const [requestId, expectedStatus] of [
-      ['conflict-freeze', 409],
-      ['unavailable-freeze', 503],
-    ] as const) {
-      const response = await runtime.fetch(
-        new Request('http://yaagi/control/freeze-development', {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify({
-            requestId,
-            reason: 'test mapping',
-          }),
-        }),
-      );
-
-      assert.equal(response.status, expectedStatus);
-      const body = (await response.json()) as Record<string, unknown>;
-      assert.equal(body['requestId'], requestId);
-    }
-  } finally {
-    await cleanup();
-  }
-});
-
-void test('AC-F0013-06 / AC-F0016-01 fails closed when the freeze governor gate is not registered', async () => {
+void test('AC-F0013-06 fails closed on freeze-development when the governor seam is absent', async () => {
   const { runtime, cleanup } = await createPlatformTestRuntime({
     dependencies: {
       createRuntimeLifecycle: () => ({
@@ -176,11 +123,8 @@ void test('AC-F0013-06 / AC-F0016-01 fails closed when the freeze governor gate 
       }),
     );
 
-    assert.equal(response.status, 503);
-    assert.deepEqual(await response.json(), {
-      accepted: false,
-      reason: 'persistence_unavailable',
-    });
+    assert.equal(response.status, 501);
+    assert.deepEqual(await response.json(), expectedUnavailableResponse);
   } finally {
     await cleanup();
   }

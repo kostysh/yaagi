@@ -44,6 +44,7 @@ type AuthorityValidationSuccess = {
 type AuthorityValidationFailure = {
   accepted: false;
   decisionReason:
+    | typeof PERIMETER_DECISION_REASON.TRUSTED_INGRESS_MISSING
     | typeof PERIMETER_DECISION_REASON.GOVERNOR_AUTHORITY_MISSING
     | typeof PERIMETER_DECISION_REASON.HUMAN_OVERRIDE_EVIDENCE_MISSING;
 };
@@ -162,7 +163,7 @@ const evaluateRequestAgainstKernel = (
         },
       };
     }
-  } else if (!input.humanOverrideEvidenceRef) {
+  } else if (input.authorityOwner === 'human_override' && !input.humanOverrideEvidenceRef) {
     return {
       verdict: PERIMETER_VERDICT.DENY,
       decisionReason: PERIMETER_DECISION_REASON.HUMAN_OVERRIDE_EVIDENCE_MISSING,
@@ -184,7 +185,20 @@ const evaluateRequestAgainstKernel = (
 };
 
 const createPassThroughAuthorityValidator = (): PerimeterAuthorityValidator => ({
-  validate(): Promise<AuthorityValidationResult> {
+  validate(input): Promise<AuthorityValidationResult> {
+    if (input.authorityOwner === 'trusted_ingress') {
+      if (input.ingressOwner === 'F-0013') {
+        return Promise.resolve({
+          accepted: false,
+          decisionReason: PERIMETER_DECISION_REASON.TRUSTED_INGRESS_MISSING,
+        });
+      }
+
+      return Promise.resolve({
+        accepted: true,
+      });
+    }
+
     return Promise.resolve({
       accepted: true,
     });
@@ -202,6 +216,19 @@ const createDbBackedPerimeterAuthorityValidator = (
 
   return {
     async validate(input: PerimeterControlRequest): Promise<AuthorityValidationResult> {
+      if (input.authorityOwner === 'trusted_ingress') {
+        if (input.ingressOwner === 'F-0013') {
+          return {
+            accepted: false,
+            decisionReason: PERIMETER_DECISION_REASON.TRUSTED_INGRESS_MISSING,
+          };
+        }
+
+        return {
+          accepted: true,
+        };
+      }
+
       if (input.authorityOwner === 'governor') {
         const decision = await developmentGovernorStore.getProposalDecision(
           input.governorDecisionRef,

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-14T21:30:22.064Z",
-  "next_apply_index": 24,
+  "updated_at": "2026-04-14T23:53:10.154Z",
+  "next_apply_index": 26,
   "packets": [
     {
       "packet_id": "f0947cdd-67be-4f98-9cbd-bec31fce4589",
@@ -347,6 +347,31 @@
       "applied_at": "2026-04-14T21:30:22.064Z",
       "kind": "patch-item",
       "target_item_keys": [
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-15-023-f-0018-implemented",
+      "apply_index": 24,
+      "canonical_path": "patches/611b80d4e305--2026-04-15-f-0018-implemented.template.json",
+      "content_hash": "611b80d4e305e403106f41e455bcf6f172156355ef44276937b90d6542dafdfe",
+      "sequence": 23,
+      "applied_at": "2026-04-14T23:52:33.152Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-014"
+      ]
+    },
+    {
+      "patch_id": "2026-04-15-024-f-0018-review-todos-clear",
+      "apply_index": 25,
+      "canonical_path": "patches/025927bfeea9--2026-04-15-f-0018-review-todos-clear.template.json",
+      "content_hash": "025927bfeea90816b93fa33638adc92e345e61a03d7bcc8405f84e7fd0f156d6",
+      "sequence": 24,
+      "applied_at": "2026-04-14T23:53:10.154Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-014",
         "CF-027"
       ]
     }

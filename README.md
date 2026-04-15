@@ -45,6 +45,7 @@ Canonical engineering decisions for the repo:
 - runtime baseline: `Node.js 22 + TypeScript`
 - default execution path for local TypeScript code: `node --experimental-strip-types`
 - local secret-bearing overrides: repo-root `.env.local` (gitignored), with checked-in shape in `.env.example`; canonical local-secret launch paths are `pnpm cell:up:local` and `pnpm smoke:cell:local`, while application code continues to read `process.env`
+- external secret-file override is supported for `YAAGI_TELEGRAM_BOT_TOKEN_FILE`, so production/container launches may inject the bot token through Docker secrets or an equivalent mounted secret file instead of repo-tracked config
 - optional richer local model endpoints use `YAAGI_DEEP_MODEL_BASE_URL` and `YAAGI_POOL_MODEL_BASE_URL`; they default to local loopback `:8001/:8002`, stay non-boot-critical, and surface through `F-0014` source diagnostics as explicit unavailable/degraded state when the services are absent
 - default test runner: `node:test`
 - canonical quality/style toolchain: `Biome + ESLint`

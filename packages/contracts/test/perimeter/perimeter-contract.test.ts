@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   PERIMETER_ACTION_CLASS,
+  PERIMETER_AUTHORITY_OWNER,
   PERIMETER_INGRESS_OWNER,
   PERIMETER_VERDICT,
   perimeterControlRequestSchema,
@@ -14,19 +15,14 @@ void test('AC-F0018-01 / AC-F0018-02 define bounded perimeter control contracts 
     requestId: 'perimeter-request-1',
     ingressOwner: PERIMETER_INGRESS_OWNER.F_0016,
     actionClass: PERIMETER_ACTION_CLASS.CODE_OR_PROMOTION_CHANGE,
-    authorityOwner: 'governor',
-    governorProposalId: 'development-proposal:1',
-    governorDecisionRef: 'development-proposal-decision:1',
+    authorityOwner: PERIMETER_AUTHORITY_OWNER.TRUSTED_INGRESS,
     targetRef: 'workspace:body',
     evidenceRefs: ['governor:decision:1'],
   });
   const kernel = safetyKernelSchema.parse({
-    version: '2026-04-14.f0018.sl-f0018-01',
+    version: '2026-04-15.f0018.external-fail-closed',
     forbiddenActions: {
-      explicitUnavailableActionClasses: [
-        PERIMETER_ACTION_CLASS.FORCE_ROLLBACK,
-        PERIMETER_ACTION_CLASS.DISABLE_EXTERNAL_NETWORK,
-      ],
+      explicitUnavailableActionClasses: [PERIMETER_ACTION_CLASS.DISABLE_EXTERNAL_NETWORK],
     },
     networkEgress: {
       disableExternalNetworkMode: 'explicit_unavailable',
@@ -35,12 +31,26 @@ void test('AC-F0018-01 / AC-F0018-02 define bounded perimeter control contracts 
     promotionChangeGates: {
       actionPolicies: {
         freeze_development: {
-          allowedIngressOwners: [PERIMETER_INGRESS_OWNER.F_0013],
-          allowedAuthorityOwners: ['governor', 'human_override'],
+          allowedIngressOwners: [
+            PERIMETER_INGRESS_OWNER.F_0013,
+            PERIMETER_INGRESS_OWNER.PLATFORM_RUNTIME,
+          ],
+          allowedAuthorityOwners: [PERIMETER_AUTHORITY_OWNER.TRUSTED_INGRESS],
         },
         code_or_promotion_change: {
           allowedIngressOwners: [PERIMETER_INGRESS_OWNER.F_0016, PERIMETER_INGRESS_OWNER.F_0017],
-          allowedAuthorityOwners: ['governor', 'human_override'],
+          allowedAuthorityOwners: [
+            PERIMETER_AUTHORITY_OWNER.TRUSTED_INGRESS,
+            PERIMETER_AUTHORITY_OWNER.GOVERNOR,
+            PERIMETER_AUTHORITY_OWNER.HUMAN_OVERRIDE,
+          ],
+        },
+        force_rollback: {
+          allowedIngressOwners: [PERIMETER_INGRESS_OWNER.F_0017, PERIMETER_INGRESS_OWNER.CF_025],
+          allowedAuthorityOwners: [
+            PERIMETER_AUTHORITY_OWNER.GOVERNOR,
+            PERIMETER_AUTHORITY_OWNER.HUMAN_OVERRIDE,
+          ],
         },
       },
     },
@@ -51,8 +61,8 @@ void test('AC-F0018-01 / AC-F0018-02 define bounded perimeter control contracts 
   });
 
   assert.equal(request.actionClass, 'code_or_promotion_change');
-  assert.equal(request.authorityOwner, 'governor');
-  assert.equal(kernel.forbiddenActions.explicitUnavailableActionClasses.length, 2);
+  assert.equal(request.authorityOwner, 'trusted_ingress');
+  assert.equal(kernel.forbiddenActions.explicitUnavailableActionClasses.length, 1);
   assert.equal(kernel.networkEgress.disableExternalNetworkMode, 'explicit_unavailable');
   assert.ok(kernel.promotionChangeGates.actionPolicies['freeze_development']);
 });

@@ -31,6 +31,7 @@ export type PerimeterIngressOwner =
   (typeof PERIMETER_INGRESS_OWNER)[keyof typeof PERIMETER_INGRESS_OWNER];
 
 export const PERIMETER_AUTHORITY_OWNER = Object.freeze({
+  TRUSTED_INGRESS: 'trusted_ingress',
   GOVERNOR: 'governor',
   HUMAN_OVERRIDE: 'human_override',
 } as const);
@@ -74,6 +75,7 @@ export const perimeterIngressOwnerSchema = z.enum([
 ]);
 
 export const perimeterAuthorityOwnerSchema = z.enum([
+  PERIMETER_AUTHORITY_OWNER.TRUSTED_INGRESS,
   PERIMETER_AUTHORITY_OWNER.GOVERNOR,
   PERIMETER_AUTHORITY_OWNER.HUMAN_OVERRIDE,
 ]);
@@ -111,6 +113,12 @@ const perimeterGovernorRequestSchema = perimeterControlRequestBaseSchema
   })
   .strict();
 
+const perimeterTrustedIngressRequestSchema = perimeterControlRequestBaseSchema
+  .extend({
+    authorityOwner: z.literal(PERIMETER_AUTHORITY_OWNER.TRUSTED_INGRESS),
+  })
+  .strict();
+
 const perimeterHumanOverrideRequestSchema = perimeterControlRequestBaseSchema
   .extend({
     authorityOwner: z.literal(PERIMETER_AUTHORITY_OWNER.HUMAN_OVERRIDE),
@@ -119,6 +127,7 @@ const perimeterHumanOverrideRequestSchema = perimeterControlRequestBaseSchema
   .strict();
 
 export const perimeterControlRequestSchema = z.discriminatedUnion('authorityOwner', [
+  perimeterTrustedIngressRequestSchema,
   perimeterGovernorRequestSchema,
   perimeterHumanOverrideRequestSchema,
 ]);

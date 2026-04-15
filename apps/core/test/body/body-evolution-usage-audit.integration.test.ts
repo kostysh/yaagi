@@ -12,6 +12,7 @@ import {
   BODY_CHANGE_STATUS,
   type BodyChangeGateCheck,
 } from '@yaagi/contracts/body-evolution';
+import type { PerimeterDecisionRow } from '@yaagi/contracts/perimeter';
 import type {
   BodyChangeEventRow,
   BodyChangeProposalRow,
@@ -20,6 +21,7 @@ import type {
 } from '@yaagi/db';
 import type { CoreRuntimeConfig } from '../../src/platform/core-config.ts';
 import { createBodyEvolutionGitGateway, createBodyEvolutionService } from '../../src/body/index.ts';
+import { createPerimeterDecisionService } from '../../src/perimeter/index.ts';
 
 const execFileAsync = promisify(execFile);
 
@@ -265,12 +267,43 @@ void test('usage audit exercises the full internal body-evolution flow with a re
   await git(config.workspaceBodyPath, ['commit', '-m', 'init']);
 
   const governorOutcomes: Array<Record<string, unknown>> = [];
+  const perimeterDecisions: PerimeterDecisionRow[] = [];
+  const perimeterDecisionService = createPerimeterDecisionService({
+    store: {
+      recordDecision: (input) => {
+        const decision: PerimeterDecisionRow = {
+          decisionId: input.decisionId,
+          requestId: input.requestId,
+          actionClass: input.actionClass,
+          ingressOwner: input.ingressOwner,
+          authorityOwner: input.authorityOwner,
+          governorProposalId: input.governorProposalId,
+          governorDecisionRef: input.governorDecisionRef,
+          humanOverrideEvidenceRef: input.humanOverrideEvidenceRef,
+          targetRef: input.targetRef,
+          evidenceRefsJson: input.evidenceRefs,
+          verdict: input.verdict,
+          decisionReason: input.decisionReason,
+          policyVersion: input.policyVersion,
+          payloadJson: input.payloadJson ?? {},
+          createdAt: input.createdAt,
+        };
+        perimeterDecisions.push(decision);
+        return Promise.resolve({
+          accepted: true,
+          deduplicated: false,
+          decision,
+        });
+      },
+    },
+  });
   const service = createBodyEvolutionService({
     config,
     store,
     gitGateway: createBodyEvolutionGitGateway({ config }),
     ensureHumanOverrideGovernorApproval: approveHumanOverride,
     verifyGovernorApproval: approveGovernor,
+    perimeterDecisionService,
     commandRunner: ({ command }) =>
       Promise.resolve({
         kind: command.kind,
@@ -380,4 +413,8 @@ void test('usage audit exercises the full internal body-evolution flow with a re
     ],
   );
   assert.equal(governorOutcomes.length, 2);
+  assert.deepEqual(
+    perimeterDecisions.map((decision) => decision.actionClass),
+    ['code_or_promotion_change', 'force_rollback'],
+  );
 });

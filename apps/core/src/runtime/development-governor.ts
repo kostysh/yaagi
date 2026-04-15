@@ -14,6 +14,12 @@ import {
   type DevelopmentProposalKind,
   type DevelopmentProposalResult,
 } from '@yaagi/contracts/governor';
+import {
+  PERIMETER_ACTION_CLASS,
+  PERIMETER_AUTHORITY_OWNER,
+  PERIMETER_INGRESS_OWNER,
+  PERIMETER_VERDICT,
+} from '@yaagi/contracts/perimeter';
 import { WORKSHOP_CANDIDATE_KIND, type WorkshopPromotionPackage } from '@yaagi/contracts/workshop';
 import {
   HOMEOSTAT_ALERT_SEVERITY,
@@ -28,6 +34,10 @@ import {
   type DevelopmentFreezeRow,
 } from '@yaagi/db';
 import type { CoreRuntimeConfig } from '../platform/core-config.ts';
+import {
+  createDbBackedPerimeterDecisionService,
+  type PerimeterDecisionService,
+} from '../perimeter/index.ts';
 
 type FreezeDevelopmentInput = {
   requestId: string;
@@ -506,9 +516,14 @@ const originSurfaceForInternalProposalOwner = (
 
 export const createDbBackedDevelopmentGovernorService = (
   config: Pick<CoreRuntimeConfig, 'postgresUrl'>,
-  options: { now?: () => Date } = {},
+  options: {
+    now?: () => Date;
+    perimeterDecisionService?: PerimeterDecisionService;
+  } = {},
 ): DevelopmentGovernorService => {
   const now = options.now ?? (() => new Date());
+  const perimeterDecisionService =
+    options.perimeterDecisionService ?? createDbBackedPerimeterDecisionService(config);
 
   const runFreeze = async (command: FreezeCommandMaterial): Promise<DevelopmentFreezeResult> =>
     withRuntimeClient(config.postgresUrl, async (client) => {
@@ -548,12 +563,91 @@ export const createDbBackedDevelopmentGovernorService = (
       return toProposalExecutionOutcomeResult(result, command.requestId);
     });
 
+  const gateFreezeRequest = async (input: {
+    requestId: string;
+    ingressOwner:
+      | typeof PERIMETER_INGRESS_OWNER.F_0013
+      | typeof PERIMETER_INGRESS_OWNER.PLATFORM_RUNTIME;
+    evidenceRefs: string[];
+  }): Promise<DevelopmentFreezeResult | null> => {
+    const result = await perimeterDecisionService.evaluateControlRequest({
+      requestId: input.requestId,
+      ingressOwner: input.ingressOwner,
+      actionClass: PERIMETER_ACTION_CLASS.FREEZE_DEVELOPMENT,
+      authorityOwner: PERIMETER_AUTHORITY_OWNER.TRUSTED_INGRESS,
+      evidenceRefs: input.evidenceRefs,
+    });
+
+    if (!result.accepted) {
+      return {
+        accepted: false,
+        requestId: input.requestId,
+        reason: 'persistence_unavailable',
+      };
+    }
+
+    if (result.verdict !== PERIMETER_VERDICT.ALLOW) {
+      return {
+        accepted: false,
+        requestId: input.requestId,
+        reason: 'invalid_request',
+      };
+    }
+
+    return null;
+  };
+
+  const gateProposalRequest = async (input: {
+    requestId: string;
+    ingressOwner: typeof PERIMETER_INGRESS_OWNER.F_0013 | typeof PERIMETER_INGRESS_OWNER.F_0016;
+    evidenceRefs: string[];
+    targetRef: string | null;
+  }): Promise<DevelopmentProposalResult | null> => {
+    const result = await perimeterDecisionService.evaluateControlRequest({
+      requestId: input.requestId,
+      ingressOwner: input.ingressOwner,
+      actionClass: PERIMETER_ACTION_CLASS.CODE_OR_PROMOTION_CHANGE,
+      authorityOwner: PERIMETER_AUTHORITY_OWNER.TRUSTED_INGRESS,
+      ...(input.targetRef ? { targetRef: input.targetRef } : {}),
+      evidenceRefs: input.evidenceRefs,
+    });
+
+    if (!result.accepted) {
+      return {
+        accepted: false,
+        requestId: input.requestId,
+        reason: 'persistence_unavailable',
+      };
+    }
+
+    if (result.verdict !== PERIMETER_VERDICT.ALLOW) {
+      return {
+        accepted: false,
+        requestId: input.requestId,
+        reason: 'insufficient_evidence',
+      };
+    }
+
+    return null;
+  };
+
   return {
-    freezeDevelopment: (input) => {
+    freezeDevelopment: async (input) => {
       const createdAt = input.requestedAt ?? now().toISOString();
       const evidenceRefs = uniqueSorted(input.evidenceRefs);
+      const gatedResult = await gateFreezeRequest({
+        requestId: input.requestId,
+        ingressOwner:
+          input.requestedBy === 'operator_api'
+            ? PERIMETER_INGRESS_OWNER.F_0013
+            : PERIMETER_INGRESS_OWNER.PLATFORM_RUNTIME,
+        evidenceRefs,
+      });
+      if (gatedResult) {
+        return gatedResult;
+      }
 
-      return runFreeze({
+      return await runFreeze({
         requestId: input.requestId,
         triggerKind: DEVELOPMENT_FREEZE_TRIGGER_KIND.OPERATOR,
         originSurface: DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.OPERATOR_API,
@@ -568,7 +662,7 @@ export const createDbBackedDevelopmentGovernorService = (
       });
     },
 
-    submitDevelopmentProposal: (input) => {
+    submitDevelopmentProposal: async (input) => {
       if (!isSupportedProposalKind(input.proposalKind)) {
         return Promise.resolve({
           accepted: false,
@@ -587,7 +681,17 @@ export const createDbBackedDevelopmentGovernorService = (
       }
 
       const createdAt = input.requestedAt ?? now().toISOString();
-      return runProposal({
+      const gatedResult = await gateProposalRequest({
+        requestId: input.requestId,
+        ingressOwner: PERIMETER_INGRESS_OWNER.F_0013,
+        evidenceRefs,
+        targetRef: input.targetRef,
+      });
+      if (gatedResult) {
+        return gatedResult;
+      }
+
+      return await runProposal({
         requestId: input.requestId,
         proposalKind: input.proposalKind,
         originSurface: DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.OPERATOR_API,
@@ -607,7 +711,7 @@ export const createDbBackedDevelopmentGovernorService = (
       });
     },
 
-    submitInternalDevelopmentProposal: (input) => {
+    submitInternalDevelopmentProposal: async (input) => {
       if (!isSupportedProposalKind(input.proposalKind)) {
         return Promise.resolve({
           accepted: false,
@@ -627,7 +731,17 @@ export const createDbBackedDevelopmentGovernorService = (
 
       const createdAt = input.requestedAt ?? now().toISOString();
       const originSurface = originSurfaceForInternalProposalOwner(input.sourceOwner);
-      return runProposal({
+      const gatedResult = await gateProposalRequest({
+        requestId: input.requestId,
+        ingressOwner: PERIMETER_INGRESS_OWNER.F_0016,
+        evidenceRefs,
+        targetRef: input.targetRef,
+      });
+      if (gatedResult) {
+        return gatedResult;
+      }
+
+      return await runProposal({
         requestId: input.requestId,
         proposalKind: input.proposalKind,
         originSurface,
@@ -705,7 +819,7 @@ export const createDbBackedDevelopmentGovernorService = (
       });
     },
 
-    submitWorkshopPromotionProposal: (input) => {
+    submitWorkshopPromotionProposal: async (input) => {
       if (!input.promotionPackage.rollbackTarget) {
         return Promise.resolve({
           accepted: false,
@@ -715,17 +829,26 @@ export const createDbBackedDevelopmentGovernorService = (
       }
 
       const createdAt = input.requestedAt ?? now().toISOString();
-      return runProposal(
-        buildWorkshopPromotionProposalCommand({
-          requestId: input.requestId,
-          promotionPackage: input.promotionPackage,
-          packageUri: input.packageUri,
-          requestedAt: createdAt,
-        }),
-      );
+      const command = buildWorkshopPromotionProposalCommand({
+        requestId: input.requestId,
+        promotionPackage: input.promotionPackage,
+        packageUri: input.packageUri,
+        requestedAt: createdAt,
+      });
+      const gatedResult = await gateProposalRequest({
+        requestId: input.requestId,
+        ingressOwner: PERIMETER_INGRESS_OWNER.F_0016,
+        evidenceRefs: command.storeEvidenceRefs,
+        targetRef: command.targetRef,
+      });
+      if (gatedResult) {
+        return gatedResult;
+      }
+
+      return await runProposal(command);
     },
 
-    applyHomeostatReaction: (request) => {
+    applyHomeostatReaction: async (request) => {
       if (
         request.signalFamily !== HOMEOSTAT_SIGNAL_FAMILY.DEVELOPMENT_PROPOSAL_RATE ||
         request.severity !== HOMEOSTAT_ALERT_SEVERITY.CRITICAL ||
@@ -744,8 +867,16 @@ export const createDbBackedDevelopmentGovernorService = (
         `homeostat:snapshot:${request.snapshotId}`,
         `homeostat:reaction:${request.reactionRequestId}`,
       ]);
+      const gatedResult = await gateFreezeRequest({
+        requestId: `homeostat:${request.idempotencyKey}`,
+        ingressOwner: PERIMETER_INGRESS_OWNER.PLATFORM_RUNTIME,
+        evidenceRefs: storeEvidenceRefs,
+      });
+      if (gatedResult) {
+        return gatedResult;
+      }
 
-      return runFreeze({
+      return await runFreeze({
         requestId: `homeostat:${request.idempotencyKey}`,
         triggerKind: DEVELOPMENT_FREEZE_TRIGGER_KIND.POLICY_AUTO,
         originSurface: DEVELOPMENT_GOVERNOR_ORIGIN_SURFACE.HOMEOSTAT,

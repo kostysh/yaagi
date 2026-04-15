@@ -828,33 +828,19 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
             targetRef: 'policy:development-governor',
           }),
         });
-        assert.equal(proposalResponse.status, 202);
+        assert.equal(proposalResponse.status, 501);
         const proposalPayload = (await proposalResponse.json()) as {
-          accepted: boolean;
-          requestId: string;
-          state: string;
-          deduplicated: boolean;
+          available: boolean;
+          action: string;
+          owner: string;
+          reason: string;
         };
-        assert.deepEqual(
-          {
-            accepted: proposalPayload.accepted,
-            requestId: proposalPayload.requestId,
-            state: proposalPayload.state,
-            deduplicated: proposalPayload.deduplicated,
-          },
-          {
-            accepted: true,
-            requestId: 'smoke-proposal-1',
-            state: 'submitted',
-            deduplicated: false,
-          },
-        );
-        assert.equal(
-          await queryPostgres(
-            "select state || '|' || proposal_kind || '|' || origin_surface from polyphony_runtime.development_proposals where request_id = 'smoke-proposal-1';",
-          ),
-          'submitted|policy_change|operator_api',
-        );
+        assert.deepEqual(proposalPayload, {
+          available: false,
+          action: 'development-proposals',
+          owner: 'CF-024',
+          reason: 'caller_admission_required',
+        });
 
         const freezeResponse = await fetch(`${coreBaseUrl()}/control/freeze-development`, {
           method: 'POST',
@@ -867,45 +853,19 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
             evidenceRefs: ['smoke:deployment-cell'],
           }),
         });
-        assert.equal(freezeResponse.status, 202);
+        assert.equal(freezeResponse.status, 501);
         const freezePayload = (await freezeResponse.json()) as {
-          accepted: boolean;
-          requestId: string;
-          state: string;
-          triggerKind: string;
-          decisionOrigin: string;
-          deduplicated: boolean;
+          available: boolean;
+          action: string;
+          owner: string;
+          reason: string;
         };
-        assert.deepEqual(
-          {
-            accepted: freezePayload.accepted,
-            requestId: freezePayload.requestId,
-            state: freezePayload.state,
-            triggerKind: freezePayload.triggerKind,
-            decisionOrigin: freezePayload.decisionOrigin,
-            deduplicated: freezePayload.deduplicated,
-          },
-          {
-            accepted: true,
-            requestId: 'smoke-freeze-1',
-            state: 'frozen',
-            triggerKind: 'operator',
-            decisionOrigin: 'operator',
-            deduplicated: false,
-          },
-        );
-        assert.equal(
-          await queryPostgres(
-            "select state || '|' || trigger_kind || '|' || origin_surface from polyphony_runtime.development_freezes where request_id = 'smoke-freeze-1';",
-          ),
-          'frozen|operator|operator_api',
-        );
-        assert.equal(
-          await queryPostgres(
-            'select development_freeze::text from polyphony_runtime.agent_state where id = 1;',
-          ),
-          'true',
-        );
+        assert.deepEqual(freezePayload, {
+          available: false,
+          action: 'freeze-development',
+          owner: 'CF-024',
+          reason: 'caller_admission_required',
+        });
 
         const frozenProposalResponse = await fetch(
           `${coreBaseUrl()}/control/development-proposals`,
@@ -924,23 +884,13 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
             }),
           },
         );
-        assert.equal(frozenProposalResponse.status, 409);
+        assert.equal(frozenProposalResponse.status, 501);
         assert.deepEqual(await frozenProposalResponse.json(), {
-          accepted: false,
-          reason: 'development_frozen',
+          available: false,
+          action: 'development-proposals',
+          owner: 'CF-024',
+          reason: 'caller_admission_required',
         });
-
-        await queryPostgres(
-          'update polyphony_runtime.agent_state set development_freeze = false where id = 1;',
-        );
-        await compose(['restart', 'core']);
-        await waitForHttp(coreHealthUrl());
-        assert.equal(
-          await queryPostgres(
-            'select development_freeze::text from polyphony_runtime.agent_state where id = 1;',
-          ),
-          'true',
-        );
       },
     );
 

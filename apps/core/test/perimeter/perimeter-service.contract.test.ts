@@ -123,6 +123,49 @@ void test('AC-F0018-03 / AC-F0018-06 allow trusted code-change requests with ver
   assert.equal(result.decisionReason, 'verified_authority');
 });
 
+void test('AC-F0018-03 allows internal trusted-ingress requests without minting a second approval ledger', async () => {
+  const memory = createMemoryStore();
+  const service = createPerimeterDecisionService({
+    store: memory.store,
+    createDecisionId: () => 'perimeter-decision:freeze-1',
+    now: () => new Date('2026-04-15T08:00:00.000Z'),
+  });
+
+  const result = await service.evaluateControlRequest({
+    requestId: 'perimeter-request:trusted-internal-1',
+    ingressOwner: PERIMETER_INGRESS_OWNER.F_0016,
+    actionClass: PERIMETER_ACTION_CLASS.CODE_OR_PROMOTION_CHANGE,
+    authorityOwner: PERIMETER_AUTHORITY_OWNER.TRUSTED_INGRESS,
+    targetRef: 'workspace:body',
+    evidenceRefs: ['internal:proposal:1'],
+  });
+
+  assert.equal(result.accepted, true);
+  assert.equal(result.verdict, 'allow');
+  assert.equal(result.decisionReason, 'verified_authority');
+});
+
+void test('AC-F0018-04 denies operator-api trusted ingress until caller admission exists', async () => {
+  const memory = createMemoryStore();
+  const service = createPerimeterDecisionService({
+    store: memory.store,
+    createDecisionId: () => 'perimeter-decision:freeze-operator-denied',
+    now: () => new Date('2026-04-15T08:00:30.000Z'),
+  });
+
+  const result = await service.evaluateControlRequest({
+    requestId: 'perimeter-request:freeze-operator-denied',
+    ingressOwner: PERIMETER_INGRESS_OWNER.F_0013,
+    actionClass: PERIMETER_ACTION_CLASS.FREEZE_DEVELOPMENT,
+    authorityOwner: PERIMETER_AUTHORITY_OWNER.TRUSTED_INGRESS,
+    evidenceRefs: ['operator:freeze:1'],
+  });
+
+  assert.equal(result.accepted, true);
+  assert.equal(result.verdict, 'deny');
+  assert.equal(result.decisionReason, 'trusted_ingress_missing');
+});
+
 void test('AC-F0018-04 denies supported paths when trusted ingress is missing', async () => {
   const memory = createMemoryStore();
   const service = createPerimeterDecisionService({
@@ -207,7 +250,7 @@ void test('AC-F0018-07 denies human_override claims when adjacent owner evidence
   assert.equal(result.decisionReason, 'human_override_evidence_missing');
 });
 
-void test('AC-F0018-05 returns refusal-only verdicts for force_rollback and disable_external_network without inventing new owners', async () => {
+void test('AC-F0018-05 allows rollback gating for adjacent owner seams and keeps disable_external_network explicit unavailable', async () => {
   const memory = createMemoryStore();
   const service = createPerimeterDecisionService({
     store: memory.store,
@@ -217,7 +260,7 @@ void test('AC-F0018-05 returns refusal-only verdicts for force_rollback and disa
 
   const rollback = await service.evaluateControlRequest({
     requestId: 'perimeter-request:3',
-    ingressOwner: PERIMETER_INGRESS_OWNER.CF_025,
+    ingressOwner: PERIMETER_INGRESS_OWNER.F_0017,
     actionClass: PERIMETER_ACTION_CLASS.FORCE_ROLLBACK,
     authorityOwner: PERIMETER_AUTHORITY_OWNER.GOVERNOR,
     governorProposalId: 'development-proposal:3',
@@ -235,8 +278,8 @@ void test('AC-F0018-05 returns refusal-only verdicts for force_rollback and disa
   });
 
   assert.equal(rollback.accepted, true);
-  assert.equal(rollback.verdict, 'require_human_review');
-  assert.equal(rollback.decisionReason, 'downstream_owner_required');
+  assert.equal(rollback.verdict, 'allow');
+  assert.equal(rollback.decisionReason, 'verified_authority');
   assert.equal(network.accepted, true);
   assert.equal(network.verdict, 'require_human_review');
   assert.equal(network.decisionReason, 'explicit_unavailable');

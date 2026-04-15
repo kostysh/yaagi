@@ -1,24 +1,16 @@
 import type { Hono } from 'hono';
 import { ZodError } from 'zod';
 import {
-  operatorDevelopmentProposalRequestSchema,
   operatorEpisodeCursorSchema,
   operatorEpisodesQuerySchema,
-  operatorFreezeDevelopmentRequestSchema,
   operatorStateQuerySchema,
   operatorTickControlRequestSchema,
   operatorTimelineCursorSchema,
   operatorTimelineQuerySchema,
-  type OperatorDevelopmentProposalRequest,
   type OperatorEpisodeCursor,
-  type OperatorFreezeDevelopmentRequest,
   type OperatorTimelineCursor,
 } from '@yaagi/contracts/operator-api';
-import {
-  DEVELOPMENT_PROPOSAL_KIND,
-  type DevelopmentFreezeResult,
-  type DevelopmentProposalResult,
-} from '@yaagi/contracts/governor';
+import type { DevelopmentFreezeResult, DevelopmentProposalResult } from '@yaagi/contracts/governor';
 import type { OperatorRicherRegistryHealthSummary } from '@yaagi/contracts/models';
 import type {
   RuntimeEpisodePageInput,
@@ -92,34 +84,23 @@ const toValidationError = (error: unknown): string => {
   return error instanceof Error ? error.message : String(error);
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === 'object' && !Array.isArray(value);
+type OperatorUnavailableControlAction = 'freeze-development' | 'development-proposals';
 
-const hasUnsupportedProposalKind = (payload: unknown): boolean =>
-  isRecord(payload) &&
-  typeof payload['proposalKind'] === 'string' &&
-  !Object.values(DEVELOPMENT_PROPOSAL_KIND).includes(
-    payload[
-      'proposalKind'
-    ] as (typeof DEVELOPMENT_PROPOSAL_KIND)[keyof typeof DEVELOPMENT_PROPOSAL_KIND],
-  );
-
-const proposalStatusForReason = (
-  reason: Exclude<DevelopmentProposalResult, { accepted: true }>['reason'],
-): 400 | 409 | 422 | 503 => {
-  switch (reason) {
-    case 'invalid_request':
-      return 400;
-    case 'conflicting_request_id':
-    case 'development_frozen':
-      return 409;
-    case 'insufficient_evidence':
-    case 'unsupported_proposal_kind':
-      return 422;
-    case 'persistence_unavailable':
-      return 503;
-  }
+type OperatorUnavailableControlResponse = {
+  available: false;
+  action: OperatorUnavailableControlAction;
+  owner: 'CF-024';
+  reason: 'caller_admission_required';
 };
+
+const unavailableControlResponse = (
+  action: OperatorUnavailableControlAction,
+): OperatorUnavailableControlResponse => ({
+  available: false,
+  action,
+  owner: 'CF-024',
+  reason: 'caller_admission_required',
+});
 
 const buildPage = <TItem extends RuntimeTimelineEventRow | RuntimeEpisodeRow>(
   rows: TItem[],
@@ -347,138 +328,11 @@ export function registerOperatorApiRoutes(
     }
   });
 
-  app.post('/control/freeze-development', async (context) => {
-    if (!runtimeLifecycle.freezeDevelopment) {
-      return context.json(
-        {
-          accepted: false,
-          reason: 'persistence_unavailable',
-        },
-        503,
-      );
-    }
-
-    let payload: unknown;
-    try {
-      payload = await context.req.json();
-    } catch (error) {
-      return context.json(
-        { accepted: false, reason: 'invalid_request', error: toValidationError(error) },
-        400,
-      );
-    }
-
-    let parsed: OperatorFreezeDevelopmentRequest;
-    try {
-      parsed = operatorFreezeDevelopmentRequestSchema.parse(payload);
-    } catch (error) {
-      return context.json(
-        { accepted: false, reason: 'invalid_request', error: toValidationError(error) },
-        400,
-      );
-    }
-
-    try {
-      const result = await runtimeLifecycle.freezeDevelopment({
-        requestId: parsed.requestId,
-        reason: parsed.reason,
-        evidenceRefs: parsed.evidenceRefs,
-        requestedBy: 'operator_api',
-        requestedAt: new Date().toISOString(),
-      });
-
-      if (result.accepted) {
-        return context.json(result, 202);
-      }
-
-      const status =
-        result.reason === 'conflicting_request_id'
-          ? 409
-          : result.reason === 'unsupported_reaction'
-            ? 422
-            : 503;
-      return context.json(result, status);
-    } catch (error) {
-      return context.json(
-        {
-          accepted: false,
-          requestId: parsed.requestId,
-          reason: 'persistence_unavailable',
-          error: toValidationError(error),
-        },
-        503,
-      );
-    }
+  app.post('/control/freeze-development', (context) => {
+    return context.json(unavailableControlResponse('freeze-development'), 501);
   });
 
-  app.post('/control/development-proposals', async (context) => {
-    if (!runtimeLifecycle.submitDevelopmentProposal) {
-      return context.json(
-        {
-          accepted: false,
-          reason: 'persistence_unavailable',
-        },
-        503,
-      );
-    }
-
-    let payload: unknown;
-    try {
-      payload = await context.req.json();
-    } catch (error) {
-      return context.json(
-        { accepted: false, reason: 'invalid_request', error: toValidationError(error) },
-        400,
-      );
-    }
-
-    if (hasUnsupportedProposalKind(payload)) {
-      return context.json(
-        {
-          accepted: false,
-          reason: 'unsupported_proposal_kind',
-        },
-        422,
-      );
-    }
-
-    let parsed: OperatorDevelopmentProposalRequest;
-    try {
-      parsed = operatorDevelopmentProposalRequestSchema.parse(payload);
-    } catch (error) {
-      return context.json(
-        { accepted: false, reason: 'invalid_request', error: toValidationError(error) },
-        400,
-      );
-    }
-
-    try {
-      const result = await runtimeLifecycle.submitDevelopmentProposal({
-        requestId: parsed.requestId,
-        proposalKind: parsed.proposalKind,
-        problemSignature: parsed.problemSignature,
-        summary: parsed.summary,
-        evidenceRefs: parsed.evidenceRefs,
-        rollbackPlanRef: parsed.rollbackPlanRef,
-        targetRef: parsed.targetRef,
-        requestedAt: new Date().toISOString(),
-      });
-
-      if (result.accepted) {
-        return context.json(result, 202);
-      }
-
-      return context.json(result, proposalStatusForReason(result.reason));
-    } catch (error) {
-      return context.json(
-        {
-          accepted: false,
-          requestId: parsed.requestId,
-          reason: 'persistence_unavailable',
-          error: toValidationError(error),
-        },
-        503,
-      );
-    }
+  app.post('/control/development-proposals', (context) => {
+    return context.json(unavailableControlResponse('development-proposals'), 501);
   });
 }

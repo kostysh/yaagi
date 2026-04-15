@@ -156,6 +156,42 @@ void test('AC-F0010-02 denies restricted_shell path arguments that escape the wr
   assert.equal(shellCalled, false);
 });
 
+void test('AC-F0018-11 denies restricted_shell commands outside the allowlist before execution starts', async () => {
+  const rootDir = await mkdtemp(path.join(tmpdir(), 'yaagi-f0018-shell-command-'));
+  const config = createActionTestConfig(rootDir);
+  await mkdir(config.workspaceBodyPath, { recursive: true });
+  await mkdir(config.seedRootPath, { recursive: true });
+
+  let shellCalled = false;
+  const gateway = createPhase0ToolGateway({
+    config,
+    executeShell: () => {
+      shellCalled = true;
+      return Promise.resolve({
+        stdout: '',
+        stderr: '',
+        exitCode: 0,
+      });
+    },
+  });
+
+  const result = await gateway.execute({
+    tickId: 'tick-shell-command-denied',
+    actionId: 'action-shell-command-denied',
+    verdictKind: 'tool_call',
+    toolName: 'restricted_shell.exec',
+    parametersJson: {
+      command: 'bash',
+      cwd: '.',
+    },
+  });
+
+  assert.equal(result.verdict.accepted, false);
+  assert.equal(result.verdict.refusalReason, 'boundary_denied');
+  assert.equal(result.verdict.boundaryCheck.deniedBy, 'restricted_shell.command');
+  assert.equal(shellCalled, false);
+});
+
 void test('AC-F0010-05 denies git_body writes that traverse a workspace symlink into immutable seed content', async () => {
   const rootDir = await mkdtemp(path.join(tmpdir(), 'yaagi-f0010-symlink-boundary-'));
   const config = createActionTestConfig(rootDir);
@@ -188,6 +224,37 @@ void test('AC-F0010-05 denies git_body writes that traverse a workspace symlink 
     await nodeReadFile(path.join(config.seedRootPath, 'constitution.yaml'), 'utf8'),
     'immutable seed',
   );
+});
+
+void test('AC-F0018-11 denies network_http egress to non-allowlisted hosts before fetch execution', async () => {
+  const rootDir = await mkdtemp(path.join(tmpdir(), 'yaagi-f0018-http-egress-'));
+  const config = createActionTestConfig(rootDir);
+  await mkdir(config.workspaceBodyPath, { recursive: true });
+  await mkdir(config.seedRootPath, { recursive: true });
+
+  let fetchCalled = false;
+  const gateway = createPhase0ToolGateway({
+    config,
+    fetchImpl: () => {
+      fetchCalled = true;
+      return Promise.resolve(new Response('should not happen', { status: 200 }));
+    },
+  });
+
+  const result = await gateway.execute({
+    tickId: 'tick-http-egress-denied',
+    actionId: 'action-http-egress-denied',
+    verdictKind: 'tool_call',
+    toolName: 'network_http.get',
+    parametersJson: {
+      url: 'https://example.com/egress',
+    },
+  });
+
+  assert.equal(result.verdict.accepted, false);
+  assert.equal(result.verdict.refusalReason, 'boundary_denied');
+  assert.equal(result.verdict.boundaryCheck.deniedBy, 'network_http.host');
+  assert.equal(fetchCalled, false);
 });
 
 void test('AC-F0010-02 refuses git_body writes when the parent directory is missing from the workspace body', async () => {

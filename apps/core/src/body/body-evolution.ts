@@ -18,6 +18,12 @@ import {
   type DevelopmentProposalExecutionOutcomeResult,
 } from '@yaagi/contracts/governor';
 import {
+  PERIMETER_ACTION_CLASS,
+  PERIMETER_AUTHORITY_OWNER,
+  PERIMETER_INGRESS_OWNER,
+  PERIMETER_VERDICT,
+} from '@yaagi/contracts/perimeter';
+import {
   createBodyEvolutionStore,
   createRuntimeDbClient,
   type BodyChangeEventRow,
@@ -32,6 +38,10 @@ import {
   type BodyEvolutionCommandRunner,
   type BodyEvolutionCommandSpec,
 } from './command-runner.ts';
+import {
+  createDbBackedPerimeterDecisionService,
+  type PerimeterDecisionService,
+} from '../perimeter/index.ts';
 import {
   createBodyEvolutionGitGateway,
   createBodyEvolutionStableTagName,
@@ -142,6 +152,7 @@ type BodyChangeMutationRejectedReason =
   | 'worktree_unavailable'
   | 'governor_target_unavailable'
   | 'governor_outcome_unavailable'
+  | 'perimeter_denied'
   | 'persistence_unavailable';
 
 type BodyChangeMutationRejected = {
@@ -211,6 +222,7 @@ export type BodyEvolutionServiceOptions = {
   verifyGovernorApproval?: BodyChangeApprovalVerifier;
   ensureHumanOverrideGovernorApproval: BodyChangeHumanOverrideGovernorApprover;
   recordGovernorOutcome: BodyChangeGovernorOutcomeRecorder;
+  perimeterDecisionService?: PerimeterDecisionService;
   resolveEvalSuiteCommand?: BodyChangeEvalSuiteResolver;
   gitGateway?: BodyEvolutionGitGateway;
   commandRunner?: BodyEvolutionCommandRunner;
@@ -987,6 +999,7 @@ export const createBodyEvolutionService = (
     options.gitGateway ?? createBodyEvolutionGitGateway({ config: options.config });
   const commandRunner = options.commandRunner ?? createBodyEvolutionCommandRunner();
   const resolveEvalSuiteCommand = options.resolveEvalSuiteCommand ?? resolveDefaultEvalSuiteCommand;
+  const perimeterDecisionService = options.perimeterDecisionService;
 
   return {
     async submitBodyChangeRequest(input) {
@@ -1067,6 +1080,45 @@ export const createBodyEvolutionService = (
           pathValidation.reason,
           request.requestId,
           pathValidation.detail,
+        );
+      }
+
+      const perimeterResult = await perimeterDecisionService?.evaluateControlRequest(
+        request.requestedByOwner === BODY_CHANGE_REQUESTED_BY_OWNER.GOVERNOR
+          ? {
+              requestId: request.requestId,
+              ingressOwner: PERIMETER_INGRESS_OWNER.F_0017,
+              actionClass: PERIMETER_ACTION_CLASS.CODE_OR_PROMOTION_CHANGE,
+              authorityOwner: PERIMETER_AUTHORITY_OWNER.GOVERNOR,
+              governorProposalId: governorProposalId ?? request.governorProposalId,
+              governorDecisionRef: governorDecisionRef ?? request.governorDecisionRef,
+              targetRef: expectedGovernorTargetRef,
+              evidenceRefs: request.evidenceRefs,
+            }
+          : {
+              requestId: request.requestId,
+              ingressOwner: PERIMETER_INGRESS_OWNER.F_0017,
+              actionClass: PERIMETER_ACTION_CLASS.CODE_OR_PROMOTION_CHANGE,
+              authorityOwner: PERIMETER_AUTHORITY_OWNER.HUMAN_OVERRIDE,
+              humanOverrideEvidenceRef: request.ownerOverrideEvidenceRef,
+              targetRef: expectedGovernorTargetRef,
+              evidenceRefs: request.evidenceRefs,
+            },
+      );
+      if (perimeterResult && !perimeterResult.accepted) {
+        return createRejectedResult(
+          'persistence_unavailable',
+          request.requestId,
+          'perimeter decision persistence is unavailable',
+        );
+      }
+      if (perimeterResult && perimeterResult.verdict !== PERIMETER_VERDICT.ALLOW) {
+        return createRejectedResult(
+          request.requestedByOwner === BODY_CHANGE_REQUESTED_BY_OWNER.GOVERNOR
+            ? 'governor_not_approved'
+            : 'override_not_recorded',
+          request.requestId,
+          `perimeter refused code_or_promotion_change with ${perimeterResult.decisionReason}`,
         );
       }
 
@@ -1869,6 +1921,49 @@ export const createBodyEvolutionService = (
         );
       }
 
+      const rollbackEvidenceRefs = buildGovernorOutcomeEvidenceRefs(
+        input.evidenceRefs,
+        `body-change:rollback:${snapshot.snapshotId}`,
+      );
+      const perimeterResult = await perimeterDecisionService?.evaluateControlRequest(
+        proposal.requestedByOwner === BODY_CHANGE_REQUESTED_BY_OWNER.HUMAN_OVERRIDE
+          ? {
+              requestId: input.requestId,
+              ingressOwner: PERIMETER_INGRESS_OWNER.F_0017,
+              actionClass: PERIMETER_ACTION_CLASS.FORCE_ROLLBACK,
+              authorityOwner: PERIMETER_AUTHORITY_OWNER.HUMAN_OVERRIDE,
+              humanOverrideEvidenceRef: proposal.ownerOverrideEvidenceRef ?? '',
+              targetRef: governorTargetRef,
+              evidenceRefs: rollbackEvidenceRefs,
+            }
+          : {
+              requestId: input.requestId,
+              ingressOwner: PERIMETER_INGRESS_OWNER.F_0017,
+              actionClass: PERIMETER_ACTION_CLASS.FORCE_ROLLBACK,
+              authorityOwner: PERIMETER_AUTHORITY_OWNER.GOVERNOR,
+              governorProposalId: proposal.governorProposalId,
+              governorDecisionRef: proposal.governorDecisionRef ?? '',
+              targetRef: governorTargetRef,
+              evidenceRefs: rollbackEvidenceRefs,
+            },
+      );
+      if (perimeterResult && !perimeterResult.accepted) {
+        return createMutationRejected(
+          'persistence_unavailable',
+          input.requestId,
+          'perimeter decision persistence is unavailable',
+          { proposal, snapshot },
+        );
+      }
+      if (perimeterResult && perimeterResult.verdict !== PERIMETER_VERDICT.ALLOW) {
+        return createMutationRejected(
+          'perimeter_denied',
+          input.requestId,
+          `perimeter refused force_rollback with ${perimeterResult.decisionReason}`,
+          { proposal, snapshot },
+        );
+      }
+
       const createdAt = input.recordedAt ?? now().toISOString();
       let rollbackProposal = proposal;
       if (proposal.status === BODY_CHANGE_STATUS.ROLLED_BACK) {
@@ -1936,10 +2031,7 @@ export const createBodyEvolutionService = (
             ? 'human_override'
             : 'runtime',
         targetRef: governorTargetRef,
-        evidenceRefs: buildGovernorOutcomeEvidenceRefs(
-          input.evidenceRefs,
-          `body-change:rollback:${snapshot.snapshotId}`,
-        ),
+        evidenceRefs: rollbackEvidenceRefs,
         recordedAt: createdAt,
         payload: {
           executionBoundary: 'F-0017',
@@ -1986,6 +2078,8 @@ export const createDbBackedBodyEvolutionService = (
     ensureHumanOverrideGovernorApprovalFromDb(config);
   const recordGovernorOutcome =
     options.recordGovernorOutcome ?? createGovernorOutcomeRecorder(config);
+  const perimeterDecisionService =
+    options.perimeterDecisionService ?? createDbBackedPerimeterDecisionService(config);
 
   const runWithStore = async <T>(
     execute: (service: BodyEvolutionService) => Promise<T>,
@@ -2001,6 +2095,7 @@ export const createDbBackedBodyEvolutionService = (
             verifyGovernorApproval,
             ensureHumanOverrideGovernorApproval,
             recordGovernorOutcome,
+            perimeterDecisionService,
           }),
         ),
     );

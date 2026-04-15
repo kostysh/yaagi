@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-14T21:22:08.983Z_
+_Last sync: 2026-04-14T23:49:38.031Z_
 
 ## Features
 
@@ -27,7 +27,7 @@ _Last sync: 2026-04-14T21:22:08.983Z_
 | F-0015 | Контур workshop для датасетов, обучения, оценки и promotion | done | strict | workshop | F-0002, F-0003, F-0014 | runtime,db,models,workshop,artifacts,observability | `../features/F-0015-workshop-datasets-training-eval-and-promotion.md` |
 | F-0016 | Development Governor и управление изменениями | done | strict | governance | F-0004, F-0011, F-0012, F-0013, F-0015 | runtime,db,governance,api,models,workspace,workshop | `../features/F-0016-development-governor-and-change-management.md` |
 | F-0017 | Git-управляемая эволюция тела и стабильные снапшоты | done | strict | body | F-0001, F-0002, F-0010, F-0015, F-0016 | runtime,db,governance,workspace,tooling,recovery | `../features/F-0017-git-managed-body-evolution-and-stable-snapshots.md` |
-| F-0018 | Профиль безопасности и изоляции | planned | deferred | safety | F-0002, F-0010, F-0013, F-0016, F-0017 | runtime,infra,governance,api,workspace,network,safety | `../features/F-0018-security-and-isolation-profile.md` |
+| F-0018 | Профиль безопасности и изоляции | done | strict | safety | F-0002, F-0010, F-0013, F-0016, F-0017 | runtime,infra,governance,api,workspace,network,safety | `../features/F-0018-security-and-isolation-profile.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -187,7 +187,7 @@ graph TD
 - **WARN** F-0012 — Potential compound ACs detected: AC-F0012-01, AC-F0012-02, AC-F0012-03, AC-F0012-04, AC-F0012-05, AC-F0012-06, AC-F0012-07, AC-F0012-08, AC-F0012-01, AC-F0012-01, AC-F0012-02, AC-F0012-03, AC-F0012-01, AC-F0012-05, AC-F0012-04, AC-F0012-03, AC-F0012-04, AC-F0012-06, AC-F0012-08. Prefer one obligation per AC.
 - **WARN** F-0013 — NFR section looks aspirational. Add a metric, budget/threshold, or observable signal for any normative NFR.
 - **WARN** F-0013 — Planned+ dossier has dependencies, but the slicing plan does not show clear `Depends on:` visibility with owner and unblock condition. Add the dependency note where it affects delivery order.
-- **WARN** F-0013 — Potential compound ACs detected: AC-F0013-01, AC-F0013-02, AC-F0013-03, AC-F0013-04, AC-F0013-05, AC-F0013-06, AC-F0013-07, AC-F0013-08, AC-F0013-01, AC-F0013-02, AC-F0013-04, AC-F0013-05, AC-F0013-01, AC-F0013-08, AC-F0013-01, AC-F0013-03, AC-F0013-04, AC-F0013-05, AC-F0013-07, AC-F0013-08. Prefer one obligation per AC.
+- **WARN** F-0013 — Potential compound ACs detected: AC-F0013-01, AC-F0013-02, AC-F0013-03, AC-F0013-04, AC-F0013-05, AC-F0013-06, AC-F0013-07, AC-F0013-08, AC-F0013-01, AC-F0013-02, AC-F0013-04, AC-F0013-05, AC-F0013-06, AC-F0013-01, AC-F0013-08, AC-F0013-01, AC-F0013-03, AC-F0013-04, AC-F0013-05, AC-F0013-07, AC-F0013-08. Prefer one obligation per AC.
 - **WARN** F-0014 — Planned+ dossier has dependencies, but the slicing plan does not show clear `Depends on:` visibility with owner and unblock condition. Add the dependency note where it affects delivery order.
 - **WARN** F-0014 — Change log shows mature replanning, but no short reason tags were found. Prefer tags like `[clarification]`, `[scope realignment]`, `[dependency realignment]`, `[risk discovery]`, or `[contract drift]`.
 - **WARN** F-0014 — Potential compound ACs detected: AC-F0014-01, AC-F0014-02, AC-F0014-03, AC-F0014-04, AC-F0014-05, AC-F0014-06, AC-F0014-07, AC-F0014-01, AC-F0014-03, AC-F0014-03, AC-F0014-04, AC-F0014-04, AC-F0014-03, AC-F0014-03, AC-F0014-04, AC-F0014-02, AC-F0014-03, AC-F0014-04, AC-F0014-06. Prefer one obligation per AC.
@@ -196,7 +196,7 @@ graph TD
 - **WARN** F-0015 — Planned+ dossier has dependencies, but the slicing plan does not show clear `Depends on:` visibility with owner and unblock condition. Add the dependency note where it affects delivery order.
 - **WARN** F-0015 — Change log shows mature replanning, but no short reason tags were found. Prefer tags like `[clarification]`, `[scope realignment]`, `[dependency realignment]`, `[risk discovery]`, or `[contract drift]`.
 - **WARN** F-0015 — Potential compound ACs detected: AC-F0015-01, AC-F0015-02, AC-F0015-03, AC-F0015-04, AC-F0015-05, AC-F0015-06, AC-F0015-07, AC-F0015-08, AC-F0015-09, AC-F0015-02, AC-F0015-02, AC-F0015-04, AC-F0015-05, AC-F0015-07, AC-F0015-02, AC-F0015-08, AC-F0015-05, AC-F0015-01, AC-F0015-02, AC-F0015-03, AC-F0015-04, AC-F0015-05, AC-F0015-06, AC-F0015-08, AC-F0015-09. Prefer one obligation per AC.
-- **WARN** F-0016 — Potential compound ACs detected: AC-F0016-01, AC-F0016-02, AC-F0016-03, AC-F0016-04, AC-F0016-05, AC-F0016-06, AC-F0016-07, AC-F0016-08, AC-F0016-09, AC-F0016-10, AC-F0016-01, AC-F0016-03, AC-F0016-04, AC-F0016-07, AC-F0016-02, AC-F0016-01, AC-F0016-02, AC-F0016-04, AC-F0016-06, AC-F0016-07, AC-F0016-08, AC-F0016-09, AC-F0016-10. Prefer one obligation per AC.
+- **WARN** F-0016 — Potential compound ACs detected: AC-F0016-01, AC-F0016-02, AC-F0016-03, AC-F0016-04, AC-F0016-05, AC-F0016-06, AC-F0016-07, AC-F0016-08, AC-F0016-09, AC-F0016-10, AC-F0016-01, AC-F0016-03, AC-F0016-04, AC-F0016-07, AC-F0016-02, AC-F0016-01, AC-F0016-02, AC-F0016-06, AC-F0016-07, AC-F0016-08, AC-F0016-09, AC-F0016-10. Prefer one obligation per AC.
 - **WARN** F-0017 — Potential compound ACs detected: AC-F0017-06, AC-F0017-06. Prefer one obligation per AC.
-- **WARN** F-0018 — Potential compound ACs detected: AC-F0018-01, AC-F0018-02, AC-F0018-03, AC-F0018-04, AC-F0018-05, AC-F0018-06, AC-F0018-07, AC-F0018-08, AC-F0018-09, AC-F0018-10, AC-F0018-11, AC-F0018-12, AC-F0018-13, AC-F0018-03, AC-F0018-03, AC-F0018-01, AC-F0018-03, AC-F0018-08, AC-F0018-11, AC-F0018-03, AC-F0018-06, AC-F0018-06, AC-F0018-07, AC-F0018-09, AC-F0018-11, AC-F0018-13. Prefer one obligation per AC.
+- **WARN** F-0018 — Potential compound ACs detected: AC-F0018-01, AC-F0018-02, AC-F0018-03, AC-F0018-04, AC-F0018-05, AC-F0018-06, AC-F0018-07, AC-F0018-08, AC-F0018-09, AC-F0018-10, AC-F0018-11, AC-F0018-12, AC-F0018-13, AC-F0018-03, AC-F0018-03, AC-F0018-01, AC-F0018-03, AC-F0018-08, AC-F0018-11, AC-F0018-03, AC-F0018-06, AC-F0018-01, AC-F0018-02, AC-F0018-03, AC-F0018-04, AC-F0018-05, AC-F0018-06, AC-F0018-07, AC-F0018-08, AC-F0018-09, AC-F0018-10, AC-F0018-11, AC-F0018-12, AC-F0018-13. Prefer one obligation per AC.
 <!-- END GENERATED RED_FLAGS -->
