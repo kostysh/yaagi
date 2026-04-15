@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-14T23:53:10.152Z",
+  "updated_at": "2026-04-15T15:13:37.232Z",
   "last_refresh_at": "2026-04-10T01:45:43.494Z",
   "context": {
     "glossary": [
@@ -710,10 +710,16 @@
       "reverse_dependency_keys": [
         "CF-027"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "69fac91d-aff2-43f7-8ae2-42e836ca925d"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "dependency_changed"
+      ],
+      "attention_reasons": [
+        "Dependency changed: review CF-018."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -755,11 +761,17 @@
         "CF-026",
         "CF-027"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
-      "ready_for_next_step": true
+      "open_todo_ids": [
+        "b427b628-98cf-4a65-ab2c-876fe30ecd96"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "dependency_changed"
+      ],
+      "attention_reasons": [
+        "Dependency changed: review CF-018."
+      ],
+      "ready_for_next_step": false
     },
     {
       "item_key": "CF-016",
@@ -852,7 +864,7 @@
       "item_key": "CF-018",
       "title": "Консолидация, event envelope и graceful shutdown",
       "type": "feature",
-      "delivery_state": "defined",
+      "delivery_state": "specified",
       "gaps": [],
       "depends_on_keys": [
         "CF-002",
@@ -921,11 +933,17 @@
       "quality_attribute_keys": [],
       "policy_decision_keys": [],
       "reverse_dependency_keys": [],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
-      "ready_for_next_step": true
+      "open_todo_ids": [
+        "eef44da4-0fbe-4103-a5f9-429e277bdcfb"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "dependency_changed"
+      ],
+      "attention_reasons": [
+        "Dependency changed: review CF-018."
+      ],
+      "ready_for_next_step": false
     },
     {
       "item_key": "CF-020",
@@ -1164,11 +1182,17 @@
         "CF-019",
         "CF-026"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
-      "ready_for_next_step": true
+      "open_todo_ids": [
+        "a952d8d1-0ca4-4b5d-ad3a-698d272fe511"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "dependency_changed"
+      ],
+      "attention_reasons": [
+        "Dependency changed: review CF-018."
+      ],
+      "ready_for_next_step": false
     },
     {
       "item_key": "CF-026",
@@ -1202,11 +1226,17 @@
       "quality_attribute_keys": [],
       "policy_decision_keys": [],
       "reverse_dependency_keys": [],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
-      "ready_for_next_step": true
+      "open_todo_ids": [
+        "daf49383-6ad3-4ee3-8311-e6028a134452"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "dependency_changed"
+      ],
+      "attention_reasons": [
+        "Dependency changed: review CF-018."
+      ],
+      "ready_for_next_step": false
     },
     {
       "item_key": "CF-027",
@@ -1242,12 +1272,91 @@
       "quality_attribute_keys": [],
       "policy_decision_keys": [],
       "reverse_dependency_keys": [],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
-      "ready_for_next_step": true
+      "open_todo_ids": [
+        "7304d104-7d80-49c0-ab9b-e6a7e7d70f3b"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "dependency_changed"
+      ],
+      "attention_reasons": [
+        "Dependency changed: review CF-018."
+      ],
+      "ready_for_next_step": false
     }
   ],
-  "todos": []
+  "todos": [
+    {
+      "todo_id": "69fac91d-aff2-43f7-8ae2-42e836ca925d",
+      "item_key": "CF-014",
+      "type": "review_dependency_change",
+      "managed_by": "mutation",
+      "message": "Upstream task changed: CF-018. Review whether this task needs updates.",
+      "created_at": "2026-04-15T15:13:37.227Z",
+      "related_sources": [],
+      "related_item_keys": [
+        "CF-018"
+      ]
+    },
+    {
+      "todo_id": "7304d104-7d80-49c0-ab9b-e6a7e7d70f3b",
+      "item_key": "CF-027",
+      "type": "review_dependency_change",
+      "managed_by": "mutation",
+      "message": "Upstream task changed: CF-018. Review whether this task needs updates.",
+      "created_at": "2026-04-15T15:13:37.228Z",
+      "related_sources": [],
+      "related_item_keys": [
+        "CF-018"
+      ]
+    },
+    {
+      "todo_id": "a952d8d1-0ca4-4b5d-ad3a-698d272fe511",
+      "item_key": "CF-025",
+      "type": "review_dependency_change",
+      "managed_by": "mutation",
+      "message": "Upstream task changed: CF-018. Review whether this task needs updates.",
+      "created_at": "2026-04-15T15:13:37.228Z",
+      "related_sources": [],
+      "related_item_keys": [
+        "CF-018"
+      ]
+    },
+    {
+      "todo_id": "b427b628-98cf-4a65-ab2c-876fe30ecd96",
+      "item_key": "CF-015",
+      "type": "review_dependency_change",
+      "managed_by": "mutation",
+      "message": "Upstream task changed: CF-018. Review whether this task needs updates.",
+      "created_at": "2026-04-15T15:13:37.228Z",
+      "related_sources": [],
+      "related_item_keys": [
+        "CF-018"
+      ]
+    },
+    {
+      "todo_id": "daf49383-6ad3-4ee3-8311-e6028a134452",
+      "item_key": "CF-026",
+      "type": "review_dependency_change",
+      "managed_by": "mutation",
+      "message": "Upstream task changed: CF-018. Review whether this task needs updates.",
+      "created_at": "2026-04-15T15:13:37.228Z",
+      "related_sources": [],
+      "related_item_keys": [
+        "CF-018"
+      ]
+    },
+    {
+      "todo_id": "eef44da4-0fbe-4103-a5f9-429e277bdcfb",
+      "item_key": "CF-019",
+      "type": "review_dependency_change",
+      "managed_by": "mutation",
+      "message": "Upstream task changed: CF-018. Review whether this task needs updates.",
+      "created_at": "2026-04-15T15:13:37.228Z",
+      "related_sources": [],
+      "related_item_keys": [
+        "CF-018"
+      ]
+    }
+  ]
 }

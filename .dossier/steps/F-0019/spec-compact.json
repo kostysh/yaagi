@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "created_at": "2026-04-15T15:31:09.617Z",
+  "feature_id": "F-0019",
+  "dossier": "docs/features/F-0019-consolidation-event-envelope-graceful-shutdown.md",
+  "step": "spec-compact",
+  "dossier_status": "shaped",
+  "event_commit": "a135569cccd29882350ce98f7ea619541732b3a4",
+  "review_trace_commit": "a135569cccd29882350ce98f7ea619541732b3a4",
+  "verification_trace_commit": "a135569cccd29882350ce98f7ea619541732b3a4",
+  "verification_artifact": ".dossier/verification/F-0019/spec-compact-a135569cccd2.json",
+  "review_artifact": ".dossier/reviews/F-0019/spec-compact-a135569cccd2.json",
+  "review_freshness": "pass",
+  "process_complete": true,
+  "blockers": [],
+  "next_step": "plan-slice"
+}
