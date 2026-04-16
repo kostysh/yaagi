@@ -589,6 +589,7 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
             role: string;
             status: string;
             adapterOf: string | null;
+            artifactUri: string | null;
             baseModel: string;
             healthSummary: {
               healthy: boolean;
@@ -616,6 +617,8 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
             role: profile.role,
             status: profile.status,
             adapterOf: profile.adapterOf,
+            artifactDescriptorObserved:
+              profile.artifactUri?.endsWith('/seed/models/base/vllm-fast-manifest.json') ?? false,
             baseModel: profile.baseModel,
             healthy: profile.healthSummary.healthy,
           })),
@@ -625,7 +628,8 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
               role: 'deliberation',
               status: 'active',
               adapterOf: null,
-              baseModel: 'model-fast',
+              artifactDescriptorObserved: true,
+              baseModel: 'google/gemma-4-E4B-it',
               healthy: true,
             },
             {
@@ -633,7 +637,8 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
               role: 'reflex',
               status: 'active',
               adapterOf: null,
-              baseModel: 'model-fast',
+              artifactDescriptorObserved: true,
+              baseModel: 'google/gemma-4-E4B-it',
               healthy: true,
             },
             {
@@ -641,7 +646,8 @@ void test('F-0007 base deployment-cell smoke family', { concurrency: false }, as
               role: 'reflection',
               status: 'active',
               adapterOf: 'deliberation.fast@baseline',
-              baseModel: 'model-fast',
+              artifactDescriptorObserved: true,
+              baseModel: 'google/gemma-4-E4B-it',
               healthy: true,
             },
           ],

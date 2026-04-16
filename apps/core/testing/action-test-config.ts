@@ -4,6 +4,7 @@ import type { CoreRuntimeConfig } from '../src/platform/core-config.ts';
 export const createActionTestConfig = (rootDir: string): CoreRuntimeConfig => ({
   postgresUrl: 'postgres://yaagi:yaagi@127.0.0.1:5432/yaagi',
   fastModelBaseUrl: 'http://127.0.0.1:8000/v1',
+  fastModelDescriptorPath: path.join(rootDir, 'seed', 'models', 'base', 'vllm-fast-manifest.json'),
   deepModelBaseUrl: 'http://127.0.0.1:8001/v1',
   poolModelBaseUrl: 'http://127.0.0.1:8002/v1',
   telegramEnabled: false,

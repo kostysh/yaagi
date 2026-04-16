@@ -15,6 +15,7 @@ void test('AC-F0013-04 returns bounded baseline model diagnostics and the F-0014
               modelProfileId: PHASE0_BASELINE_PROFILE_ID.REFLEX,
               role: 'reflex',
               endpoint: 'http://vllm-fast:8000/v1',
+              artifactUri: 'file:///seed/models/base/vllm-fast-manifest.json',
               baseModel: 'model-fast',
               adapterOf: null,
               capabilities: ['reactive'],
@@ -58,6 +59,7 @@ void test('AC-F0013-04 returns bounded baseline model diagnostics and the F-0014
         role: string;
         status: string;
         adapterOf: string | null;
+        artifactUri: string | null;
         baseModel: string;
         healthSummary: {
           healthy: boolean;
@@ -87,6 +89,7 @@ void test('AC-F0013-04 returns bounded baseline model diagnostics and the F-0014
         role: 'reflex',
         status: 'active',
         adapterOf: null,
+        artifactUri: 'file:///seed/models/base/vllm-fast-manifest.json',
         baseModel: 'model-fast',
         healthSummary: {
           healthy: true,

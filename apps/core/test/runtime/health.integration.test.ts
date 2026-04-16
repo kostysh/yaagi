@@ -22,6 +22,52 @@ const createTempWorkspace = async (): Promise<string> => {
   await writeFile(path.join(root, 'seed/body/.gitkeep'), '', 'utf8');
   await writeFile(path.join(root, 'seed/skills/.gitkeep'), '', 'utf8');
   await writeFile(path.join(root, 'seed/models/base/.gitkeep'), '', 'utf8');
+  await writeFile(
+    path.join(root, 'seed/models/base/vllm-fast-manifest.json'),
+    JSON.stringify(
+      {
+        schemaVersion: '2026-04-16',
+        serviceId: 'vllm-fast',
+        selectionState: 'qualification_pending',
+        protocol: 'openai-compatible',
+        preferredCandidateId: 'gemma-4-e4b-it',
+        runtimeArtifactRoot: 'base/vllm-fast',
+        mustPassGates: ['canonical_container_boot'],
+        scorecard: [
+          { name: 'quality', weight: 40 },
+          { name: 'latency_throughput', weight: 25 },
+          { name: 'memory_headroom', weight: 20 },
+          { name: 'stability_restart', weight: 15 },
+        ],
+        candidates: [
+          {
+            candidateId: 'gemma-4-e4b-it',
+            modelId: 'google/gemma-4-E4B-it',
+            sourceUri: 'hf://google/gemma-4-E4B-it',
+            selectionRole: 'preferred',
+            runtimeSubdir: 'base/vllm-fast/google--gemma-4-E4B-it',
+          },
+          {
+            candidateId: 'phi-4-mini-instruct',
+            modelId: 'microsoft/Phi-4-mini-instruct',
+            sourceUri: 'hf://microsoft/Phi-4-mini-instruct',
+            selectionRole: 'fallback',
+            runtimeSubdir: 'base/vllm-fast/microsoft--Phi-4-mini-instruct',
+          },
+          {
+            candidateId: 'qwen3-8b',
+            modelId: 'Qwen/Qwen3-8B',
+            sourceUri: 'hf://Qwen/Qwen3-8B',
+            selectionRole: 'comparator',
+            runtimeSubdir: 'base/vllm-fast/Qwen--Qwen3-8B',
+          },
+        ],
+      },
+      null,
+      2,
+    ),
+    'utf8',
+  );
   await writeFile(path.join(root, 'seed/models/adapters/.gitkeep'), '', 'utf8');
   await writeFile(path.join(root, 'seed/models/specialists/.gitkeep'), '', 'utf8');
   await writeFile(path.join(root, 'seed/data/datasets/.gitkeep'), '', 'utf8');
@@ -98,6 +144,7 @@ void test('AC-F0008-06 surfaces baseline profile diagnostics through health and 
                 modelProfileId: PHASE0_BASELINE_PROFILE_ID.REFLEX,
                 role: 'reflex',
                 endpoint: 'http://vllm-fast:8000/v1',
+                artifactUri: 'file:///seed/models/base/vllm-fast-manifest.json',
                 baseModel: 'model-fast',
                 adapterOf: null,
                 capabilities: ['reactive'],
@@ -182,6 +229,7 @@ void test('AC-F0008-06 surfaces baseline profile diagnostics through health and 
           role: string;
           status: string;
           adapterOf: string | null;
+          artifactUri: string | null;
           baseModel: string;
           healthSummary: {
             healthy: boolean;
@@ -210,6 +258,7 @@ void test('AC-F0008-06 surfaces baseline profile diagnostics through health and 
           role: 'reflex',
           status: 'active',
           adapterOf: null,
+          artifactUri: 'file:///seed/models/base/vllm-fast-manifest.json',
           baseModel: 'model-fast',
           healthSummary: {
             healthy: true,

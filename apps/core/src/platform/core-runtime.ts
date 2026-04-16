@@ -98,6 +98,7 @@ const createFileSystemProbe = (config: CoreRuntimeConfig) => async (): Promise<b
     config.seedBodyPath,
     config.seedSkillsPath,
     config.seedModelsPath,
+    config.fastModelDescriptorPath,
     config.seedDataPath,
     config.workspaceBodyPath,
     config.workspaceSkillsPath,

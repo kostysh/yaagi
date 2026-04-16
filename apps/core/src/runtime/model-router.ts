@@ -38,6 +38,7 @@ export type BaselineModelProfileDiagnostic = {
   modelProfileId: string;
   role: BaselineModelProfileRole;
   endpoint: string;
+  artifactUri: string | null;
   baseModel: string;
   adapterOf: string | null;
   capabilities: string[];
@@ -213,6 +214,7 @@ const toBaselineDiagnostic = (
     modelProfileId: profile.modelProfileId,
     role: profile.role as BaselineModelProfileRole,
     endpoint: profile.endpoint,
+    artifactUri: profile.artifactUri,
     baseModel: profile.baseModel,
     adapterOf: profile.adapterOf,
     capabilities: profile.capabilitiesJson,

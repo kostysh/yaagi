@@ -42,6 +42,7 @@ void test('AC-F0015-02 registers the canonical workshop queue family on the pg-b
         ...createPlatformConfigEnv(root),
         postgresUrl: 'postgres://unused',
         fastModelBaseUrl: 'http://127.0.0.1:8000/v1',
+        fastModelDescriptorPath: `${root}/seed/models/base/vllm-fast-manifest.json`,
         deepModelBaseUrl: 'http://127.0.0.1:8001/v1',
         poolModelBaseUrl: 'http://127.0.0.1:8002/v1',
         telegramEnabled: false,

@@ -41,6 +41,52 @@ const createSeedFixture = async (): Promise<string> => {
     'utf8',
   );
   await writeFile(path.join(root, 'seed/models/base/model.txt'), 'seed-model', 'utf8');
+  await writeFile(
+    path.join(root, 'seed/models/base/vllm-fast-manifest.json'),
+    JSON.stringify(
+      {
+        schemaVersion: '2026-04-16',
+        serviceId: 'vllm-fast',
+        selectionState: 'qualification_pending',
+        protocol: 'openai-compatible',
+        preferredCandidateId: 'gemma-4-e4b-it',
+        runtimeArtifactRoot: 'base/vllm-fast',
+        mustPassGates: ['canonical_container_boot'],
+        scorecard: [
+          { name: 'quality', weight: 40 },
+          { name: 'latency_throughput', weight: 25 },
+          { name: 'memory_headroom', weight: 20 },
+          { name: 'stability_restart', weight: 15 },
+        ],
+        candidates: [
+          {
+            candidateId: 'gemma-4-e4b-it',
+            modelId: 'google/gemma-4-E4B-it',
+            sourceUri: 'hf://google/gemma-4-E4B-it',
+            selectionRole: 'preferred',
+            runtimeSubdir: 'base/vllm-fast/google--gemma-4-E4B-it',
+          },
+          {
+            candidateId: 'phi-4-mini-instruct',
+            modelId: 'microsoft/Phi-4-mini-instruct',
+            sourceUri: 'hf://microsoft/Phi-4-mini-instruct',
+            selectionRole: 'fallback',
+            runtimeSubdir: 'base/vllm-fast/microsoft--Phi-4-mini-instruct',
+          },
+          {
+            candidateId: 'qwen3-8b',
+            modelId: 'Qwen/Qwen3-8B',
+            sourceUri: 'hf://Qwen/Qwen3-8B',
+            selectionRole: 'comparator',
+            runtimeSubdir: 'base/vllm-fast/Qwen--Qwen3-8B',
+          },
+        ],
+      },
+      null,
+      2,
+    ),
+    'utf8',
+  );
   await writeFile(path.join(root, 'seed/data/datasets/dataset.txt'), 'seed-dataset', 'utf8');
 
   return root;
@@ -83,6 +129,10 @@ void test('AC-F0002-05 materializes empty runtime volumes from seed and preserve
       'seed-skills',
     );
     assert.equal(await readFile(path.join(root, 'models/base/model.txt'), 'utf8'), 'seed-model');
+    assert.match(
+      await readFile(path.join(root, 'models/base/vllm-fast-manifest.json'), 'utf8'),
+      /"serviceId": "vllm-fast"/,
+    );
     assert.equal(
       await readFile(path.join(root, 'data/datasets/dataset.txt'), 'utf8'),
       'seed-dataset',

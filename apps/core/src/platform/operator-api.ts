@@ -259,6 +259,7 @@ export function registerOperatorApiRoutes(
         role: profile.role,
         status: profile.status,
         adapterOf: profile.adapterOf,
+        artifactUri: profile.artifactUri,
         baseModel: profile.baseModel,
         healthSummary: profile.healthSummary,
       })),

@@ -31,6 +31,7 @@ import { createSubjectStateDbHarness } from '../../../../packages/db/testing/sub
 const perceptionConfig: CoreRuntimeConfig = {
   postgresUrl: 'postgres://yaagi:yaagi@127.0.0.1:5432/yaagi',
   fastModelBaseUrl: 'http://127.0.0.1:8000/v1',
+  fastModelDescriptorPath: '/tmp/yaagi-f0009-refusal/models/base/vllm-fast-manifest.json',
   deepModelBaseUrl: 'http://127.0.0.1:8001/v1',
   poolModelBaseUrl: 'http://127.0.0.1:8002/v1',
   telegramEnabled: false,

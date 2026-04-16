@@ -58,6 +58,7 @@ import {
 import { createPerceptionController, type StimulusIngestResult } from '../perception/index.ts';
 import type { CoreRuntimeConfig } from '../platform/core-config.ts';
 import { createPhase0DecisionInvoker } from '../platform/phase0-ai.ts';
+import { createVllmFastBaselineProfiles } from '../platform/vllm-fast-manifest.ts';
 import {
   createPhase0ModelRouter,
   type BaselineModelProfileDiagnostic,
@@ -1220,6 +1221,7 @@ export function createPhase0RuntimeLifecycle(
   const actionLogStore = createDbBackedActionLogStore(config);
   const modelRouter = createPhase0ModelRouter({
     fastModelBaseUrl: config.fastModelBaseUrl,
+    baselineProfiles: createVllmFastBaselineProfiles(config),
     store: modelProfileStore,
     resolveBaselineHealth,
   });

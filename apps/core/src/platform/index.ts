@@ -14,3 +14,9 @@ export {
   PHASE0_AGENT_KEYS,
   PHASE0_MODEL_ID,
 } from './phase0-ai.ts';
+export {
+  createVllmFastBaselineProfiles,
+  loadVllmFastManifest,
+  type VllmFastManifest,
+  type VllmFastManifestCandidate,
+} from './vllm-fast-manifest.ts';

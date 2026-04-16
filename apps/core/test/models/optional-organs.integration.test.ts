@@ -14,6 +14,7 @@ void test('AC-F0014-05 optional richer organs degrade explicitly without becomin
               modelProfileId: 'reflex.fast@baseline',
               role: 'reflex',
               endpoint: 'http://vllm-fast:8000/v1',
+              artifactUri: 'file:///seed/models/base/vllm-fast-manifest.json',
               baseModel: 'model-fast',
               adapterOf: null,
               capabilities: ['reactive'],
