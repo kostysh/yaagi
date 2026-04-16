@@ -7,6 +7,11 @@
 
 Зафиксировать первый shortlist кандидатов, дружественных к `vLLM`, для этой рабочей станции, чтобы к моменту реального выбора `fast` / `deep` / `pool` не пришлось заново поднимать весь ресёрч.
 
+Обновление `2026-04-16`:
+
+- после выхода `Gemma 4` shortlist дополнен кандидатом `google/gemma-4-E4B-it`;
+- он рассматривается как новый приоритетный кандидат для `vllm-fast`, но без автоматического вывода о совместимости именно с локальным `Ryzen AI MAX / gfx1151`, пока не выполнен реальный `vLLM` smoke test на этой машине.
+
 Целевые роли берутся из архитектуры, а не из этой записки:
 
 - `vllm-fast`: низколатентный generative organ для reactive ticks, summary, дешёвых draft-ов и route preselection.
@@ -55,6 +60,12 @@
 
 На бумаге эта машина под базовую совместимость подходит.
 
+Дополнительная оговорка после обновления shortlist:
+
+- upstream `vLLM` уже опубликовал отдельный `Gemma 4` guide с явной поддержкой `google/gemma-4-E4B-it`;
+- в этом guide AMD deployment path документирован для `MI300X` / `MI325X` / `MI350X` / `MI355X`, а не явно для `Ryzen AI MAX`;
+- поэтому для этой рабочей станции `Gemma 4 E4B` пока считается сильным кандидатом, но не локально доказанным baseline.
+
 ## Предположение о деплое для этой записки
 
 Для будущей оценки предполагаем:
@@ -84,19 +95,25 @@
 
 ### `fast`
 
-1. `Qwen/Qwen3-8B`
+1. `google/gemma-4-E4B-it`
+   - Уверенность: `confirmed`
+   - Почему: upstream `vLLM` уже имеет отдельный `Gemma 4` usage guide, где `Gemma 4 E4B IT` явно перечислена как supported model и фигурирует в quick-start `vllm serve google/gemma-4-E4B-it`.
+   - Назначение: новый приоритетный кандидат для `vllm-fast`, если нужен один современный low-footprint generative organ с сильным reasoning/coding upside и меньшим compute-давлением, чем у `Qwen/Qwen3-8B`.
+   - Риск: модель явно поддержана в `vLLM`, но локальная ROCm-совместимость на `Ryzen AI MAX / gfx1151` в `Gemma 4` guide не подтверждена напрямую; до повышения в основной кандидат нужен реальный smoke test на этой машине.
+
+2. `Qwen/Qwen3-8B`
    - Уверенность: `confirmed`
    - Почему: upstream `vLLM` явно перечисляет `Qwen3ForCausalLM` с примером `Qwen/Qwen3-8B`.
-   - Назначение: хороший первый default для `vllm-fast`, если нужен один современный general-purpose text model.
+   - Назначение: сильный запасной `fast`, если `Gemma 4 E4B` на локальном ROCm path окажется нестабильной или заметно тяжелее ожиданий.
    - Риск: под `vLLM` это всё ещё не "маленькая" модель; не стоит переносить на неё ожидания от квантованного `llama.cpp`.
 
-2. `microsoft/Phi-4-mini-instruct`
+3. `microsoft/Phi-4-mini-instruct`
    - Уверенность: `confirmed`
    - Почему: upstream `vLLM` явно перечисляет `Phi3ForCausalLM` с примером `microsoft/Phi-4-mini-instruct`.
    - Назначение: консервативный `fast`, если важнее сохранить отзывчивость рабочего стола, чем выжать максимум качества.
    - Риск: слабее Qwen-класса для широкого deliberation; лучше держать его на reactive / cheap-draft роли.
 
-3. `Qwen/Qwen3-4B`
+4. `Qwen/Qwen3-4B`
    - Уверенность: `inferred`
    - Почему: то же семейство `Qwen3ForCausalLM`, что и у явно поддержанного `Qwen/Qwen3-8B`.
    - Назначение: возможный более дешёвый `fast`, если `8B` окажется слишком дорогим под реальными замерами `vLLM`.
@@ -172,25 +189,25 @@
 
 ### Минимально безопасный стек
 
-- `fast`: `microsoft/Phi-4-mini-instruct`
+- `fast`: `google/gemma-4-E4B-it` после локального smoke; fallback — `microsoft/Phi-4-mini-instruct`
 - `deep`: `deepseek-ai/DeepSeek-R1-Distill-Qwen-7B`
 - `pool/embed`: `BAAI/bge-base-en-v1.5`
 - `pool/rerank`: сначала не нужен
 
 Почему:
 
-- минимизирует давление на ресурсы, но сохраняет архитектурное разделение между reactive generation, более глубоким reasoning и embeddings.
+- даёт шанс поднять более сильный `fast`-organ без немедленного перехода к `8B+` general-purpose baseline, но сохраняет консервативный fallback, если локальный ROCm path для `Gemma 4 E4B` окажется проблемным.
 
 ### Сбалансированный первый серьёзный стек
 
-- `fast`: `Qwen/Qwen3-8B`
+- `fast`: `google/gemma-4-E4B-it`
 - `deep`: `deepseek-ai/DeepSeek-R1-Distill-Qwen-14B`
 - `pool/embed`: `BAAI/bge-base-en-v1.5` или `Qwen/Qwen3-Embedding-0.6B`
 - `pool/rerank`: опционально `BAAI/bge-reranker-base`
 
 Почему:
 
-- это самый правдоподобный "настоящий" workstation-конфиг, если машина должна оставаться отзывчивой для обычной работы.
+- это теперь самый правдоподобный первый "настоящий" workstation-конфиг, если `Gemma 4 E4B` подтвердит локальную пригодность на ROCm path и даст более выгодный баланс качества и задержки, чем `Qwen3-8B`.
 
 ### Поздние high-risk эксперименты
 
@@ -217,6 +234,7 @@
 4. Для pooling-моделей не забывать принудительно включать pooling mode:
    - использовать `--runner pooling` или соответствующий embedding / score task path
 5. Не переносить числа из `llmfit` в capacity planning для `vLLM` напрямую.
+6. Для `google/gemma-4-E4B-it` отдельно доказать не только запуск модели, но и пригодность локального ROCm path именно на `gfx1151`, потому что текущий `Gemma 4` guide для AMD явно документирует другой класс ускорителей.
 
 ## Источники
 
@@ -232,6 +250,8 @@
   - https://docs.vllm.ai/en/stable/getting_started/installation/gpu/
 - Supported models:
   - https://docs.vllm.ai/en/latest/models/supported_models/
+- Gemma 4 guide:
+  - https://docs.vllm.ai/projects/recipes/en/latest/Google/Gemma4.html
 - Pooling models:
   - https://docs.vllm.ai/en/stable/models/pooling_models/
 - OpenAI-compatible server docs:
@@ -245,3 +265,7 @@
 
 - https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-14B
 - https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+
+### Upstream model card для обновления shortlist
+
+- https://huggingface.co/google/gemma-4-E4B
