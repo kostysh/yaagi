@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-16-030-patch-template-57fc586c",
+    "created_at": "2026-04-16T19:59:01.988Z",
+    "sequence": 30,
+    "target_item_keys": [
+      "CF-023"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-023",
+      "action": "replace_fields",
+      "fields": {
+        "delivery_state": "planned"
+      }
+    }
+  ]
+}

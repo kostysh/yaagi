@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "created_at": "2026-04-16T20:34:34.075Z",
+  "feature_id": "F-0020",
+  "dossier": "docs/features/F-0020-real-vllm-serving-and-promotion-model-dependencies.md",
+  "step": "plan-slice",
+  "dossier_status": "planned",
+  "event_commit": "aac8139ea9a8ed7b465b21d847aa0c605cf1849d",
+  "review_trace_commit": "aac8139ea9a8ed7b465b21d847aa0c605cf1849d",
+  "verification_trace_commit": "aac8139ea9a8ed7b465b21d847aa0c605cf1849d",
+  "verification_artifact": ".dossier/verification/F-0020/plan-slice-aac8139ea9a8.json",
+  "review_artifact": ".dossier/reviews/F-0020/plan-slice-aac8139ea9a8.json",
+  "review_freshness": "pass",
+  "process_complete": true,
+  "blockers": [],
+  "next_step": "implementation"
+}

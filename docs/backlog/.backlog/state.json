@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-16T19:20:43.254Z",
-  "last_refresh_at": "2026-04-15T17:28:18.545Z",
+  "updated_at": "2026-04-16T20:32:25.394Z",
+  "last_refresh_at": "2026-04-16T20:00:52.656Z",
   "context": {
     "glossary": [
       {
@@ -581,7 +581,8 @@
       "reverse_dependency_keys": [
         "CF-012",
         "CF-016",
-        "CF-019"
+        "CF-019",
+        "CF-023"
       ],
       "open_todo_ids": [],
       "needs_attention": false,
@@ -829,10 +830,16 @@
         "CF-025",
         "CF-027"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "85b901ad-8b79-4a26-a1e5-6bf7bba06839"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../features/F-0016-development-governor-and-change-management.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -910,10 +917,16 @@
         "CF-015",
         "CF-025"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "c9b23fb5-cb2c-4094-9491-8816b72e9c6e"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../features/F-0019-consolidation-event-envelope-graceful-shutdown.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -1087,12 +1100,13 @@
       "item_key": "CF-023",
       "title": "Реальный vLLM-serving и promotion model dependencies",
       "type": "feature",
-      "delivery_state": "specified",
+      "delivery_state": "planned",
       "gaps": [],
       "depends_on_keys": [
         "CF-020",
         "CF-006",
-        "CF-010"
+        "CF-010",
+        "CF-011"
       ],
       "origin_source_ids": [
         "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
@@ -1205,7 +1219,8 @@
       "open_todo_ids": [
         "1444a841-a2b1-4642-ae3b-07d4f66e32c6",
         "58e15dc0-fe72-4e49-9412-ce7ee613e497",
-        "a952d8d1-0ca4-4b5d-ad3a-698d272fe511"
+        "a952d8d1-0ca4-4b5d-ad3a-698d272fe511",
+        "d6b195fe-364d-40ff-8bbd-0948ae0eea4e"
       ],
       "needs_attention": true,
       "attention_reason_codes": [
@@ -1521,6 +1536,21 @@
       "related_item_keys": []
     },
     {
+      "todo_id": "85b901ad-8b79-4a26-a1e5-6bf7bba06839",
+      "item_key": "CF-016",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../features/F-0016-development-governor-and-change-management.md.",
+      "created_at": "2026-04-16T19:59:47.332Z",
+      "related_sources": [
+        {
+          "source_id": "ef27eeb6-7dfa-408b-a240-1712dd407575",
+          "source_label": "../features/F-0016-development-governor-and-change-management.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
       "todo_id": "a952d8d1-0ca4-4b5d-ad3a-698d272fe511",
       "item_key": "CF-025",
       "type": "review_dependency_change",
@@ -1576,6 +1606,21 @@
       "related_item_keys": []
     },
     {
+      "todo_id": "c9b23fb5-cb2c-4094-9491-8816b72e9c6e",
+      "item_key": "CF-018",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../features/F-0019-consolidation-event-envelope-graceful-shutdown.md.",
+      "created_at": "2026-04-16T19:59:47.332Z",
+      "related_sources": [
+        {
+          "source_id": "97f90f65-393f-455c-b7ea-9ec09da09343",
+          "source_label": "../features/F-0019-consolidation-event-envelope-graceful-shutdown.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
       "todo_id": "d0aa0999-f0c2-4494-aa63-e1ddf45f0e90",
       "item_key": "CF-019",
       "type": "review_dependency_change",
@@ -1584,6 +1629,41 @@
       "created_at": "2026-04-16T19:20:43.251Z",
       "related_sources": [],
       "related_item_keys": [
+        "CF-023"
+      ]
+    },
+    {
+      "todo_id": "d6b195fe-364d-40ff-8bbd-0948ae0eea4e",
+      "item_key": "CF-025",
+      "type": "review_dependency_change",
+      "managed_by": "refresh",
+      "message": "Upstream task changed: CF-016, CF-018, CF-023. Review whether this task needs updates.",
+      "created_at": "2026-04-16T19:59:47.334Z",
+      "related_sources": [
+        {
+          "source_id": "5b9f63ff-21ce-440c-a3a3-7416945dde4f",
+          "source_label": "../../README.md"
+        },
+        {
+          "source_id": "a81e772a-16a8-48fd-9854-dea832ad39cb",
+          "source_label": "../adr/ADR-2026-03-23-no-technical-debt-rule.md"
+        },
+        {
+          "source_id": "ef27eeb6-7dfa-408b-a240-1712dd407575",
+          "source_label": "../features/F-0016-development-governor-and-change-management.md"
+        },
+        {
+          "source_id": "97f90f65-393f-455c-b7ea-9ec09da09343",
+          "source_label": "../features/F-0019-consolidation-event-envelope-graceful-shutdown.md"
+        },
+        {
+          "source_id": "9d061028-1d37-4f85-9919-f6321ed1f995",
+          "source_label": "local-vllm-model-shortlist-2026-03-24.md"
+        }
+      ],
+      "related_item_keys": [
+        "CF-016",
+        "CF-018",
         "CF-023"
       ]
     },

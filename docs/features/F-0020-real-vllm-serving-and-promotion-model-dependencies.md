@@ -1,7 +1,7 @@
 ---
 id: F-0020
 title: Реальный vLLM-serving и promotion model dependencies
-status: shaped
+status: planned
 coverage_gate: deferred
 owners: ["@codex"]
 area: models
@@ -92,40 +92,35 @@ links:
 
 ### Assumptions (optional)
 
-- The current repository state still matches the canonical backlog reading captured at intake: `CF-023` remains backlog-selected and still carries `delivery_state=planned` until this `spec-compact` cycle actualizes it.
-- The first implementation slice should target one canonical real `vllm-fast` path before any deep/pool expansion.
+- Backlog truth before this planning cycle remains canonical via `backlog-engineer`: `CF-023` is `specified` and ready for `planned` actualization once slice sequencing and stop points are explicit.
+- The first implementation slice must prove the workstation-specific feasibility of one real `vllm-fast` candidate before boot-critical promotion is allowed.
 - Existing richer registry/health surfaces from `F-0014` will be consumed and refined by this seam rather than replaced.
 
 ### Open questions (optional)
 
-- Which exact model family and artifact source become the canonical fast-first `vllm-fast` baseline for this repo?
-- Does `F-0020` own both the fast-first and deep/pool serving slices in one dossier, or should deep/pool serving split into a later dossier/change-proposal after the first real-serving closure?
+- none
 
 ### Unresolved-decision triage
 
 #### Normative now
 
-- `OQ-F0020-01`: Select the canonical fast-first `vllm-fast` baseline model family and artifact source.
-  - owner: `@codex`
-  - date: `2026-04-16`
-  - needed_by: `before_planned`
-  - next decision path: settle in the final `spec-compact` review so `plan-slice` can bind real artifact/bootstrap work to one baseline.
-- `OQ-F0020-02`: Decide whether deep/pool real-serving stays inside `F-0020` as later slices or is split into a follow-up dossier/change-proposal after the fast-first rule is delivered.
-  - owner: `@codex`
-  - date: `2026-04-16`
-  - needed_by: `before_planned`
-  - next decision path: settle during planning boundary selection so slice sequencing stays unambiguous while preserving the promotion rule defined in this spec.
+- `OQ-F0020-01` resolved on `2026-04-16`: planning now fixes a **closed fast-candidate qualification rule** instead of hard-coding an unevidenced winner.
+  - Candidate order for `SL-F0020-01`: `google/gemma-4-E4B-it` as preferred candidate, `microsoft/Phi-4-mini-instruct` as conservative fallback, `Qwen/Qwen3-8B` as stretch comparator.
+  - Artifact source family: canonical Hugging Face descriptors/manifests resolved into writable `/models/base/*`; no alternate registry or ad hoc provider path is introduced by this dossier.
+  - Decision rule: the winner is the highest-ranked candidate that clears the must-pass workstation gates and the shared scorecard defined in `SL-F0020-01`; if no candidate clears the gate, implementation must stop at the allowed stop point and realign dossier/backlog rather than silently inventing a fourth candidate.
+- `OQ-F0020-02` resolved on `2026-04-16`: `F-0020` implementation scope ends with fast-first real `vllm-fast`, explicit optional deep/pool diagnostics continuity, and one future promotion rule. Real-serving delivery for `vllm-deep` / `vllm-pool` is split into a follow-up dossier or change-proposal after the fast path is delivered.
 
 #### Implementation freedom
 
 - The serving container may be CPU-only or ROCm-enabled as long as it preserves canonical `vllm-fast` service/protocol continuity and proves real inference over the canonical deployment-cell path.
 - The readiness probe may use the minimal canonical OpenAI-compatible inference call shape that produces real model output; the exact prompt payload is implementation freedom as long as it is not transport-only.
 - The canonical serving-dependency descriptor may be file-backed with DB projection or DB-backed with file pointers, but there must be only one source of truth per `service_id`.
+- The candidate-qualification corpus may mix reactive, summarization, structured-output and short coding prompts, but every candidate must be measured against the same corpus, same runtime posture and same scoring rubric.
 
 #### Temporary assumptions
 
-- For this shaping cycle, `vllm-fast` is the only boot-critical real-serving target; `vllm-deep` and `vllm-pool` remain optional diagnostics until a later seam explicitly fires the promotion trigger defined in this spec.
-- Existing `F-0014` richer diagnostics remain the upstream source for optional deep/pool absence and health state until this seam promotes those organs into required runtime dependencies.
+- `google/gemma-4-E4B-it` is the best current first candidate because of the updated shortlist, but it still carries local ROCm/gfx1151 proof risk; the plan therefore treats it as a preferred candidate, not an unevidenced preselected winner.
+- `vllm-fast` is the only boot-critical real-serving target in this dossier. `vllm-deep` and `vllm-pool` stay optional diagnostics here unless a later dossier explicitly promotes them.
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
 
@@ -231,18 +226,14 @@ type ServingDependencyState = {
 
 ### 5.5 Verification surface / initial verification plan
 
-- `AC-F0020-01`: spec-conformance review of owner boundaries + implementation contract review.
-- `AC-F0020-02`: service/protocol continuity integration check for `vllm-fast` on the canonical deployment-cell path.
-- `AC-F0020-03`: real-serving integration test plus container smoke proving that `vllm-fast` is no longer satisfied by a stub/fake path.
-- `AC-F0020-04`: readiness integration test proving that only probe-backed inference yields `ready`.
-- `AC-F0020-05`: startup failure-path test for missing artifact, probe failure, or unavailable promoted fast dependency.
-- `AC-F0020-06`: owner-admission failure-path test for missing artifact, probe failure, or unavailable promoted fast dependency.
-- `AC-F0020-07`: contract/integration coverage for descriptor placement and writable `/models/*` materialization.
-- `AC-F0020-08`: spec-conformance check of the deep/pool promotion trigger wording plus planning-boundary audit.
+- `AC-F0020-01`: spec-conformance review of owner boundaries plus final implementation contract review.
+- `AC-F0020-02`, `AC-F0020-03`, `AC-F0020-07`, `AC-F0020-12`: candidate-qualification bundle on the closed fast-candidate set, including identical prompt corpus, descriptor/materialization proof, real inference over the canonical container path, and negative-path smoke for unusable candidates.
+- `AC-F0020-04`: readiness integration coverage, including stale-result, replay and race-window guards proving that only probe-backed inference yields `ready`.
+- `AC-F0020-05`: startup failure-path test for missing artifact, probe failure, timeout, or unavailable promoted fast dependency.
+- `AC-F0020-06`: owner-admission failure-path test for missing artifact, probe failure, timeout, or unavailable promoted fast dependency.
+- `AC-F0020-08`, `AC-F0020-10`: spec-conformance audit of the deep/pool promotion trigger wording and future-promotion contract guard; no in-dossier deep/pool promotion is planned for this feature.
 - `AC-F0020-09`: integration coverage for optional deep/pool diagnostics before promotion.
-- `AC-F0020-10`: promoted-dependency integration coverage for deep/pool once a later seam marks them required.
 - `AC-F0020-11`: workshop/promotion dependency handoff audit proving that only real-serving-backed identifiers are treated as delivered dependencies.
-- `AC-F0020-12`: container smoke plus fail-closed negative-path verification.
 
 ### 5.6 Representation upgrades (triggered only when needed)
 
@@ -271,35 +262,127 @@ type ServingDependencyState = {
 
 - Intake direction is fast-first: real `vllm-fast` serving must be shaped and proven before any deeper serving expansion or later working-system claims.
 - Activation order:
-  1. deliver and prove the fast-first real `vllm-fast` path;
-  2. realign boot/readiness assumptions to the delivered fast dependency;
-  3. only then decide whether `vllm-deep` / `vllm-pool` stay optional diagnostics or become promoted dependencies;
-  4. later workshop/specialist/release seams may consume only the delivered dependency truth.
+  1. qualify the closed `vllm-fast` candidate set on the canonical container path using one shared scorecard;
+  2. activate the selected fast baseline as a real-serving dependency and publish only probe-backed readiness;
+  3. realign boot/readiness assumptions to the delivered fast dependency;
+  4. run the final usage audit and keep `vllm-deep` / `vllm-pool` explicitly optional until a future promotion seam exists;
+  5. later workshop/specialist/release seams may consume only the delivered dependency truth.
 
 ## 6. Slicing plan (2–6 increments)
 
-Deferred to `plan-slice`. Expected first slice is fast-first `vllm-fast`; later slices depend on the normative-now decisions above.
+Forecast policy: slices below are implementation forecast, not separate product commitments. Commitment remains in ACs, Definition of Done, verification gates and rollout constraints.
+
+### Dependency visibility
+
+- Depends on: `F-0002`; owner: `@codex`; unblock condition: the canonical deployment cell remains `core + postgres + vllm-fast` over Docker Compose with the same service name, `/v1/*` contract and writable `/models/*` mount.
+- Depends on: `F-0008`; owner: `@codex`; unblock condition: baseline router and continuity continue treating `service_id = vllm-fast` as the fast profile target without inventing a second routing substrate.
+- Depends on: `F-0014`; owner: `@codex`; unblock condition: richer `model_registry` / `model_profile_health` / `model_fallback_links` surfaces remain the only source of optional deep/pool diagnostics and service identity continuity.
+- Depends on: `F-0015`; owner: `@codex`; unblock condition: workshop/promotion flows consume service/artifact identifiers read-only and do not force this dossier to become the workshop lifecycle owner.
+
+### Матрица риск -> доказательство
+
+| Risk / edge case | Spec source | Required proof | Slice | Verification artifact | N/A rationale |
+|---|---|---|---|---|---|
+| Sequential success | §5.4 `Sequential success`; AC-F0020-03/04 | One ordered run `descriptor resolution -> artifact materialization -> service start -> inference probe -> readiness publish -> router/admission read` on the same `service_id`/artifact identity. Observable result: `ready` appears only after the probe returns actual model output. Invariant: transport or metadata alone never publishes `ready`. | `SL-F0020-01`, `SL-F0020-02` | Candidate qualification bundle + readiness integration + container smoke | — |
+| Invalid input | §5.4 `Invalid input`; AC-F0020-04/07 | Malformed descriptor path, unsupported artifact pointer, bad endpoint or missing runtime root must produce explicit `descriptor_invalid` / `artifact_missing` / `transport_failed` states. Observable result: startup/readiness stays non-ready and the system names the failing basis. Invariant: invalid config never becomes live. | `SL-F0020-01`, `SL-F0020-02` | Descriptor contract tests + negative integration | — |
+| Dependency failure / timeout | §5.4 `Dependency failure / timeout`; AC-F0020-05/06/12 | Probe timeout, container boot failure or probe transport failure during startup/admission must fail closed for the promoted fast dependency. Observable result: startup or owner-bound admission rejects instead of silently degrading to stub behavior. Invariant: promoted dependency truth is fail-closed. | `SL-F0020-03` | Startup/admission fail-closed integration + smoke | — |
+| Duplicate or replay after completion | §5.4 `Duplicate or replay after completion`; AC-F0020-04 | Re-running readiness/start on an already-qualified artifact must converge to one dependency identity and one readiness verdict. Observable result: replay reuses the same descriptor/artifact tuple and does not create a second active dependency record. Invariant: readiness is idempotent for the current artifact identity. | `SL-F0020-02` | Replay/idempotency integration | — |
+| Concurrent duplicate or racing request | §5.4 `Concurrent duplicate or racing request`; AC-F0020-04 | Overlapping health refreshes and probe completions on the same `service_id` must keep result ordering tied to the freshest probe for the current artifact digest. Observable result: a stale transport-only success cannot overwrite a fresher probe failure or a newer artifact identity. Invariant: no `ready` before the winning probe succeeds. | `SL-F0020-02` | Race-window integration harness | — |
+| Concurrent conflicting request | §5.4 `Concurrent conflicting request` | No public/operator write path in this dossier selects competing artifacts for the same `service_id`; later rollout/governance seams own that actuation policy. | `SL-F0020-04` | Spec-conformance audit | Outside current owner boundary |
+| Partial side effect / crash / restart | §5.4 `Partial side effect / crash / restart`; AC-F0020-03/05/07 | Interrupt artifact materialization or service startup before readiness publication, then restart. Observable result: partial downloads or interrupted boots never create `ready`; restart resumes safely or fails closed. Invariant: crash/restart cannot backdoor readiness. | `SL-F0020-02`, `SL-F0020-03` | Restart integration + smoke | — |
+| Stale read / late completion | §5.4 `Stale read / late completion`; AC-F0020-04/09 | Read model health or `/models` projection before probe completion and after dependency loss. Observable result: projected readiness stays degraded/unavailable until a probe for the current artifact identity succeeds, and late success for an old artifact is ignored. Invariant: projections track current service/artifact identity, not stale metadata. | `SL-F0020-02`, `SL-F0020-04` | Projection contract integration | — |
+
+### SL-F0020-01: Candidate qualification bundle и artifact contract
+
+- **Результат:** Один canonical `serving-dependency` contract для `vllm-fast`, closed candidate set для fast baseline и объективный qualification bundle, который сравнивает `google/gemma-4-E4B-it`, `microsoft/Phi-4-mini-instruct` и `Qwen/Qwen3-8B` на одном runtime path.
+- **Покрывает:** AC-F0020-01, AC-F0020-02, AC-F0020-03, AC-F0020-07, AC-F0020-12.
+- **Проверка:** descriptor contract tests, artifact materialization tests, canonical container smoke по всем кандидатам до первого failing gate, qualification report с единым prompt corpus и scorecard.
+- Depends on: `F-0002`; owner `@codex`; unblock condition: canonical Docker Compose cell and `/models/*` runtime roots stay unchanged.
+- **Предположение:** closed candidate set из текущего shortlist достаточно для fast-first workstation decision без немедленного расширения рынка моделей.
+- **Fallback:** если ни один кандидат не проходит must-pass gates, остановиться после `SL-F0020-01`, сохранить qualification evidence и вернуть dossier/backlog на realignment вместо тихой замены candidate set.
+- **Approval / decision path:** architecture/ADR realignment required if implementation needs a fourth candidate, a different provider bridge, or a non-canonical artifact source.
+
+#### Objective candidate-testing policy
+
+- **Closed candidate set:** `google/gemma-4-E4B-it`, `microsoft/Phi-4-mini-instruct`, `Qwen/Qwen3-8B`.
+- **Runtime parity rule:** одинаковые container entrypoint, `vLLM` version family, OpenAI-compatible probe path, writable `/models/base/*` root, prompt corpus and warmup policy for every candidate.
+- **Must-pass gates:**
+  1. candidate boots through the canonical `vllm-fast` container path and answers one real inference probe;
+  2. candidate survives `3` cold starts and `20` warm probe requests without crash, OOM or transport flapping;
+  3. structured-output adherence on the shared bounded JSON/schema subset is at least `95%`;
+  4. the candidate exposes no secret/stub/fake path and leaves one reproducible artifact descriptor -> runtime root trace.
+- **Comparative scorecard after gates:** quality on shared prompt corpus `40%`, latency / throughput for reactive prompts `25%`, memory headroom on the workstation `20%`, stability / restart behavior `15%`.
+- **Decision rule:** highest weighted passing score wins; if scores are within `5` points, prefer lower memory pressure and faster cold boot; if the preferred `Gemma 4` candidate fails any must-pass gate, evaluate the next candidate in order without changing the closed set.
+
+### SL-F0020-02: Real `vllm-fast` activation и probe-backed readiness
+
+- **Результат:** Выбранный fast candidate materialize-ится как actual runtime artifact, поднимается через canonical `vllm-fast` service path и публикует readiness только после успешного inference probe.
+- **Покрывает:** AC-F0020-03, AC-F0020-04, AC-F0020-07.
+- **Проверка:** readiness integration tests, stale-result/replay/race tests, restart/partial-materialization tests, container smoke for the selected candidate.
+- Depends on: `SL-F0020-01`, `F-0014`; owner `@codex`; unblock condition: selected candidate already has qualification evidence and the richer health surface can project probe-backed basis without creating a second registry.
+- **Предположение:** the selected fast candidate can be started and probed on this workstation without introducing a second serving control plane.
+- **Fallback:** if the candidate boots but readiness remains unstable, keep `vllm-fast` non-ready and stop before boot-critical promotion.
+
+### SL-F0020-03: Fail-closed fast promotion, router/admission handoff и workshop dependency truth
+
+- **Результат:** `vllm-fast` becomes the promoted fast dependency for startup and owner-bound admission, while workshop/promotion handoff consumes only real-serving-backed service/artifact identifiers.
+- **Покрывает:** AC-F0020-05, AC-F0020-06, AC-F0020-11, AC-F0020-12.
+- **Проверка:** startup fail-closed integration, owner-admission fail-closed integration, negative smoke for missing/unusable promoted dependency, workshop dependency handoff audit.
+- Depends on: `F-0008`, `F-0015`; owner `@codex`; unblock condition: baseline routing still targets `service_id = vllm-fast`, and workshop reads can consume dependency truth without forcing `F-0020` to own promotion lifecycle.
+- **Предположение:** router and admission paths can consume the same promoted dependency state without reopening router ownership.
+- **Fallback:** if promotion breaks startup/admission semantics, stop with the selected fast candidate still real-serving but not yet boot-critical, and realign the dossier before activation.
+
+### SL-F0020-04: Optional deep/pool continuity, future promotion guard и usage audit
+
+- **Результат:** `vllm-deep` / `vllm-pool` remain explicit optional diagnostics, the future promotion rule is pinned as a contract guard, and the delivered fast path is checked by a real usage audit before close-out.
+- **Покрывает:** AC-F0020-08, AC-F0020-09, AC-F0020-10.
+- **Проверка:** optional-diagnostics integration, spec-conformance audit for the future promotion trigger, real usage audit over the selected fast path and its downstream projections.
+- Depends on: `F-0014`; owner `@codex`; unblock condition: richer diagnostics keep projecting unavailable/degraded state without making deep/pool boot-critical.
+- **Предположение:** deep/pool can remain future-owned without weakening the delivered fast-first truth.
+- **Fallback:** if diagnostics cannot stay explicit and bounded, keep deep/pool surfaces degraded/unavailable and raise a follow-up dossier/change-proposal before any promotion attempt.
+
+### Allowed stop points
+
+| Stop point | Безопасная причина остановки | Ожидаемая проверка | Вне остановки |
+|---|---|---|---|
+| After `SL-F0020-01` | Candidate evidence and descriptor contract exist, but no runtime dependency was promoted yet. | Qualification bundle, descriptor/materialization tests and negative candidate gates pass. | Real-serving activation, fail-closed promotion and deep/pool continuity remain pending. |
+| After `SL-F0020-02` | Real `vllm-fast` serving is live and probe-backed, but startup/admission still do not treat it as boot-critical. | Selected-candidate readiness integration and smoke pass. | Boot-critical promotion, workshop handoff and final audit remain pending. |
+| After `SL-F0020-03` | Mandatory fast-first scope is delivered, but deep/pool continuity close-out and usage audit still remain. | Startup/admission fail-closed integration and workshop dependency audit pass. | Final optionality guard and usage audit remain pending. |
+| After `SL-F0020-04` | Full planned scope is delivered. | Full AC coverage, usage audit and step-close bundle pass. | Future deep/pool real-serving dossier remains separate by design. |
+
+### Аудит реального использования
+
+- Запустить после `SL-F0020-04` на реально поднятом `vllm-fast`, а не только на in-memory harness.
+- Audit categories: `docs-only`, `runtime`, `schema/help`, `cross-skill`, `audit-only`.
+- Expected checks: selected baseline still answers through the canonical container path after restart, `/health` and `/models` projections reflect the same readiness basis, workshop-facing dependency references never point to a stub-only artifact, deep/pool surfaces remain explicitly optional.
 
 ## 7. Task list (implementation units)
 
-Deferred to `plan-slice`.
+- **T-F0020-01:** Добавить canonical `serving-dependency` descriptor and runtime-root contract для `SL-F0020-01`. Covers: AC-F0020-01, AC-F0020-07.
+- **T-F0020-02:** Подготовить shared candidate corpus, must-pass gates and weighted scorecard для `SL-F0020-01`. Covers: AC-F0020-02, AC-F0020-03, AC-F0020-12.
+- **T-F0020-03:** Зафиксировать selected fast baseline outcome или explicit no-winner stop-point evidence для `SL-F0020-01`. Covers: AC-F0020-01, AC-F0020-12.
+- **T-F0020-04:** Реализовать artifact materialization, `vllm-fast` startup and probe-backed readiness publication для `SL-F0020-02`. Covers: AC-F0020-03, AC-F0020-04, AC-F0020-07.
+- **T-F0020-05:** Добавить replay, race-window and restart guards around readiness/projection state для `SL-F0020-02`. Covers: AC-F0020-04.
+- **T-F0020-06:** Перевести startup and owner-bound admission на fail-closed promoted fast dependency для `SL-F0020-03`. Covers: AC-F0020-05, AC-F0020-06, AC-F0020-12.
+- **T-F0020-07:** Ограничить workshop/promotion dependency handoff реальными service/artifact identifiers для `SL-F0020-03`. Covers: AC-F0020-11.
+- **T-F0020-08:** Закрепить optional deep/pool diagnostics, future promotion guard and final usage audit для `SL-F0020-04`. Covers: AC-F0020-08, AC-F0020-09, AC-F0020-10.
 
 ## 8. Test plan & Coverage map
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0020-01 | Planned: spec-conformance review + owner-boundary audit | planned |
-| AC-F0020-02 | Planned: service/protocol continuity integration | planned |
-| AC-F0020-03 | Planned: real-serving integration + container smoke | planned |
-| AC-F0020-04 | Planned: readiness/probe integration | planned |
-| AC-F0020-05 | Planned: startup fail-closed integration | planned |
-| AC-F0020-06 | Planned: owner-admission fail-closed integration | planned |
-| AC-F0020-07 | Planned: artifact/descriptor contract + integration | planned |
-| AC-F0020-08 | Planned: promotion-trigger spec-conformance audit | planned |
-| AC-F0020-09 | Planned: optional deep/pool diagnostics integration | planned |
-| AC-F0020-10 | Planned: promoted deep/pool dependency integration | planned |
-| AC-F0020-11 | Planned: workshop/promotion dependency handoff audit | planned |
-| AC-F0020-12 | Planned: negative-path smoke / fail-closed verification | planned |
+| AC-F0020-01 | `SL-F0020-01` owner-boundary/spec-conformance review + `SL-F0020-03`/`SL-F0020-04` close-out audit | planned |
+| AC-F0020-02 | `SL-F0020-01` candidate-qualification bundle proving service/protocol continuity on the canonical `vllm-fast` path | planned |
+| AC-F0020-03 | `SL-F0020-01` real inference on the closed candidate set + `SL-F0020-02` selected-candidate smoke | planned |
+| AC-F0020-04 | `SL-F0020-02` readiness/probe integration, replay/race guards and projection contract tests | planned |
+| AC-F0020-05 | `SL-F0020-03` startup fail-closed integration | planned |
+| AC-F0020-06 | `SL-F0020-03` owner-admission fail-closed integration | planned |
+| AC-F0020-07 | `SL-F0020-01` descriptor/materialization contract tests + `SL-F0020-02` runtime-root integration | planned |
+| AC-F0020-08 | `SL-F0020-04` promotion-trigger spec-conformance audit | planned |
+| AC-F0020-09 | `SL-F0020-04` optional deep/pool diagnostics integration | planned |
+| AC-F0020-10 | `SL-F0020-04` future-promotion contract guard audit; no in-feature deep/pool promotion planned | planned |
+| AC-F0020-11 | `SL-F0020-03` workshop/promotion dependency handoff audit | planned |
+| AC-F0020-12 | `SL-F0020-01` negative candidate gates + `SL-F0020-03` fail-closed smoke | planned |
 
 ## 9. Decision log (ADR blocks)
 
@@ -316,3 +399,4 @@ Deferred to `plan-slice`.
 
 - 2026-04-16: Initial dossier created from backlog item `CF-023` at backlog delivery state `planned`.
 - 2026-04-16: `spec-compact` shaped the real-serving seam: added atomic ACs, machine-facing serving contract, adversarial semantics, fail-closed dependency rules, and initial verification/coverage plan.
+- 2026-04-16 [planning]: closed the `before_planned` ambiguity by fixing the fast-candidate qualification rule (`Gemma 4 E4B` preferred, `Phi-4-mini` fallback, `Qwen3-8B` comparator), split deep/pool real-serving into follow-up scope, and added four implementation slices with objective model-testing guidance and explicit stop points.

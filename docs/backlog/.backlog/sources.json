@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-15T17:28:18.539Z",
+  "updated_at": "2026-04-16T20:00:52.648Z",
   "sources": [
     {
       "source_id": "5b9f63ff-21ce-440c-a3a3-7416945dde4f",
@@ -10,9 +10,9 @@
       "kind": "technical-decision",
       "authority": "authoritative",
       "note": "Repo runtime and toolchain contract",
-      "hash": "97dfc0bce81dfb968c887c32ce6b3050f8912b722fe3b9ba9a65aa619dfcc690",
+      "hash": "95d939eb05daf060063b417dbd57f52b433618fc924df64beec6ae6829d4bf57",
       "registered_at": "2026-04-09T23:44:44.665Z",
-      "last_checked_at": "2026-04-09T23:44:44.665Z"
+      "last_checked_at": "2026-04-16T19:59:47.326Z"
     },
     {
       "source_id": "afb03520-49fc-4db1-b604-6962cd14b459",
@@ -23,7 +23,7 @@
       "note": "Boot dependency contract",
       "hash": "b6799b3b5f76ced3a418b2935cf80c2484992367e6da6e8dbe75f63b8328b898",
       "registered_at": "2026-04-09T23:44:44.726Z",
-      "last_checked_at": "2026-04-09T23:44:44.726Z"
+      "last_checked_at": "2026-04-16T19:59:47.326Z"
     },
     {
       "source_id": "b51cfc9b-50b8-48fc-8ce2-56adf5d520c5",
@@ -34,7 +34,7 @@
       "note": "Canonical runtime and toolchain",
       "hash": "a11e602967a612ba8f26d07e12031899a641098cb389c5b8f3e707ac7d7a7f3b",
       "registered_at": "2026-04-09T23:44:44.788Z",
-      "last_checked_at": "2026-04-09T23:44:44.788Z"
+      "last_checked_at": "2026-04-16T19:59:47.326Z"
     },
     {
       "source_id": "da69c792-33fd-4f9c-8786-236c3d8e1478",
@@ -45,7 +45,7 @@
       "note": "Phase-0 deployment cell",
       "hash": "4a14c0c945df41b60c77477505b0bcb2132d9290328a9b749bf62c9fff7bb629",
       "registered_at": "2026-04-09T23:44:44.848Z",
-      "last_checked_at": "2026-04-09T23:44:44.848Z"
+      "last_checked_at": "2026-04-16T19:59:47.326Z"
     },
     {
       "source_id": "90842437-1283-44f7-832a-1a0fb8fe8b1a",
@@ -56,7 +56,7 @@
       "note": "Phase-0 runtime boundary",
       "hash": "f8d60f5d3016f3136b1a19ac197cd297c43c153b684e9263b5dbb72afa64bb90",
       "registered_at": "2026-04-09T23:44:44.910Z",
-      "last_checked_at": "2026-04-09T23:44:44.910Z"
+      "last_checked_at": "2026-04-16T19:59:47.326Z"
     },
     {
       "source_id": "9ee3dd1d-afaa-4459-983e-52d0dbfd5ecb",
@@ -67,7 +67,7 @@
       "note": "Quality gate sequence",
       "hash": "224958a9a1a8426677a6a2c8fa4eb3ad6568dc158828e90b32369a60ad6d7fcd",
       "registered_at": "2026-04-09T23:44:44.975Z",
-      "last_checked_at": "2026-04-09T23:44:44.975Z"
+      "last_checked_at": "2026-04-16T19:59:47.326Z"
     },
     {
       "source_id": "a81e772a-16a8-48fd-9854-dea832ad39cb",
@@ -76,9 +76,9 @@
       "kind": "adr",
       "authority": "authoritative",
       "note": "No technical debt rule",
-      "hash": "dd64eb73927919af155e865de8e897c18bd05999c59a2de5865638316514e135",
+      "hash": "381c5cf627aef156af4658bf395fc457c7a408db9d07e7d08f9fddd885075bcf",
       "registered_at": "2026-04-09T23:44:45.037Z",
-      "last_checked_at": "2026-04-09T23:44:45.037Z"
+      "last_checked_at": "2026-04-16T19:59:47.326Z"
     },
     {
       "source_id": "85e668f4-c213-4aba-a7e8-55606cadb94b",
@@ -89,7 +89,7 @@
       "note": "Perception intake contract",
       "hash": "eb3a24690cf820aeb701ecc2890cc4fa19520b2559c986808bc31789e9c151d2",
       "registered_at": "2026-04-09T23:44:45.100Z",
-      "last_checked_at": "2026-04-09T23:44:45.100Z"
+      "last_checked_at": "2026-04-16T19:59:47.326Z"
     },
     {
       "source_id": "caf9cab9-54ab-474c-9aee-7c391939a440",
@@ -100,7 +100,7 @@
       "note": "Plan mode decision gate",
       "hash": "ddbcf90b0f4f398e78ab62355d4e523ce351c02edd408a4511f0bdba6c2f8206",
       "registered_at": "2026-04-09T23:44:45.162Z",
-      "last_checked_at": "2026-04-09T23:44:45.162Z"
+      "last_checked_at": "2026-04-16T19:59:47.326Z"
     },
     {
       "source_id": "0d916afc-3490-4b21-b640-c4a714157a89",
@@ -111,7 +111,7 @@
       "note": "Subject-state evidence refs",
       "hash": "5525fecbbeaca9aaf3ac2d792642e6677e7df9c9ac0f5b228cd817f4621833ae",
       "registered_at": "2026-04-09T23:44:45.224Z",
-      "last_checked_at": "2026-04-09T23:44:45.224Z"
+      "last_checked_at": "2026-04-16T19:59:47.326Z"
     },
     {
       "source_id": "d7ca68c0-022b-48d2-8384-578f9d3c7a7c",
@@ -122,7 +122,7 @@
       "note": "AI SDK runtime substrate",
       "hash": "d9d6b72a28fd84af3e9b03b09abb2548a745a73d9b363c253549d8b66caf74b8",
       "registered_at": "2026-04-09T23:44:45.290Z",
-      "last_checked_at": "2026-04-09T23:44:45.290Z"
+      "last_checked_at": "2026-04-16T19:59:47.326Z"
     },
     {
       "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
@@ -133,7 +133,7 @@
       "note": "Canonical system architecture",
       "hash": "50712ab70d3002483ee648b616b4a998bb85c47e87d42f6644789a56e39eea21",
       "registered_at": "2026-04-09T23:44:44.538Z",
-      "last_checked_at": "2026-04-15T17:28:18.539Z"
+      "last_checked_at": "2026-04-16T20:00:52.648Z"
     },
     {
       "source_id": "ef27eeb6-7dfa-408b-a240-1712dd407575",
@@ -142,9 +142,9 @@
       "kind": "specification",
       "authority": "authoritative",
       "note": "Canonical Feature Dossier for CF-016 implementation closure",
-      "hash": "e7a3540a6185b3aefb46193b6d133ba8267cc5940e243f9912d34b4bf6bfe09e",
+      "hash": "ce0edb1c9d74b130f3663c2a034577547e27864cd2d20a619342eebcac928c2b",
       "registered_at": "2026-04-10T12:43:55.900Z",
-      "last_checked_at": "2026-04-10T12:43:55.900Z"
+      "last_checked_at": "2026-04-16T20:00:52.648Z"
     },
     {
       "source_id": "30e1204b-b08d-4f15-8fa2-99d2ac2dffd0",
@@ -155,7 +155,7 @@
       "note": "Canonical Feature Dossier for CF-012 implementation closure",
       "hash": "b0c04a4637ad08879774c3da94da152eb190cca758fb484a5ae40482bd52c3ba",
       "registered_at": "2026-04-13T13:25:41.394Z",
-      "last_checked_at": "2026-04-13T13:25:41.394Z"
+      "last_checked_at": "2026-04-16T20:00:52.648Z"
     },
     {
       "source_id": "101e300d-dc80-4a8b-a11d-0a3f1849f368",
@@ -166,7 +166,7 @@
       "note": "Canonical Feature Dossier for CF-014 implementation closure",
       "hash": "c7052f1e0b1e16601ae23f8187752367875ff6f6b1bd02b5c724a50ac1c604bf",
       "registered_at": "2026-04-14T23:51:56.806Z",
-      "last_checked_at": "2026-04-15T17:28:18.539Z"
+      "last_checked_at": "2026-04-16T20:00:52.648Z"
     },
     {
       "source_id": "97f90f65-393f-455c-b7ea-9ec09da09343",
@@ -175,9 +175,9 @@
       "kind": "specification",
       "authority": "authoritative",
       "note": "Canonical Feature Dossier for CF-018 implementation closure",
-      "hash": "3b20291d34043e39f2aca13e1eda6cacdb01a681a88fab82158a6ae618618e25",
+      "hash": "ebb040b37a370cd508a385581ea3cefe3df5612ef78b6e68780aa8cd5070d544",
       "registered_at": "2026-04-15T17:19:58.072Z",
-      "last_checked_at": "2026-04-15T17:28:18.539Z"
+      "last_checked_at": "2026-04-16T20:00:52.648Z"
     },
     {
       "source_id": "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
@@ -188,7 +188,7 @@
       "note": "Canonical Russian Polyphony concept",
       "hash": "c8030fe4d6e54c594c0b72c0cb628b1d9daf4aa81abef21742a84b205718a71a",
       "registered_at": "2026-04-09T23:44:44.599Z",
-      "last_checked_at": "2026-04-15T17:28:18.539Z"
+      "last_checked_at": "2026-04-16T20:00:52.648Z"
     },
     {
       "source_id": "97107644-d070-4cb0-bfe3-aa581331229c",
@@ -199,7 +199,7 @@
       "note": "Legacy candidate backlog used for migration and legacy CF traceability",
       "hash": "136d786fff392aa470a6313d13b81736eafdbf5d914330a5f774c194eab66b9a",
       "registered_at": "2026-04-09T23:44:45.352Z",
-      "last_checked_at": "2026-04-15T17:28:18.539Z"
+      "last_checked_at": "2026-04-16T20:00:52.648Z"
     },
     {
       "source_id": "9d061028-1d37-4f85-9919-f6321ed1f995",
@@ -208,9 +208,9 @@
       "kind": "planning",
       "authority": "supporting",
       "note": "Legacy planning note for real vLLM serving backlog seam",
-      "hash": "8338a5b97fd9078dc661d0c47f39194cc27d558682d1b4c8264fb53c725d938d",
+      "hash": "b45a0e3c1765cdb4ec727b450ac89f95681ac894c879484332e1c85b943565f0",
       "registered_at": "2026-04-09T23:44:45.473Z",
-      "last_checked_at": "2026-04-10T01:45:43.482Z"
+      "last_checked_at": "2026-04-16T20:00:52.648Z"
     },
     {
       "source_id": "4ffa2197-8f9f-4d98-a615-36b03c2cc660",
@@ -221,7 +221,7 @@
       "note": "Legacy roadmap matrix used to normalize non-intaken delivery states",
       "hash": "a0a725f8e0d2c80467a64544198cfd833a4acb6b62efd2bc3fc264dafd8f7c7f",
       "registered_at": "2026-04-09T23:44:45.414Z",
-      "last_checked_at": "2026-04-15T17:28:18.539Z"
+      "last_checked_at": "2026-04-16T20:00:52.648Z"
     }
   ]
 }

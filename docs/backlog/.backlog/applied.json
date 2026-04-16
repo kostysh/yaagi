@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-16T19:20:43.255Z",
-  "next_apply_index": 31,
+  "updated_at": "2026-04-16T20:32:25.395Z",
+  "next_apply_index": 33,
   "packets": [
     {
       "packet_id": "f0947cdd-67be-4f98-9cbd-bec31fce4589",
@@ -430,6 +430,30 @@
       "content_hash": "2aae81868b8bdbdf4bd4e748d4f598f264993625ab500c0f9aeba09036321286",
       "sequence": 29,
       "applied_at": "2026-04-16T19:20:43.255Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-023"
+      ]
+    },
+    {
+      "patch_id": "2026-04-16-030-patch-template-57fc586c",
+      "apply_index": 31,
+      "canonical_path": "patches/f3fa3942e516--f0020-plan-slice.patch.json",
+      "content_hash": "f3fa3942e5164c8a2ecae7e3aa64417ee03ba60452edbdbac702f2fb55fc8e63",
+      "sequence": 30,
+      "applied_at": "2026-04-16T19:59:27.239Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-023"
+      ]
+    },
+    {
+      "patch_id": "2026-04-16-031-patch-template-78fb6775",
+      "apply_index": 32,
+      "canonical_path": "patches/e1353fb2e89c--f0020-add-cf011-dep.patch.json",
+      "content_hash": "e1353fb2e89cb147f907d8d25a3e001b24711731431e87fd60fb5d7fd43a02c2",
+      "sequence": 31,
+      "applied_at": "2026-04-16T20:32:25.395Z",
       "kind": "patch-item",
       "target_item_keys": [
         "CF-023"
