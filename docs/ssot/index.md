@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-15T17:02:49.762Z_
+_Last sync: 2026-04-16T18:41:14.869Z_
 
 ## Features
 
@@ -29,6 +29,7 @@ _Last sync: 2026-04-15T17:02:49.762Z_
 | F-0017 | Git-управляемая эволюция тела и стабильные снапшоты | done | strict | body | F-0001, F-0002, F-0010, F-0015, F-0016 | runtime,db,governance,workspace,tooling,recovery | `../features/F-0017-git-managed-body-evolution-and-stable-snapshots.md` |
 | F-0018 | Профиль безопасности и изоляции | done | strict | safety | F-0002, F-0010, F-0013, F-0016, F-0017 | runtime,infra,governance,api,workspace,network,safety | `../features/F-0018-security-and-isolation-profile.md` |
 | F-0019 | Консолидация, event envelope и graceful shutdown | done | strict | lifecycle | F-0003, F-0004, F-0011 | runtime,db,lifecycle,governance,reporting | `../features/F-0019-consolidation-event-envelope-graceful-shutdown.md` |
+| F-0020 | Реальный vLLM-serving и promotion model dependencies | proposed | deferred | models | F-0002, F-0008, F-0014 | runtime,infra,models,artifacts,workshop | `../features/F-0020-real-vllm-serving-and-promotion-model-dependencies.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -55,6 +56,7 @@ graph TD
   F0017["F-0017 Git-управляемая эволюция тела и стабильные снапшоты"]
   F0018["F-0018 Профиль безопасности и изоляции"]
   F0019["F-0019 Консолидация, event envelope и graceful shutdown"]
+  F0020["F-0020 Реальный vLLM-serving и promotion model dependencies"]
   F0001 --> F0002
   F0003 --> F0001
   F0003 --> F0002
@@ -122,6 +124,9 @@ graph TD
   F0019 --> F0003
   F0019 --> F0004
   F0019 --> F0011
+  F0020 --> F0002
+  F0020 --> F0008
+  F0020 --> F0014
 ```
 <!-- END GENERATED DEP_GRAPH -->
 
@@ -204,4 +209,7 @@ graph TD
 - **WARN** F-0016 — Potential compound ACs detected: AC-F0016-01, AC-F0016-02, AC-F0016-03, AC-F0016-04, AC-F0016-05, AC-F0016-06, AC-F0016-07, AC-F0016-08, AC-F0016-09, AC-F0016-10, AC-F0016-01, AC-F0016-03, AC-F0016-04, AC-F0016-07, AC-F0016-02, AC-F0016-01, AC-F0016-02, AC-F0016-06, AC-F0016-07, AC-F0016-08, AC-F0016-09, AC-F0016-10. Prefer one obligation per AC.
 - **WARN** F-0017 — Potential compound ACs detected: AC-F0017-06, AC-F0017-06. Prefer one obligation per AC.
 - **WARN** F-0018 — Potential compound ACs detected: AC-F0018-01, AC-F0018-02, AC-F0018-03, AC-F0018-04, AC-F0018-05, AC-F0018-06, AC-F0018-07, AC-F0018-08, AC-F0018-09, AC-F0018-10, AC-F0018-11, AC-F0018-12, AC-F0018-13, AC-F0018-03, AC-F0018-03, AC-F0018-01, AC-F0018-03, AC-F0018-08, AC-F0018-11, AC-F0018-03, AC-F0018-06, AC-F0018-01, AC-F0018-02, AC-F0018-03, AC-F0018-04, AC-F0018-05, AC-F0018-06, AC-F0018-07, AC-F0018-08, AC-F0018-09, AC-F0018-10, AC-F0018-11, AC-F0018-12, AC-F0018-13. Prefer one obligation per AC.
+- **WARN** F-0020 — No acceptance criteria IDs found yet. Add at least one AC-F....-.. entry before leaving the proposed intake state.
+- **WARN** F-0020 — Coverage map rows are recommended even when coverage is deferred.
+- **WARN** F-0020 — Vague wording in executable sections: "fast" in "- Canonical owner for replacing the phase-0 stub-capable `vllm-fast` continuity slot with real `vLLM` inference over the canonical deployment-cell path."; "fast" in "- Explicit fast-first slice: one real `vllm-fast` organ must be live and smoke-proven before any claim about a real local-model runtime is accepted.". Rewrite the statement more concretely.
 <!-- END GENERATED RED_FLAGS -->

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "created_at": "2026-04-16T18:54:05.916Z",
+  "reviewer": "independent-reviewer-planck-gpt-5.4",
+  "step": "feature-intake",
+  "dossier": "docs/features/F-0020-real-vllm-serving-and-promotion-model-dependencies.md",
+  "feature_id": "F-0020",
+  "event_commit": "16e902f370955e0ccd9a44f1ac9a94a7b65f41ae",
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "docs/features/F-0020-real-vllm-serving-and-promotion-model-dependencies.md",
+      ".dossier/logs/F-0020/feature-intake-c01.md",
+      "docs/ssot/index.md"
+    ]
+  },
+  "notes": "Independent external review by agent Planck on gpt-5.4/high reasoning passed after backlog handoff traceability, reconciliation note, and required intake-log were added."
+}
