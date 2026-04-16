@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "created_at": "2026-04-16T19:32:53.096Z",
+  "reviewer": "019d97be-2821-7b02-8588-7707936f36e5/spec-conformance-reviewer",
+  "step": "spec-compact",
+  "dossier": "docs/features/F-0020-real-vllm-serving-and-promotion-model-dependencies.md",
+  "feature_id": "F-0020",
+  "event_commit": "1703e9fc810d537a6c30834056f397aa059e4b5b",
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "docs/features/F-0020-real-vllm-serving-and-promotion-model-dependencies.md",
+      ".dossier/logs/F-0020/spec-compact-c01.md",
+      "docs/backlog/patches/2aae81868b8b--cf023-spec-compact.patch.json",
+      ".dossier/verification/F-0020/spec-compact-1703e9fc810d.json"
+    ]
+  },
+  "notes": "PASS on the latest working tree. Promotion trigger, AC split, stage-log telemetry, backlog actualization, and verification evidence are consistent. Residual heuristic warnings in docs/ssot/index.md are non-blocking on manual review."
+}

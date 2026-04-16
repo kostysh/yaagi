@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-15T17:28:18.545Z",
+  "updated_at": "2026-04-16T19:20:43.254Z",
   "last_refresh_at": "2026-04-15T17:28:18.545Z",
   "context": {
     "glossary": [
@@ -664,11 +664,17 @@
       "quality_attribute_keys": [],
       "policy_decision_keys": [],
       "reverse_dependency_keys": [],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
-      "ready_for_next_step": true
+      "open_todo_ids": [
+        "d8a96661-1632-4565-a95a-00adf3236797"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "dependency_changed"
+      ],
+      "attention_reasons": [
+        "Dependency changed: review CF-023."
+      ],
+      "ready_for_next_step": false
     },
     {
       "item_key": "CF-014",
@@ -945,6 +951,7 @@
       "reverse_dependency_keys": [],
       "open_todo_ids": [
         "beb9edbd-365d-4b75-92f1-e0250bddf7e3",
+        "d0aa0999-f0c2-4494-aa63-e1ddf45f0e90",
         "eef44da4-0fbe-4103-a5f9-429e277bdcfb"
       ],
       "needs_attention": true,
@@ -954,7 +961,7 @@
       ],
       "attention_reasons": [
         "Source changed: review ../architecture/system.md.",
-        "Dependency changed: review CF-018."
+        "Dependency changed: review CF-023."
       ],
       "ready_for_next_step": false
     },
@@ -1080,7 +1087,7 @@
       "item_key": "CF-023",
       "title": "Реальный vLLM-serving и promotion model dependencies",
       "type": "feature",
-      "delivery_state": "planned",
+      "delivery_state": "specified",
       "gaps": [],
       "depends_on_keys": [
         "CF-020",
@@ -1197,6 +1204,7 @@
       ],
       "open_todo_ids": [
         "1444a841-a2b1-4642-ae3b-07d4f66e32c6",
+        "58e15dc0-fe72-4e49-9412-ce7ee613e497",
         "a952d8d1-0ca4-4b5d-ad3a-698d272fe511"
       ],
       "needs_attention": true,
@@ -1206,7 +1214,7 @@
       ],
       "attention_reasons": [
         "Source changed: review ../architecture/system.md.",
-        "Dependency changed: review CF-018."
+        "Dependency changed: review CF-023."
       ],
       "ready_for_next_step": false
     },
@@ -1243,6 +1251,7 @@
       "policy_decision_keys": [],
       "reverse_dependency_keys": [],
       "open_todo_ids": [
+        "07766c01-1feb-4f34-803d-3538ee8bcd30",
         "6196ed1e-1cfc-47c9-ab83-80ebf399ac83",
         "daf49383-6ad3-4ee3-8311-e6028a134452"
       ],
@@ -1253,7 +1262,7 @@
       ],
       "attention_reasons": [
         "Source changed: review ../architecture/system.md.",
-        "Dependency changed: review CF-018."
+        "Dependency changed: review CF-023."
       ],
       "ready_for_next_step": false
     },
@@ -1308,6 +1317,18 @@
     }
   ],
   "todos": [
+    {
+      "todo_id": "07766c01-1feb-4f34-803d-3538ee8bcd30",
+      "item_key": "CF-026",
+      "type": "review_dependency_change",
+      "managed_by": "mutation",
+      "message": "Upstream task changed: CF-023. Review whether this task needs updates.",
+      "created_at": "2026-04-16T19:20:43.251Z",
+      "related_sources": [],
+      "related_item_keys": [
+        "CF-023"
+      ]
+    },
     {
       "todo_id": "1444a841-a2b1-4642-ae3b-07d4f66e32c6",
       "item_key": "CF-025",
@@ -1369,6 +1390,18 @@
         }
       ],
       "related_item_keys": []
+    },
+    {
+      "todo_id": "58e15dc0-fe72-4e49-9412-ce7ee613e497",
+      "item_key": "CF-025",
+      "type": "review_dependency_change",
+      "managed_by": "mutation",
+      "message": "Upstream task changed: CF-023. Review whether this task needs updates.",
+      "created_at": "2026-04-16T19:20:43.251Z",
+      "related_sources": [],
+      "related_item_keys": [
+        "CF-023"
+      ]
     },
     {
       "todo_id": "5ab0fc6f-5de2-4970-92e7-c7c191f2ad21",
@@ -1541,6 +1574,30 @@
         }
       ],
       "related_item_keys": []
+    },
+    {
+      "todo_id": "d0aa0999-f0c2-4494-aa63-e1ddf45f0e90",
+      "item_key": "CF-019",
+      "type": "review_dependency_change",
+      "managed_by": "mutation",
+      "message": "Upstream task changed: CF-023. Review whether this task needs updates.",
+      "created_at": "2026-04-16T19:20:43.251Z",
+      "related_sources": [],
+      "related_item_keys": [
+        "CF-023"
+      ]
+    },
+    {
+      "todo_id": "d8a96661-1632-4565-a95a-00adf3236797",
+      "item_key": "CF-013",
+      "type": "review_dependency_change",
+      "managed_by": "mutation",
+      "message": "Upstream task changed: CF-023. Review whether this task needs updates.",
+      "created_at": "2026-04-16T19:20:43.251Z",
+      "related_sources": [],
+      "related_item_keys": [
+        "CF-023"
+      ]
     },
     {
       "todo_id": "daf49383-6ad3-4ee3-8311-e6028a134452",
