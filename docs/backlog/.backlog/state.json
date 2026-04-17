@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-17T15:42:37.101Z",
-  "last_refresh_at": "2026-04-17T15:42:37.101Z",
+  "updated_at": "2026-04-17T17:11:37.073Z",
+  "last_refresh_at": "2026-04-17T17:11:37.073Z",
   "context": {
     "glossary": [
       {
@@ -135,6 +135,29 @@
           "confirmed=>planned"
         ],
         "note": "Candidate seams stay defined until the new backlog/dossier workflow advances them through explicit specification, planning, and closure."
+      },
+      {
+        "area": "pending-seams-current",
+        "pending_seams": [
+          "CF-012",
+          "CF-013",
+          "CF-014",
+          "CF-015",
+          "CF-016",
+          "CF-018",
+          "CF-019",
+          "CF-024",
+          "CF-025",
+          "CF-026",
+          "CF-027"
+        ],
+        "implemented_since_baseline": [
+          "CF-023"
+        ],
+        "planned_followups": [
+          "CF-028"
+        ],
+        "note": "Current follow-up state after real-serving closure: CF-023 moved to implemented, while smoke-harness optimization continues as separate backlog delta CF-028."
       }
     ],
     "claims": [],
@@ -1186,18 +1209,13 @@
       "quality_attribute_keys": [],
       "policy_decision_keys": [],
       "reverse_dependency_keys": [
-        "CF-025"
+        "CF-025",
+        "CF-028"
       ],
-      "open_todo_ids": [
-        "c8fb993b-1bc6-41bf-b918-09f00fe58391"
-      ],
-      "needs_attention": true,
-      "attention_reason_codes": [
-        "source_changed"
-      ],
-      "attention_reasons": [
-        "Source changed: review ../architecture/system.md."
-      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
       "ready_for_next_step": false
     },
     {
@@ -1237,7 +1255,8 @@
       "reverse_dependency_keys": [
         "CF-013",
         "CF-019",
-        "CF-025"
+        "CF-025",
+        "CF-028"
       ],
       "open_todo_ids": [],
       "needs_attention": false,
@@ -1444,6 +1463,41 @@
         "Dependency changed: review CF-018."
       ],
       "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-028",
+      "title": "Оптимизация smoke harness после real vLLM/Gemma runtime",
+      "type": "feature",
+      "delivery_state": "planned",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-022",
+        "CF-023"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "99b920fb-a72a-4372-94bd-28dce36af456"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "99b920fb-a72a-4372-94bd-28dce36af456"
+      ],
+      "plan_source_ids": [
+        "99b920fb-a72a-4372-94bd-28dce36af456"
+      ],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": true
     }
   ],
   "todos": [
@@ -2053,21 +2107,6 @@
     {
       "todo_id": "c34e8928-6572-43d3-85a8-f67bc52274a7",
       "item_key": "CF-005",
-      "type": "review_source_change",
-      "managed_by": "refresh",
-      "message": "Review source change: ../architecture/system.md.",
-      "created_at": "2026-04-17T11:30:40.507Z",
-      "related_sources": [
-        {
-          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
-          "source_label": "../architecture/system.md"
-        }
-      ],
-      "related_item_keys": []
-    },
-    {
-      "todo_id": "c8fb993b-1bc6-41bf-b918-09f00fe58391",
-      "item_key": "CF-022",
       "type": "review_source_change",
       "managed_by": "refresh",
       "message": "Review source change: ../architecture/system.md.",

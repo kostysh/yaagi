@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-17T15:40:37.098Z",
-  "next_apply_index": 35,
+  "updated_at": "2026-04-17T17:01:49.742Z",
+  "next_apply_index": 36,
   "packets": [
     {
       "packet_id": "f0947cdd-67be-4f98-9cbd-bec31fce4589",
@@ -38,6 +38,16 @@
         "CF-025",
         "CF-026",
         "CF-027"
+      ]
+    },
+    {
+      "packet_id": "3626ef44-d82d-45f1-86fc-73bec5ad9441",
+      "apply_index": 35,
+      "canonical_path": "packets/3ebdcd681116--58e93468d0bd--cf028-smoke-harness-follow-up.json",
+      "content_hash": "3ebdcd681116fbef07cdd34508aaf7900a084bd2bbd048fb879c0a006717ded9",
+      "applied_at": "2026-04-17T17:01:49.742Z",
+      "item_keys": [
+        "CF-028"
       ]
     }
   ],

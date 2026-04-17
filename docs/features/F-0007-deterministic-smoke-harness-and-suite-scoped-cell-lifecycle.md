@@ -8,7 +8,7 @@ area: platform
 depends_on: [F-0002, F-0003, F-0004, F-0005, F-0006]
 impacts: [runtime, infra, verification, smoke]
 created: 2026-03-23
-updated: 2026-03-25
+updated: 2026-04-17
 links:
   issue: ""
   pr: []
@@ -17,6 +17,8 @@ links:
     - "README.md"
     - "docs/features/F-0002-canonical-monorepo-deployment-cell.md"
     - "docs/features/F-0006-baseline-dependency-refresh-and-toolchain-alignment.md"
+    - "docs/features/F-0020-real-vllm-serving-and-promotion-model-dependencies.md"
+    - "docs/adr/ADR-2026-04-17-smoke-harness-follow-up-scope-extraction.md"
 ---
 
 # F-0007 Детерминированный smoke harness и suite-scoped lifecycle deployment cell
@@ -85,10 +87,10 @@ links:
 ### 6.1 Каноническая execution model smoke suite
 
 - `pnpm smoke:cell` остаётся одним root-level containerized verification path, но lifecycle cell фиксируется на уровне suite/scenario-family, а не на уровне каждого отдельного smoke-теста.
-- Допустимая execution model после shaping:
-  - один базовый live project `yaagi-phase0` для non-Telegram smoke scenarios;
-  - один отдельный live project `yaagi-phase0-telegram` только для Telegram-specific smoke family;
-  - full `docker compose up -d --build --wait` допускается один раз на каждую такую scenario family, а не перед каждым тестом;
+- Delivered execution model после `v1.4` фиксируется так:
+  - один shared live project `yaagi-phase0` для базовой smoke family;
+  - Telegram-specific scenarios активируются как overlay над тем же `yaagi-phase0`, а не как отдельный live project;
+  - full `docker compose up -d --build --wait` допускается один раз на suite startup, а overlay reuse-ит тот же promoted dependency stack;
   - explicit `compose restart core` остаётся допустимым только для restart-specific scenarios, где AC действительно требует доказать поведение после process restart.
 - Полный `compose down -v --remove-orphans` между соседними обычными smoke-тестами перестаёт быть канонической моделью изоляции.
 
@@ -96,7 +98,7 @@ links:
 
 - Межтестовая изоляция больше не должна выражаться через repeated full teardown/startup cell. Вместо этого `F-0007` обязан ввести deterministic reset contract для mutable runtime state.
 - Канонический inter-test reset mechanism после shaping фиксируется так:
-  - для базового smoke project и для Telegram project baseline восстанавливается через один и тот же основной механизм: deterministic runtime DB reset до clean post-bootstrap state plus targeted `core` restart, когда следующему сценарию нужен новый process lifecycle;
+  - baseline восстанавливается через deterministic runtime DB reset до clean post-bootstrap state plus targeted `core` restart, когда следующему сценарию нужен новый process lifecycle;
   - reset mutable runtime DB state является primary isolation primitive, а не одной из нескольких альтернатив;
   - fixture-specific cleanup допустим только как подчинённое дополнение для внешних тестовых fixtures, которые не живут в runtime DB (например, очередь fake Telegram API), и не заменяет runtime baseline reset;
   - generic cleanup runtime-generated files не становится отдельной свободной веткой дизайна: file cleanup допускается только если конкретный smoke scenario сам создаёт временный артефакт вне canonical runtime DB reset.
@@ -146,7 +148,7 @@ links:
 ### 6.6 Edge cases
 
 - После упавшего smoke-теста suite cleanup всё равно должен гарантированно удалять `yaagi-phase0*` containers/networks/volumes.
-- Telegram-specific scenario не должен конфликтовать с основным suite project по host ports и residual Docker resources.
+- Telegram-specific scenario не должен конфликтовать с shared suite project по host ports и residual Docker resources.
 - Restart-specific tests не должны зависеть от случайного residue от предыдущего smoke scenario.
 - Если `core` readiness проходит, но domain barrier ещё не выполнен (например, adapter status или DB-side condition), harness должен ждать именно domain condition, а не вставлять fixed sleep.
 
@@ -166,11 +168,11 @@ Covers: AC-F0007-01, AC-F0007-04, AC-F0007-05
 Verification: `smoke`, `audit`
 Exit criteria:
 - Зафиксирован before baseline для `pnpm smoke:cell`: wall-clock duration, число full `compose up/down` cycles и текущие polling points.
-- Harness умеет поднимать `yaagi-phase0` и `yaagi-phase0-telegram` не чаще одного раза на scenario family.
+- Harness умеет поднимать `yaagi-phase0` и Telegram overlay не чаще одного раза на scenario family.
 - Per-test full `compose down -v --remove-orphans` перестаёт быть default suite orchestration path.
 Tasks:
 - **T-F0007-01:** Зафиксировать baseline repeated-restart harness и оформить measurement evidence, на который будет ссылаться `AC-F0007-04`. Covers: AC-F0007-04.
-- **T-F0007-02:** Вынести scenario-family project lifecycle helpers для `yaagi-phase0` и `yaagi-phase0-telegram` в canonical smoke harness substrate. Covers: AC-F0007-01, AC-F0007-05.
+- **T-F0007-02:** Вынести scenario-family lifecycle helpers для shared `yaagi-phase0` и Telegram overlay в canonical smoke harness substrate. Covers: AC-F0007-01, AC-F0007-05.
 - **T-F0007-03:** Реорганизовать suite bootstrap так, чтобы обычные smoke scenarios больше не стартовали весь compose stack заново перед каждым тестом. Covers: AC-F0007-01.
 
 ### Slice SL-F0007-02: Deterministic reset и readiness barriers
@@ -201,7 +203,7 @@ Tasks:
 - **T-F0007-10:** Выполнить dossier realignment для `F-0002`, `F-0003`, `F-0004`, `F-0005` и `F-0007`, чтобы coverage ownership больше не расходился с фактическим test surface. Covers: AC-F0007-06.
 
 ### Slice SL-F0007-04: Telegram scenario family и ingest smoke closure
-Delivers: Telegram-specific scenario overlay на том же harness substrate и в том же compose project, без второго `vllm-fast` runtime и без возврата к repeated full suite restarts.
+Delivers: Telegram-specific scenario overlay над shared project/runtime, без второго `vllm-fast` runtime и без возврата к repeated full suite restarts.
 Covers: AC-F0007-01, AC-F0007-02, AC-F0007-03, AC-F0007-05
 Verification: `smoke`
 Exit criteria:
@@ -266,6 +268,8 @@ Tasks:
 
 - Статус: `done`
 - Intake source: user-approved follow-up after `F-0006`
+- Backlog follow-up after post-`F-0020` runtime review: `CF-028`
+- Canonical backlog carrier for the extracted delta: `ADR-2026-04-17 Smoke Harness Follow-up Scope Extraction`
 - PRs:
   - -
 - Code:
@@ -281,10 +285,29 @@ Tasks:
   - current `v1.4` shared-runtime snapshot after `F-0020`: total suite `321.06s`, base family `96.02s`, Telegram overlay `14.16s`; snapshot is intentionally not compared against `v1.3` because `vllm-fast` now serves real `Gemma` instead of the lighter pre-`F-0020` path
   - `node --experimental-strip-types --test infra/docker/deployment-cell.smoke.ts`
 
-## 12. Журнал изменений (Change log)
+## 12. Извлечённый follow-up delta (`CF-028`)
+
+- `F-0007` остаётся delivered feature; change-proposal не reopen-ит её lifecycle и не переводит dossier обратно в активную delivery stage.
+- Post-`F-0020` runtime review выделил отдельный backlog delta, который теперь живёт как `CF-028` и опирается на `docs/architecture/system.md` плюс [ADR-2026-04-17 Smoke Harness Follow-up Scope Extraction](../adr/ADR-2026-04-17-smoke-harness-follow-up-scope-extraction.md).
+- Канонический extracted scope для `CF-028`:
+  1. заменить steady-state `docker compose exec postgres psql` на smoke-only published PostgreSQL port и один direct `pg` client;
+  2. схлопнуть последовательные DB waits в predicate waits и batched readouts;
+  3. убрать redundant `--build` из Telegram overlay и сохранить reuse того же shared model runtime;
+  4. подчистить startup/overlay readiness вокруг compose/service health и оставить только domain-specific waits.
+- Canonical execution order для follow-up:
+  - direct PostgreSQL channel;
+  - predicate waits и batched readouts;
+  - Telegram overlay without redundant build;
+  - health-first readiness cleanup и финальный smoke closure.
+- Dependency / unblock note:
+  - follow-up depends on both delivered prerequisites: historical smoke harness seam `CF-022` and real-serving seam `F-0020` / `CF-023`;
+  - profiling counters и отдельная instrumentation не входят в этот delta scope по явному решению оператора.
+
+## 13. Журнал изменений (Change log)
 
 - **v1.0 (2026-03-23):** Выполнен intake отдельного workstream на детерминизацию и ускорение `pnpm smoke:cell` после подтверждения, что текущий harness тратит основное время на repeated full deployment-cell lifecycle и readiness polling.
 - **v1.1 (2026-03-23):** Выполнен `spec-compact`: зафиксированы suite-scoped lifecycle model, deterministic reset/readiness contract, canonical smoke scope, relative performance-measurement contract и explicit ADR decisions по coverage realignment.
 - **v1.2 (2026-03-23):** Выполнен `plan-slice`: работа разложена на 5 delivery slices с явными exit criteria, task IDs, coverage realignment steps и отдельным acceptance closure path для performance evidence и repo-level smoke contract.
 - **v1.3 (2026-03-23):** Выполнен `implementation`: `deployment-cell.smoke.ts` переведён на scenario-family scoped lifecycle, full compose boots сокращены до двух на весь suite, межсценарная изоляция заменена на deterministic runtime DB reset + `core` stop/start barriers, fake Telegram API получил explicit reset endpoint, ownership был realigned в `F-0003` и `F-0005`, а historical pre-Gemma single-run `pnpm smoke:cell` improved from `133.47s` to `57.13s`.
 - **v1.4 (2026-04-17):** Smoke harness realigned после `F-0020`: Telegram scenario больше не materialize-ит второй compose project и второй `vllm-fast`/`Gemma` stack. Telegram ingest теперь проверяется как overlay над shared deployment cell и reuse-ит тот же `models_state` и тот же promoted fast dependency. Current shared-runtime timing snapshot (`321.06s` total, `96.02s` base family, `14.16s` Telegram overlay) фиксируется только как актуальный cost/topology reference и не переиспользует `v1.3` comparative evidence как текущий proof.
+- **v1.5 (2026-04-17) [risk discovery]:** Выполнен `change-proposal` после post-`F-0020` runtime review. Extracted follow-up delta на direct PostgreSQL channel, predicate/batched DB waits, Telegram overlay без redundant `--build` и health-first readiness cleanup вынесен в отдельный ADR-backed backlog item `CF-028`. Этот delta не reopen-ит delivered `F-0007`.

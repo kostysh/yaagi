@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-17T15:59:18.851Z_
+_Last sync: 2026-04-17T16:38:36.847Z_
 
 ## Features
 
@@ -168,7 +168,6 @@ graph TD
 - **WARN** F-0007 — NFR section looks aspirational. Add a metric, budget/threshold, or observable signal for any normative NFR.
 - **WARN** F-0007 — Planned+ dossier has dependencies, but the slicing plan does not show clear `Depends on:` visibility with owner and unblock condition. Add the dependency note where it affects delivery order.
 - **WARN** F-0007 — Planning/design text suggests rollout order matters, but no rollout / activation note was found. Add a compact activation order and rollback-limits note.
-- **WARN** F-0007 — Change log shows mature replanning, but no short reason tags were found. Prefer tags like `[clarification]`, `[scope realignment]`, `[dependency realignment]`, `[risk discovery]`, or `[contract drift]`.
 - **WARN** F-0007 — Potential compound ACs detected: AC-F0007-04, AC-F0007-01, AC-F0007-02, AC-F0007-03, AC-F0007-05, AC-F0007-06. Prefer one obligation per AC.
 - **WARN** F-0007 — Vague wording in executable sections: "fast" in "- В smoke suite должны остаться только сценарии, где containerized cell реально добавляет verification value поверх fast integration path."; "fast" in "- Lease-discipline smoke probe из `F-0003` после shaping выводится из container smoke suite и закрепляется за fast integration path, потому что его main value лежит в DB/runtime semantics, а не в long-lived container cell. `F-0007` implementation обязан удалить этот probe из `deployment-cell.smoke.ts` и сохранить coverage ownership через explicit realignment на fast integration surface, а не оставлять implementer-у выбор.". Rewrite the statement more concretely.
 - **WARN** F-0008 — NFR section looks aspirational. Add a metric, budget/threshold, or observable signal for any normative NFR.

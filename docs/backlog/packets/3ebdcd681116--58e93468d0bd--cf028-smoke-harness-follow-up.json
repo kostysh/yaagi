@@ -1,0 +1,72 @@
+{
+  "context": {
+    "glossary": [],
+    "key_strategy": {
+      "item_key_space": "Preserve legacy CF-* seam identifiers as stable backlog item keys during migration to backlog-engineer.",
+      "delivery_state_rule": "Legacy intaken maps to implemented by explicit operator instruction; confirmed maps to planned; remaining candidate seams stay defined unless a carried migration gap blocks them.",
+      "source_traceability": "Architecture and legacy planning inputs stay attached through registered source IDs, while current truth is read from backlog-engineer state after packet apply."
+    },
+    "target_system": [],
+    "as_built": [
+      {
+        "area": "pending-seams-current",
+        "pending_seams": [
+          "CF-012",
+          "CF-013",
+          "CF-014",
+          "CF-015",
+          "CF-016",
+          "CF-018",
+          "CF-019",
+          "CF-024",
+          "CF-025",
+          "CF-026",
+          "CF-027"
+        ],
+        "implemented_since_baseline": [
+          "CF-023"
+        ],
+        "planned_followups": [
+          "CF-028"
+        ],
+        "note": "Current follow-up state after real-serving closure: CF-023 moved to implemented, while smoke-harness optimization continues as separate backlog delta CF-028."
+      }
+    ],
+    "claims": [],
+    "contracts": [],
+    "data_domains": [],
+    "quality_attributes": [],
+    "policy_decisions": []
+  },
+  "items": [
+    {
+      "item_key": "CF-028",
+      "title": "Оптимизация smoke harness после real vLLM/Gemma runtime",
+      "type": "feature",
+      "delivery_state": "planned",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-022",
+        "CF-023"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "99b920fb-a72a-4372-94bd-28dce36af456"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "99b920fb-a72a-4372-94bd-28dce36af456"
+      ],
+      "plan_source_ids": [
+        "99b920fb-a72a-4372-94bd-28dce36af456"
+      ],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": []
+    }
+  ]
+}
