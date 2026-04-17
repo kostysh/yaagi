@@ -34,7 +34,7 @@ links:
     - CF-022
     - CF-023
 - **User problem:** После `F-0020` smoke harness работает поверх реального `Gemma`/`vLLM` runtime, и orchestration overhead вокруг него стал отдельной проблемой. Текущий `pnpm smoke:cell` сохраняет покрытие, но часть стоимости и нестабильности создают не сами сценарии, а способ общения harness с PostgreSQL, лишние readiness loops и redundant overlay orchestration.
-- **Goal:** Упростить и удешевить канонический containerized smoke path без потери функциональности, покрытия и shared-runtime topology. Целевой результат: `smoke:cell` остаётся тем же repo-level verification path, но перестаёт тратить время и ресурсы на avoidable orchestration work.
+- **Goal:** Упростить и удешевить канонический containerized smoke path без потери функциональности, покрытия и shared-runtime topology. Целевой результат: `smoke:cell` остаётся тем же repo-level verification path, убирает avoidable orchestration work и доказывает измеримый выигрыш хотя бы на одном целевом orchestration path без существенной регрессии полного suite wall-clock.
 - **Non-goals:** Эта фича не меняет выбор `Gemma`/`vLLM`, не ослабляет smoke coverage, не добавляет profiling counters как обязательный deliverable и не меняет продуктовый runtime вне smoke harness.
 - **Current substrate / baseline:** Базовый substrate уже delivered через `F-0007` и `F-0020`: один shared deployment cell, Telegram overlay поверх него и один реальный `vllm-fast`/`Gemma` runtime. Follow-up работает поверх этого delivered baseline, а не переоткрывает его.
 
@@ -101,14 +101,14 @@ links:
 - **AC-F0021-06:** Sequential DB waits that guard one domain outcome are collapsed into one predicate wait plus one batched readout without reducing asserted smoke conditions.
 - **AC-F0021-07:** Base startup orchestration treats compose/service health as the first readiness barrier and adds domain-specific waits only where Docker health is insufficient.
 - **AC-F0021-08:** Telegram overlay orchestration treats compose/service health as the first readiness barrier and adds domain-specific waits only where Docker health is insufficient.
-- **AC-F0021-09:** `pnpm smoke:cell` preserves current base-family verification semantics after the harness refactor.
-- **AC-F0021-10:** `pnpm smoke:cell` preserves current Telegram-family verification semantics after the harness refactor.
+- **AC-F0021-09:** `pnpm smoke:cell` preserves the base-family smoke assertion baseline listed in section `5.5 Preserved smoke assertion baseline`.
+- **AC-F0021-10:** `pnpm smoke:cell` preserves the Telegram-family smoke assertion baseline listed in section `5.5 Preserved smoke assertion baseline`.
 - **AC-F0021-11:** `pnpm smoke:cell` still completes without orphaned `yaagi-phase0*` resources.
-- **AC-F0021-12:** The follow-up records before/after execution evidence for the same machine and workload class, so the resulting cost change is explicit rather than anecdotal.
+- **AC-F0021-12:** Before/after evidence is recorded on the same machine and workload class, and shows both: total `pnpm smoke:cell` wall-clock does not regress by more than 10% versus the current shared-runtime baseline, and at least one targeted orchestration path (`base family startup` or `Telegram overlay activation`) is faster than that baseline.
 
 ## 4. Non-functional requirements (NFR)
 
-- **Performance:** The implementation must produce explicit before/after timing evidence against the current shared-runtime smoke baseline on the same machine.
+- **Performance:** The implementation must produce explicit before/after timing evidence against the current shared-runtime smoke baseline on the same machine, keep total suite wall-clock within a 10% regression budget, and improve at least one targeted orchestration path (`base family startup` or `Telegram overlay activation`).
 - **Determinism:** The refactored harness must not reintroduce multi-runtime topology or readiness races that `F-0007` already removed.
 - **Operability:** The operator entrypoint remains `pnpm smoke:cell`; no parallel manual setup becomes mandatory.
 - **Verification integrity:** Coverage retained by the current shared base family plus Telegram overlay must stay explicit in dossier/test ownership.
@@ -161,6 +161,20 @@ links:
 - AC-F0021-01..08 should be proven through contract tests plus targeted smoke assertions.
 - AC-F0021-09..11 require full `pnpm smoke:cell`.
 - AC-F0021-12 closes only with recorded before/after evidence in the dossier and implementation closure artifacts.
+
+#### Preserved smoke assertion baseline
+
+Base-family assertions that must remain present after the refactor:
+
+- `readiness and materialization baseline`: the suite still proves base `/health` readiness, PostgreSQL/`pgboss` readiness, phase-0 model availability, and writable/runtime materialization boundaries currently exercised by the startup smoke.
+- `model and operator baseline`: the suite still proves bounded `/models` projection and operator state/governor-unavailable assertions currently exercised for baseline model-routing and operator introspection.
+- `runtime continuity baseline`: the suite still proves fail-closed startup on unsupported subject-state schema, one completed wake tick after boot, homeostat periodic cadence, stale active-tick reclaim, and subject-state reload after restart.
+- `reactive execution baseline`: the suite still proves HTTP ingest, bounded reactive decision, bounded executive outcome, and fail-closed promoted dependency behavior on the shared deployment cell.
+
+Telegram-family assertions that must remain present after the refactor:
+
+- `overlay readiness baseline`: Telegram overlay activation still proves that the telegram adapter becomes healthy on top of the shared deployment cell.
+- `telegram ingest baseline`: fake Bot API ingest still proves one telegram stimulus enters `stimulus_inbox`, one reactive tick completes, and the durable envelope/source-kind fields remain consistent with the current telegram smoke path.
 
 ### 5.6 Adversarial semantics
 

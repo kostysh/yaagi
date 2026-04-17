@@ -26,11 +26,34 @@ generated_after_commit: false
 freshness_basis: intended_final_tree
 operator_command_refs:
   - "комить и приступай к spec-compact"
-review_events: []
+review_events:
+  - agent_id: 019d9c9c-fad9-7d81-816f-ca57e20547f4
+    role: independent
+    audit_launch_gate_checked: true
+    audit_class: independent-review
+    required_skill: dossier-engineer
+    model: gpt-5.4
+    reasoning_effort: high
+    allowed_by_policy: true
+    disallowed_reason: ""
+    requested_ts: 2026-04-17T20:00:00+02:00
+    verdict_ts: 2026-04-17T20:04:00+02:00
+    verdict: findings
+    rerun_reason: review_findings
+    scope: F-0021 spec-compact on commit cdccd7d
+    fork_context: false
+    read_only_expected: true
+    mutation_check: clean
+    invalidated: false
+    invalidated_reason: not_applicable
+    operator_intervention_required: false
+    operator_intervention_ref: null
+    replacement_event_ref: pending
 review_retry_count: 0
 review_wait_minutes: 0
 transport_failures_total: 0
-rerun_reasons: []
+rerun_reasons:
+  - review_findings
 operator_review_interventions_total: 0
 ---
 
@@ -56,6 +79,8 @@ operator_review_interventions_total: 0
 - Разделены boundary operations: base startup, direct PostgreSQL reads/waits, Telegram overlay activation, runtime reset и teardown.
 - AC разбиты на отдельные обязательства по shared deployment cell reuse, shared model-runtime reuse, redundant build removal, predicate waits, health-first readiness, preserved semantics, teardown cleanliness и evidence capture.
 - Добавлен explicit operator/agent contract: единственная operator entrypoint остаётся `pnpm smoke:cell`, а smoke-only PostgreSQL channel скрывается внутри harness contract.
+- После первого review FAIL добавлен observable optimization-success contract: total suite regression budget не более 10% и обязательное улучшение хотя бы одного orchestration path.
+- После первого review FAIL добавлен explicit preserved smoke assertion baseline для base family и Telegram overlay.
 
 ### Implementation freedom decisions
 
@@ -71,7 +96,8 @@ operator_review_interventions_total: 0
 
 ## Review events
 
-- pending
+- Первый независимый review вернул два finding'а: отсутствовал measurable optimization-success contract, а preserved smoke semantics были заданы слишком расплывчато.
+- Scope reround ограничен dossier-only corrections без изменения backlog truth.
 
 ## Backlog actualization
 
