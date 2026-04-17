@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-17T16:38:36.847Z_
+_Last sync: 2026-04-17T17:44:10.415Z_
 
 ## Features
 
@@ -30,6 +30,7 @@ _Last sync: 2026-04-17T16:38:36.847Z_
 | F-0018 | Профиль безопасности и изоляции | done | strict | safety | F-0002, F-0010, F-0013, F-0016, F-0017 | runtime,infra,governance,api,workspace,network,safety | `../features/F-0018-security-and-isolation-profile.md` |
 | F-0019 | Консолидация, event envelope и graceful shutdown | done | strict | lifecycle | F-0003, F-0004, F-0011 | runtime,db,lifecycle,governance,reporting | `../features/F-0019-consolidation-event-envelope-graceful-shutdown.md` |
 | F-0020 | Реальный vLLM-serving и promotion model dependencies | done | strict | models | F-0002, F-0008, F-0014, F-0015 | runtime,infra,models,artifacts,workshop | `../features/F-0020-real-vllm-serving-and-promotion-model-dependencies.md` |
+| F-0021 | Оптимизация smoke harness после real vLLM/Gemma runtime | proposed | deferred | platform | F-0007, F-0020 | runtime,infra,verification,smoke,db | `../features/F-0021-smoke-harness-post-f0020-runtime-optimization.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -57,6 +58,7 @@ graph TD
   F0018["F-0018 Профиль безопасности и изоляции"]
   F0019["F-0019 Консолидация, event envelope и graceful shutdown"]
   F0020["F-0020 Реальный vLLM-serving и promotion model dependencies"]
+  F0021["F-0021 Оптимизация smoke harness после real vLLM/Gemma runtime"]
   F0001 --> F0002
   F0003 --> F0001
   F0003 --> F0002
@@ -128,6 +130,8 @@ graph TD
   F0020 --> F0008
   F0020 --> F0014
   F0020 --> F0015
+  F0021 --> F0007
+  F0021 --> F0020
 ```
 <!-- END GENERATED DEP_GRAPH -->
 
@@ -212,4 +216,6 @@ graph TD
 - **WARN** F-0020 — NFR section looks aspirational. Add a metric, budget/threshold, or observable signal for any normative NFR.
 - **WARN** F-0020 — Potential compound ACs detected: AC-F0020-01, AC-F0020-02, AC-F0020-03, AC-F0020-04, AC-F0020-05, AC-F0020-06, AC-F0020-07, AC-F0020-08, AC-F0020-09, AC-F0020-10, AC-F0020-11, AC-F0020-12, AC-F0020-02, AC-F0020-04, AC-F0020-05, AC-F0020-06, AC-F0020-08, AC-F0020-03, AC-F0020-04, AC-F0020-05, AC-F0020-04, AC-F0020-04, AC-F0020-03, AC-F0020-04, AC-F0020-01, AC-F0020-02, AC-F0020-03, AC-F0020-04, AC-F0020-05, AC-F0020-08, AC-F0020-04. Prefer one obligation per AC.
 - **WARN** F-0020 — Vague wording in executable sections: "fast" in "- Canonical owner for replacing the phase-0 stub-capable `vllm-fast` continuity slot with real `vLLM` inference over the canonical deployment-cell path."; "fast" in "- Explicit fast-first slice: one real `vllm-fast` organ must be live and smoke-proven before any claim about a real local-model runtime is accepted.". Rewrite the statement more concretely.
+- **WARN** F-0021 — Potential compound ACs detected: AC-F0021-02, AC-F0021-04, AC-F0021-05, AC-F0021-06, AC-F0021-08. Prefer one obligation per AC.
+- **WARN** F-0021 — Vague wording in executable sections: "fast" in "- Telegram overlay не должен снова материализовать второй `vllm-fast` runtime или второй `Gemma` stack."; "fast" in "- **AC-F0021-02:** Telegram overlay reuses the same shared deployment cell and the same already-started `vllm-fast` runtime as the base smoke family.". Rewrite the statement more concretely.
 <!-- END GENERATED RED_FLAGS -->
