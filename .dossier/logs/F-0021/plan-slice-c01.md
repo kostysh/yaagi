@@ -5,6 +5,8 @@ stage: plan-slice
 cycle_id: c01
 session_id: 019d95c3-2088-7a01-88bb-e20d2b203438
 start_ts: 2026-04-17T20:20:19+02:00
+ready_for_review_ts: 2026-04-17T20:30:00+02:00
+final_pass_ts: 2026-04-17T20:32:30+02:00
 source_inputs:
   - AGENTS.md
   - README.md
@@ -32,7 +34,7 @@ slice_status:
   SL-F0021-03: not_started
   SL-F0021-04: not_started
 current_checkpoint: checkpoint_only
-completion_decision: checkpoint_progress_only
+completion_decision: final_closeout
 canonical_for_commit: false
 supersedes: []
 generated_after_commit: false
@@ -88,12 +90,37 @@ review_events:
     operator_intervention_required: false
     operator_intervention_ref: null
     replacement_event_ref: null
+  - agent_id: 019d9cb5-dc67-74b3-8e2b-53e6202f9957
+    role: independent
+    audit_launch_gate_checked: true
+    audit_class: independent-review
+    required_skill: dossier-engineer
+    model: gpt-5.4
+    reasoning_effort: high
+    allowed_by_policy: true
+    disallowed_reason: ""
+    requested_ts: 2026-04-17T20:31:00+02:00
+    verdict_ts: 2026-04-17T20:32:30+02:00
+    verdict: pass
+    rerun_reason: none
+    scope: final independent review for F-0021 plan-slice on commit ca4207c
+    fork_context: false
+    read_only_expected: true
+    mutation_check: clean
+    invalidated: false
+    invalidated_reason: none
+    operator_intervention_required: false
+    operator_intervention_ref: null
+    replacement_event_ref: null
 review_retry_count: 1
-review_wait_minutes: 3
+review_wait_minutes: 6
 transport_failures_total: 0
 rerun_reasons:
   - review_findings
 operator_review_interventions_total: 0
+verification_artifact: .dossier/verification/F-0021/plan-slice-ca4207c35fbd.json
+review_artifact: .dossier/reviews/F-0021/plan-slice-ca4207c35fbd.json
+step_artifact: .dossier/steps/F-0021/plan-slice.json
 ---
 
 # Журнал планирования: F-0021 plan-slice
@@ -137,6 +164,7 @@ operator_review_interventions_total: 0
 
 - Узкий pre-implementation review на missing proof obligations сначала вернул finding'и по lifecycle прямого `pg`-канала, ambiguous retry after timeout, optional failure-path proofs, слабому evidence contract и cleanup ownership для non-Docker side effects.
 - После dossier reround повторный narrow review вернулся `PASS`; planning-level proof debt по этим пяти направлениям закрыт до финального stage review.
+- Финальный independent review на чистом коммите `ca4207c` вернулся `PASS`: planning package признан implementation-ready, а backlog verdict `no-op` — правдивым.
 
 ## Актуализация backlog
 
@@ -149,4 +177,8 @@ operator_review_interventions_total: 0
 
 ## Закрытие
 
-- Пока не выполнялось.
+- `verification_artifact`: `.dossier/verification/F-0021/plan-slice-ca4207c35fbd.json`
+- `review_artifact`: `.dossier/reviews/F-0021/plan-slice-ca4207c35fbd.json`
+- `step_artifact`: `.dossier/steps/F-0021/plan-slice.json`
+- `next-step`: `implementation`
+- `process_complete=yes`
