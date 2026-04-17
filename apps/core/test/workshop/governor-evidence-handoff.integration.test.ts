@@ -18,6 +18,13 @@ void test('AC-F0016-10 maps workshop promotion package evidence into a governor-
       requiredEvalSuite: 'reflex-regression',
       lastKnownGoodEvalReportUri: 'file:///runtime/reports/workshop/evals/eval-1.json',
       artifactUri: 'file:///runtime/models/reflex-adapter.safetensors',
+      dependencyRef: {
+        serviceId: 'vllm-fast',
+        artifactUri: 'file:///runtime/models/base/vllm-fast/google--gemma-4-E4B-it',
+        artifactDescriptorPath: '/seed/models/base/vllm-fast-manifest.json',
+        runtimeArtifactRoot: '/models/base/vllm-fast',
+        readiness: 'ready',
+      },
     },
   });
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import path from 'node:path';
-import { fileExists, infraRoot, run } from '../helpers.ts';
+import { fileExists, infraRoot, repoEnvFilePath, run } from '../helpers.ts';
 
 const composeFile = path.join(infraRoot(), 'docker', 'compose.yaml');
 const coreDockerfile = path.join(infraRoot(), 'docker', 'core', 'Dockerfile');
@@ -14,7 +14,14 @@ void test('AC-F0002-03 renders the canonical compose cell with phase-0 service w
   assert.equal(await fileExists(vllmDockerfile), true);
   assert.equal(await fileExists(migrationFile), true);
 
-  const { stdout } = await run('docker', ['compose', '-f', composeFile, 'config']);
+  const envFilePath = repoEnvFilePath();
+  const { stdout } = await run('docker', [
+    'compose',
+    ...(envFilePath ? ['--env-file', envFilePath] : []),
+    '-f',
+    composeFile,
+    'config',
+  ]);
   assert.match(stdout, /core:/);
   assert.match(stdout, /postgres:/);
   assert.match(stdout, /vllm-fast:/);
@@ -30,6 +37,12 @@ void test('AC-F0002-03 renders the canonical compose cell with phase-0 service w
   assert.match(stdout, /target: \/workspace/);
   assert.match(stdout, /source: models_state/);
   assert.match(stdout, /target: \/models/);
+  assert.match(stdout, /HOME: \/models\/\.home/);
+  assert.match(stdout, /VLLM_CACHE_ROOT: \/models\/\.cache\/vllm/);
+  assert.match(stdout, /VLLM_CONFIG_ROOT: \/models\/\.config\/vllm/);
+  assert.match(stdout, /HF_XET_CACHE: \/models\/\.hf-cache\/xet/);
+  assert.match(stdout, /TRITON_CACHE_DIR: \/models\/\.cache\/triton/);
+  assert.match(stdout, /TORCHINDUCTOR_CACHE_DIR: \/models\/\.cache\/torchinductor/);
   assert.match(stdout, /source: data_state/);
   assert.match(stdout, /target: \/data/);
   assert.match(stdout, /internal: true/);

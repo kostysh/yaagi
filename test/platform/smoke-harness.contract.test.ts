@@ -28,17 +28,19 @@ const readmePath = path.join(repoRoot, 'README.md');
 
 const loadText = async (targetPath: string): Promise<string> => readFile(targetPath, 'utf8');
 
-void test('AC-F0007-01 keeps the deployment-cell harness on one base family boot and one Telegram family boot', async () => {
+void test('AC-F0007-01 keeps the deployment-cell harness on one suite-scoped project and one Telegram overlay activation', async () => {
   const text = await loadText(smokeHarnessPath);
 
   assert.match(
     text,
     /AC-F0007-01 reuses suite-scoped compose families instead of per-test full deployment-cell restarts/,
   );
+  assert.match(text, /F-0007 deployment-cell smoke suite/);
   assert.match(text, /F-0007 base deployment-cell smoke family/);
-  assert.match(text, /F-0007 telegram deployment-cell smoke family/);
-  assert.match(text, /baseFamilyStarts, 1/);
-  assert.match(text, /telegramFamilyStarts, 1/);
+  assert.match(text, /F-0007 telegram deployment-cell smoke overlay/);
+  assert.match(text, /projectStarts, 1/);
+  assert.match(text, /telegramOverlayActivations, 1/);
+  assert.match(text, /telegramOverlayVllmFastContainerId/);
 });
 
 void test('AC-F0007-02 restores clean post-bootstrap runtime state through deterministic reset and readiness helpers', async () => {
@@ -73,33 +75,27 @@ void test('AC-F0007-03 retains F-0002 startup smoke ownership and removes lease 
   );
 });
 
-void test('AC-F0007-04 records before and after smoke timings with a materially faster post-implementation result', async () => {
+void test('AC-F0007-04 scopes historical performance evidence separately from the current shared-runtime snapshot', async () => {
   const text = await loadText(f0007Path);
-  const beforeMatch = text.match(/before: .*?`real ([0-9]+\.[0-9]+)`/);
-  const afterMatch = text.match(/after: .*?`real ([0-9]+\.[0-9]+)`/);
 
-  assert.ok(beforeMatch?.[1]);
-  assert.ok(afterMatch?.[1]);
-
-  const before = Number(beforeMatch[1]);
-  const after = Number(afterMatch[1]);
-  assert.ok(Number.isFinite(before));
-  assert.ok(Number.isFinite(after));
-  assert.ok(after < before);
-  assert.ok(after <= before * 0.65);
+  assert.match(text, /historical `v1\.3` comparative evidence/);
+  assert.match(text, /before .* `real 133\.47`/);
+  assert.match(text, /after .* `real 57\.13`/);
+  assert.match(text, /current `v1\.4` shared-runtime snapshot after `F-0020`/);
+  assert.match(text, /one shared `vllm-fast`\/`Gemma` runtime/);
+  assert.match(text, /not compared against `v1\.3`/);
 });
 
-void test('AC-F0007-05 keeps an explicit teardown audit for both smoke projects and their host ports', async () => {
+void test('AC-F0007-05 keeps an explicit teardown audit for the shared smoke project and host port', async () => {
   const text = await loadText(smokeHarnessPath);
 
   assert.match(
     text,
     /AC-F0007-05 tears down suite-scoped smoke projects without orphaned docker resources/,
   );
-  assert.match(text, /waitForProjectResourcesToDisappear\(projectName\)/);
-  assert.match(text, /waitForProjectResourcesToDisappear\(telegramProjectName\)/);
+  assert.match(text, /waitForProjectResourcesToDisappear\(projectName, \{/);
+  assert.match(text, /ignoredVolumes: \[modelsVolumeName\(\)\]/);
   assert.match(text, /waitForPortToClose\(defaultCoreHostPort\)/);
-  assert.match(text, /waitForPortToClose\(telegramCoreHostPort\)/);
 });
 
 void test('AC-F0007-06 realigns README and dossier references to the delivered smoke execution model', async () => {
@@ -116,7 +112,11 @@ void test('AC-F0007-06 realigns README and dossier references to the delivered s
   assert.match(f0007, /Статус: `done`/);
   assert.match(
     f0007,
-    /measured single-run `pnpm smoke:cell` improved from `133\.47s` to `57\.13s`/,
+    /historical pre-Gemma single-run `pnpm smoke:cell` improved from `133\.47s` to `57\.13s`/,
+  );
+  assert.match(
+    f0007,
+    /Current shared-runtime timing snapshot \(`321\.06s` total, `96\.02s` base family, `14\.16s` Telegram overlay\)/,
   );
   assert.match(
     indexText,

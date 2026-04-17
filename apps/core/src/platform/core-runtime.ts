@@ -10,19 +10,24 @@ import {
   type HttpIngestStimulusInput,
   type PerceptionHealthSnapshot,
 } from '@yaagi/contracts/perception';
-import type { OperatorRicherRegistryHealthSummary } from '@yaagi/contracts/models';
+import type {
+  OperatorRicherRegistryHealthSummary,
+  ServingDependencyState,
+} from '@yaagi/contracts/models';
 import { checkPostgresConnectivity, ensureDatabaseReady } from '@yaagi/db/bootstrap';
 import { type CoreRuntimeConfig, loadCoreRuntimeConfig } from './core-config.ts';
 import { createPhase0DecisionInvoker, PHASE0_AGENT_KEYS } from './phase0-ai.ts';
 import { registerOperatorApiRoutes, type OperatorRuntimeLifecycle } from './operator-api.ts';
 import { materializeRuntimeSeed } from './runtime-seed.ts';
 import { createPhase0RuntimeLifecycle } from '../runtime/runtime-lifecycle.ts';
+import { createVllmFastDependencyMonitor, probeVllmFastTransport } from './vllm-fast-serving.ts';
 import type {
   BaselineModelProfileDiagnostic,
   ModelHealthSummary,
 } from '../runtime/model-router.ts';
 
 const BOOT_POLL_INTERVAL_MS = 1_000;
+const PUBLIC_FAST_MODEL_ALIAS = 'model-fast';
 
 export type CoreRuntimeHealth = {
   ok: boolean;
@@ -34,6 +39,7 @@ export type CoreRuntimeHealth = {
   modelRouting: {
     profiles: BaselineModelProfileDiagnostic[];
   };
+  servingDependencies: ServingDependencyState[];
   checks: Array<{
     name: 'configuration' | 'postgres' | 'fastModel';
     ok: boolean;
@@ -57,6 +63,8 @@ export type CoreRuntimeDependencies = {
       reflection?: ModelHealthSummary;
     }): Promise<BaselineModelProfileDiagnostic[]>;
     getRicherModelRegistryHealthSummary?(): Promise<OperatorRicherRegistryHealthSummary>;
+    getServingDependencyStates?(): Promise<ServingDependencyState[]>;
+    peekServingDependencyStates?(): ServingDependencyState[];
     ingestHttpStimulus?(input: unknown): Promise<{
       stimulusId: string;
       deduplicated: boolean;
@@ -74,7 +82,8 @@ export type CoreRuntimeDependencies = {
         | 'boot_inactive'
         | 'lease_busy'
         | 'unsupported_tick_kind'
-        | 'shutdown_admission_closed';
+        | 'shutdown_admission_closed'
+        | 'promoted_dependency_unavailable';
     }>;
   };
 };
@@ -88,8 +97,6 @@ export type CoreRuntime = {
   stop(): Promise<void>;
   fetch(request: Request): Promise<Response>;
 };
-
-const withTrailingSlash = (value: string): string => (value.endsWith('/') ? value : `${value}/`);
 
 const createFileSystemProbe = (config: CoreRuntimeConfig) => async (): Promise<boolean> => {
   const paths = [
@@ -157,22 +164,45 @@ const createPostgresProbe = (config: CoreRuntimeConfig) => async (): Promise<boo
   });
 };
 
-const createFastModelProbe = (config: CoreRuntimeConfig) => async (): Promise<boolean> => {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 1_500);
+const createFastModelProbe =
+  (fastDependencyMonitor: ReturnType<typeof createVllmFastDependencyMonitor>) =>
+  async (): Promise<boolean> =>
+    (await fastDependencyMonitor.refreshState()).readiness === 'ready';
 
-  try {
-    const response = await fetch(new URL('models', withTrailingSlash(config.fastModelBaseUrl)), {
-      method: 'GET',
-      signal: controller.signal,
-    });
-    return response.ok;
-  } catch {
-    return false;
-  } finally {
-    clearTimeout(timeout);
-  }
+const createFastModelTransportProbe = (
+  config: Pick<CoreRuntimeConfig, 'fastModelBaseUrl'>,
+): (() => Promise<boolean>) => {
+  return async () => await probeVllmFastTransport(config.fastModelBaseUrl);
 };
+
+const redactBaselineProfileDiagnostic = (
+  profile: BaselineModelProfileDiagnostic,
+): BaselineModelProfileDiagnostic => ({
+  ...profile,
+  endpoint: '',
+  artifactUri: null,
+  baseModel: PUBLIC_FAST_MODEL_ALIAS,
+  artifactDescriptorPath: null,
+  runtimeArtifactRoot: null,
+  healthSummary: {
+    healthy: profile.healthSummary.healthy,
+    detail: profile.healthSummary.healthy
+      ? 'model-fast dependency is reachable'
+      : 'model-fast dependency is unavailable',
+  },
+});
+
+const redactServingDependencyState = (state: ServingDependencyState): ServingDependencyState => ({
+  ...state,
+  endpoint: '',
+  artifactUri: null,
+  artifactDescriptorPath: '',
+  runtimeArtifactRoot: '',
+  candidateId: null,
+  baseModel: null,
+  servedModelName: null,
+  detail: null,
+});
 
 const toNodeResponse = async (response: Response) => {
   const headers = Object.fromEntries(response.headers.entries());
@@ -204,20 +234,32 @@ export function createCoreRuntime(
     dependencies.materializeRuntimeState ?? (() => materializeRuntimeSeed(config).then(() => {}));
   const probeConfiguration = dependencies.probeConfiguration ?? createFileSystemProbe(config);
   const probePostgres = dependencies.probePostgres ?? createPostgresProbe(config);
-  const probeFastModel = dependencies.probeFastModel ?? createFastModelProbe(config);
+  const fastDependencyMonitor = createVllmFastDependencyMonitor(config);
+  const probeFastModel = dependencies.probeFastModel ?? createFastModelProbe(fastDependencyMonitor);
+  const probeFastModelPublic = dependencies.probeFastModel ?? createFastModelTransportProbe(config);
   const reasoningAgents = [...PHASE0_AGENT_KEYS];
   const runtimeLifecycle =
     dependencies.createRuntimeLifecycle?.(config) ??
     createPhase0RuntimeLifecycle(config, {
       invokeDecision: createPhase0DecisionInvoker(),
+      fastDependencyMonitor,
     });
 
   const health = async (): Promise<CoreRuntimeHealth> => {
-    const [configuration, postgres, fastModel] = await Promise.all([
+    const [configuration, postgres, servingDependencies] = await Promise.all([
       probeConfiguration(),
       probePostgres(),
-      probeFastModel(),
+      runtimeLifecycle.getServingDependencyStates
+        ? runtimeLifecycle.getServingDependencyStates()
+        : runtimeLifecycle.peekServingDependencyStates
+          ? Promise.resolve(runtimeLifecycle.peekServingDependencyStates())
+          : Promise.resolve([]),
     ]);
+    const fastDependencyState =
+      servingDependencies.find((dependency) => dependency.serviceId === 'vllm-fast') ?? null;
+    const fastModel = fastDependencyState
+      ? fastDependencyState.readiness === 'ready'
+      : await probeFastModelPublic();
     let perception = DEFAULT_PERCEPTION_HEALTH;
     let modelRoutingProfiles: BaselineModelProfileDiagnostic[] = [];
     const baselineHealthSummary: ModelHealthSummary = fastModel
@@ -247,7 +289,6 @@ export function createCoreRuntime(
         modelRoutingProfiles = [];
       }
     }
-
     return {
       ok: configuration && postgres && fastModel,
       configuration,
@@ -256,8 +297,9 @@ export function createCoreRuntime(
       agents: reasoningAgents,
       perception,
       modelRouting: {
-        profiles: modelRoutingProfiles,
+        profiles: modelRoutingProfiles.map(redactBaselineProfileDiagnostic),
       },
+      servingDependencies: servingDependencies.map(redactServingDependencyState),
       checks: [
         { name: 'configuration', ok: configuration },
         { name: 'postgres', ok: postgres },

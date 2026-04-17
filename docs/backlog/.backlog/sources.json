@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-16T20:00:52.648Z",
+  "updated_at": "2026-04-17T15:42:37.092Z",
   "sources": [
     {
       "source_id": "5b9f63ff-21ce-440c-a3a3-7416945dde4f",
@@ -125,15 +125,26 @@
       "last_checked_at": "2026-04-16T19:59:47.326Z"
     },
     {
+      "source_id": "d53951b9-90dd-4afc-b7e0-df4dfd03a867",
+      "source_label": "../adr/ADR-2026-04-17-local-structured-output-schema-sanitization.md",
+      "path": "../adr/ADR-2026-04-17-local-structured-output-schema-sanitization.md",
+      "kind": "adr",
+      "authority": "authoritative",
+      "note": "Cross-cutting local structured-output compatibility rule for Gemma/vLLM",
+      "hash": "9e771da4f6d20a94c3b27ae7334a9a72c98cdb4862668dc16cbfb76756842160",
+      "registered_at": "2026-04-17T11:29:16.542Z",
+      "last_checked_at": "2026-04-17T15:42:37.092Z"
+    },
+    {
       "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
       "source_label": "../architecture/system.md",
       "path": "../architecture/system.md",
       "kind": "architecture",
       "authority": "authoritative",
       "note": "Canonical system architecture",
-      "hash": "50712ab70d3002483ee648b616b4a998bb85c47e87d42f6644789a56e39eea21",
+      "hash": "3cbe6e4763116e2ea676ed8973287caa4acdc1fe78f1bb72bbdba5c246170b9a",
       "registered_at": "2026-04-09T23:44:44.538Z",
-      "last_checked_at": "2026-04-16T20:00:52.648Z"
+      "last_checked_at": "2026-04-17T15:42:37.092Z"
     },
     {
       "source_id": "ef27eeb6-7dfa-408b-a240-1712dd407575",
@@ -144,7 +155,7 @@
       "note": "Canonical Feature Dossier for CF-016 implementation closure",
       "hash": "ce0edb1c9d74b130f3663c2a034577547e27864cd2d20a619342eebcac928c2b",
       "registered_at": "2026-04-10T12:43:55.900Z",
-      "last_checked_at": "2026-04-16T20:00:52.648Z"
+      "last_checked_at": "2026-04-17T12:26:09.978Z"
     },
     {
       "source_id": "30e1204b-b08d-4f15-8fa2-99d2ac2dffd0",
@@ -155,7 +166,7 @@
       "note": "Canonical Feature Dossier for CF-012 implementation closure",
       "hash": "b0c04a4637ad08879774c3da94da152eb190cca758fb484a5ae40482bd52c3ba",
       "registered_at": "2026-04-13T13:25:41.394Z",
-      "last_checked_at": "2026-04-16T20:00:52.648Z"
+      "last_checked_at": "2026-04-17T12:26:09.978Z"
     },
     {
       "source_id": "101e300d-dc80-4a8b-a11d-0a3f1849f368",
@@ -166,7 +177,7 @@
       "note": "Canonical Feature Dossier for CF-014 implementation closure",
       "hash": "c7052f1e0b1e16601ae23f8187752367875ff6f6b1bd02b5c724a50ac1c604bf",
       "registered_at": "2026-04-14T23:51:56.806Z",
-      "last_checked_at": "2026-04-16T20:00:52.648Z"
+      "last_checked_at": "2026-04-17T12:26:09.978Z"
     },
     {
       "source_id": "97f90f65-393f-455c-b7ea-9ec09da09343",
@@ -177,7 +188,7 @@
       "note": "Canonical Feature Dossier for CF-018 implementation closure",
       "hash": "ebb040b37a370cd508a385581ea3cefe3df5612ef78b6e68780aa8cd5070d544",
       "registered_at": "2026-04-15T17:19:58.072Z",
-      "last_checked_at": "2026-04-16T20:00:52.648Z"
+      "last_checked_at": "2026-04-17T12:26:09.978Z"
     },
     {
       "source_id": "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
@@ -188,7 +199,7 @@
       "note": "Canonical Russian Polyphony concept",
       "hash": "c8030fe4d6e54c594c0b72c0cb628b1d9daf4aa81abef21742a84b205718a71a",
       "registered_at": "2026-04-09T23:44:44.599Z",
-      "last_checked_at": "2026-04-16T20:00:52.648Z"
+      "last_checked_at": "2026-04-17T15:42:37.092Z"
     },
     {
       "source_id": "97107644-d070-4cb0-bfe3-aa581331229c",
@@ -199,7 +210,7 @@
       "note": "Legacy candidate backlog used for migration and legacy CF traceability",
       "hash": "136d786fff392aa470a6313d13b81736eafdbf5d914330a5f774c194eab66b9a",
       "registered_at": "2026-04-09T23:44:45.352Z",
-      "last_checked_at": "2026-04-16T20:00:52.648Z"
+      "last_checked_at": "2026-04-17T15:42:37.092Z"
     },
     {
       "source_id": "9d061028-1d37-4f85-9919-f6321ed1f995",
@@ -208,9 +219,9 @@
       "kind": "planning",
       "authority": "supporting",
       "note": "Legacy planning note for real vLLM serving backlog seam",
-      "hash": "b45a0e3c1765cdb4ec727b450ac89f95681ac894c879484332e1c85b943565f0",
+      "hash": "f004904de20605b7ca4c31e9cef83815aa50118959d7fe4a28459c41e2a2b795",
       "registered_at": "2026-04-09T23:44:45.473Z",
-      "last_checked_at": "2026-04-16T20:00:52.648Z"
+      "last_checked_at": "2026-04-17T15:42:37.092Z"
     },
     {
       "source_id": "4ffa2197-8f9f-4d98-a615-36b03c2cc660",
@@ -221,7 +232,7 @@
       "note": "Legacy roadmap matrix used to normalize non-intaken delivery states",
       "hash": "a0a725f8e0d2c80467a64544198cfd833a4acb6b62efd2bc3fc264dafd8f7c7f",
       "registered_at": "2026-04-09T23:44:45.414Z",
-      "last_checked_at": "2026-04-16T20:00:52.648Z"
+      "last_checked_at": "2026-04-17T15:42:37.092Z"
     }
   ]
 }

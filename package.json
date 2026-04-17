@@ -16,6 +16,7 @@
     "cell:up": "env DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker compose -f infra/docker/compose.yaml up -d --build --wait",
     "cell:up:local": "env DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker compose --env-file .env.local -f infra/docker/compose.yaml up -d --build --wait",
     "cell:down": "docker compose -f infra/docker/compose.yaml down --volumes --remove-orphans",
+    "qualify:vllm-fast": "node --experimental-strip-types infra/docker/qualify-vllm-fast.ts",
     "smoke:cell": "node --experimental-strip-types --test infra/docker/deployment-cell.smoke.ts",
     "smoke:cell:local": "node --env-file=.env.local --experimental-strip-types --test infra/docker/deployment-cell.smoke.ts"
   },

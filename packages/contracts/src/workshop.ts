@@ -1,3 +1,5 @@
+import type { ServingDependencyServiceId } from './models.ts';
+
 export const WORKSHOP_DATASET_KIND = Object.freeze({
   SFT: 'sft',
   EVAL: 'eval',
@@ -138,6 +140,14 @@ export type PrepareWorkshopPromotionPackageRequest = {
   candidateId: string;
 };
 
+export type WorkshopPromotionDependencyRef = {
+  serviceId: ServingDependencyServiceId;
+  artifactUri: string;
+  artifactDescriptorPath: string;
+  runtimeArtifactRoot: string;
+  readiness: 'ready';
+};
+
 export type WorkshopPromotionPackage = {
   candidateId: string;
   candidateStage: Exclude<WorkshopCandidateStage, 'candidate'>;
@@ -148,6 +158,7 @@ export type WorkshopPromotionPackage = {
   requiredEvalSuite: string;
   lastKnownGoodEvalReportUri: string | null;
   artifactUri: string;
+  dependencyRef: WorkshopPromotionDependencyRef;
 };
 
 export type WorkshopJobPayloadMap = {

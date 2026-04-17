@@ -1,3 +1,4 @@
+import { chmodSync, existsSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { access, mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -13,6 +14,53 @@ export function infraRoot(): string {
 
 export function repoRoot(): string {
   return path.resolve(infraRoot(), '..');
+}
+
+export function repoEnvFilePath(): string | null {
+  const envLocalFilePath = path.join(repoRoot(), '.env.local');
+  if (existsSync(envLocalFilePath)) {
+    return envLocalFilePath;
+  }
+
+  const envFilePath = path.join(repoRoot(), '.env');
+  return existsSync(envFilePath) ? envFilePath : null;
+}
+
+let repoEnvLoaded = false;
+
+export function loadRepoEnv(): void {
+  if (repoEnvLoaded) {
+    return;
+  }
+
+  const repoEnvFiles = [path.join(repoRoot(), '.env'), path.join(repoRoot(), '.env.local')];
+  for (const envFilePath of repoEnvFiles) {
+    if (existsSync(envFilePath)) {
+      process.loadEnvFile(envFilePath);
+    }
+  }
+
+  const configuredTokenFile = process.env['YAAGI_HF_TOKEN_FILE']?.trim();
+  if (configuredTokenFile) {
+    process.env['YAAGI_HF_TOKEN_FILE'] = path.isAbsolute(configuredTokenFile)
+      ? configuredTokenFile
+      : path.resolve(repoRoot(), configuredTokenFile);
+  } else {
+    const configuredToken = process.env['YAAGI_HF_TOKEN']?.trim();
+    if (configuredToken) {
+      const secretDir = mkdtempSync(path.join(os.tmpdir(), 'yaagi-hf-token-'));
+      const secretPath = path.join(secretDir, 'token');
+      writeFileSync(secretPath, `${configuredToken}\n`, {
+        encoding: 'utf8',
+        mode: 0o600,
+      });
+      chmodSync(secretPath, 0o600);
+      process.env['YAAGI_HF_TOKEN_FILE'] = secretPath;
+      delete process.env['YAAGI_HF_TOKEN'];
+    }
+  }
+
+  repoEnvLoaded = true;
 }
 
 export async function fileExists(targetPath: string): Promise<boolean> {
@@ -72,7 +120,7 @@ export async function removePath(targetPath: string): Promise<void> {
 
 export async function waitForHttp(
   url: string,
-  timeoutMs = 60_000,
+  timeoutMs = 300_000,
   intervalMs = 250,
 ): Promise<Response> {
   const startedAt = Date.now();
@@ -90,3 +138,5 @@ export async function waitForHttp(
 
   throw new Error(`timeout waiting for ${url}`);
 }
+
+loadRepoEnv();

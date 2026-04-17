@@ -19,4 +19,13 @@ export {
   loadVllmFastManifest,
   type VllmFastManifest,
   type VllmFastManifestCandidate,
+  type VllmFastReadinessProbe,
+  type VllmFastServingConfig,
 } from './vllm-fast-manifest.ts';
+export {
+  createOptionalServingDependencyState,
+  createVllmFastDependencyMonitor,
+  probeVllmFastInference,
+  probeTextMatchesExpected,
+  type VllmFastDependencyMonitor,
+} from './vllm-fast-serving.ts';

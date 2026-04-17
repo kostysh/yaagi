@@ -146,6 +146,11 @@ void test('AC-F0013-05 maps runtime gate rejection reasons to explicit HTTP stat
       reason: 'boot_inactive' as const,
       expectedStatus: 503,
     },
+    {
+      requestId: 'promoted-dependency',
+      reason: 'promoted_dependency_unavailable' as const,
+      expectedStatus: 503,
+    },
   ];
 
   const { runtime, cleanup } = await createPlatformTestRuntime({

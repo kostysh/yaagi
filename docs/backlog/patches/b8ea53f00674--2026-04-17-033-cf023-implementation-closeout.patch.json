@@ -1,0 +1,26 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-17-033-cf023-implementation-closeout",
+    "created_at": "2026-04-17T15:05:00.000Z",
+    "sequence": 33,
+    "target_item_keys": [
+      "CF-023"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-023",
+      "action": "replace_fields",
+      "fields": {
+        "delivery_state": "implemented"
+      }
+    },
+    {
+      "item_key": "CF-023",
+      "action": "remove_todo",
+      "todo_ids": [
+        "8d241527-aaaf-47ec-878c-01272df8cf17"
+      ]
+    }
+  ]
+}

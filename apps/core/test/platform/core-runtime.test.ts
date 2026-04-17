@@ -25,19 +25,46 @@ const createTempWorkspace = async (): Promise<string> => {
     path.join(root, 'seed/models/base/vllm-fast-manifest.json'),
     JSON.stringify(
       {
-        schemaVersion: '2026-04-16',
+        schemaVersion: '2026-04-17',
         serviceId: 'vllm-fast',
-        selectionState: 'qualification_pending',
+        selectionState: 'qualified',
         protocol: 'openai-compatible',
         preferredCandidateId: 'gemma-4-e4b-it',
+        selectedCandidateId: 'gemma-4-e4b-it',
         runtimeArtifactRoot: 'base/vllm-fast',
-        mustPassGates: ['canonical_container_boot'],
+        qualificationCorpusPath: 'seed/models/base/vllm-fast-qualification-corpus.json',
+        qualificationReportPath: 'base/vllm-fast/qualification/latest.json',
+        mustPassGates: [
+          'canonical_container_boot',
+          'real_inference_probe',
+          'cold_start_stability',
+          'warm_probe_stability',
+          'structured_output_threshold',
+          'descriptor_to_runtime_trace',
+        ],
         scorecard: [
           { name: 'quality', weight: 40 },
           { name: 'latency_throughput', weight: 25 },
           { name: 'memory_headroom', weight: 20 },
           { name: 'stability_restart', weight: 15 },
         ],
+        servingConfig: {
+          servedModelName: 'phase-0-fast',
+          dtype: 'bfloat16',
+          tensorParallelSize: 1,
+          maxModelLen: 16384,
+          gpuMemoryUtilization: 0.82,
+          maxNumSeqs: 4,
+          generationConfig: 'vllm',
+          attentionBackend: 'TRITON_ATTN',
+          limitMmPerPrompt: '{"image":0,"audio":0}',
+        },
+        readinessProbe: {
+          prompt: 'Reply with the single word READY.',
+          expectedText: 'READY',
+          maxTokens: 8,
+          timeoutMs: 15000,
+        },
         candidates: [
           {
             candidateId: 'gemma-4-e4b-it',
@@ -45,20 +72,6 @@ const createTempWorkspace = async (): Promise<string> => {
             sourceUri: 'hf://google/gemma-4-E4B-it',
             selectionRole: 'preferred',
             runtimeSubdir: 'base/vllm-fast/google--gemma-4-E4B-it',
-          },
-          {
-            candidateId: 'phi-4-mini-instruct',
-            modelId: 'microsoft/Phi-4-mini-instruct',
-            sourceUri: 'hf://microsoft/Phi-4-mini-instruct',
-            selectionRole: 'fallback',
-            runtimeSubdir: 'base/vllm-fast/microsoft--Phi-4-mini-instruct',
-          },
-          {
-            candidateId: 'qwen3-8b',
-            modelId: 'Qwen/Qwen3-8B',
-            sourceUri: 'hf://Qwen/Qwen3-8B',
-            selectionRole: 'comparator',
-            runtimeSubdir: 'base/vllm-fast/Qwen--Qwen3-8B',
           },
         ],
       },
@@ -91,6 +104,8 @@ const createTempWorkspace = async (): Promise<string> => {
       '  - postgres',
       '  - model-fast',
       'allowedDegradedDependencies:',
+      '  - vllm-deep',
+      '  - vllm-pool',
       '',
     ].join('\n'),
     'utf8',
@@ -371,6 +386,69 @@ void test('AC-F0005-02 exposes POST /ingest through the runtime boundary and ret
         deduplicated: false,
         tickAdmission: {
           accepted: true,
+        },
+      });
+    } finally {
+      await runtime.stop();
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+void test('AC-F0020-05 / AC-F0020-06 / AC-F0020-10 / AC-F0020-12 preserves fail-closed promoted dependency admission metadata on POST /ingest', async () => {
+  const root = await createTempWorkspace();
+
+  try {
+    const runtime = createCoreRuntime(
+      loadCoreRuntimeConfig({
+        ...createConfigEnv(root),
+        YAAGI_PORT: '8798',
+      }),
+      {
+        bootstrapDatabase: () => Promise.resolve(),
+        probeConfiguration: () => Promise.resolve(true),
+        probePostgres: () => Promise.resolve(true),
+        probeFastModel: () => Promise.resolve(true),
+        createRuntimeLifecycle: () => ({
+          start: () => Promise.resolve(),
+          stop: () => Promise.resolve(),
+          ingestHttpStimulus: () =>
+            Promise.resolve({
+              stimulusId: 'stimulus-http-2',
+              deduplicated: false,
+              tickAdmission: {
+                accepted: false,
+                reason: 'promoted_dependency_unavailable',
+              },
+            }),
+        }),
+      },
+    );
+
+    const started = await runtime.start();
+    try {
+      const response = await fetch(`${started.url}/ingest`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          signalType: 'http.operator.message',
+          payload: {
+            text: 'hello',
+          },
+        }),
+      });
+
+      assert.equal(response.status, 202);
+      assert.deepEqual(await response.json(), {
+        accepted: true,
+        stimulusId: 'stimulus-http-2',
+        deduplicated: false,
+        tickAdmission: {
+          accepted: false,
+          reason: 'promoted_dependency_unavailable',
         },
       });
     } finally {

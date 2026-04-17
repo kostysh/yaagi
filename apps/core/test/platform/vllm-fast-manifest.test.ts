@@ -19,17 +19,22 @@ const createManifestFixture = async (): Promise<string> => {
     path.join(root, 'seed/models/base/vllm-fast-manifest.json'),
     JSON.stringify(
       {
-        schemaVersion: '2026-04-16',
+        schemaVersion: '2026-04-17',
         serviceId: 'vllm-fast',
-        selectionState: 'qualification_pending',
+        selectionState: 'qualified',
         protocol: 'openai-compatible',
         preferredCandidateId: 'gemma-4-e4b-it',
+        selectedCandidateId: 'gemma-4-e4b-it',
         runtimeArtifactRoot: 'base/vllm-fast',
+        qualificationCorpusPath: 'seed/models/base/vllm-fast-qualification-corpus.json',
+        qualificationReportPath: '.dossier/verification/F-0020/vllm-fast-qualification-report.json',
         mustPassGates: [
           'canonical_container_boot',
           'real_inference_probe',
           'cold_start_stability',
           'warm_probe_stability',
+          'structured_output_threshold',
+          'descriptor_to_runtime_trace',
         ],
         scorecard: [
           { name: 'quality', weight: 40 },
@@ -37,6 +42,23 @@ const createManifestFixture = async (): Promise<string> => {
           { name: 'memory_headroom', weight: 20 },
           { name: 'stability_restart', weight: 15 },
         ],
+        servingConfig: {
+          servedModelName: 'phase-0-fast',
+          dtype: 'bfloat16',
+          tensorParallelSize: 1,
+          maxModelLen: 16384,
+          gpuMemoryUtilization: 0.82,
+          maxNumSeqs: 4,
+          generationConfig: 'vllm',
+          attentionBackend: 'TRITON_ATTN',
+          limitMmPerPrompt: '{"image":0,"audio":0}',
+        },
+        readinessProbe: {
+          prompt: 'Reply with the single word READY.',
+          expectedText: 'READY',
+          maxTokens: 8,
+          timeoutMs: 15000,
+        },
         candidates: [
           {
             candidateId: 'gemma-4-e4b-it',
@@ -44,20 +66,6 @@ const createManifestFixture = async (): Promise<string> => {
             sourceUri: 'hf://google/gemma-4-E4B-it',
             selectionRole: 'preferred',
             runtimeSubdir: 'base/vllm-fast/google--gemma-4-E4B-it',
-          },
-          {
-            candidateId: 'phi-4-mini-instruct',
-            modelId: 'microsoft/Phi-4-mini-instruct',
-            sourceUri: 'hf://microsoft/Phi-4-mini-instruct',
-            selectionRole: 'fallback',
-            runtimeSubdir: 'base/vllm-fast/microsoft--Phi-4-mini-instruct',
-          },
-          {
-            candidateId: 'qwen3-8b',
-            modelId: 'Qwen/Qwen3-8B',
-            sourceUri: 'hf://Qwen/Qwen3-8B',
-            selectionRole: 'comparator',
-            runtimeSubdir: 'base/vllm-fast/Qwen--Qwen3-8B',
           },
         ],
       },
@@ -89,11 +97,15 @@ void test('AC-F0020-07 loads the canonical vllm-fast descriptor and derives runt
     assert.equal(manifest.runtimeArtifactRootPath, path.join(root, 'models/base/vllm-fast'));
     assert.deepEqual(
       manifest.candidates.map((candidate) => candidate.selectionRole),
-      ['preferred', 'fallback', 'comparator'],
+      ['preferred'],
     );
     assert.equal(
       manifest.candidates[0]?.runtimeArtifactPath,
       path.join(root, 'models/base/vllm-fast/google--gemma-4-E4B-it'),
+    );
+    assert.equal(
+      manifest.candidates[0]?.runtimeArtifactUri,
+      pathToFileURL(path.join(root, 'models/base/vllm-fast/google--gemma-4-E4B-it')).toString(),
     );
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -117,7 +129,7 @@ void test('AC-F0020-01 derives baseline profiles from the vllm-fast descriptor i
       profiles.every(
         (profile) =>
           profile.artifactUri ===
-          pathToFileURL(path.join(root, 'seed/models/base/vllm-fast-manifest.json')).toString(),
+          pathToFileURL(path.join(root, 'models/base/vllm-fast/google--gemma-4-E4B-it')).toString(),
       ),
     );
   } finally {
@@ -133,19 +145,47 @@ void test('AC-F0020-07 rejects descriptor candidate paths that escape the writab
       path.join(root, 'seed/models/base/vllm-fast-manifest.json'),
       JSON.stringify(
         {
-          schemaVersion: '2026-04-16',
+          schemaVersion: '2026-04-17',
           serviceId: 'vllm-fast',
-          selectionState: 'qualification_pending',
+          selectionState: 'qualified',
           protocol: 'openai-compatible',
           preferredCandidateId: 'gemma-4-e4b-it',
+          selectedCandidateId: 'gemma-4-e4b-it',
           runtimeArtifactRoot: 'base/vllm-fast',
-          mustPassGates: ['canonical_container_boot'],
+          qualificationCorpusPath: 'seed/models/base/vllm-fast-qualification-corpus.json',
+          qualificationReportPath:
+            '.dossier/verification/F-0020/vllm-fast-qualification-report.json',
+          mustPassGates: [
+            'canonical_container_boot',
+            'real_inference_probe',
+            'cold_start_stability',
+            'warm_probe_stability',
+            'structured_output_threshold',
+            'descriptor_to_runtime_trace',
+          ],
           scorecard: [
             { name: 'quality', weight: 40 },
             { name: 'latency_throughput', weight: 25 },
             { name: 'memory_headroom', weight: 20 },
             { name: 'stability_restart', weight: 15 },
           ],
+          servingConfig: {
+            servedModelName: 'phase-0-fast',
+            dtype: 'bfloat16',
+            tensorParallelSize: 1,
+            maxModelLen: 16384,
+            gpuMemoryUtilization: 0.82,
+            maxNumSeqs: 4,
+            generationConfig: 'vllm',
+            attentionBackend: 'TRITON_ATTN',
+            limitMmPerPrompt: '{"image":0,"audio":0}',
+          },
+          readinessProbe: {
+            prompt: 'Reply with the single word READY.',
+            expectedText: 'READY',
+            maxTokens: 8,
+            timeoutMs: 15000,
+          },
           candidates: [
             {
               candidateId: 'gemma-4-e4b-it',
@@ -153,20 +193,6 @@ void test('AC-F0020-07 rejects descriptor candidate paths that escape the writab
               sourceUri: 'hf://google/gemma-4-E4B-it',
               selectionRole: 'preferred',
               runtimeSubdir: '../escape',
-            },
-            {
-              candidateId: 'phi-4-mini-instruct',
-              modelId: 'microsoft/Phi-4-mini-instruct',
-              sourceUri: 'hf://microsoft/Phi-4-mini-instruct',
-              selectionRole: 'fallback',
-              runtimeSubdir: 'base/vllm-fast/microsoft--Phi-4-mini-instruct',
-            },
-            {
-              candidateId: 'qwen3-8b',
-              modelId: 'Qwen/Qwen3-8B',
-              sourceUri: 'hf://Qwen/Qwen3-8B',
-              selectionRole: 'comparator',
-              runtimeSubdir: 'base/vllm-fast/Qwen--Qwen3-8B',
             },
           ],
         },
@@ -182,6 +208,134 @@ void test('AC-F0020-07 rejects descriptor candidate paths that escape the writab
     });
 
     assert.throws(() => loadVllmFastManifest(config), /must stay inside the runtime models root/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+void test('AC-F0020-01 rejects silent re-expansion beyond the canonical Gemma-only candidate set', async () => {
+  const root = await createManifestFixture();
+
+  try {
+    await writeFile(
+      path.join(root, 'seed/models/base/vllm-fast-manifest.json'),
+      JSON.stringify(
+        {
+          schemaVersion: '2026-04-17',
+          serviceId: 'vllm-fast',
+          selectionState: 'qualified',
+          protocol: 'openai-compatible',
+          preferredCandidateId: 'gemma-4-e4b-it',
+          selectedCandidateId: 'gemma-4-e4b-it',
+          runtimeArtifactRoot: 'base/vllm-fast',
+          qualificationCorpusPath: 'seed/models/base/vllm-fast-qualification-corpus.json',
+          qualificationReportPath:
+            '.dossier/verification/F-0020/vllm-fast-qualification-report.json',
+          mustPassGates: [
+            'canonical_container_boot',
+            'real_inference_probe',
+            'cold_start_stability',
+            'warm_probe_stability',
+            'structured_output_threshold',
+            'descriptor_to_runtime_trace',
+          ],
+          scorecard: [
+            { name: 'quality', weight: 40 },
+            { name: 'latency_throughput', weight: 25 },
+            { name: 'memory_headroom', weight: 20 },
+            { name: 'stability_restart', weight: 15 },
+          ],
+          candidates: [
+            {
+              candidateId: 'gemma-4-e4b-it',
+              modelId: 'google/gemma-4-E4B-it',
+              sourceUri: 'hf://google/gemma-4-E4B-it',
+              selectionRole: 'preferred',
+              runtimeSubdir: 'base/vllm-fast/google--gemma-4-E4B-it',
+            },
+            {
+              candidateId: 'phi-4-mini-instruct',
+              modelId: 'microsoft/Phi-4-mini-instruct',
+              sourceUri: 'hf://microsoft/Phi-4-mini-instruct',
+              selectionRole: 'preferred',
+              runtimeSubdir: 'base/vllm-fast/microsoft--Phi-4-mini-instruct',
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+
+    const config = loadCoreRuntimeConfig({
+      YAAGI_SEED_ROOT_PATH: path.join(root, 'seed'),
+      YAAGI_MODELS_PATH: path.join(root, 'models'),
+    });
+
+    assert.throws(() => loadVllmFastManifest(config), /exactly one canonical candidate/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+void test('AC-F0020-07 rejects qualification paths that traverse outside the repository root after normalization', async () => {
+  const root = await createManifestFixture();
+
+  try {
+    await writeFile(
+      path.join(root, 'seed/models/base/vllm-fast-manifest.json'),
+      JSON.stringify(
+        {
+          schemaVersion: '2026-04-17',
+          serviceId: 'vllm-fast',
+          selectionState: 'qualified',
+          protocol: 'openai-compatible',
+          preferredCandidateId: 'gemma-4-e4b-it',
+          selectedCandidateId: 'gemma-4-e4b-it',
+          runtimeArtifactRoot: 'base/vllm-fast',
+          qualificationCorpusPath: 'tmp/../../outside-corpus.json',
+          qualificationReportPath:
+            '.dossier/verification/F-0020/vllm-fast-qualification-report.json',
+          mustPassGates: [
+            'canonical_container_boot',
+            'real_inference_probe',
+            'cold_start_stability',
+            'warm_probe_stability',
+            'structured_output_threshold',
+            'descriptor_to_runtime_trace',
+          ],
+          scorecard: [
+            { name: 'quality', weight: 40 },
+            { name: 'latency_throughput', weight: 25 },
+            { name: 'memory_headroom', weight: 20 },
+            { name: 'stability_restart', weight: 15 },
+          ],
+          candidates: [
+            {
+              candidateId: 'gemma-4-e4b-it',
+              modelId: 'google/gemma-4-E4B-it',
+              sourceUri: 'hf://google/gemma-4-E4B-it',
+              selectionRole: 'preferred',
+              runtimeSubdir: 'base/vllm-fast/google--gemma-4-E4B-it',
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+
+    const config = loadCoreRuntimeConfig({
+      YAAGI_SEED_ROOT_PATH: path.join(root, 'seed'),
+      YAAGI_MODELS_PATH: path.join(root, 'models'),
+    });
+
+    assert.throws(
+      () => loadVllmFastManifest(config),
+      /qualificationCorpusPath must stay inside the repository root/,
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }

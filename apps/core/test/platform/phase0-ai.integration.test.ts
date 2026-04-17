@@ -132,6 +132,22 @@ const hasStringContent = (value: unknown): value is { content: string } =>
   'content' in value &&
   typeof (value as { content?: unknown }).content === 'string';
 
+const hasSchemaKeyword = (value: unknown, keyword: string): boolean => {
+  if (Array.isArray(value)) {
+    return value.some((item) => hasSchemaKeyword(item, keyword));
+  }
+
+  if (value === null || typeof value !== 'object') {
+    return false;
+  }
+
+  if (keyword in value) {
+    return true;
+  }
+
+  return Object.values(value).some((item) => hasSchemaKeyword(item, keyword));
+};
+
 const withServer = async <T>(
   handler: (requestBody: Record<string, unknown>) => string,
   run: (endpoint: string, requests: Array<Record<string, unknown>>) => Promise<T>,
@@ -230,7 +246,29 @@ void test('AC-F0009-03 returns a validated TickDecisionV1 envelope from the boun
       const messages = requestBody?.['messages'];
 
       assert.equal(requestBody?.['model'], PHASE0_MODEL_ID);
-      assert.deepEqual(requestBody?.['response_format'], { type: 'json_object' });
+      assert.equal(
+        (requestBody?.['response_format'] as { type?: unknown } | undefined)?.type,
+        'json_schema',
+      );
+      assert.equal(
+        (
+          requestBody?.['response_format'] as
+            | {
+                json_schema?: { schema?: unknown; name?: unknown };
+              }
+            | undefined
+        )?.json_schema?.name,
+        'TickDecisionV1',
+      );
+      const providerSchema = (
+        requestBody?.['response_format'] as
+          | {
+              json_schema?: { schema?: unknown };
+            }
+          | undefined
+      )?.json_schema?.schema;
+      assert.equal(hasSchemaKeyword(providerSchema, 'propertyNames'), false);
+      assert.equal(hasSchemaKeyword(providerSchema, 'patternProperties'), false);
       assert.ok(
         Array.isArray(messages) &&
           messages.some(
@@ -239,12 +277,58 @@ void test('AC-F0009-03 returns a validated TickDecisionV1 envelope from the boun
               message.content.includes('Selected profile: reflex.fast@baseline (reflex)'),
           ),
       );
+      assert.ok(
+        Array.isArray(messages) &&
+          messages.some(
+            (message) =>
+              hasStringContent(message) && message.content.includes('never copy into action.tool'),
+          ),
+      );
 
       assert.equal((decision as { action: { type: string } }).action.type, 'reflect');
       assert.equal(
         (decision as { episode: { summary: string } }).episode.summary,
         'bounded ai sdk decision completed',
       );
+    },
+  );
+});
+
+void test('AC-F0020-03 sanitizes endpoint-echo tool calls back into bounded inaction before executive handoff', async () => {
+  let selectedEndpoint = '';
+  await withServer(
+    () =>
+      JSON.stringify({
+        observations: ['telegram stimulus requires immediate handling'],
+        interpretations: ['the selected endpoint was mistakenly treated as a tool'],
+        action: {
+          type: 'tool_call',
+          tool: selectedEndpoint,
+          summary: 'Invoke the selected endpoint to process the current stimuli.',
+        },
+        episode: {
+          summary: 'endpoint echo was normalized before executive handoff',
+          importance: 0.4,
+        },
+        developmentHints: ['keep endpoint transport metadata out of action.tool'],
+      }),
+    async (endpoint) => {
+      selectedEndpoint = endpoint;
+      const invokeDecision = createPhase0DecisionInvoker();
+      const decision = await invokeDecision({
+        context: baseContext,
+        selectedProfile: {
+          ...baseHarnessInput.selectedProfile,
+          endpoint,
+        },
+      });
+
+      assert.equal((decision as { action: { type: string } }).action.type, 'none');
+      assert.equal(
+        (decision as { action: { summary: string } }).action.summary,
+        'Keep the outcome bounded without invoking the model endpoint as a tool.',
+      );
+      assert.equal('tool' in (decision as { action: Record<string, unknown> }).action, false);
     },
   );
 });

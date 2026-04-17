@@ -31,15 +31,45 @@ const ensureDirectory = async (targetPath: string): Promise<void> => {
 };
 
 const isPlaceholderTree = async (targetPath: string): Promise<boolean> => {
-  const entries = await listEntries(targetPath);
+  let entries: string[];
+  try {
+    entries = await listEntries(targetPath);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      'code' in error &&
+      (error.code === 'EACCES' || error.code === 'EPERM')
+    ) {
+      return false;
+    }
+    throw error;
+  }
 
   for (const entryName of entries) {
     if (entryName === '.gitkeep') {
       continue;
     }
 
+    // Hidden runtime cache/config trees indicate a live materialized runtime and
+    // must not be traversed during bootstrap placeholder detection.
+    if (entryName.startsWith('.')) {
+      return false;
+    }
+
     const entryPath = path.join(targetPath, entryName);
-    const entryStat = await stat(entryPath);
+    let entryStat: Awaited<ReturnType<typeof stat>>;
+    try {
+      entryStat = await stat(entryPath);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error.code === 'EACCES' || error.code === 'EPERM')
+      ) {
+        return false;
+      }
+      throw error;
+    }
     if (!entryStat.isDirectory()) {
       return false;
     }

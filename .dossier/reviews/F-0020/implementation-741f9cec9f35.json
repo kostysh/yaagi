@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "created_at": "2026-04-17T15:58:42.834Z",
+  "reviewer": "Volta",
+  "step": "implementation",
+  "dossier": "docs/features/F-0020-real-vllm-serving-and-promotion-model-dependencies.md",
+  "feature_id": "F-0020",
+  "event_commit": "741f9cec9f352707ecf8dc5bbc34eb1535110035",
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "Subagent Volta (gpt-5.4) verdict: PASS with residual risk limited to pending review-artifact and dossier-step-close creation.",
+      "Canonical backlog read: CF-023 delivery_state=implemented, needs_attention=false, todo=[].",
+      "dossier-verify: .dossier/verification/F-0020/implementation-741f9cec9f35.json"
+    ]
+  },
+  "notes": "Independent scoped audit passed after aligning F-0020 provenance semantics, F-0007 timing evidence, and the implementation closeout state."
+}

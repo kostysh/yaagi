@@ -10,7 +10,15 @@
 Обновление `2026-04-16`:
 
 - после выхода `Gemma 4` shortlist дополнен кандидатом `google/gemma-4-E4B-it`;
-- он рассматривается как новый приоритетный кандидат для `vllm-fast`, но без автоматического вывода о совместимости именно с локальным `Ryzen AI MAX / gfx1151`, пока не выполнен реальный `vLLM` smoke test на этой машине.
+- он рассматривался как новый приоритетный кандидат для `vllm-fast`, но без автоматического вывода о совместимости именно с локальным `Ryzen AI MAX / gfx1151`, пока не будет выполнен реальный `vLLM` smoke test на этой машине.
+
+Обновление `2026-04-17`:
+
+- для `F-0020` candidate set локально схлопнут до одного canonical baseline: `google/gemma-4-E4B-it`;
+- рабочий ROCm container path для этой модели оказался не `vllm/vllm-openai-rocm:latest`, а `vllm/vllm-openai-rocm:gemma4`;
+- для text-only serving на этой машине нужен `TRITON_ATTN` и JSON-формат `limitMmPerPrompt={"image":0,"audio":0}`;
+- при `read_only` root filesystem нужно заранее уводить `vLLM` и `huggingface_hub` cache/config roots с `/root/.cache/*` и `/root/.config/*` в writable models volume, иначе после materialization модель может падать уже на engine init, хотя сами веса скачались корректно.
+- canonical container smoke и qualification bundle на этой машине теперь пройдены; `Gemma 4 E4B` больше не считается только теоретическим кандидатом и зафиксирована как локально доказанный baseline для `vllm-fast`.
 
 Целевые роли берутся из архитектуры, а не из этой записки:
 
@@ -64,7 +72,7 @@
 
 - upstream `vLLM` уже опубликовал отдельный `Gemma 4` guide с явной поддержкой `google/gemma-4-E4B-it`;
 - в этом guide AMD deployment path документирован для `MI300X` / `MI325X` / `MI350X` / `MI355X`, а не явно для `Ryzen AI MAX`;
-- поэтому для этой рабочей станции `Gemma 4 E4B` пока считается сильным кандидатом, но не локально доказанным baseline.
+- для этой рабочей станции baseline теперь локально доказан через canonical qualification bundle и container smoke; оговорка про guide остаётся важной только как переносимость на другие AMD-классы, а не как сомнение в этой машине.
 
 ## Предположение о деплое для этой записки
 
@@ -98,8 +106,8 @@
 1. `google/gemma-4-E4B-it`
    - Уверенность: `confirmed`
    - Почему: upstream `vLLM` уже имеет отдельный `Gemma 4` usage guide, где `Gemma 4 E4B IT` явно перечислена как supported model и фигурирует в quick-start `vllm serve google/gemma-4-E4B-it`.
-   - Назначение: новый приоритетный кандидат для `vllm-fast`, если нужен один современный low-footprint generative organ с сильным reasoning/coding upside и меньшим compute-давлением, чем у `Qwen/Qwen3-8B`.
-   - Риск: модель явно поддержана в `vLLM`, но локальная ROCm-совместимость на `Ryzen AI MAX / gfx1151` в `Gemma 4` guide не подтверждена напрямую; до повышения в основной кандидат нужен реальный smoke test на этой машине.
+   - Назначение: canonical baseline для `vllm-fast` на этой машине после завершённого qualification bundle и container smoke.
+   - Риск: переносимость этого exact runtime path на другие AMD-классы не следует автоматически выводить из локального результата; для другой машины smoke/qualification нужно повторять.
 
 2. `Qwen/Qwen3-8B`
    - Уверенность: `confirmed`
@@ -234,7 +242,21 @@
 4. Для pooling-моделей не забывать принудительно включать pooling mode:
    - использовать `--runner pooling` или соответствующий embedding / score task path
 5. Не переносить числа из `llmfit` в capacity planning для `vLLM` напрямую.
-6. Для `google/gemma-4-E4B-it` отдельно доказать не только запуск модели, но и пригодность локального ROCm path именно на `gfx1151`, потому что текущий `Gemma 4` guide для AMD явно документирует другой класс ускорителей.
+6. Для `google/gemma-4-E4B-it` использовать этот checklist как regression-suite, если materially меняются ROCm image, launch flags, cache layout или сама машина; для текущего `gfx1151` baseline уже доказан canonical qualification bundle и container smoke.
+
+## Операционные заметки после реального запуска Gemma
+
+- Если используется `read_only` container root, нельзя оставлять стандартные `vLLM` / `huggingface_hub` cache пути под `/root`.
+- Минимальный безопасный набор env-переопределений для такого деплоя:
+  - `XDG_CACHE_HOME=<writable>`
+  - `XDG_CONFIG_HOME=<writable>`
+  - `HF_HOME=<writable>/hf`
+  - `HF_HUB_CACHE=<writable>/hf/hub`
+  - `HF_XET_CACHE=<writable>/hf/xet`
+  - `VLLM_CACHE_ROOT=<writable>/vllm-cache`
+  - `VLLM_CONFIG_ROOT=<writable>/vllm-config`
+- Для локального Gemma-пути это не optimisation detail, а часть boot viability: без этих переопределений `vLLM` может завершиться при попытке записать собственный cache/config в read-only rootfs даже после успешного скачивания `model.safetensors`.
+- Отдельный практический вывод: большие Gemma веса сейчас приходят через Xet-backed Hugging Face path, поэтому persistence `HF_XET_CACHE` на writable volume полезен не только для совместимости, но и для более дешёвых повторных cold/warm reruns.
 
 ## Источники
 
@@ -252,6 +274,8 @@
   - https://docs.vllm.ai/en/latest/models/supported_models/
 - Gemma 4 guide:
   - https://docs.vllm.ai/projects/recipes/en/latest/Google/Gemma4.html
+- vLLM environment variables:
+  - https://docs.vllm.ai/en/stable/configuration/env_vars/
 - Pooling models:
   - https://docs.vllm.ai/en/stable/models/pooling_models/
 - OpenAI-compatible server docs:
@@ -269,3 +293,8 @@
 ### Upstream model card для обновления shortlist
 
 - https://huggingface.co/google/gemma-4-E4B
+
+### Upstream cache/download references для operational compatibility
+
+- https://huggingface.co/docs/huggingface_hub/package_reference/environment_variables
+- https://status.huggingface.co/

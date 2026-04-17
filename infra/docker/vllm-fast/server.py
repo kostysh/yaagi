@@ -1,128 +1,326 @@
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
-
+import shutil
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
 
 PORT = int(os.environ.get("VLLM_FAST_PORT", "8000"))
-MODEL_ID = os.environ.get("VLLM_FAST_MODEL_ID", "phase-0-fast")
+MANIFEST_PATH = Path(
+    os.environ.get("VLLM_FAST_MANIFEST_PATH", "/seed/models/base/vllm-fast-manifest.json")
+)
+MODELS_ROOT = Path(os.environ.get("VLLM_FAST_RUNTIME_MODELS_ROOT", "/models"))
+OVERRIDE_CANDIDATE_ID = os.environ.get("VLLM_FAST_SELECTED_CANDIDATE_ID", "").strip()
+HF_TOKEN_FILE = os.environ.get("YAAGI_HF_TOKEN_FILE", "").strip()
 
 
-class Handler(BaseHTTPRequestHandler):
-    def _json(self, status, payload):
-        data = json.dumps(payload).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
+def load_hf_token() -> str | None:
+    if HF_TOKEN_FILE:
+        token_path = Path(HF_TOKEN_FILE)
+        if token_path.exists():
+            token = token_path.read_text(encoding="utf-8").strip()
+            if token:
+                return token
 
-    def _structured_decision_content(self, request, messages):
-        prompt_parts = []
-        for message in messages:
-            if isinstance(message, dict):
-                content = message.get("content", "")
-                if isinstance(content, str) and content:
-                    prompt_parts.append(content)
+    token = (
+        os.environ.get("YAAGI_HF_TOKEN", "").strip()
+        or os.environ.get("HF_TOKEN", "").strip()
+        or os.environ.get("HUGGINGFACE_HUB_TOKEN", "").strip()
+    )
+    return token or None
 
-        prompt = "\n".join(prompt_parts)
-        response_format = request.get("response_format", {})
-        if not (
-            "You MUST answer with a JSON object that matches the JSON schema above." in prompt
-            or response_format.get("type") in ("json_object", "json_schema")
-        ):
-            return None
 
-        summary_source = ""
-        if messages:
-            last = messages[-1]
-            if isinstance(last, dict):
-                candidate = last.get("content", "")
-                if isinstance(candidate, str):
-                    summary_source = candidate.strip().splitlines()[0][:120]
+HF_TOKEN = load_hf_token()
+ESSENTIAL_SNAPSHOT_FILES = (
+    ".gitattributes",
+    "README.md",
+    "chat_template.jinja",
+    "config.json",
+    "generation_config.json",
+    "model.safetensors",
+    "processor_config.json",
+    "tokenizer.json",
+    "tokenizer_config.json",
+)
 
-        return json.dumps(
-            {
-                "observations": [
-                    summary_source or "bounded phase-0 prompt received",
-                    "custom phase-0 fast stub returned deterministic JSON",
-                ],
-                "interpretations": [
-                    "bounded structured decision generation is available in the deployment cell"
-                ],
-                "action": {
-                    "type": "reflect",
-                    "summary": "keep the phase-0 decision bounded and conservative",
-                },
-                "episode": {
-                    "summary": "bounded phase-0 decision completed",
-                    "importance": 0.4,
-                },
-                "developmentHints": [
-                    "preserve the reactive-first boundary",
-                    "avoid implicit executive expansion",
-                ],
-            }
+
+def copy_missing_tree(source_root: Path, target_root: Path) -> None:
+    target_root.mkdir(parents=True, exist_ok=True)
+
+    for source_entry in source_root.iterdir():
+        target_entry = target_root / source_entry.name
+        if source_entry.is_dir():
+            copy_missing_tree(source_entry, target_entry)
+            continue
+
+        if target_entry.exists():
+            continue
+
+        target_entry.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source_entry, target_entry)
+
+
+def load_manifest() -> dict:
+    with MANIFEST_PATH.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def normalize_relative_path(value: str, label: str) -> Path:
+    normalized = Path(value)
+    if normalized.is_absolute():
+        raise RuntimeError(f"{label} must stay inside the runtime models root: {value}")
+    if ".." in normalized.parts:
+        raise RuntimeError(f"{label} must stay inside the runtime models root: {value}")
+    return normalized
+
+
+def resolve_selected_candidate(manifest: dict) -> dict:
+    preferred_candidate_id = str(manifest.get("preferredCandidateId", "")).strip()
+    if not preferred_candidate_id:
+        raise RuntimeError("vllm-fast bootstrap requires preferredCandidateId")
+
+    selected_candidate_id = str(manifest.get("selectedCandidateId", "")).strip()
+    if not selected_candidate_id:
+        raise RuntimeError(
+            "vllm-fast bootstrap requires selectedCandidateId when selectionState=qualified"
+        )
+    if selected_candidate_id != preferred_candidate_id:
+        raise RuntimeError(
+            "vllm-fast bootstrap requires selectedCandidateId to match preferredCandidateId"
+        )
+    if OVERRIDE_CANDIDATE_ID and OVERRIDE_CANDIDATE_ID != selected_candidate_id:
+        raise RuntimeError(
+            "vllm-fast bootstrap override candidate must match selectedCandidateId"
         )
 
-    def do_GET(self):
-        if self.path == "/health":
-            self._json(200, {"ok": True, "model": MODEL_ID})
-            return
+    for candidate in manifest["candidates"]:
+        if candidate["candidateId"] == selected_candidate_id:
+            return candidate
+    raise RuntimeError(f"candidate {selected_candidate_id!r} is not declared in the manifest")
 
-        if self.path == "/v1/models":
-            self._json(
-                200,
+
+def ensure_manifest_is_qualified(manifest: dict) -> None:
+    selection_state = str(manifest.get("selectionState", "")).strip()
+    if selection_state != "qualified":
+        raise RuntimeError(
+            f"vllm-fast bootstrap requires selectionState=qualified, got {selection_state or 'missing'}"
+        )
+
+
+def resolve_serving_config(manifest: dict) -> dict:
+    serving = manifest.get("servingConfig") or {}
+    return {
+        "servedModelName": serving.get("servedModelName", "phase-0-fast"),
+        "dtype": serving.get("dtype", "bfloat16"),
+        "tensorParallelSize": int(serving.get("tensorParallelSize", 1)),
+        "maxModelLen": int(serving.get("maxModelLen", 16384)),
+        "gpuMemoryUtilization": float(serving.get("gpuMemoryUtilization", 0.82)),
+        "maxNumSeqs": int(serving.get("maxNumSeqs", 4)),
+        "generationConfig": serving.get("generationConfig", "vllm"),
+        "attentionBackend": serving.get("attentionBackend"),
+        "limitMmPerPrompt": serving.get("limitMmPerPrompt"),
+    }
+
+
+def load_existing_materialization(materialization_path: Path) -> dict | None:
+    if not materialization_path.exists():
+        return None
+
+    try:
+        return json.loads(materialization_path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def has_incomplete_snapshot(snapshot_path: Path) -> bool:
+    download_root = snapshot_path / ".cache" / "huggingface" / "download"
+    if not download_root.exists():
+        return False
+
+    return any(download_root.glob("*.incomplete")) or any(download_root.glob("*.lock"))
+
+
+def can_reuse_materialization(
+    manifest: dict,
+    candidate: dict,
+    serving: dict,
+    snapshot_path: Path,
+    materialization_path: Path,
+) -> bool:
+    materialization = load_existing_materialization(materialization_path)
+    if materialization is None:
+        return False
+
+    expected_pairs = {
+        "serviceId": manifest["serviceId"],
+        "candidateId": candidate["candidateId"],
+        "modelId": candidate["modelId"],
+        "snapshotPath": str(snapshot_path),
+        "manifestSelectionState": manifest["selectionState"],
+        "servedModelName": serving["servedModelName"],
+    }
+    for key, expected_value in expected_pairs.items():
+        if materialization.get(key) != expected_value:
+            return False
+
+    if has_incomplete_snapshot(snapshot_path):
+        return False
+
+    return all((snapshot_path / relative_path).exists() for relative_path in ESSENTIAL_SNAPSHOT_FILES)
+
+
+def materialize_candidate(manifest: dict, candidate: dict, serving: dict) -> tuple[Path, Path]:
+    from huggingface_hub import snapshot_download
+
+    seed_models_root = MANIFEST_PATH.parent.parent.resolve()
+    copy_missing_tree(seed_models_root, MODELS_ROOT)
+
+    runtime_root = (MODELS_ROOT / normalize_relative_path(manifest["runtimeArtifactRoot"], "runtimeArtifactRoot")).resolve()
+    candidate_root = (MODELS_ROOT / normalize_relative_path(candidate["runtimeSubdir"], "runtimeSubdir")).resolve()
+
+    if runtime_root not in candidate_root.parents and runtime_root != candidate_root:
+        raise RuntimeError(
+            f"candidate runtime path {candidate_root} escapes runtime root {runtime_root}"
+        )
+
+    runtime_root.mkdir(parents=True, exist_ok=True)
+    candidate_root.mkdir(parents=True, exist_ok=True)
+    snapshot_path = candidate_root / "snapshot"
+    snapshot_path.mkdir(parents=True, exist_ok=True)
+    materialization_path = candidate_root / "materialization.json"
+
+    if can_reuse_materialization(manifest, candidate, serving, snapshot_path, materialization_path):
+        print(
+            json.dumps(
                 {
-                    "object": "list",
-                    "data": [
-                        {
-                            "id": MODEL_ID,
-                            "object": "model",
-                            "owned_by": "yaagi",
-                        }
-                    ],
-                },
-            )
-            return
+                    "level": "info",
+                    "message": "reusing previously materialized vllm-fast candidate",
+                    "candidateId": candidate["candidateId"],
+                    "modelId": candidate["modelId"],
+                    "snapshotPath": str(snapshot_path),
+                    "materializationPath": str(materialization_path),
+                }
+            ),
+            flush=True,
+        )
+        return snapshot_path, materialization_path
 
-        self._json(404, {"error": "not found"})
+    model_id = candidate["modelId"]
+    print(
+        json.dumps(
+            {
+                "level": "info",
+                "message": "materializing vllm-fast candidate",
+                "candidateId": candidate["candidateId"],
+                "modelId": model_id,
+                "snapshotPath": str(snapshot_path),
+            }
+        ),
+        flush=True,
+    )
 
-    def do_POST(self):
-        if self.path == "/v1/chat/completions":
-            length = int(self.headers.get("Content-Length", "0"))
-            body = self.rfile.read(length) if length > 0 else b"{}"
-            request = json.loads(body.decode("utf-8"))
-            messages = request.get("messages", [])
-            content = self._structured_decision_content(request, messages)
-            if content is None and messages:
-                last = messages[-1]
-                if isinstance(last, dict):
-                    content = f"phase-0 stub response for: {last.get('content', '')}"
+    snapshot_download(
+        repo_id=model_id,
+        local_dir=str(snapshot_path),
+        local_dir_use_symlinks=False,
+        token=HF_TOKEN,
+        resume_download=True,
+    )
 
-            self._json(
-                200,
+    materialization_path.write_text(
+        json.dumps(
+            {
+                "serviceId": manifest["serviceId"],
+                "candidateId": candidate["candidateId"],
+                "modelId": model_id,
+                "snapshotPath": str(snapshot_path),
+                "manifestPath": str(MANIFEST_PATH),
+                "manifestSelectionState": manifest["selectionState"],
+                "servedModelName": serving["servedModelName"],
+                "snapshotFiles": list(ESSENTIAL_SNAPSHOT_FILES),
+                "materializedAt": datetime.now(timezone.utc).isoformat(),
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    return snapshot_path, materialization_path
+
+
+def build_vllm_command(snapshot_path: Path, serving: dict) -> list[str]:
+    command = [
+        "vllm",
+        "serve",
+        str(snapshot_path),
+        "--host",
+        "0.0.0.0",
+        "--port",
+        str(PORT),
+        "--served-model-name",
+        serving["servedModelName"],
+        "--dtype",
+        serving["dtype"],
+        "--tensor-parallel-size",
+        str(serving["tensorParallelSize"]),
+        "--max-model-len",
+        str(serving["maxModelLen"]),
+        "--gpu-memory-utilization",
+        str(serving["gpuMemoryUtilization"]),
+        "--max-num-seqs",
+        str(serving["maxNumSeqs"]),
+        "--generation-config",
+        serving["generationConfig"],
+    ]
+
+    if isinstance(serving.get("attentionBackend"), str) and serving["attentionBackend"].strip():
+        command.extend(["--attention-backend", serving["attentionBackend"].strip()])
+
+    if isinstance(serving.get("limitMmPerPrompt"), str) and serving["limitMmPerPrompt"].strip():
+        command.extend(["--limit-mm-per-prompt", serving["limitMmPerPrompt"].strip()])
+
+    return command
+
+
+def main() -> None:
+    manifest = load_manifest()
+    ensure_manifest_is_qualified(manifest)
+    candidate = resolve_selected_candidate(manifest)
+    serving = resolve_serving_config(manifest)
+    snapshot_path, materialization_path = materialize_candidate(manifest, candidate, serving)
+
+    command = build_vllm_command(snapshot_path, serving)
+    print(
+        json.dumps(
+            {
+                "level": "info",
+                "message": "starting vllm-fast serving",
+                "candidateId": candidate["candidateId"],
+                "modelId": candidate["modelId"],
+                "servedModelName": serving["servedModelName"],
+                "materializationPath": str(materialization_path),
+                "command": command,
+            }
+        ),
+        flush=True,
+    )
+    os.execvp(command[0], command)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as error:  # noqa: BLE001
+        print(
+            json.dumps(
                 {
-                    "id": "chatcmpl-phase0-stub",
-                    "object": "chat.completion",
-                    "created": 0,
-                    "model": MODEL_ID,
-                    "choices": [
-                        {
-                            "index": 0,
-                            "message": {
-                                "role": "assistant",
-                                "content": content or "phase-0 stub response",
-                            },
-                            "finish_reason": "stop",
-                        }
-                    ],
-                },
-            )
-            return
-
-        self._json(404, {"error": "not found"})
-
-
-server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
-print(json.dumps({"level": "info", "message": "vllm-fast stub listening", "port": PORT}))
-server.serve_forever()
+                    "level": "error",
+                    "message": "vllm-fast startup failed",
+                    "detail": str(error),
+                }
+            ),
+            file=sys.stderr,
+            flush=True,
+        )
+        raise

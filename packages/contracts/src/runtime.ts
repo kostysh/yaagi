@@ -49,7 +49,8 @@ export type TickRequestRejectionReason =
   | 'boot_inactive'
   | 'lease_busy'
   | 'unsupported_tick_kind'
-  | 'shutdown_admission_closed';
+  | 'shutdown_admission_closed'
+  | 'promoted_dependency_unavailable';
 
 export type TickRequestResult =
   | { accepted: true; tickId: string }

@@ -2254,6 +2254,7 @@ Homeostat должен иметь не только метрики, но и де
 - reasoning/model-integration substrate (`AI SDK + Hono`, health-only public surface in phase 0): [ADR-2026-03-25 AI SDK Runtime Substrate](../adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md);
 - historical phase-0 runtime boundary before the substrate migration: [ADR-2026-03-19 Phase-0 Runtime Boundary](../adr/ADR-2026-03-19-phase0-runtime-boundary.md);
 - обязательная phase-0 deployment cell и baseline container posture: [ADR-2026-03-19 Phase-0 Deployment Cell](../adr/ADR-2026-03-19-phase0-deployment-cell.md);
+- local OpenAI-compatible structured outputs may use sanitized provider-facing JSON Schema while canonical runtime acceptance stays bound to local `Zod` validation: [ADR-2026-04-17 Local Structured Output Schema Sanitization](../adr/ADR-2026-04-17-local-structured-output-schema-sanitization.md);
 - constitution-driven boot dependency set и связь boot с delivered substrate: [ADR-2026-03-19 Boot Dependency Contract](../adr/ADR-2026-03-19-boot-dependency-contract.md);
 - canonical quality/style gate ordering и единый formatter/linter contract для source и tests: [ADR-2026-03-19 Quality Gate Sequence](../adr/ADR-2026-03-19-quality-gate-sequence.md).
 

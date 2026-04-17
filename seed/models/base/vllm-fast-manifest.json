@@ -1,10 +1,13 @@
 {
-  "schemaVersion": "2026-04-16",
+  "schemaVersion": "2026-04-17",
   "serviceId": "vllm-fast",
-  "selectionState": "qualification_pending",
+  "selectionState": "qualified",
   "protocol": "openai-compatible",
   "preferredCandidateId": "gemma-4-e4b-it",
+  "selectedCandidateId": "gemma-4-e4b-it",
   "runtimeArtifactRoot": "base/vllm-fast",
+  "qualificationCorpusPath": "seed/models/base/vllm-fast-qualification-corpus.json",
+  "qualificationReportPath": ".dossier/verification/F-0020/vllm-fast-qualification-report.json",
   "mustPassGates": [
     "canonical_container_boot",
     "real_inference_probe",
@@ -31,6 +34,23 @@
       "weight": 15
     }
   ],
+  "servingConfig": {
+    "servedModelName": "phase-0-fast",
+    "dtype": "bfloat16",
+    "tensorParallelSize": 1,
+    "maxModelLen": 16384,
+    "gpuMemoryUtilization": 0.82,
+    "maxNumSeqs": 4,
+    "generationConfig": "vllm",
+    "attentionBackend": "TRITON_ATTN",
+    "limitMmPerPrompt": "{\"image\":0,\"audio\":0}"
+  },
+  "readinessProbe": {
+    "prompt": "Reply with the single word READY.",
+    "expectedText": "READY",
+    "maxTokens": 8,
+    "timeoutMs": 15000
+  },
   "candidates": [
     {
       "candidateId": "gemma-4-e4b-it",
@@ -38,20 +58,6 @@
       "sourceUri": "hf://google/gemma-4-E4B-it",
       "selectionRole": "preferred",
       "runtimeSubdir": "base/vllm-fast/google--gemma-4-E4B-it"
-    },
-    {
-      "candidateId": "phi-4-mini-instruct",
-      "modelId": "microsoft/Phi-4-mini-instruct",
-      "sourceUri": "hf://microsoft/Phi-4-mini-instruct",
-      "selectionRole": "fallback",
-      "runtimeSubdir": "base/vllm-fast/microsoft--Phi-4-mini-instruct"
-    },
-    {
-      "candidateId": "qwen3-8b",
-      "modelId": "Qwen/Qwen3-8B",
-      "sourceUri": "hf://Qwen/Qwen3-8B",
-      "selectionRole": "comparator",
-      "runtimeSubdir": "base/vllm-fast/Qwen--Qwen3-8B"
     }
   ]
 }

@@ -214,7 +214,7 @@ interface PerceptionIngress {
 - Containerized smoke path:
   - `pnpm smoke:cell` должен подтвердить, что `core` стартует с perception subsystem внутри canonical deployment cell;
   - smoke должен подтвердить, что `POST /ingest` принимает canonical payload и может инициировать не более одного `reactive` tick через existing runtime path;
-  - Telegram-specific smoke использует smoke-only compose override, который добавляет `fake-telegram-api` test service и прокидывает `YAAGI_TELEGRAM_API_BASE_URL=http://fake-telegram-api:8081` в `core`; этот override не меняет delivered deployment-cell baseline и не требует live Telegram;
+  - Telegram-specific smoke использует smoke-only compose override, который добавляет `fake-telegram-api` test service и прокидывает `YAAGI_TELEGRAM_API_BASE_URL=http://fake-telegram-api:8081` в `core`; этот override не меняет delivered deployment-cell baseline, reuse-ит тот же suite-scoped `vllm-fast` runtime и не требует live Telegram;
   - smoke должен подтвердить, что `core`, запущенный против `fake-telegram-api` и test token, ingest-ит Telegram update в `stimulus_inbox` без отдельного webhook ingress;
   - restart-safe behavior для queued/consumed stimuli остаётся обязательным, но доказывается fast integration path, а не container smoke, потому что его main value лежит в claim/release and stale-reclaim DB/runtime semantics.
 - Manual/operator surface:

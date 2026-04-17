@@ -101,3 +101,31 @@ export type ModelOrganHealthReportInput = {
     latencyMsP95: number | null;
   }>;
 };
+
+export type ServingDependencyServiceId = 'vllm-fast' | ExpandedModelServiceId;
+
+export type ServingDependencyReadiness = 'ready' | 'warming' | 'degraded' | 'unavailable';
+
+export type ServingDependencyReadinessBasis =
+  | 'probe_passed'
+  | 'descriptor_invalid'
+  | 'artifact_missing'
+  | 'transport_failed'
+  | 'probe_failed';
+
+export type ServingDependencyState = {
+  serviceId: ServingDependencyServiceId;
+  endpoint: string;
+  bootCritical: boolean;
+  optionalUntilPromoted: boolean;
+  artifactUri: string | null;
+  artifactDescriptorPath: string;
+  runtimeArtifactRoot: string;
+  readiness: ServingDependencyReadiness;
+  readinessBasis: ServingDependencyReadinessBasis;
+  candidateId: string | null;
+  baseModel: string | null;
+  servedModelName: string | null;
+  detail: string | null;
+  lastCheckedAt: string | null;
+};

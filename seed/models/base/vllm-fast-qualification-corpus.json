@@ -1,0 +1,139 @@
+{
+  "schemaVersion": "2026-04-17",
+  "serviceId": "vllm-fast",
+  "servedModelName": "phase-0-fast",
+  "qualityTasks": [
+    {
+      "taskId": "reactive-summary-1",
+      "kind": "freeform",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Summarize the operational risk of a missing readiness probe in one concise sentence."
+        }
+      ],
+      "maxTokens": 48,
+      "checks": {
+        "minLength": 24,
+        "mustIncludeAny": [
+          "readiness",
+          "probe",
+          "risk"
+        ]
+      }
+    },
+    {
+      "taskId": "reactive-summary-2",
+      "kind": "freeform",
+      "messages": [
+        {
+          "role": "user",
+          "content": "In one sentence, explain why a model service must not be considered ready from /v1/models alone."
+        }
+      ],
+      "maxTokens": 48,
+      "checks": {
+        "minLength": 24,
+        "mustIncludeAny": [
+          "inference",
+          "ready",
+          "metadata"
+        ]
+      }
+    },
+    {
+      "taskId": "structured-json-1",
+      "kind": "json",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Return only JSON with keys status and rationale. status must be \"ok\" if a real inference probe passed, otherwise \"blocked\"."
+        }
+      ],
+      "maxTokens": 64,
+      "checks": {
+        "requiredKeys": [
+          "status",
+          "rationale"
+        ],
+        "requiredStringKeys": [
+          "status",
+          "rationale"
+        ],
+        "allowedStatusValues": [
+          "ok",
+          "blocked"
+        ]
+      }
+    },
+    {
+      "taskId": "structured-json-2",
+      "kind": "json",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Return only JSON with keys service_id, readiness_basis and recommended_action for a local model organ that failed its probe."
+        }
+      ],
+      "maxTokens": 96,
+      "checks": {
+        "requiredKeys": [
+          "service_id",
+          "readiness_basis",
+          "recommended_action"
+        ],
+        "requiredStringKeys": [
+          "service_id",
+          "readiness_basis",
+          "recommended_action"
+        ]
+      }
+    },
+    {
+      "taskId": "short-coding-1",
+      "kind": "freeform",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Write a one-line TypeScript expression that returns true only when readiness === \"ready\" and readinessBasis === \"probe_passed\"."
+        }
+      ],
+      "maxTokens": 64,
+      "checks": {
+        "minLength": 20,
+        "mustIncludeAny": [
+          "probe_passed",
+          "readiness"
+        ]
+      }
+    }
+  ],
+  "structuredOutputGate": {
+    "taskId": "structured-json-gate",
+    "runs": 20,
+    "requiredPassRate": 0.95,
+    "messages": [
+      {
+        "role": "user",
+        "content": "Return only JSON with keys ok and echo, where ok is true and echo is the string \"gate\"."
+      }
+    ],
+    "maxTokens": 48,
+    "checks": {
+      "requiredKeys": [
+        "ok",
+        "echo"
+      ],
+      "requiredBooleanKeys": [
+        "ok"
+      ],
+      "requiredStringKeys": [
+        "echo"
+      ],
+      "requiredTrueKeys": [
+        "ok"
+      ],
+      "expectedEcho": "gate"
+    }
+  }
+}

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-16T20:32:25.394Z",
-  "last_refresh_at": "2026-04-16T20:00:52.656Z",
+  "updated_at": "2026-04-17T15:42:37.101Z",
+  "last_refresh_at": "2026-04-17T15:42:37.101Z",
   "context": {
     "glossary": [
       {
@@ -176,10 +176,16 @@
         "CF-012",
         "CF-021"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "f2ee722f-5876-4e0d-b114-023d391db612"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -220,10 +226,16 @@
         "CF-018",
         "CF-021"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "a9b1bb73-8591-4cba-8466-e035fa94fc67"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -263,10 +275,16 @@
         "CF-018",
         "CF-021"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "963de9a2-2ad1-49ad-93fe-468ff5390fca"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -304,10 +322,16 @@
         "CF-021",
         "CF-027"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "1a63af67-044b-4e56-b5f0-90866f241619"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -343,10 +367,16 @@
         "CF-016",
         "CF-018"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "c34e8928-6572-43d3-85a8-f67bc52274a7"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -384,10 +414,16 @@
         "CF-023",
         "CF-027"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "19daf5e3-0eaf-4322-8e0e-6e19d8919b13"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -427,10 +463,16 @@
         "CF-014",
         "CF-015"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "e5266517-114f-4303-8ce8-f9f135d6b942"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -464,10 +506,16 @@
       "reverse_dependency_keys": [
         "CF-016"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "206bfbeb-1d0c-4dfa-800e-4828b2fdb4a4"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -506,10 +554,16 @@
         "CF-024",
         "CF-026"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "2b283941-9661-4b35-aba7-c102cafebff0"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -546,10 +600,16 @@
         "CF-019",
         "CF-023"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "761f0584-1fef-4b87-a6f0-d16760e6c9df"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -584,10 +644,16 @@
         "CF-019",
         "CF-023"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "6b7cac5c-0e8e-4b5b-8a6d-97091ad130ed"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -628,10 +694,16 @@
       "reverse_dependency_keys": [
         "CF-014"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "13918f04-45d1-424e-95df-6de9df085024"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -666,13 +738,16 @@
       "policy_decision_keys": [],
       "reverse_dependency_keys": [],
       "open_todo_ids": [
+        "d5eba069-f63d-4979-9348-58db66fd6360",
         "d8a96661-1632-4565-a95a-00adf3236797"
       ],
       "needs_attention": true,
       "attention_reason_codes": [
+        "source_changed",
         "dependency_changed"
       ],
       "attention_reasons": [
+        "Source changed: review ../adr/ADR-2026-04-17-local-structured-output-schema-sanitization.md.",
         "Dependency changed: review CF-023."
       ],
       "ready_for_next_step": false
@@ -719,7 +794,8 @@
       ],
       "open_todo_ids": [
         "69fac91d-aff2-43f7-8ae2-42e836ca925d",
-        "805d5433-8ccf-4a42-b5cb-dcb1507c5213"
+        "805d5433-8ccf-4a42-b5cb-dcb1507c5213",
+        "bbd0e391-bfa1-4dbe-8f9f-b312c00b156d"
       ],
       "needs_attention": true,
       "attention_reason_codes": [
@@ -773,7 +849,8 @@
       ],
       "open_todo_ids": [
         "301c37b5-a015-4c66-ae42-135a4776c42b",
-        "b427b628-98cf-4a65-ab2c-876fe30ecd96"
+        "b427b628-98cf-4a65-ab2c-876fe30ecd96",
+        "d7510475-847e-4eee-832d-9fd690d3570f"
       ],
       "needs_attention": true,
       "attention_reason_codes": [
@@ -831,6 +908,7 @@
         "CF-027"
       ],
       "open_todo_ids": [
+        "47a41f81-6907-4cdd-800f-9fc03a5f7d9f",
         "85b901ad-8b79-4a26-a1e5-6bf7bba06839"
       ],
       "needs_attention": true,
@@ -838,7 +916,7 @@
         "source_changed"
       ],
       "attention_reasons": [
-        "Source changed: review ../features/F-0016-development-governor-and-change-management.md."
+        "Source changed: review ../architecture/system.md."
       ],
       "ready_for_next_step": false
     },
@@ -873,10 +951,16 @@
       "reverse_dependency_keys": [
         "CF-007"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "afadad53-a179-4662-a863-375de6eeff4a"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -918,6 +1002,7 @@
         "CF-025"
       ],
       "open_todo_ids": [
+        "067ddc7f-102a-4f89-aa0e-9577ea07698d",
         "c9b23fb5-cb2c-4094-9491-8816b72e9c6e"
       ],
       "needs_attention": true,
@@ -925,7 +1010,7 @@
         "source_changed"
       ],
       "attention_reasons": [
-        "Source changed: review ../features/F-0019-consolidation-event-envelope-graceful-shutdown.md."
+        "Source changed: review ../architecture/system.md."
       ],
       "ready_for_next_step": false
     },
@@ -963,6 +1048,7 @@
       "policy_decision_keys": [],
       "reverse_dependency_keys": [],
       "open_todo_ids": [
+        "a9188d4d-1913-4e17-8ce6-51691be1083e",
         "beb9edbd-365d-4b75-92f1-e0250bddf7e3",
         "d0aa0999-f0c2-4494-aa63-e1ddf45f0e90",
         "eef44da4-0fbe-4103-a5f9-429e277bdcfb"
@@ -973,7 +1059,7 @@
         "dependency_changed"
       ],
       "attention_reasons": [
-        "Source changed: review ../architecture/system.md.",
+        "Source changed: review ../adr/ADR-2026-04-17-local-structured-output-schema-sanitization.md.",
         "Dependency changed: review CF-023."
       ],
       "ready_for_next_step": false
@@ -1015,10 +1101,16 @@
         "CF-024",
         "CF-025"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "f3992c9e-ad9e-4d1f-bf7a-3adcc67b340b"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -1054,10 +1146,16 @@
       "reverse_dependency_keys": [
         "CF-022"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "488730a1-709e-4d1c-bd60-60a3e23c842d"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
       "ready_for_next_step": false
     },
     {
@@ -1090,17 +1188,23 @@
       "reverse_dependency_keys": [
         "CF-025"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
+      "open_todo_ids": [
+        "c8fb993b-1bc6-41bf-b918-09f00fe58391"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
       "ready_for_next_step": false
     },
     {
       "item_key": "CF-023",
       "title": "Реальный vLLM-serving и promotion model dependencies",
       "type": "feature",
-      "delivery_state": "planned",
+      "delivery_state": "implemented",
       "gaps": [],
       "depends_on_keys": [
         "CF-020",
@@ -1121,7 +1225,9 @@
         "4ffa2197-8f9f-4d98-a615-36b03c2cc660",
         "9d061028-1d37-4f85-9919-f6321ed1f995"
       ],
-      "implementation_source_ids": [],
+      "implementation_source_ids": [
+        "d53951b9-90dd-4afc-b7e0-df4dfd03a867"
+      ],
       "test_source_ids": [],
       "claim_keys": [],
       "contract_keys": [],
@@ -1137,7 +1243,7 @@
       "needs_attention": false,
       "attention_reason_codes": [],
       "attention_reasons": [],
-      "ready_for_next_step": true
+      "ready_for_next_step": false
     },
     {
       "item_key": "CF-024",
@@ -1173,11 +1279,17 @@
         "CF-026",
         "CF-027"
       ],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
-      "ready_for_next_step": true
+      "open_todo_ids": [
+        "ce42ce5e-19c2-4a92-9c8e-b2a3d7891850"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "source_changed"
+      ],
+      "attention_reasons": [
+        "Source changed: review ../architecture/system.md."
+      ],
+      "ready_for_next_step": false
     },
     {
       "item_key": "CF-025",
@@ -1219,6 +1331,7 @@
       "open_todo_ids": [
         "1444a841-a2b1-4642-ae3b-07d4f66e32c6",
         "58e15dc0-fe72-4e49-9412-ce7ee613e497",
+        "8a65119b-a071-4b32-b816-fca16cd6d2d6",
         "a952d8d1-0ca4-4b5d-ad3a-698d272fe511",
         "d6b195fe-364d-40ff-8bbd-0948ae0eea4e"
       ],
@@ -1267,6 +1380,7 @@
       "reverse_dependency_keys": [],
       "open_todo_ids": [
         "07766c01-1feb-4f34-803d-3538ee8bcd30",
+        "1b26f5d5-5a5a-4398-a86d-605a29058088",
         "6196ed1e-1cfc-47c9-ab83-80ebf399ac83",
         "daf49383-6ad3-4ee3-8311-e6028a134452"
       ],
@@ -1276,7 +1390,7 @@
         "dependency_changed"
       ],
       "attention_reasons": [
-        "Source changed: review ../architecture/system.md.",
+        "Source changed: review ../adr/ADR-2026-04-17-local-structured-output-schema-sanitization.md.",
         "Dependency changed: review CF-023."
       ],
       "ready_for_next_step": false
@@ -1317,7 +1431,8 @@
       "reverse_dependency_keys": [],
       "open_todo_ids": [
         "5ab0fc6f-5de2-4970-92e7-c7c191f2ad21",
-        "7304d104-7d80-49c0-ab9b-e6a7e7d70f3b"
+        "7304d104-7d80-49c0-ab9b-e6a7e7d70f3b",
+        "b88df55f-7156-4378-baa5-94d3f83c6153"
       ],
       "needs_attention": true,
       "attention_reason_codes": [
@@ -1333,6 +1448,21 @@
   ],
   "todos": [
     {
+      "todo_id": "067ddc7f-102a-4f89-aa0e-9577ea07698d",
+      "item_key": "CF-018",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
       "todo_id": "07766c01-1feb-4f34-803d-3538ee8bcd30",
       "item_key": "CF-026",
       "type": "review_dependency_change",
@@ -1343,6 +1473,21 @@
       "related_item_keys": [
         "CF-023"
       ]
+    },
+    {
+      "todo_id": "13918f04-45d1-424e-95df-6de9df085024",
+      "item_key": "CF-012",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
     },
     {
       "todo_id": "1444a841-a2b1-4642-ae3b-07d4f66e32c6",
@@ -1376,6 +1521,101 @@
       "related_item_keys": []
     },
     {
+      "todo_id": "19daf5e3-0eaf-4322-8e0e-6e19d8919b13",
+      "item_key": "CF-006",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
+      "todo_id": "1a63af67-044b-4e56-b5f0-90866f241619",
+      "item_key": "CF-004",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
+      "todo_id": "1b26f5d5-5a5a-4398-a86d-605a29058088",
+      "item_key": "CF-026",
+      "type": "review_source_change",
+      "managed_by": "mutation",
+      "message": "Review source change: ../adr/ADR-2026-04-17-local-structured-output-schema-sanitization.md, ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, local-vllm-model-shortlist-2026-03-24.md, working-system-roadmap-matrix-2026-03-26.md.",
+      "created_at": "2026-04-17T11:30:00.980Z",
+      "related_sources": [
+        {
+          "source_id": "d53951b9-90dd-4afc-b7e0-df4dfd03a867",
+          "source_label": "../adr/ADR-2026-04-17-local-structured-output-schema-sanitization.md"
+        },
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        },
+        {
+          "source_id": "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+          "source_label": "../polyphony_concept.md"
+        },
+        {
+          "source_id": "97107644-d070-4cb0-bfe3-aa581331229c",
+          "source_label": "feature-candidates.md"
+        },
+        {
+          "source_id": "9d061028-1d37-4f85-9919-f6321ed1f995",
+          "source_label": "local-vllm-model-shortlist-2026-03-24.md"
+        },
+        {
+          "source_id": "4ffa2197-8f9f-4d98-a615-36b03c2cc660",
+          "source_label": "working-system-roadmap-matrix-2026-03-26.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
+      "todo_id": "206bfbeb-1d0c-4dfa-800e-4828b2fdb4a4",
+      "item_key": "CF-008",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
+      "todo_id": "2b283941-9661-4b35-aba7-c102cafebff0",
+      "item_key": "CF-009",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
       "todo_id": "301c37b5-a015-4c66-ae42-135a4776c42b",
       "item_key": "CF-015",
       "type": "review_source_change",
@@ -1402,6 +1642,36 @@
         {
           "source_id": "4ffa2197-8f9f-4d98-a615-36b03c2cc660",
           "source_label": "working-system-roadmap-matrix-2026-03-26.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
+      "todo_id": "47a41f81-6907-4cdd-800f-9fc03a5f7d9f",
+      "item_key": "CF-016",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
+      "todo_id": "488730a1-709e-4d1c-bd60-60a3e23c842d",
+      "item_key": "CF-021",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
         }
       ],
       "related_item_keys": []
@@ -1493,6 +1763,21 @@
       ]
     },
     {
+      "todo_id": "6b7cac5c-0e8e-4b5b-8a6d-97091ad130ed",
+      "item_key": "CF-011",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
       "todo_id": "7304d104-7d80-49c0-ab9b-e6a7e7d70f3b",
       "item_key": "CF-027",
       "type": "review_dependency_change",
@@ -1503,6 +1788,21 @@
       "related_item_keys": [
         "CF-018"
       ]
+    },
+    {
+      "todo_id": "761f0584-1fef-4b87-a6f0-d16760e6c9df",
+      "item_key": "CF-010",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
     },
     {
       "todo_id": "805d5433-8ccf-4a42-b5cb-dcb1507c5213",
@@ -1551,6 +1851,91 @@
       "related_item_keys": []
     },
     {
+      "todo_id": "8a65119b-a071-4b32-b816-fca16cd6d2d6",
+      "item_key": "CF-025",
+      "type": "review_source_change",
+      "managed_by": "mutation",
+      "message": "Review source change: ../adr/ADR-2026-04-17-local-structured-output-schema-sanitization.md, ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, local-vllm-model-shortlist-2026-03-24.md, working-system-roadmap-matrix-2026-03-26.md.",
+      "created_at": "2026-04-17T11:30:00.980Z",
+      "related_sources": [
+        {
+          "source_id": "d53951b9-90dd-4afc-b7e0-df4dfd03a867",
+          "source_label": "../adr/ADR-2026-04-17-local-structured-output-schema-sanitization.md"
+        },
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        },
+        {
+          "source_id": "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+          "source_label": "../polyphony_concept.md"
+        },
+        {
+          "source_id": "97107644-d070-4cb0-bfe3-aa581331229c",
+          "source_label": "feature-candidates.md"
+        },
+        {
+          "source_id": "9d061028-1d37-4f85-9919-f6321ed1f995",
+          "source_label": "local-vllm-model-shortlist-2026-03-24.md"
+        },
+        {
+          "source_id": "4ffa2197-8f9f-4d98-a615-36b03c2cc660",
+          "source_label": "working-system-roadmap-matrix-2026-03-26.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
+      "todo_id": "963de9a2-2ad1-49ad-93fe-468ff5390fca",
+      "item_key": "CF-003",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
+      "todo_id": "a9188d4d-1913-4e17-8ce6-51691be1083e",
+      "item_key": "CF-019",
+      "type": "review_source_change",
+      "managed_by": "mutation",
+      "message": "Review source change: ../adr/ADR-2026-04-17-local-structured-output-schema-sanitization.md, ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, local-vllm-model-shortlist-2026-03-24.md, working-system-roadmap-matrix-2026-03-26.md.",
+      "created_at": "2026-04-17T11:30:00.980Z",
+      "related_sources": [
+        {
+          "source_id": "d53951b9-90dd-4afc-b7e0-df4dfd03a867",
+          "source_label": "../adr/ADR-2026-04-17-local-structured-output-schema-sanitization.md"
+        },
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        },
+        {
+          "source_id": "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+          "source_label": "../polyphony_concept.md"
+        },
+        {
+          "source_id": "97107644-d070-4cb0-bfe3-aa581331229c",
+          "source_label": "feature-candidates.md"
+        },
+        {
+          "source_id": "9d061028-1d37-4f85-9919-f6321ed1f995",
+          "source_label": "local-vllm-model-shortlist-2026-03-24.md"
+        },
+        {
+          "source_id": "4ffa2197-8f9f-4d98-a615-36b03c2cc660",
+          "source_label": "working-system-roadmap-matrix-2026-03-26.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
       "todo_id": "a952d8d1-0ca4-4b5d-ad3a-698d272fe511",
       "item_key": "CF-025",
       "type": "review_dependency_change",
@@ -1563,6 +1948,36 @@
       ]
     },
     {
+      "todo_id": "a9b1bb73-8591-4cba-8466-e035fa94fc67",
+      "item_key": "CF-002",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
+      "todo_id": "afadad53-a179-4662-a863-375de6eeff4a",
+      "item_key": "CF-017",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
       "todo_id": "b427b628-98cf-4a65-ab2c-876fe30ecd96",
       "item_key": "CF-015",
       "type": "review_dependency_change",
@@ -1573,6 +1988,36 @@
       "related_item_keys": [
         "CF-018"
       ]
+    },
+    {
+      "todo_id": "b88df55f-7156-4378-baa5-94d3f83c6153",
+      "item_key": "CF-027",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
+      "todo_id": "bbd0e391-bfa1-4dbe-8f9f-b312c00b156d",
+      "item_key": "CF-014",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
     },
     {
       "todo_id": "beb9edbd-365d-4b75-92f1-e0250bddf7e3",
@@ -1606,6 +2051,36 @@
       "related_item_keys": []
     },
     {
+      "todo_id": "c34e8928-6572-43d3-85a8-f67bc52274a7",
+      "item_key": "CF-005",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
+      "todo_id": "c8fb993b-1bc6-41bf-b918-09f00fe58391",
+      "item_key": "CF-022",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
       "todo_id": "c9b23fb5-cb2c-4094-9491-8816b72e9c6e",
       "item_key": "CF-018",
       "type": "review_source_change",
@@ -1621,6 +2096,21 @@
       "related_item_keys": []
     },
     {
+      "todo_id": "ce42ce5e-19c2-4a92-9c8e-b2a3d7891850",
+      "item_key": "CF-024",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
       "todo_id": "d0aa0999-f0c2-4494-aa63-e1ddf45f0e90",
       "item_key": "CF-019",
       "type": "review_dependency_change",
@@ -1631,6 +2121,41 @@
       "related_item_keys": [
         "CF-023"
       ]
+    },
+    {
+      "todo_id": "d5eba069-f63d-4979-9348-58db66fd6360",
+      "item_key": "CF-013",
+      "type": "review_source_change",
+      "managed_by": "mutation",
+      "message": "Review source change: ../adr/ADR-2026-04-17-local-structured-output-schema-sanitization.md, ../architecture/system.md, ../polyphony_concept.md, feature-candidates.md, local-vllm-model-shortlist-2026-03-24.md, working-system-roadmap-matrix-2026-03-26.md.",
+      "created_at": "2026-04-17T11:30:00.980Z",
+      "related_sources": [
+        {
+          "source_id": "d53951b9-90dd-4afc-b7e0-df4dfd03a867",
+          "source_label": "../adr/ADR-2026-04-17-local-structured-output-schema-sanitization.md"
+        },
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        },
+        {
+          "source_id": "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+          "source_label": "../polyphony_concept.md"
+        },
+        {
+          "source_id": "97107644-d070-4cb0-bfe3-aa581331229c",
+          "source_label": "feature-candidates.md"
+        },
+        {
+          "source_id": "9d061028-1d37-4f85-9919-f6321ed1f995",
+          "source_label": "local-vllm-model-shortlist-2026-03-24.md"
+        },
+        {
+          "source_id": "4ffa2197-8f9f-4d98-a615-36b03c2cc660",
+          "source_label": "working-system-roadmap-matrix-2026-03-26.md"
+        }
+      ],
+      "related_item_keys": []
     },
     {
       "todo_id": "d6b195fe-364d-40ff-8bbd-0948ae0eea4e",
@@ -1668,6 +2193,21 @@
       ]
     },
     {
+      "todo_id": "d7510475-847e-4eee-832d-9fd690d3570f",
+      "item_key": "CF-015",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
       "todo_id": "d8a96661-1632-4565-a95a-00adf3236797",
       "item_key": "CF-013",
       "type": "review_dependency_change",
@@ -1692,6 +2232,21 @@
       ]
     },
     {
+      "todo_id": "e5266517-114f-4303-8ce8-f9f135d6b942",
+      "item_key": "CF-007",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
       "todo_id": "eef44da4-0fbe-4103-a5f9-429e277bdcfb",
       "item_key": "CF-019",
       "type": "review_dependency_change",
@@ -1702,6 +2257,36 @@
       "related_item_keys": [
         "CF-018"
       ]
+    },
+    {
+      "todo_id": "f2ee722f-5876-4e0d-b114-023d391db612",
+      "item_key": "CF-001",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
+    },
+    {
+      "todo_id": "f3992c9e-ad9e-4d1f-bf7a-3adcc67b340b",
+      "item_key": "CF-020",
+      "type": "review_source_change",
+      "managed_by": "refresh",
+      "message": "Review source change: ../architecture/system.md.",
+      "created_at": "2026-04-17T11:30:40.507Z",
+      "related_sources": [
+        {
+          "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+          "source_label": "../architecture/system.md"
+        }
+      ],
+      "related_item_keys": []
     }
   ]
 }

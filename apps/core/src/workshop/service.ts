@@ -6,9 +6,11 @@ import type { CoreRuntimeConfig } from '../platform/core-config.ts';
 import { createSecretHygieneGuard } from '../security/secret-hygiene.ts';
 import {
   createRuntimeDbClient,
+  createRuntimeModelProfileStore,
   createWorkshopStore,
   type RecordWorkshopCandidateStageTransitionInput,
   type RegisterWorkshopCandidateInput,
+  type RuntimeModelProfileRow,
   type WorkshopCandidateStageEventRow,
   type WorkshopDatasetRow,
   type WorkshopEvalRunRow,
@@ -25,6 +27,7 @@ import {
   type PrepareWorkshopPromotionPackageRequest,
   type RecordCandidateStageTransitionRequest,
   type RegisterModelCandidateRequest,
+  type WorkshopPromotionDependencyRef,
   type WorkshopCandidateKind,
   type WorkshopCandidateStage,
   type WorkshopDatasetBuildRequest,
@@ -37,6 +40,7 @@ import {
   assertValidWorkshopJobEnvelope,
   createWorkshopJobEnvelope,
 } from '@yaagi/contracts/workshop';
+import type { ServingDependencyState } from '@yaagi/contracts/models';
 import {
   createRuntimeJobEnqueuer,
   type RuntimeJobEnqueuer,
@@ -52,6 +56,8 @@ type WorkshopServiceOptions = {
   dataPath: string;
   modelsPath: string;
   secretHygieneGuard?: (payload: unknown, surface: string) => void;
+  getServingDependencyStates?: () => Promise<ServingDependencyState[]>;
+  getModelProfileById?: (modelProfileId: string) => Promise<RuntimeModelProfileRow | null>;
 };
 
 type WorkshopJobGatewayOptions = {
@@ -338,6 +344,61 @@ const resolveDatasetManifestPath = (dataPath: string, datasetId: string): string
 
 const resolvePromotionPackagePath = (dataPath: string, candidateId: string): string =>
   path.join(dataPath, 'reports', 'workshop', 'promotion', `${candidateId}.json`);
+
+const resolvePromotionDependencyRef = async (input: {
+  candidate: WorkshopModelCandidateRow;
+  getServingDependencyStates?: WorkshopServiceOptions['getServingDependencyStates'];
+  getModelProfileById?: WorkshopServiceOptions['getModelProfileById'];
+}): Promise<WorkshopPromotionDependencyRef> => {
+  if (!input.getServingDependencyStates || !input.getModelProfileById) {
+    throw new Error('workshop promotion package requires canonical serving dependency resolvers');
+  }
+
+  const dependencyProfileId =
+    input.candidate.rollbackTarget ?? input.candidate.predecessorProfileId;
+  if (!dependencyProfileId) {
+    throw new Error('workshop promotion package requires rollbackTarget or predecessorProfileId');
+  }
+
+  const dependencyProfile = await input.getModelProfileById(dependencyProfileId);
+  if (!dependencyProfile) {
+    throw new Error(`unknown dependency profile ${dependencyProfileId}`);
+  }
+
+  if (!dependencyProfile.artifactUri) {
+    throw new Error(`dependency profile ${dependencyProfileId} is missing canonical artifactUri`);
+  }
+
+  const dependencyState = (await input.getServingDependencyStates()).find(
+    (state) => state.serviceId === dependencyProfile.serviceId,
+  );
+
+  if (!dependencyState) {
+    throw new Error(
+      `no canonical serving dependency state found for service ${dependencyProfile.serviceId}`,
+    );
+  }
+
+  if (dependencyState.readiness !== 'ready') {
+    throw new Error(
+      `serving dependency ${dependencyState.serviceId} is not ready: ${dependencyState.readiness}`,
+    );
+  }
+
+  if (dependencyState.artifactUri !== dependencyProfile.artifactUri) {
+    throw new Error(
+      `serving dependency ${dependencyState.serviceId} artifact mismatch: ${dependencyState.artifactUri ?? 'null'} !== ${dependencyProfile.artifactUri}`,
+    );
+  }
+
+  return {
+    serviceId: dependencyState.serviceId,
+    artifactUri: dependencyProfile.artifactUri,
+    artifactDescriptorPath: dependencyState.artifactDescriptorPath,
+    runtimeArtifactRoot: dependencyState.runtimeArtifactRoot,
+    readiness: 'ready',
+  };
+};
 
 export const createWorkshopService = (options: WorkshopServiceOptions): WorkshopService => {
   const now = options.now ?? (() => new Date());
@@ -781,6 +842,12 @@ export const createWorkshopService = (options: WorkshopServiceOptions): Workshop
         );
       }
 
+      const dependencyRef = await resolvePromotionDependencyRef({
+        candidate,
+        getServingDependencyStates: options.getServingDependencyStates,
+        getModelProfileById: options.getModelProfileById,
+      });
+
       const promotionPackage: WorkshopPromotionPackage = {
         candidateId: candidate.candidateId,
         candidateStage: candidate.stage,
@@ -791,6 +858,7 @@ export const createWorkshopService = (options: WorkshopServiceOptions): Workshop
         requiredEvalSuite: candidate.requiredEvalSuite,
         lastKnownGoodEvalReportUri: candidate.lastKnownGoodEvalReportUri,
         artifactUri: candidate.artifactUri,
+        dependencyRef,
       };
 
       const packageUri = await writeJsonArtifact(
@@ -867,8 +935,11 @@ export const createWorkshopJobGateway = (
   };
 };
 
-export const createDbBackedWorkshopService = (config: CoreRuntimeConfig): WorkshopService =>
-  createWorkshopService({
+export const createDbBackedWorkshopService = (
+  config: CoreRuntimeConfig,
+  options: Pick<WorkshopServiceOptions, 'getServingDependencyStates' | 'getModelProfileById'> = {},
+): WorkshopService => {
+  const serviceOptions: WorkshopServiceOptions = {
     store: {
       persistDataset: (input) =>
         withRuntimeClient(config.postgresUrl, (store) => store.persistDataset(input)),
@@ -896,7 +967,29 @@ export const createDbBackedWorkshopService = (config: CoreRuntimeConfig): Worksh
     dataPath: config.dataPath,
     modelsPath: config.modelsPath,
     secretHygieneGuard: createSecretHygieneGuard(config),
-  });
+  };
+
+  if (options.getServingDependencyStates) {
+    serviceOptions.getServingDependencyStates = options.getServingDependencyStates;
+  }
+
+  serviceOptions.getModelProfileById =
+    options.getModelProfileById ??
+    (async (modelProfileId) => {
+      const client = createRuntimeDbClient(config.postgresUrl);
+      await client.connect();
+
+      try {
+        const store = createRuntimeModelProfileStore(client);
+        const profiles = await store.listModelProfiles();
+        return profiles.find((profile) => profile.modelProfileId === modelProfileId) ?? null;
+      } finally {
+        await client.end();
+      }
+    });
+
+  return createWorkshopService(serviceOptions);
+};
 
 export const runWorkshopJobEnvelope = async (
   service: WorkshopService,

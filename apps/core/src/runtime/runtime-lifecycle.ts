@@ -12,6 +12,7 @@ import {
 import type {
   ModelOrganHealthReportInput,
   OperatorRicherRegistryHealthSummary,
+  ServingDependencyState,
 } from '@yaagi/contracts/models';
 import {
   DEFAULT_PERCEPTION_HEALTH,
@@ -41,7 +42,12 @@ import {
   type SubjectStateSnapshotInput,
 } from '@yaagi/db';
 import type { SystemEvent } from '@yaagi/contracts/boot';
-import { TICK_STATUS, type TickTerminalResult } from '@yaagi/contracts/runtime';
+import {
+  TICK_STATUS,
+  type TickRequest,
+  type TickRequestResult,
+  type TickTerminalResult,
+} from '@yaagi/contracts/runtime';
 import { GRACEFUL_SHUTDOWN_STATE } from '@yaagi/contracts/lifecycle';
 import {
   createExecutiveCenter,
@@ -59,6 +65,12 @@ import { createPerceptionController, type StimulusIngestResult } from '../percep
 import type { CoreRuntimeConfig } from '../platform/core-config.ts';
 import { createPhase0DecisionInvoker } from '../platform/phase0-ai.ts';
 import { createVllmFastBaselineProfiles } from '../platform/vllm-fast-manifest.ts';
+import {
+  createOptionalServingDependencyState,
+  createVllmFastDependencyMonitor,
+  vllmFastStateCacheTtlMs,
+  type VllmFastDependencyMonitor,
+} from '../platform/vllm-fast-serving.ts';
 import {
   createPhase0ModelRouter,
   type BaselineModelProfileDiagnostic,
@@ -106,7 +118,12 @@ type RuntimeLifecycle = {
     payload: Record<string, unknown>;
   }): Promise<{
     accepted: boolean;
-    reason?: 'boot_inactive' | 'lease_busy' | 'unsupported_tick_kind' | 'shutdown_admission_closed';
+    reason?:
+      | 'boot_inactive'
+      | 'lease_busy'
+      | 'unsupported_tick_kind'
+      | 'shutdown_admission_closed'
+      | 'promoted_dependency_unavailable';
   }>;
   freezeDevelopment(input: {
     requestId: string;
@@ -152,6 +169,8 @@ type RuntimeLifecycle = {
   }): Promise<BaselineModelProfileDiagnostic[]>;
   getRicherModelRegistryHealthSummary(): Promise<OperatorRicherRegistryHealthSummary>;
   getModelOrganHealthReportInput(): Promise<ModelOrganHealthReportInput>;
+  getServingDependencyStates(): Promise<ServingDependencyState[]>;
+  peekServingDependencyStates(): ServingDependencyState[];
 };
 
 export const startBoundedWorkshopWorker = async (
@@ -247,64 +266,67 @@ const findRuntimeRoot = (config: CoreRuntimeConfig): string => {
   return path.join(path.parse(first).root, ...firstSegments.slice(0, sharedLength));
 };
 
-const createDependencyProbeMap = (config: CoreRuntimeConfig) => ({
+const createDependencyProbeMap = (
+  config: CoreRuntimeConfig,
+  fastDependencyMonitor: VllmFastDependencyMonitor,
+) => ({
   [DEPENDENCY.POSTGRES]: () =>
     withRuntimeClient(config.postgresUrl, async (client) => {
       await client.query('select 1');
       return { ok: true as const };
     }),
   [DEPENDENCY.MODEL_FAST]: async () => {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 1_500);
-
-    try {
-      const response = await fetch(new URL('models', `${config.fastModelBaseUrl}/`), {
-        method: 'GET',
-        signal: controller.signal,
-      });
-      return { ok: response.ok, ...(response.ok ? {} : { detail: `${response.status}` }) };
-    } catch (error) {
-      return {
-        ok: false,
-        detail: error instanceof Error ? error.message : String(error),
-      };
-    } finally {
-      clearTimeout(timeout);
-    }
+    const state = await fastDependencyMonitor.refreshState();
+    return {
+      ok: state.readiness === 'ready',
+      ...(state.detail ? { detail: state.detail } : {}),
+    };
   },
 });
 
 const createFastModelHealthProbe =
-  (config: CoreRuntimeConfig) => async (): Promise<ModelHealthSummary> => {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 1_500);
-
-    try {
-      const response = await fetch(new URL('models', `${config.fastModelBaseUrl}/`), {
-        method: 'GET',
-        signal: controller.signal,
-      });
-
-      if (response.ok) {
-        return {
-          healthy: true,
-          detail: 'model-fast dependency is reachable',
-        };
-      }
-
-      return {
-        healthy: false,
-        detail: `model-fast probe returned ${response.status}`,
-      };
-    } catch (error) {
-      return {
-        healthy: false,
-        detail: error instanceof Error ? error.message : String(error),
-      };
-    } finally {
-      clearTimeout(timeout);
-    }
+  (fastDependencyMonitor: VllmFastDependencyMonitor) => async (): Promise<ModelHealthSummary> => {
+    const state = await fastDependencyMonitor.getState({
+      maxAgeMs: vllmFastStateCacheTtlMs(),
+    });
+    return {
+      healthy: state.readiness === 'ready',
+      detail: state.detail ?? `model-fast readiness=${state.readiness} (${state.readinessBasis})`,
+    };
   };
+
+const applyServingDependencyStateToBaselineDiagnostics = (
+  diagnostics: BaselineModelProfileDiagnostic[],
+  fastState: ServingDependencyState | null,
+): BaselineModelProfileDiagnostic[] =>
+  diagnostics.map((profile) =>
+    profile.serviceId !== 'vllm-fast' || !fastState
+      ? profile
+      : {
+          ...profile,
+          endpoint: fastState.endpoint,
+          artifactUri: fastState.artifactUri,
+          baseModel: fastState.baseModel ?? profile.baseModel,
+          artifactDescriptorPath: fastState.artifactDescriptorPath,
+          runtimeArtifactRoot: fastState.runtimeArtifactRoot,
+          bootCritical: fastState.bootCritical,
+          optionalUntilPromoted: fastState.optionalUntilPromoted,
+          readiness: fastState.readiness,
+          readinessBasis: fastState.readinessBasis,
+          healthSummary: {
+            healthy: fastState.readiness === 'ready',
+            detail:
+              fastState.detail ??
+              `model-fast readiness=${fastState.readiness} (${fastState.readinessBasis})`,
+          },
+          eligibility:
+            profile.status === 'disabled'
+              ? 'profile_unavailable'
+              : fastState.readiness === 'ready'
+                ? 'eligible'
+                : 'profile_unhealthy',
+        },
+  );
 
 const createDbBackedTickRuntimeStore = (
   config: CoreRuntimeConfig,
@@ -1187,6 +1209,7 @@ export function createPhase0RuntimeLifecycle(
   config: CoreRuntimeConfig,
   options: {
     invokeDecision?: DecisionAgentInvoker;
+    fastDependencyMonitor?: VllmFastDependencyMonitor;
   } = {},
 ): RuntimeLifecycle {
   let tickRuntime: TickRuntime | null = null;
@@ -1202,9 +1225,80 @@ export function createPhase0RuntimeLifecycle(
     config,
     homeostatService,
   );
-  const workshopService = createDbBackedWorkshopService(config);
+  const fastDependencyMonitor =
+    options.fastDependencyMonitor ?? createVllmFastDependencyMonitor(config);
+  const optionalServingDependencyStates = (): ServingDependencyState[] => [
+    createOptionalServingDependencyState({
+      serviceId: 'vllm-deep',
+      endpoint: config.deepModelBaseUrl,
+      artifactDescriptorPath: path.join(config.seedModelsPath, 'shared', 'vllm-deep.json'),
+      runtimeArtifactRoot: path.join(config.modelsPath, 'base', 'vllm-deep'),
+      detail: 'optional diagnostics only until a future promotion seam exists',
+    }),
+    createOptionalServingDependencyState({
+      serviceId: 'vllm-pool',
+      endpoint: config.poolModelBaseUrl,
+      artifactDescriptorPath: path.join(config.seedModelsPath, 'shared', 'vllm-pool.json'),
+      runtimeArtifactRoot: path.join(config.modelsPath, 'base', 'vllm-pool'),
+      detail: 'optional diagnostics only until a future promotion seam exists',
+    }),
+  ];
+  const buildServingDependencyStates = (
+    fastState: ServingDependencyState | null,
+  ): ServingDependencyState[] =>
+    fastState
+      ? [fastState, ...optionalServingDependencyStates()]
+      : optionalServingDependencyStates();
+  const listServingDependencyStates = async (input?: {
+    useCached?: boolean;
+  }): Promise<ServingDependencyState[]> => {
+    const fastState = input?.useCached
+      ? fastDependencyMonitor.peekState()
+      : await fastDependencyMonitor.getState({
+          maxAgeMs: vllmFastStateCacheTtlMs(),
+        });
+    return buildServingDependencyStates(fastState);
+  };
+  const requestTickWithPromotedDependencyGate = async (
+    input: TickRequest,
+  ): Promise<TickRequestResult> => {
+    if (shuttingDown) {
+      return {
+        accepted: false,
+        reason: 'shutdown_admission_closed',
+      };
+    }
+
+    if (!tickRuntime) {
+      return {
+        accepted: false,
+        reason: 'boot_inactive',
+      };
+    }
+
+    const fastDependencyState = await fastDependencyMonitor.refreshState();
+    if (fastDependencyState.readiness !== 'ready') {
+      return {
+        accepted: false,
+        reason: 'promoted_dependency_unavailable',
+      };
+    }
+
+    const result = await tickRuntime.requestTick(input);
+    if (result.accepted) {
+      return result;
+    }
+
+    return {
+      accepted: false,
+      reason: result.reason,
+    };
+  };
+  const workshopService = createDbBackedWorkshopService(config, {
+    getServingDependencyStates: listServingDependencyStates,
+  });
   const workshopWorker: WorkshopWorker = createWorkshopWorker(config, workshopService);
-  const fastModelHealthProbe = createFastModelHealthProbe(config);
+  const fastModelHealthProbe = createFastModelHealthProbe(fastDependencyMonitor);
   const resolveBaselineHealth = async (): Promise<
     Record<'reflex' | 'deliberation' | 'reflection', ModelHealthSummary>
   > => {
@@ -1245,23 +1339,7 @@ export function createPhase0RuntimeLifecycle(
   const perceptionController = createPerceptionController({
     config,
     store: createDbBackedPerceptionStore(config),
-    requestReactiveTick: async (input) => {
-      if (shuttingDown) {
-        return {
-          accepted: false,
-          reason: 'shutdown_admission_closed',
-        };
-      }
-
-      if (!tickRuntime) {
-        return {
-          accepted: false,
-          reason: 'boot_inactive',
-        };
-      }
-
-      return await tickRuntime.requestTick(input);
-    },
+    requestReactiveTick: requestTickWithPromotedDependencyGate,
   });
 
   tickRuntime = createTickRuntime({
@@ -1468,7 +1546,7 @@ export function createPhase0RuntimeLifecycle(
         expectedSchemaVersion,
         repoRoot: findRuntimeRoot(config),
         constitutionPath: config.seedConstitutionPath,
-        dependencyProbes: createDependencyProbeMap(config),
+        dependencyProbes: createDependencyProbeMap(config, fastDependencyMonitor),
         timeline: createTimelinePort(config),
         agentStateStore: createAgentStatePort(config),
         lifecycleController: createNoopLifecycleController(),
@@ -1576,22 +1654,7 @@ export function createPhase0RuntimeLifecycle(
     },
 
     async requestTick(input) {
-      if (shuttingDown) {
-        return {
-          accepted: false,
-          reason: 'shutdown_admission_closed',
-        };
-      }
-
-      const result = await tickRuntime.requestTick(input);
-      if (result.accepted) {
-        return { accepted: true };
-      }
-
-      return {
-        accepted: false,
-        reason: result.reason,
-      };
+      return await requestTickWithPromotedDependencyGate(input);
     },
 
     freezeDevelopment(input) {
@@ -1648,10 +1711,24 @@ export function createPhase0RuntimeLifecycle(
       deliberation?: ModelHealthSummary;
       reflection?: ModelHealthSummary;
     }): Promise<BaselineModelProfileDiagnostic[]> {
-      return modelRouter.getBaselineDiagnostics(input ? { organHealth: input } : undefined);
+      return Promise.all([
+        modelRouter.getBaselineDiagnostics(input ? { organHealth: input } : undefined),
+        listServingDependencyStates(),
+      ]).then(([diagnostics, servingDependencies]) =>
+        applyServingDependencyStateToBaselineDiagnostics(
+          diagnostics,
+          servingDependencies.find((dependency) => dependency.serviceId === 'vllm-fast') ?? null,
+        ),
+      );
     },
 
     getRicherModelRegistryHealthSummary,
     getModelOrganHealthReportInput,
+    async getServingDependencyStates(): Promise<ServingDependencyState[]> {
+      return await listServingDependencyStates();
+    },
+    peekServingDependencyStates(): ServingDependencyState[] {
+      return buildServingDependencyStates(fastDependencyMonitor.peekState());
+    },
   };
 }

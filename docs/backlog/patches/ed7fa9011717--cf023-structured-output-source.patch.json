@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-17-032-patch-template-77bf189f",
+    "created_at": "2026-04-17T11:29:21.611Z",
+    "sequence": 32,
+    "target_item_keys": [
+      "CF-023"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-023",
+      "action": "append_unique",
+      "field": "implementation_source_ids",
+      "values": ["d53951b9-90dd-4afc-b7e0-df4dfd03a867"]
+    }
+  ]
+}

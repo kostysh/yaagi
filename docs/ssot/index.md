@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-16T20:01:11.359Z_
+_Last sync: 2026-04-17T15:59:18.851Z_
 
 ## Features
 
@@ -29,7 +29,7 @@ _Last sync: 2026-04-16T20:01:11.359Z_
 | F-0017 | Git-управляемая эволюция тела и стабильные снапшоты | done | strict | body | F-0001, F-0002, F-0010, F-0015, F-0016 | runtime,db,governance,workspace,tooling,recovery | `../features/F-0017-git-managed-body-evolution-and-stable-snapshots.md` |
 | F-0018 | Профиль безопасности и изоляции | done | strict | safety | F-0002, F-0010, F-0013, F-0016, F-0017 | runtime,infra,governance,api,workspace,network,safety | `../features/F-0018-security-and-isolation-profile.md` |
 | F-0019 | Консолидация, event envelope и graceful shutdown | done | strict | lifecycle | F-0003, F-0004, F-0011 | runtime,db,lifecycle,governance,reporting | `../features/F-0019-consolidation-event-envelope-graceful-shutdown.md` |
-| F-0020 | Реальный vLLM-serving и promotion model dependencies | planned | deferred | models | F-0002, F-0008, F-0014 | runtime,infra,models,artifacts,workshop | `../features/F-0020-real-vllm-serving-and-promotion-model-dependencies.md` |
+| F-0020 | Реальный vLLM-serving и promotion model dependencies | done | strict | models | F-0002, F-0008, F-0014, F-0015 | runtime,infra,models,artifacts,workshop | `../features/F-0020-real-vllm-serving-and-promotion-model-dependencies.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -127,6 +127,7 @@ graph TD
   F0020 --> F0002
   F0020 --> F0008
   F0020 --> F0014
+  F0020 --> F0015
 ```
 <!-- END GENERATED DEP_GRAPH -->
 
@@ -168,7 +169,7 @@ graph TD
 - **WARN** F-0007 — Planned+ dossier has dependencies, but the slicing plan does not show clear `Depends on:` visibility with owner and unblock condition. Add the dependency note where it affects delivery order.
 - **WARN** F-0007 — Planning/design text suggests rollout order matters, but no rollout / activation note was found. Add a compact activation order and rollback-limits note.
 - **WARN** F-0007 — Change log shows mature replanning, but no short reason tags were found. Prefer tags like `[clarification]`, `[scope realignment]`, `[dependency realignment]`, `[risk discovery]`, or `[contract drift]`.
-- **WARN** F-0007 — Potential compound ACs detected: AC-F0007-04, AC-F0007-01, AC-F0007-02, AC-F0007-03, AC-F0007-04, AC-F0007-05, AC-F0007-06. Prefer one obligation per AC.
+- **WARN** F-0007 — Potential compound ACs detected: AC-F0007-04, AC-F0007-01, AC-F0007-02, AC-F0007-03, AC-F0007-05, AC-F0007-06. Prefer one obligation per AC.
 - **WARN** F-0007 — Vague wording in executable sections: "fast" in "- В smoke suite должны остаться только сценарии, где containerized cell реально добавляет verification value поверх fast integration path."; "fast" in "- Lease-discipline smoke probe из `F-0003` после shaping выводится из container smoke suite и закрепляется за fast integration path, потому что его main value лежит в DB/runtime semantics, а не в long-lived container cell. `F-0007` implementation обязан удалить этот probe из `deployment-cell.smoke.ts` и сохранить coverage ownership через explicit realignment на fast integration surface, а не оставлять implementer-у выбор.". Rewrite the statement more concretely.
 - **WARN** F-0008 — NFR section looks aspirational. Add a metric, budget/threshold, or observable signal for any normative NFR.
 - **WARN** F-0008 — Planned+ dossier has dependencies, but the slicing plan does not show clear `Depends on:` visibility with owner and unblock condition. Add the dependency note where it affects delivery order.
@@ -210,7 +211,6 @@ graph TD
 - **WARN** F-0017 — Potential compound ACs detected: AC-F0017-06, AC-F0017-06. Prefer one obligation per AC.
 - **WARN** F-0018 — Potential compound ACs detected: AC-F0018-01, AC-F0018-02, AC-F0018-03, AC-F0018-04, AC-F0018-05, AC-F0018-06, AC-F0018-07, AC-F0018-08, AC-F0018-09, AC-F0018-10, AC-F0018-11, AC-F0018-12, AC-F0018-13, AC-F0018-03, AC-F0018-03, AC-F0018-01, AC-F0018-03, AC-F0018-08, AC-F0018-11, AC-F0018-03, AC-F0018-06, AC-F0018-01, AC-F0018-02, AC-F0018-03, AC-F0018-04, AC-F0018-05, AC-F0018-06, AC-F0018-07, AC-F0018-08, AC-F0018-09, AC-F0018-10, AC-F0018-11, AC-F0018-12, AC-F0018-13. Prefer one obligation per AC.
 - **WARN** F-0020 — NFR section looks aspirational. Add a metric, budget/threshold, or observable signal for any normative NFR.
-- **WARN** F-0020 — Change log shows mature replanning, but no short reason tags were found. Prefer tags like `[clarification]`, `[scope realignment]`, `[dependency realignment]`, `[risk discovery]`, or `[contract drift]`.
 - **WARN** F-0020 — Potential compound ACs detected: AC-F0020-01, AC-F0020-02, AC-F0020-03, AC-F0020-04, AC-F0020-05, AC-F0020-06, AC-F0020-07, AC-F0020-08, AC-F0020-09, AC-F0020-10, AC-F0020-11, AC-F0020-12, AC-F0020-02, AC-F0020-04, AC-F0020-05, AC-F0020-06, AC-F0020-08, AC-F0020-03, AC-F0020-04, AC-F0020-05, AC-F0020-04, AC-F0020-04, AC-F0020-03, AC-F0020-04, AC-F0020-01, AC-F0020-02, AC-F0020-03, AC-F0020-04, AC-F0020-05, AC-F0020-08, AC-F0020-04. Prefer one obligation per AC.
 - **WARN** F-0020 — Vague wording in executable sections: "fast" in "- Canonical owner for replacing the phase-0 stub-capable `vllm-fast` continuity slot with real `vLLM` inference over the canonical deployment-cell path."; "fast" in "- Explicit fast-first slice: one real `vllm-fast` organ must be live and smoke-proven before any claim about a real local-model runtime is accepted.". Rewrite the statement more concretely.
 <!-- END GENERATED RED_FLAGS -->

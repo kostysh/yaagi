@@ -11,7 +11,10 @@ import {
   type OperatorTimelineCursor,
 } from '@yaagi/contracts/operator-api';
 import type { DevelopmentFreezeResult, DevelopmentProposalResult } from '@yaagi/contracts/governor';
-import type { OperatorRicherRegistryHealthSummary } from '@yaagi/contracts/models';
+import type {
+  OperatorRicherRegistryHealthSummary,
+  ServingDependencyState,
+} from '@yaagi/contracts/models';
 import type {
   RuntimeEpisodePageInput,
   RuntimeEpisodeRow,
@@ -25,6 +28,8 @@ import type {
   ModelHealthSummary,
 } from '../runtime/model-router.ts';
 
+const PUBLIC_FAST_MODEL_ALIAS = 'model-fast';
+
 export type OperatorRuntimeLifecycle = {
   getSubjectStateSnapshot?(input?: SubjectStateSnapshotInput): Promise<SubjectStateSnapshot>;
   listTimelineEvents?(input?: RuntimeTimelineEventPageInput): Promise<RuntimeTimelineEventRow[]>;
@@ -35,6 +40,8 @@ export type OperatorRuntimeLifecycle = {
     reflection?: ModelHealthSummary;
   }): Promise<BaselineModelProfileDiagnostic[]>;
   getRicherModelRegistryHealthSummary?(): Promise<OperatorRicherRegistryHealthSummary>;
+  getServingDependencyStates?(): Promise<ServingDependencyState[]>;
+  peekServingDependencyStates?(): ServingDependencyState[];
   requestTick?(input: {
     requestId: string;
     kind: 'reactive' | 'deliberative' | 'contemplative' | 'consolidation' | 'developmental';
@@ -43,7 +50,12 @@ export type OperatorRuntimeLifecycle = {
     payload: Record<string, unknown>;
   }): Promise<{
     accepted: boolean;
-    reason?: 'boot_inactive' | 'lease_busy' | 'unsupported_tick_kind' | 'shutdown_admission_closed';
+    reason?:
+      | 'boot_inactive'
+      | 'lease_busy'
+      | 'unsupported_tick_kind'
+      | 'shutdown_admission_closed'
+      | 'promoted_dependency_unavailable';
   }>;
   freezeDevelopment?(input: {
     requestId: string;
@@ -83,6 +95,35 @@ const toValidationError = (error: unknown): string => {
 
   return error instanceof Error ? error.message : String(error);
 };
+
+const redactBaselineProfileDiagnostic = (
+  profile: BaselineModelProfileDiagnostic,
+): BaselineModelProfileDiagnostic => ({
+  ...profile,
+  endpoint: '',
+  artifactUri: null,
+  baseModel: PUBLIC_FAST_MODEL_ALIAS,
+  artifactDescriptorPath: null,
+  runtimeArtifactRoot: null,
+  healthSummary: {
+    healthy: profile.healthSummary.healthy,
+    detail: profile.healthSummary.healthy
+      ? 'model-fast dependency is reachable'
+      : 'model-fast dependency is unavailable',
+  },
+});
+
+const redactServingDependencyState = (state: ServingDependencyState): ServingDependencyState => ({
+  ...state,
+  endpoint: '',
+  artifactUri: null,
+  artifactDescriptorPath: '',
+  runtimeArtifactRoot: '',
+  candidateId: null,
+  baseModel: null,
+  servedModelName: null,
+  detail: null,
+});
 
 type OperatorUnavailableControlAction = 'freeze-development' | 'development-proposals';
 
@@ -242,7 +283,7 @@ export function registerOperatorApiRoutes(
       return context.json({ error: 'models_unavailable' }, 503);
     }
 
-    const [baselineProfiles, richerRegistryHealth] = await Promise.all([
+    const [baselineProfiles, richerRegistryHealth, servingDependencies] = await Promise.all([
       runtimeLifecycle.getModelRoutingDiagnostics(),
       runtimeLifecycle.getRicherModelRegistryHealthSummary
         ? runtimeLifecycle.getRicherModelRegistryHealthSummary()
@@ -251,19 +292,35 @@ export function registerOperatorApiRoutes(
             owner: 'F-0014' as const,
             reason: 'future_owned',
           }),
+      runtimeLifecycle.getServingDependencyStates
+        ? runtimeLifecycle.getServingDependencyStates()
+        : runtimeLifecycle.peekServingDependencyStates
+          ? Promise.resolve(runtimeLifecycle.peekServingDependencyStates())
+          : Promise.resolve([]),
     ]);
 
     return context.json({
-      baselineProfiles: baselineProfiles.map((profile) => ({
-        modelProfileId: profile.modelProfileId,
-        role: profile.role,
-        status: profile.status,
-        adapterOf: profile.adapterOf,
-        artifactUri: profile.artifactUri,
-        baseModel: profile.baseModel,
-        healthSummary: profile.healthSummary,
-      })),
+      baselineProfiles: baselineProfiles.map((profile) => {
+        const redacted = redactBaselineProfileDiagnostic(profile);
+        return {
+          modelProfileId: redacted.modelProfileId,
+          role: redacted.role,
+          serviceId: redacted.serviceId,
+          status: redacted.status,
+          adapterOf: redacted.adapterOf,
+          artifactUri: redacted.artifactUri,
+          baseModel: redacted.baseModel,
+          artifactDescriptorPath: redacted.artifactDescriptorPath,
+          runtimeArtifactRoot: redacted.runtimeArtifactRoot,
+          bootCritical: redacted.bootCritical,
+          optionalUntilPromoted: redacted.optionalUntilPromoted,
+          readiness: redacted.readiness,
+          readinessBasis: redacted.readinessBasis,
+          healthSummary: redacted.healthSummary,
+        };
+      }),
       richerRegistryHealth,
+      servingDependencies: servingDependencies.map(redactServingDependencyState),
     });
   });
 
@@ -313,7 +370,9 @@ export function registerOperatorApiRoutes(
           ? 409
           : result.reason === 'unsupported_tick_kind'
             ? 422
-            : 503;
+            : result.reason === 'promoted_dependency_unavailable'
+              ? 503
+              : 503;
 
       return context.json(
         {

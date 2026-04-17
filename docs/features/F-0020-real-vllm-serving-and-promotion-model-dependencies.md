@@ -1,14 +1,14 @@
 ---
 id: F-0020
 title: Реальный vLLM-serving и promotion model dependencies
-status: planned
-coverage_gate: deferred
+status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: models
-depends_on: ["F-0002", "F-0008", "F-0014"]
+depends_on: ["F-0002", "F-0008", "F-0014", "F-0015"]
 impacts: ["runtime", "infra", "models", "artifacts", "workshop"]
 created: 2026-04-16
-updated: 2026-04-16
+updated: 2026-04-17
 links:
   issue: ""
   pr: []
@@ -20,6 +20,7 @@ links:
     - "docs/features/F-0015-workshop-datasets-training-eval-and-promotion.md"
     - "docs/adr/ADR-2026-03-19-phase0-deployment-cell.md"
     - "docs/adr/ADR-2026-03-25-ai-sdk-runtime-substrate.md"
+    - "docs/adr/ADR-2026-04-17-local-structured-output-schema-sanitization.md"
 ---
 
 ## 1. Context & Goal
@@ -104,10 +105,11 @@ links:
 
 #### Normative now
 
-- `OQ-F0020-01` resolved on `2026-04-16`: planning now fixes a **closed fast-candidate qualification rule** instead of hard-coding an unevidenced winner.
-  - Candidate order for `SL-F0020-01`: `google/gemma-4-E4B-it` as preferred candidate, `microsoft/Phi-4-mini-instruct` as conservative fallback, `Qwen/Qwen3-8B` as stretch comparator.
+- `OQ-F0020-01` re-resolved on `2026-04-17`: implementation now fixes one **canonical Gemma-only fast baseline** instead of continuing the earlier three-candidate forecast.
+  - Canonical fast baseline: `google/gemma-4-E4B-it`.
   - Artifact source family: canonical Hugging Face descriptors/manifests resolved into writable `/models/base/*`; no alternate registry or ad hoc provider path is introduced by this dossier.
-  - Decision rule: the winner is the highest-ranked candidate that clears the must-pass workstation gates and the shared scorecard defined in `SL-F0020-01`; if no candidate clears the gate, implementation must stop at the allowed stop point and realign dossier/backlog rather than silently inventing a fourth candidate.
+  - Canonical ROCm serving posture for this workstation: `vllm/vllm-openai-rocm:gemma4`, `TRITON_ATTN`, JSON `limitMmPerPrompt={"image":0,"audio":0}`, OpenAI-compatible `/v1/*` probe path and the existing `vllm-fast` service identity.
+  - Decision rule: the current manifest and qualification bundle may name only the canonical Gemma baseline. Introducing another baseline candidate, fallback candidate or alternate provider bridge requires explicit dossier/backlog realignment instead of silent re-expansion of the candidate set.
 - `OQ-F0020-02` resolved on `2026-04-16`: `F-0020` implementation scope ends with fast-first real `vllm-fast`, explicit optional deep/pool diagnostics continuity, and one future promotion rule. Real-serving delivery for `vllm-deep` / `vllm-pool` is split into a follow-up dossier or change-proposal after the fast path is delivered.
 
 #### Implementation freedom
@@ -119,7 +121,6 @@ links:
 
 #### Temporary assumptions
 
-- `google/gemma-4-E4B-it` is the best current first candidate because of the updated shortlist, but it still carries local ROCm/gfx1151 proof risk; the plan therefore treats it as a preferred candidate, not an unevidenced preselected winner.
 - `vllm-fast` is the only boot-critical real-serving target in this dossier. `vllm-deep` and `vllm-pool` stay optional diagnostics here unless a later dossier explicitly promotes them.
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
@@ -140,7 +141,7 @@ links:
 ## 4. Non-functional requirements (NFR)
 
 - **NFR-F0020-01 Activation correctness:** `core` may expose the promoted fast organ as healthy only after one successful canonical inference probe has produced actual model output for the current artifact/service identity.
-- **NFR-F0020-02 Provenance visibility:** Every promoted serving dependency exposes an observable tuple of `service_id`, artifact descriptor location, runtime artifact root and `bootCritical` flag through canonical owner surfaces.
+- **NFR-F0020-02 Provenance visibility:** Every promoted serving dependency preserves one observable tuple of `service_id`, artifact descriptor location, runtime artifact root and `bootCritical` flag on canonical owner-only surfaces (`vllm-fast` manifest/monitor state, workshop dependency handoff and verification artifacts). Public `GET /health` and bounded `/models` projections may expose only redacted/public-safe views of that tuple and must not leak raw local paths.
 - **NFR-F0020-03 Recoverability:** After restart, a missing artifact, failed readiness probe or unusable promoted service keeps the dependency in a non-ready state and blocks real-serving claims until a fresh probe succeeds.
 - **NFR-F0020-04 Optionality transparency:** Optional deep/pool services must appear as explicit unavailable/degraded diagnostics rather than hidden boot failures or silent fallback claims.
 
@@ -188,6 +189,7 @@ type ServingDependencyState = {
 - Writable model assets live under `/models/*`; tracked bootstrap manifests remain under `/seed/models`.
 - `polyphony-core` remains the only identity-bearing runtime. Model services stay outside core as cognitive organs and may not become shadow owners of continuity or workshop state.
 - `GET /health` and bounded `/models` publication remain downstream projections. This seam owns the serving truth they project, not new public write routes.
+- Exact local provenance (`artifact_descriptor_path`, `runtime_artifact_root`) remains on owner-only surfaces such as the manifest loader state, serving dependency monitor, workshop dependency handoff and verification artifacts; public projections expose only redacted/public-safe views of the same dependency identity.
 
 ### 5.3 Data model changes
 
@@ -227,7 +229,7 @@ type ServingDependencyState = {
 ### 5.5 Verification surface / initial verification plan
 
 - `AC-F0020-01`: spec-conformance review of owner boundaries plus final implementation contract review.
-- `AC-F0020-02`, `AC-F0020-03`, `AC-F0020-07`, `AC-F0020-12`: candidate-qualification bundle on the closed fast-candidate set, including identical prompt corpus, descriptor/materialization proof, real inference over the canonical container path, and negative-path smoke for unusable candidates.
+- `AC-F0020-02`, `AC-F0020-03`, `AC-F0020-07`, `AC-F0020-12`: canonical Gemma-baseline qualification bundle, including fixed prompt corpus, descriptor/materialization proof, real inference over the canonical container path, and negative-path smoke for unusable promoted fast dependencies.
 - `AC-F0020-04`: readiness integration coverage, including stale-result, replay and race-window guards proving that only probe-backed inference yields `ready`.
 - `AC-F0020-05`: startup failure-path test for missing artifact, probe failure, timeout, or unavailable promoted fast dependency.
 - `AC-F0020-06`: owner-admission failure-path test for missing artifact, probe failure, timeout, or unavailable promoted fast dependency.
@@ -254,7 +256,7 @@ type ServingDependencyState = {
 
 - `vllm-fast` is served through one real containerized inference path on the canonical deployment cell.
 - Boot/readiness semantics treat the promoted fast dependency as fail-closed when unusable.
-- Artifact/weights placement and provenance rules are explicit and enforced by canonical owner surfaces.
+- Artifact/weights placement and provenance rules are explicit and enforced by canonical owner-only surfaces; public operator projections stay redacted and do not expose raw local paths.
 - The optional-vs-promoted rule for `vllm-deep` / `vllm-pool` is explicit.
 - Verification proves real inference and negative-path behavior; no stub/emulator path counts toward closure.
 
@@ -262,7 +264,7 @@ type ServingDependencyState = {
 
 - Intake direction is fast-first: real `vllm-fast` serving must be shaped and proven before any deeper serving expansion or later working-system claims.
 - Activation order:
-  1. qualify the closed `vllm-fast` candidate set on the canonical container path using one shared scorecard;
+  1. qualify the canonical `google/gemma-4-E4B-it` fast baseline on the canonical container path using one fixed scorecard and must-pass gate set;
   2. activate the selected fast baseline as a real-serving dependency and publish only probe-backed readiness;
   3. realign boot/readiness assumptions to the delivered fast dependency;
   4. run the final usage audit and keep `vllm-deep` / `vllm-pool` explicitly optional until a future promotion seam exists;
@@ -294,25 +296,25 @@ Forecast policy: slices below are implementation forecast, not separate product 
 
 ### SL-F0020-01: Candidate qualification bundle и artifact contract
 
-- **Результат:** Один canonical `serving-dependency` contract для `vllm-fast`, closed candidate set для fast baseline и объективный qualification bundle, который сравнивает `google/gemma-4-E4B-it`, `microsoft/Phi-4-mini-instruct` и `Qwen/Qwen3-8B` на одном runtime path.
+- **Результат:** Один canonical `serving-dependency` contract для `vllm-fast`, один canonical `google/gemma-4-E4B-it` baseline и объективный qualification bundle, который доказывает этот baseline на одном runtime path без скрытого fallback/comparator набора.
 - **Покрывает:** AC-F0020-01, AC-F0020-02, AC-F0020-03, AC-F0020-07, AC-F0020-12.
-- **Проверка:** descriptor contract tests, artifact materialization tests, canonical container smoke по всем кандидатам до первого failing gate, qualification report с единым prompt corpus и scorecard.
+- **Проверка:** descriptor contract tests, artifact materialization tests, canonical container smoke для Gemma baseline, qualification report с единым prompt corpus и scorecard.
 - Depends on: `F-0002`; owner `@codex`; unblock condition: canonical Docker Compose cell and `/models/*` runtime roots stay unchanged.
-- **Предположение:** closed candidate set из текущего shortlist достаточно для fast-first workstation decision без немедленного расширения рынка моделей.
-- **Fallback:** если ни один кандидат не проходит must-pass gates, остановиться после `SL-F0020-01`, сохранить qualification evidence и вернуть dossier/backlog на realignment вместо тихой замены candidate set.
-- **Approval / decision path:** architecture/ADR realignment required if implementation needs a fourth candidate, a different provider bridge, or a non-canonical artifact source.
+- **Предположение:** один Gemma baseline, уже подтверждённый workstation qualification, достаточен для fast-first delivery без повторного расширения candidate market внутри этой фичи.
+- **Fallback:** если Gemma перестаёт проходить must-pass gates на canonical runtime path, остановиться после `SL-F0020-01`, сохранить qualification evidence и вернуть dossier/backlog на realignment вместо тихого возврата к многокандидатному набору.
+- **Approval / decision path:** architecture/ADR realignment required if implementation needs a second candidate, a different provider bridge, or a non-canonical artifact source.
 
 #### Objective candidate-testing policy
 
-- **Closed candidate set:** `google/gemma-4-E4B-it`, `microsoft/Phi-4-mini-instruct`, `Qwen/Qwen3-8B`.
-- **Runtime parity rule:** одинаковые container entrypoint, `vLLM` version family, OpenAI-compatible probe path, writable `/models/base/*` root, prompt corpus and warmup policy for every candidate.
+- **Canonical baseline under test:** `google/gemma-4-E4B-it`.
+- **Runtime parity rule:** одинаковые container entrypoint, `vLLM` version family, OpenAI-compatible probe path, writable `/models/base/*` root, prompt corpus and warmup policy must hold across every restart and rerun of the canonical Gemma baseline.
 - **Must-pass gates:**
   1. candidate boots through the canonical `vllm-fast` container path and answers one real inference probe;
   2. candidate survives `3` cold starts and `20` warm probe requests without crash, OOM or transport flapping;
   3. structured-output adherence on the shared bounded JSON/schema subset is at least `95%`;
   4. the candidate exposes no secret/stub/fake path and leaves one reproducible artifact descriptor -> runtime root trace.
 - **Comparative scorecard after gates:** quality on shared prompt corpus `40%`, latency / throughput for reactive prompts `25%`, memory headroom on the workstation `20%`, stability / restart behavior `15%`.
-- **Decision rule:** highest weighted passing score wins; if scores are within `5` points, prefer lower memory pressure and faster cold boot; if the preferred `Gemma 4` candidate fails any must-pass gate, evaluate the next candidate in order without changing the closed set.
+- **Decision rule:** Gemma must clear every must-pass gate and the fixed weighted scorecard. If it fails, the outcome is `no_winner` for the current seam until dossier/backlog realignment explicitly approves a different baseline candidate.
 
 ### SL-F0020-02: Real `vllm-fast` activation и probe-backed readiness
 
@@ -371,22 +373,22 @@ Forecast policy: slices below are implementation forecast, not separate product 
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0020-01 | `SL-F0020-01` owner-boundary/spec-conformance review + `SL-F0020-03`/`SL-F0020-04` close-out audit | planned |
-| AC-F0020-02 | `SL-F0020-01` candidate-qualification bundle proving service/protocol continuity on the canonical `vllm-fast` path | planned |
-| AC-F0020-03 | `SL-F0020-01` real inference on the closed candidate set + `SL-F0020-02` selected-candidate smoke | planned |
-| AC-F0020-04 | `SL-F0020-02` readiness/probe integration, replay/race guards and projection contract tests | planned |
-| AC-F0020-05 | `SL-F0020-03` startup fail-closed integration | planned |
-| AC-F0020-06 | `SL-F0020-03` owner-admission fail-closed integration | planned |
-| AC-F0020-07 | `SL-F0020-01` descriptor/materialization contract tests + `SL-F0020-02` runtime-root integration | planned |
-| AC-F0020-08 | `SL-F0020-04` promotion-trigger spec-conformance audit | planned |
-| AC-F0020-09 | `SL-F0020-04` optional deep/pool diagnostics integration | planned |
-| AC-F0020-10 | `SL-F0020-04` future-promotion contract guard audit; no in-feature deep/pool promotion planned | planned |
-| AC-F0020-11 | `SL-F0020-03` workshop/promotion dependency handoff audit | planned |
-| AC-F0020-12 | `SL-F0020-01` negative candidate gates + `SL-F0020-03` fail-closed smoke | planned |
+| AC-F0020-01 | `SL-F0020-01` owner-boundary/spec-conformance review + `SL-F0020-03`/`SL-F0020-04` close-out audit | implemented |
+| AC-F0020-02 | `SL-F0020-01` Gemma-baseline qualification bundle proving service/protocol continuity on the canonical `vllm-fast` path | implemented |
+| AC-F0020-03 | `SL-F0020-01` real inference on the canonical Gemma baseline + `SL-F0020-02` selected-candidate smoke | implemented |
+| AC-F0020-04 | `SL-F0020-02` readiness/probe integration, replay/race guards and projection contract tests | implemented |
+| AC-F0020-05 | `SL-F0020-03` startup fail-closed integration | implemented |
+| AC-F0020-06 | `SL-F0020-03` owner-admission fail-closed integration | implemented |
+| AC-F0020-07 | `SL-F0020-01` descriptor/materialization contract tests + `SL-F0020-02` runtime-root integration | implemented |
+| AC-F0020-08 | `SL-F0020-04` promotion-trigger spec-conformance audit | implemented |
+| AC-F0020-09 | `SL-F0020-04` optional deep/pool diagnostics integration | implemented |
+| AC-F0020-10 | `SL-F0020-04` future-promotion contract guard audit; no in-feature deep/pool promotion planned | implemented |
+| AC-F0020-11 | `SL-F0020-03` workshop/promotion dependency handoff audit | implemented |
+| AC-F0020-12 | `SL-F0020-01` canonical baseline qualification + `SL-F0020-03` fail-closed smoke | implemented |
 
 ## 9. Decision log (ADR blocks)
 
-- none yet
+- **ADR-F0020-01:** Local `Gemma`/`vLLM` structured outputs use a sanitized provider-facing JSON Schema derived from the canonical `Zod` decision contract, while final runtime acceptance stays bound to local `Zod` validation. Source: [ADR-2026-04-17 Local Structured Output Schema Sanitization](../adr/ADR-2026-04-17-local-structured-output-schema-sanitization.md).
 
 ## 10. Progress & links
 
@@ -399,4 +401,8 @@ Forecast policy: slices below are implementation forecast, not separate product 
 
 - 2026-04-16: Initial dossier created from backlog item `CF-023` at backlog delivery state `planned`.
 - 2026-04-16: `spec-compact` shaped the real-serving seam: added atomic ACs, machine-facing serving contract, adversarial semantics, fail-closed dependency rules, and initial verification/coverage plan.
-- 2026-04-16 [planning]: closed the `before_planned` ambiguity by fixing the fast-candidate qualification rule (`Gemma 4 E4B` preferred, `Phi-4-mini` fallback, `Qwen3-8B` comparator), split deep/pool real-serving into follow-up scope, and added four implementation slices with objective model-testing guidance and explicit stop points.
+- 2026-04-16 [planning]: closed the `before_planned` ambiguity by fixing the fast-candidate qualification rule around one canonical fast baseline, split deep/pool real-serving into follow-up scope, and added four implementation slices with objective model-testing guidance and explicit stop points.
+- 2026-04-17 [contract drift]: implementation and operator direction realigned `SL-F0020-01` from a forecast three-candidate qualification to one canonical `google/gemma-4-E4B-it` baseline, fixed the ROCm serving image/flags required for `gemma4`, and recorded Gemma-only qualification evidence as the current source of truth.
+- 2026-04-17 [runtime compatibility]: fixed the local structured-output delivery rule for the Gemma/vLLM path by introducing sanitized provider-facing JSON Schema plus canonical local `Zod` revalidation, and promoted that rule into repo-level ADR ownership.
+- 2026-04-17 [smoke realignment]: `F-0007` deployment-cell smoke was realigned so Telegram coverage runs as an overlay over the same suite-scoped compose project and reuses the same promoted `vllm-fast`/`Gemma` runtime instead of booting a second model stack.
+- 2026-04-17 [implementation]: completed the executable Gemma-first seam changes, qualification evidence, probe-backed readiness, fail-closed startup/admission promotion, bounded workshop dependency truth, explicit optional deep/pool continuity and a passing container smoke path; independent review and `dossier-step-close` were recorded as the final closeout gate.

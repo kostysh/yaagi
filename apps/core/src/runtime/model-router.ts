@@ -37,10 +37,23 @@ export type BaselineRoutingInput = {
 export type BaselineModelProfileDiagnostic = {
   modelProfileId: string;
   role: BaselineModelProfileRole;
+  serviceId: string;
   endpoint: string;
   artifactUri: string | null;
   baseModel: string;
   adapterOf: string | null;
+  artifactDescriptorPath: string | null;
+  runtimeArtifactRoot: string | null;
+  bootCritical: boolean;
+  optionalUntilPromoted: boolean;
+  readiness: 'ready' | 'warming' | 'degraded' | 'unavailable';
+  readinessBasis:
+    | 'probe_passed'
+    | 'descriptor_invalid'
+    | 'artifact_missing'
+    | 'transport_failed'
+    | 'probe_failed'
+    | null;
   capabilities: string[];
   status: ModelProfileStatus;
   healthSummary: ModelHealthSummary;
@@ -140,6 +153,12 @@ const toHealthSummary = (
   return detail ? { healthy, detail } : { healthy };
 };
 
+const readBoolean = (value: Record<string, unknown>, key: string, fallback: boolean): boolean =>
+  typeof value[key] === 'boolean' ? value[key] : fallback;
+
+const readStringOrNull = (value: Record<string, unknown>, key: string): string | null =>
+  typeof value[key] === 'string' ? value[key] : null;
+
 const createBaselineProfiles = (fastModelBaseUrl: string): RuntimeModelProfileSeedInput[] => [
   {
     modelProfileId: PHASE0_BASELINE_PROFILE_ID.REFLEX,
@@ -213,10 +232,30 @@ const toBaselineDiagnostic = (
   return {
     modelProfileId: profile.modelProfileId,
     role: profile.role as BaselineModelProfileRole,
+    serviceId: profile.serviceId,
     endpoint: profile.endpoint,
     artifactUri: profile.artifactUri,
     baseModel: profile.baseModel,
     adapterOf: profile.adapterOf,
+    artifactDescriptorPath: readStringOrNull(profile.healthJson, 'artifactDescriptorPath'),
+    runtimeArtifactRoot: readStringOrNull(profile.healthJson, 'runtimeArtifactRoot'),
+    bootCritical: readBoolean(profile.healthJson, 'bootCritical', true),
+    optionalUntilPromoted: readBoolean(profile.healthJson, 'optionalUntilPromoted', false),
+    readiness:
+      profile.healthJson['readiness'] === 'ready' ||
+      profile.healthJson['readiness'] === 'warming' ||
+      profile.healthJson['readiness'] === 'degraded' ||
+      profile.healthJson['readiness'] === 'unavailable'
+        ? profile.healthJson['readiness']
+        : 'warming',
+    readinessBasis:
+      profile.healthJson['readinessBasis'] === 'probe_passed' ||
+      profile.healthJson['readinessBasis'] === 'descriptor_invalid' ||
+      profile.healthJson['readinessBasis'] === 'artifact_missing' ||
+      profile.healthJson['readinessBasis'] === 'transport_failed' ||
+      profile.healthJson['readinessBasis'] === 'probe_failed'
+        ? (profile.healthJson['readinessBasis'] as BaselineModelProfileDiagnostic['readinessBasis'])
+        : null,
     capabilities: profile.capabilitiesJson,
     status: profile.status,
     healthSummary,

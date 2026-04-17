@@ -47,6 +47,7 @@ Canonical engineering decisions for the repo:
 - local secret-bearing overrides: repo-root `.env.local` (gitignored), with checked-in shape in `.env.example`; canonical local-secret launch paths are `pnpm cell:up:local` and `pnpm smoke:cell:local`, while application code continues to read `process.env`
 - external secret-file override is supported for `YAAGI_TELEGRAM_BOT_TOKEN_FILE`, so production/container launches may inject the bot token through Docker secrets or an equivalent mounted secret file instead of repo-tracked config
 - optional richer local model endpoints use `YAAGI_DEEP_MODEL_BASE_URL` and `YAAGI_POOL_MODEL_BASE_URL`; they default to local loopback `:8001/:8002`, stay non-boot-critical, and surface through `F-0014` source diagnostics as explicit unavailable/degraded state when the services are absent
+- canonical fast local-model baseline is `google/gemma-4-E4B-it` over `vllm/vllm-openai-rocm:gemma4`; first cold boot from an empty runtime `/models` volume may take several minutes because the artifact must materialize before `vllm-fast` becomes healthy, and local Docker/smoke runs should prefer `YAAGI_HF_TOKEN_FILE` (with `YAAGI_HF_TOKEN` kept only as a compatibility fallback that local infra automation materializes into a temp secret file)
 - default test runner: `node:test`
 - canonical quality/style toolchain: `Biome + ESLint`
 - fast code verification: `pnpm test`
@@ -54,7 +55,7 @@ Canonical engineering decisions for the repo:
 - canonical automation gate: `pnpm quality:check`
 - minimum GitHub Actions testing workflow: `.github/workflows/test.yml` runs `pnpm quality:check` then `pnpm test` on `pull_request` and `push` to `master`
 - containerized phase-0 smoke verification: `pnpm smoke:cell`
-  runs a suite-scoped deployment-cell harness with deterministic runtime resets between individual scenarios inside each scenario family instead of per-test full `compose down/up`
+  runs a suite-scoped deployment-cell harness with deterministic runtime resets between individual scenarios inside each scenario family instead of per-test full `compose down/up`, and Telegram-specific smoke overlays reuse the same shared `vllm-fast` runtime instead of booting a second model stack
 
 Repo-level ADRs:
 - `docs/adr/ADR-2026-03-19-canonical-runtime-toolchain.md`

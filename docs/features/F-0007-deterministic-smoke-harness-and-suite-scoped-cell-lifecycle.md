@@ -201,23 +201,23 @@ Tasks:
 - **T-F0007-10:** Выполнить dossier realignment для `F-0002`, `F-0003`, `F-0004`, `F-0005` и `F-0007`, чтобы coverage ownership больше не расходился с фактическим test surface. Covers: AC-F0007-06.
 
 ### Slice SL-F0007-04: Telegram scenario family и ingest smoke closure
-Delivers: отдельная Telegram-specific scenario family на том же harness substrate, без портовых конфликтов и без возврата к repeated full suite restarts.
+Delivers: Telegram-specific scenario overlay на том же harness substrate и в том же compose project, без второго `vllm-fast` runtime и без возврата к repeated full suite restarts.
 Covers: AC-F0007-01, AC-F0007-02, AC-F0007-03, AC-F0007-05
 Verification: `smoke`
 Exit criteria:
 - HTTP ingest и fake-Bot-API-backed Telegram ingest проходят внутри новой suite/scenario-family execution model.
-- Telegram-specific family не конфликтует с base family по host ports, project names и residual Docker resources.
+- Telegram-specific overlay не клонирует `models_state` и не поднимает второй `vllm-fast`; base family и Telegram ingest reuse the same promoted fast dependency.
 - Fake Telegram fixture reset встроен в canonical reset contract как subordinate fixture cleanup, а не как произвольный timeout path.
 Tasks:
 - **T-F0007-11:** Перевести HTTP ingest и Telegram ingest smoke scenarios на scenario-family lifecycle с общими reset/readiness barriers. Covers: AC-F0007-01, AC-F0007-02, AC-F0007-03.
-- **T-F0007-12:** Выровнять fake Telegram fixture reset и Telegram-specific compose orchestration без host-port collisions и residual resources. Covers: AC-F0007-02, AC-F0007-05.
+- **T-F0007-12:** Выровнять fake Telegram fixture reset и Telegram-specific compose orchestration как overlay над shared project/runtime, без второго `Gemma` stack и residual resources. Covers: AC-F0007-02, AC-F0007-05.
 
 ### Slice SL-F0007-05: Acceptance closure, performance evidence и repo-level realignment
-Delivers: итоговый materially-faster smoke suite, зафиксированное before/after evidence и синхронизированный repo-level verification contract.
+Delivers: итоговый suite-scoped smoke contract, историческое comparative evidence для pre-Gemma harness и синхронизированный repo-level verification contract.
 Covers: AC-F0007-04, AC-F0007-05, AC-F0007-06
 Verification: `smoke`, `audit`
 Exit criteria:
-- На той же машине и на том же repo state class зафиксировано materially lower single-run duration относительно baseline repeated-restart harness.
+- На той же машине и на том же repo state class зафиксировано historical comparative evidence для pre-Gemma repeated-restart harness и отдельно зафиксирован current shared-runtime timing snapshot после перехода на один `Gemma`-backed `vllm-fast`.
 - `pnpm smoke:cell` проходит на финальном harness без orphaned `yaagi-phase0*` resources.
 - `README.md`, `F-0002`, `F-0003`, `F-0004`, `F-0005`, `F-0007` и `docs/ssot/index.md` выровнены там, где меняется verification ownership или smoke execution model.
 Tasks:
@@ -229,11 +229,11 @@ Tasks:
 
 | AC ID | Verification reference | Status |
 | --- | --- | --- |
-| AC-F0007-01 | `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0007-01 reuses suite-scoped compose families instead of per-test full deployment-cell restarts")`; `test/platform/smoke-harness.contract.test.ts` → `test("AC-F0007-01 keeps the deployment-cell harness on one base family boot and one Telegram family boot")` | done |
+| AC-F0007-01 | `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0007-01 reuses suite-scoped compose families instead of per-test full deployment-cell restarts")`; `test/platform/smoke-harness.contract.test.ts` → `test("AC-F0007-01 keeps the deployment-cell harness on one suite-scoped project and one Telegram overlay activation")` | done |
 | AC-F0007-02 | `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0007-02 restores clean post-bootstrap runtime state through deterministic resets between suite-scoped smoke scenarios")`; `test/platform/smoke-harness.contract.test.ts` → `test("AC-F0007-02 restores clean post-bootstrap runtime state through deterministic reset and readiness helpers")` | done |
 | AC-F0007-03 | `test/platform/smoke-harness.contract.test.ts` → `test("AC-F0007-03 retains F-0002 startup smoke ownership and removes lease plus perception restart probes from container smoke")`; [F-0003](./F-0003-tick-runtime-scheduler-episodic-timeline.md); [F-0005](./F-0005-perception-buffer-and-sensor-adapters.md) | done |
-| AC-F0007-04 | `test/platform/smoke-harness.contract.test.ts` → `test("AC-F0007-04 records before and after smoke timings with a materially faster post-implementation result")`; before: `/usr/bin/time -p pnpm smoke:cell` → `real 133.47`; after: `/usr/bin/time -p pnpm smoke:cell` → `real 57.13` | done |
-| AC-F0007-05 | `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0007-05 tears down suite-scoped smoke projects without orphaned docker resources")`; `test/platform/smoke-harness.contract.test.ts` → `test("AC-F0007-05 keeps an explicit teardown audit for both smoke projects and their host ports")` | done |
+| AC-F0007-04 | `test/platform/smoke-harness.contract.test.ts` → `test("AC-F0007-04 scopes historical performance evidence separately from the current shared-runtime snapshot")`; historical `v1.3` comparative evidence: before `/usr/bin/time -p pnpm smoke:cell` → `real 133.47`, after → `real 57.13`; current `v1.4` shared-runtime snapshot after `F-0020`: total suite `321.06s`, base family `96.02s`, Telegram overlay `14.16s`, one shared `vllm-fast`/`Gemma` runtime | done |
+| AC-F0007-05 | `infra/docker/deployment-cell.smoke.ts` → `test("AC-F0007-05 tears down suite-scoped smoke projects without orphaned docker resources")`; `test/platform/smoke-harness.contract.test.ts` → `test("AC-F0007-05 keeps an explicit teardown audit for the shared smoke project and host port")` | done |
 | AC-F0007-06 | `test/platform/smoke-harness.contract.test.ts` → `test("AC-F0007-06 realigns README and dossier references to the delivered smoke execution model")`; [README.md](/code/projects/yaagi/README.md); [F-0003](./F-0003-tick-runtime-scheduler-episodic-timeline.md); [F-0005](./F-0005-perception-buffer-and-sensor-adapters.md); `docs/ssot/index.md` | done |
 
 План проверки:
@@ -276,8 +276,9 @@ Tasks:
   - `docs/features/F-0003-tick-runtime-scheduler-episodic-timeline.md`
   - `docs/features/F-0005-perception-buffer-and-sensor-adapters.md`
 - Verification:
-  - `/usr/bin/time -p pnpm smoke:cell` before → `real 133.47`
-  - `/usr/bin/time -p pnpm smoke:cell` after → `real 57.13`
+  - historical `v1.3` comparative evidence: `/usr/bin/time -p pnpm smoke:cell` before → `real 133.47`
+  - historical `v1.3` comparative evidence: `/usr/bin/time -p pnpm smoke:cell` after → `real 57.13`
+  - current `v1.4` shared-runtime snapshot after `F-0020`: total suite `321.06s`, base family `96.02s`, Telegram overlay `14.16s`; snapshot is intentionally not compared against `v1.3` because `vllm-fast` now serves real `Gemma` instead of the lighter pre-`F-0020` path
   - `node --experimental-strip-types --test infra/docker/deployment-cell.smoke.ts`
 
 ## 12. Журнал изменений (Change log)
@@ -285,4 +286,5 @@ Tasks:
 - **v1.0 (2026-03-23):** Выполнен intake отдельного workstream на детерминизацию и ускорение `pnpm smoke:cell` после подтверждения, что текущий harness тратит основное время на repeated full deployment-cell lifecycle и readiness polling.
 - **v1.1 (2026-03-23):** Выполнен `spec-compact`: зафиксированы suite-scoped lifecycle model, deterministic reset/readiness contract, canonical smoke scope, relative performance-measurement contract и explicit ADR decisions по coverage realignment.
 - **v1.2 (2026-03-23):** Выполнен `plan-slice`: работа разложена на 5 delivery slices с явными exit criteria, task IDs, coverage realignment steps и отдельным acceptance closure path для performance evidence и repo-level smoke contract.
-- **v1.3 (2026-03-23):** Выполнен `implementation`: `deployment-cell.smoke.ts` переведён на scenario-family scoped lifecycle, full compose boots сокращены до двух на весь suite, межсценарная изоляция заменена на deterministic runtime DB reset + `core` stop/start barriers, fake Telegram API получил explicit reset endpoint, ownership был realigned в `F-0003` и `F-0005`, а measured single-run `pnpm smoke:cell` improved from `133.47s` to `57.13s`.
+- **v1.3 (2026-03-23):** Выполнен `implementation`: `deployment-cell.smoke.ts` переведён на scenario-family scoped lifecycle, full compose boots сокращены до двух на весь suite, межсценарная изоляция заменена на deterministic runtime DB reset + `core` stop/start barriers, fake Telegram API получил explicit reset endpoint, ownership был realigned в `F-0003` и `F-0005`, а historical pre-Gemma single-run `pnpm smoke:cell` improved from `133.47s` to `57.13s`.
+- **v1.4 (2026-04-17):** Smoke harness realigned после `F-0020`: Telegram scenario больше не materialize-ит второй compose project и второй `vllm-fast`/`Gemma` stack. Telegram ingest теперь проверяется как overlay над shared deployment cell и reuse-ит тот же `models_state` и тот же promoted fast dependency. Current shared-runtime timing snapshot (`321.06s` total, `96.02s` base family, `14.16s` Telegram overlay) фиксируется только как актуальный cost/topology reference и не переиспользует `v1.3` comparative evidence как текущий proof.

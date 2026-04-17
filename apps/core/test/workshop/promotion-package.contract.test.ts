@@ -57,6 +57,13 @@ void test('AC-F0015-06 assembles a bounded promotion package from lifecycle trut
 
     assert.equal(result.promotionPackage.candidateStage, 'shadow');
     assert.equal(result.promotionPackage.rollbackTarget, 'deliberation.fast@baseline');
+    assert.deepEqual(result.promotionPackage.dependencyRef, {
+      serviceId: 'vllm-fast',
+      artifactUri: 'file:///runtime/models/base/vllm-fast/google--gemma-4-E4B-it',
+      artifactDescriptorPath: '/seed/models/base/vllm-fast-manifest.json',
+      runtimeArtifactRoot: '/models/base/vllm-fast',
+      readiness: 'ready',
+    });
     assert.match(result.packageUri, /promotion/);
   } finally {
     await harness.cleanup();

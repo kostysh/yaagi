@@ -17,7 +17,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ../../infra/migrations:/docker-entrypoint-initdb.d:ro
     tmpfs:
-      - /tmp
+      - /tmp:exec,mode=1777
     networks:
       - db_net
 
@@ -25,22 +25,54 @@ services:
     build:
       context: ../..
       dockerfile: infra/docker/vllm-fast/Dockerfile
+      args:
+        VLLM_FAST_BASE_IMAGE: "${VLLM_FAST_BASE_IMAGE:-vllm/vllm-openai-rocm:gemma4}"
     environment:
+      HOME: /models/.home
       VLLM_FAST_PORT: "8000"
-      VLLM_FAST_MODEL_ID: "phase-0-fast"
-    read_only: true
-    tmpfs:
-      - /tmp
-    security_opt:
-      - no-new-privileges:true
+      VLLM_FAST_MANIFEST_PATH: /seed/models/base/vllm-fast-manifest.json
+      VLLM_FAST_RUNTIME_MODELS_ROOT: /models
+      XDG_CACHE_HOME: /models/.cache
+      XDG_CONFIG_HOME: /models/.config
+      HF_HOME: /models/.hf-cache
+      HF_HUB_CACHE: /models/.hf-cache/hub
+      HF_XET_CACHE: /models/.hf-cache/xet
+      TRITON_CACHE_DIR: /models/.cache/triton
+      TORCHINDUCTOR_CACHE_DIR: /models/.cache/torchinductor
+      VLLM_CACHE_ROOT: /models/.cache/vllm
+      VLLM_CONFIG_ROOT: /models/.config/vllm
+      VLLM_FAST_SELECTED_CANDIDATE_ID: "${YAAGI_VLLM_FAST_SELECTED_CANDIDATE_ID:-}"
+      YAAGI_HF_TOKEN_FILE: /run/secrets/yaagi_hf_token
+    group_add:
+      - video
+      - render
     cap_drop:
       - ALL
+    cap_add:
+      - DAC_OVERRIDE
+    read_only: true
+    tmpfs:
+      - /tmp:exec,mode=1777
+    security_opt:
+      - seccomp=unconfined
+      - no-new-privileges:true
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    ipc: host
+    ulimits:
+      memlock: -1
+      stack: 67108864
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)\""]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=10)\""]
       interval: 5s
-      timeout: 3s
-      retries: 30
-      start_period: 3s
+      timeout: 10s
+      retries: 180
+      start_period: 5m
+    volumes:
+      - ../../seed:/seed:ro
+      - models_state:/models
+      - ${YAAGI_HF_TOKEN_FILE:-/dev/null}:/run/secrets/yaagi_hf_token:ro
     networks:
       - models_net
 
@@ -62,7 +94,7 @@ services:
       YAAGI_DATA_PATH: /data
       YAAGI_MIGRATIONS_DIR: /app/infra/migrations
       YAAGI_PGBOSS_SCHEMA: pgboss
-      YAAGI_BOOT_TIMEOUT_MS: "60000"
+      YAAGI_BOOT_TIMEOUT_MS: "900000"
       YAAGI_TELEGRAM_ENABLED: "${YAAGI_TELEGRAM_ENABLED:-false}"
       YAAGI_TELEGRAM_BOT_TOKEN: "${YAAGI_TELEGRAM_BOT_TOKEN:-}"
       YAAGI_TELEGRAM_BOT_TOKEN_FILE: "${YAAGI_TELEGRAM_BOT_TOKEN_FILE:-}"
@@ -84,8 +116,8 @@ services:
       test: ["CMD-SHELL", "node --input-type=module -e \"const response = await fetch('http://127.0.0.1:8080/health'); if (!response.ok) process.exit(1);\""]
       interval: 5s
       timeout: 3s
-      retries: 30
-      start_period: 10s
+      retries: 120
+      start_period: 30s
     ports:
       - "${YAAGI_CORE_HOST_PORT:-18080}:8080"
     volumes:
