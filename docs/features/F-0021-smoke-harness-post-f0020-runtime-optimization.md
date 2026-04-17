@@ -1,7 +1,7 @@
 ---
 id: F-0021
 title: Оптимизация smoke harness после real vLLM/Gemma runtime
-status: proposed
+status: shaped
 coverage_gate: deferred
 owners: ["@codex"]
 area: platform
@@ -74,21 +74,37 @@ links:
 - Compose/service health already exists and can serve as the first readiness barrier before domain-specific waits.
 - Основной выигрыш времени лежит в harness orchestration, а не в повторном подборе model runtime.
 
-### Open questions (optional)
+### Decision triage
 
-- Нужен ли отдельный smoke-local port allocation contract, чтобы гарантировать отсутствие локальных collisions при параллельных runs?
-- Нужен ли отдельный helper для batched predicate waits, или достаточно сузить существующие wait helpers без новой abstraction surface?
+#### Normative now
+
+- Harness использует один direct PostgreSQL channel для steady-state smoke polling и не возвращается к repeated `compose exec postgres psql`.
+- Telegram overlay reuse-ит уже запущенный shared deployment cell и не materialize-ит второй model runtime.
+- Compose/service health становится первым readiness barrier для startup и overlay paths; domain-specific waits остаются только там, где health не доказывает нужный инвариант.
+
+#### Implementation freedom
+
+- Конкретное имя и shape нового helper surface (`waitForPostgresPredicate`, batched read helper, тонкая wrapper around `pg`) остаются свободой реализации, если contract по AC и adversarial semantics сохраняется.
+- Конкретный env/compose key для smoke-only PostgreSQL host port остаётся свободой реализации, если он остаётся smoke-scoped и не превращается в продуктовый runtime contract.
+
+#### Temporary assumptions
+
+- Текущий smoke run остаётся single-run local workflow; parallel smoke execution не входит в обязательный contract этого dossier, если реализация не захочет закрыть collision story сразу.
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
 
 - **AC-F0021-01:** Steady-state PostgreSQL polling inside `pnpm smoke:cell` uses a smoke-only direct `pg` client instead of repeated `docker compose exec postgres psql`.
-- **AC-F0021-02:** Telegram overlay reuses the same shared deployment cell and the same already-started `vllm-fast` runtime as the base smoke family.
-- **AC-F0021-03:** Telegram overlay activation does not issue redundant `--build` for unchanged services.
-- **AC-F0021-04:** Sequential DB waits that guard one domain outcome are collapsed into predicate waits and batched readouts without reducing asserted smoke conditions.
-- **AC-F0021-05:** Startup and Telegram overlay orchestration treat compose/service health as the first readiness barrier and keep only explicit domain-specific waits above it.
-- **AC-F0021-06:** `pnpm smoke:cell` preserves current base-family and Telegram-family verification semantics after the harness refactor.
-- **AC-F0021-07:** `pnpm smoke:cell` still completes without orphaned `yaagi-phase0*` resources.
-- **AC-F0021-08:** The follow-up records before/after execution evidence for the same machine and workload class, so the resulting cost change is explicit rather than anecdotal.
+- **AC-F0021-02:** The direct PostgreSQL channel is created once per smoke run and reused for steady-state harness queries instead of reconnecting through container exec on every poll.
+- **AC-F0021-03:** Telegram overlay reuses the same shared deployment cell as the base smoke family.
+- **AC-F0021-04:** Telegram overlay reuses the same already-started `vllm-fast` model runtime as the base smoke family.
+- **AC-F0021-05:** Telegram overlay activation does not issue redundant `--build` for unchanged services.
+- **AC-F0021-06:** Sequential DB waits that guard one domain outcome are collapsed into one predicate wait plus one batched readout without reducing asserted smoke conditions.
+- **AC-F0021-07:** Base startup orchestration treats compose/service health as the first readiness barrier and adds domain-specific waits only where Docker health is insufficient.
+- **AC-F0021-08:** Telegram overlay orchestration treats compose/service health as the first readiness barrier and adds domain-specific waits only where Docker health is insufficient.
+- **AC-F0021-09:** `pnpm smoke:cell` preserves current base-family verification semantics after the harness refactor.
+- **AC-F0021-10:** `pnpm smoke:cell` preserves current Telegram-family verification semantics after the harness refactor.
+- **AC-F0021-11:** `pnpm smoke:cell` still completes without orphaned `yaagi-phase0*` resources.
+- **AC-F0021-12:** The follow-up records before/after execution evidence for the same machine and workload class, so the resulting cost change is explicit rather than anecdotal.
 
 ## 4. Non-functional requirements (NFR)
 
@@ -103,11 +119,28 @@ links:
 
 - Product-facing API surface does not change. This follow-up only changes test-harness orchestration around the existing deployment cell.
 
+#### Harness boundary operations
+
+| Operation | Success behavior | Dependency failure / timeout | Duplicate / replay semantics |
+| --- | --- | --- | --- |
+| Base family startup | One shared deployment cell becomes reachable through `GET /health`; PostgreSQL and the phase-0 model runtime are already healthy through compose dependency gates before smoke assertions continue. | Suite fails with explicit startup/readiness error; no scenario may continue on a partially ready base family. | Re-running startup after a clean teardown is allowed; startup is not required to be idempotent over an already running suite in the same process. |
+| Steady-state PostgreSQL query / wait | Harness reads source state through one direct client channel and returns the queried value or predicate success. | Query or predicate wait fails explicitly on connect/query timeout; harness does not silently fall back to `compose exec postgres psql`. | Repeated reads are allowed; they must not mutate database state. |
+| Telegram overlay activation | Overlay-specific services become available while reusing the already running shared deployment cell and the existing model runtime. | Overlay activation fails explicitly if health or overlay-specific adapter readiness never converges. | Repeating overlay activation in one run must not materialize a second model runtime or rebuild unchanged services. |
+| Inter-scenario runtime reset | Canonical reset clears mutable runtime state and returns the suite to a fresh post-bootstrap condition. | Reset failure blocks the following scenario instead of allowing assertions on stale state. | Sequential resets are allowed and must converge to the same post-bootstrap state. |
+| Suite teardown | Compose resources are removed and no orphaned `yaagi-phase0*` resources remain. | Teardown failure is reported as smoke failure and must not be hidden as a passing run. | Repeating teardown after resources are already gone is tolerated. |
+
+#### Operator / agent contract
+
+- Operator entrypoint remains `pnpm smoke:cell`.
+- The follow-up must not require a second manual command to prepare PostgreSQL connectivity; any smoke-only port exposure is internal to the harness contract.
+- Failures stay machine-actionable through command exit status and existing smoke output; the follow-up does not introduce a second reporting channel.
+
 ### 5.2 Runtime / deployment surface
 
-- `infra/docker/compose.yaml` may expose a smoke-only PostgreSQL port for harness-side direct access.
-- `infra/docker/deployment-cell.smoke.ts` and its helpers become the canonical owner of one persistent `pg` client lifecycle for smoke runs.
-- Telegram overlay remains an overlay over the shared `yaagi-phase0` runtime and must keep reuse of the already started `vllm-fast` container.
+- `infra/docker/compose.yaml` exposes a smoke-only PostgreSQL host port used only by the smoke harness.
+- `infra/docker/deployment-cell.smoke.ts` and its helpers own one persistent `pg` client lifecycle per smoke run.
+- The base family still starts through one shared `yaagi-phase0` project.
+- Telegram scenarios remain an overlay over the shared base runtime and keep reuse of the already started `vllm-fast` container.
 
 ### 5.3 Data model changes
 
@@ -118,25 +151,42 @@ links:
 - Host-port collision on the smoke-only PostgreSQL port must fail clearly rather than hanging the suite.
 - Compose/service health can pass before domain data reaches the expected state, so domain-specific waits still need explicit ownership.
 - Overlay transitions must not leave stale service state that silently reuses wrong assumptions from the previous scenario family.
+- Smoke teardown remains the canonical cleanup path after partial startup or partial overlay activation failure.
 
 ### 5.5 Verification surface / initial verification plan
 
 - Fast verification path: `pnpm format`, `pnpm typecheck`, `pnpm lint`, `pnpm test`.
 - Container verification path: `pnpm smoke:cell`.
 - Contract proof is expected in `test/platform/smoke-harness.contract.test.ts` plus the live smoke suite under `infra/docker/deployment-cell.smoke.ts`.
+- AC-F0021-01..08 should be proven through contract tests plus targeted smoke assertions.
+- AC-F0021-09..11 require full `pnpm smoke:cell`.
+- AC-F0021-12 closes only with recorded before/after evidence in the dossier and implementation closure artifacts.
 
-### 5.6 Representation upgrades (triggered only when needed)
+### 5.6 Adversarial semantics
+
+| Case | Classification | Contract |
+| --- | --- | --- |
+| Sequential success | specified | `start base family -> reset runtime -> activate Telegram overlay -> teardown` is the canonical successful order. Proof: smoke plus contract tests. |
+| Invalid input | N/A | No new operator-facing data payload is introduced; the only new inputs are harness-side config/env details under repo control. |
+| Dependency failure / timeout | specified | If direct PostgreSQL connect, compose health, or overlay adapter readiness does not converge before timeout, the suite fails explicitly and does not continue on degraded assumptions. Proof: contract tests and smoke failure assertions. |
+| Duplicate or replay after completion | specified | Repeated steady-state reads are read-only; repeated runtime resets converge to the same post-bootstrap state; repeated overlay activation must not create a second model runtime or rebuild unchanged services. Proof: contract tests plus smoke topology assertions. |
+| Concurrent duplicate or racing request | N/A | The smoke suite remains `concurrency: false`; concurrent helper invocation is outside the mandatory contract of this follow-up. |
+| Concurrent conflicting request | N/A | The harness does not expose concurrent competing mutations as a supported operator surface in this dossier. |
+| Partial side effect / crash / restart | specified | If startup, overlay activation, or reset fails mid-flight, the suite must fail or recover through the canonical teardown/reset path before any later assertion claims success. Proof: contract tests plus smoke teardown checks. |
+| Stale read / stale snapshot / late completion | specified | Compose/service health may become healthy before the required domain state is durable, so the harness must wait on the explicit domain predicate before asserting the dependent outcome. Proof: contract tests and targeted smoke waits. |
+
+### 5.7 Representation upgrades (triggered only when needed)
 
 - If batched waits introduce a new helper contract, the helper should define one explicit predicate/result shape rather than scattering ad hoc SQL snippets per scenario.
 
-### 5.7 Definition of Done
+### 5.8 Definition of Done
 
 - All `AC-F0021-*` are covered by updated contract tests and the live smoke suite.
 - `pnpm smoke:cell` still runs through one shared `Gemma` runtime and one Telegram overlay.
 - Before/after evidence is recorded in the dossier during implementation closure.
 - Backlog truth for `CF-028` is actualized according to downstream dossier stages.
 
-### 5.8 Rollout / activation note (triggered only when needed)
+### 5.9 Rollout / activation note (triggered only when needed)
 
 - No user-facing rollout is expected. Activation happens by merging the harness refactor on the canonical repo path.
 - Rollback remains a git-level rollback of the harness changes if the new smoke topology regresses determinism or cost.
@@ -144,16 +194,21 @@ links:
 ## 6. Slicing plan (2–6 increments)
 
 ### Slice SL-F0021-01: Direct PostgreSQL channel for steady-state smoke polling
-Covers: AC-F0021-01, AC-F0021-07
+Covers: AC-F0021-01, AC-F0021-02, AC-F0021-11
 Verification: test, smoke
+Assumes: smoke-only PostgreSQL host-port exposure remains repo-local and does not alter product runtime contracts.
+Fallback: fail-closed and keep the legacy path only until the follow-up implementation lands; do not mix both query paths inside one passing smoke run.
 
 ### Slice SL-F0021-02: Predicate waits and Telegram overlay cleanup
-Covers: AC-F0021-02, AC-F0021-03, AC-F0021-04, AC-F0021-05, AC-F0021-06, AC-F0021-07
+Covers: AC-F0021-03, AC-F0021-04, AC-F0021-05, AC-F0021-06, AC-F0021-07, AC-F0021-08, AC-F0021-09, AC-F0021-10, AC-F0021-11
 Verification: test, smoke
+Depends on: SL-F0021-01 for the canonical query/wait substrate.
+Fallback: keep domain-specific waits explicit even if helper consolidation is incomplete; coverage may not be traded away for speed.
 
 ### Slice SL-F0021-03: Evidence capture and closure
-Covers: AC-F0021-08
+Covers: AC-F0021-12
 Verification: smoke, audit
+Depends on: SL-F0021-01, SL-F0021-02
 
 ## 7. Task list (implementation units)
 
@@ -173,7 +228,11 @@ Verification: smoke, audit
 | AC-F0021-05 | `infra/docker/deployment-cell.smoke.ts`; `test/platform/smoke-harness.contract.test.ts` | planned |
 | AC-F0021-06 | `infra/docker/deployment-cell.smoke.ts`; `test/platform/smoke-harness.contract.test.ts` | planned |
 | AC-F0021-07 | `infra/docker/deployment-cell.smoke.ts`; `test/platform/smoke-harness.contract.test.ts` | planned |
-| AC-F0021-08 | dossier implementation evidence; `pnpm smoke:cell` timing capture | planned |
+| AC-F0021-08 | `infra/docker/deployment-cell.smoke.ts`; `test/platform/smoke-harness.contract.test.ts` | planned |
+| AC-F0021-09 | `infra/docker/deployment-cell.smoke.ts` | planned |
+| AC-F0021-10 | `infra/docker/deployment-cell.smoke.ts` | planned |
+| AC-F0021-11 | `infra/docker/deployment-cell.smoke.ts`; teardown audit in smoke contract tests | planned |
+| AC-F0021-12 | dossier implementation evidence; `pnpm smoke:cell` timing capture | planned |
 
 ## 9. Decision log (ADR blocks)
 
@@ -199,3 +258,4 @@ Verification: smoke, audit
 ## 11. Change log
 
 - 2026-04-17: Initial dossier created from backlog item `CF-028` at backlog delivery state `planned`.
+- 2026-04-17 [clarification]: `spec-compact` completed for the smoke follow-up with atomic ACs, boundary operations, adversarial semantics and decision triage for the post-`F-0020` runtime path.
