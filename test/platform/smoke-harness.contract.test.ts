@@ -5,6 +5,7 @@ import path from 'node:path';
 
 const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
 const smokeHarnessPath = path.join(repoRoot, 'infra', 'docker', 'deployment-cell.smoke.ts');
+const smokeBaseComposePath = path.join(repoRoot, 'infra', 'docker', 'compose.smoke-base.yaml');
 const f0003Path = path.join(
   repoRoot,
   'docs',
@@ -23,8 +24,21 @@ const f0007Path = path.join(
   'features',
   'F-0007-deterministic-smoke-harness-and-suite-scoped-cell-lifecycle.md',
 );
+const f0021Path = path.join(
+  repoRoot,
+  'docs',
+  'features',
+  'F-0021-smoke-harness-post-f0020-runtime-optimization.md',
+);
 const indexPath = path.join(repoRoot, 'docs', 'ssot', 'index.md');
 const readmePath = path.join(repoRoot, 'README.md');
+const f0021ImplementationEvidencePath = path.join(
+  repoRoot,
+  '.dossier',
+  'evidence',
+  'F-0021',
+  'implementation-smoke-timing-c01.json',
+);
 
 const loadText = async (targetPath: string): Promise<string> => readFile(targetPath, 'utf8');
 
@@ -50,10 +64,121 @@ void test('AC-F0007-02 restores clean post-bootstrap runtime state through deter
   assert.match(text, /compose\(\['stop', 'core'\]/);
   assert.match(text, /queryPostgres\(\s*runtimeResetSql/);
   assert.match(text, /compose\(\['start', 'core'\]/);
+  assert.match(text, /await waitForHttp\(coreHealthUrl\(\)\)/);
   assert.match(
     text,
     /AC-F0007-02 restores clean post-bootstrap runtime state through deterministic resets between suite-scoped smoke scenarios/,
   );
+});
+
+void test('AC-F0021-01 / AC-F0021-02 keep steady-state smoke PostgreSQL access on one direct pg client with explicit lifecycle ownership', async () => {
+  const [smokeHarness, smokeBaseCompose, composeYaml, readme] = await Promise.all([
+    loadText(smokeHarnessPath),
+    loadText(smokeBaseComposePath),
+    loadText(path.join(repoRoot, 'infra', 'docker', 'compose.yaml')),
+    loadText(readmePath),
+  ]);
+
+  assert.match(smokeHarness, /import \{ Client \} from 'pg';/);
+  assert.match(smokeHarness, /const smokePostgresQueryTimeoutMs = 5_000;/);
+  assert.match(smokeHarness, /let smokePostgresClient: Client \| null = null;/);
+  assert.match(smokeHarness, /async function connectSmokePostgres/);
+  assert.match(smokeHarness, /async function closeSmokePostgres/);
+  assert.match(
+    smokeHarness,
+    /const smokeBaseComposeFile = path.join\(repoRoot\(\), 'infra', 'docker', 'compose\.smoke-base\.yaml'\);/,
+  );
+  assert.match(smokeHarness, /query_timeout: smokePostgresQueryTimeoutMs/);
+  assert.match(smokeHarness, /statement_timeout: smokePostgresQueryTimeoutMs/);
+  assert.doesNotMatch(smokeHarness, /exec', '-T', 'postgres', 'psql'/);
+  assert.match(smokeBaseCompose, /YAAGI_SMOKE_POSTGRES_HOST_PORT/);
+  assert.doesNotMatch(composeYaml, /YAAGI_SMOKE_POSTGRES_HOST_PORT/);
+  assert.match(readme, /one smoke-only direct PostgreSQL client/);
+});
+
+void test('AC-F0021-03 / AC-F0021-04 / AC-F0021-05 keep Telegram overlay on the shared runtime without rebuilds', async () => {
+  const text = await loadText(smokeHarnessPath);
+
+  assert.match(
+    text,
+    /compose\(\s*\['up', '-d', '--no-build', '--force-recreate', '--wait', 'fake-telegram-api', 'core'\],\s*\{\s*telegram: true,\s*\},\s*\);/s,
+  );
+  assert.doesNotMatch(
+    text,
+    /compose\(\['up', '-d', '--build', 'vllm-fast', 'fake-telegram-api'\], \{ telegram: true \}\);/,
+  );
+});
+
+void test('AC-F0021-06 introduces predicate waits instead of repeated sequential postgres value waits for one domain outcome', async () => {
+  const text = await loadText(smokeHarnessPath);
+
+  assert.match(text, /async function waitForPostgresPredicate/);
+  assert.match(text, /await waitForPostgresPredicate\(\s*`select \(/);
+  assert.match(text, /await queryPostgresJson</);
+});
+
+void test('AC-F0021-07 / AC-F0021-08 keep compose health as the first barrier for startup and overlay while preserving explicit domain barriers', async () => {
+  const text = await loadText(smokeHarnessPath);
+
+  assert.match(
+    text,
+    /import \{ runSmokeActivationWithFence \} from '\.\/smoke-activation-fence\.ts';/,
+  );
+  assert.match(text, /async function fenceSmokeActivationFailure/);
+  assert.match(text, /async function startSmokeProject/);
+  assert.match(text, /compose\(\['up', '-d', '--build', '--wait'\], options\)/);
+  assert.match(text, /await runSmokeActivationWithFence\(/);
+  assert.match(
+    text,
+    /compose\(\s*\['up', '-d', '--no-build', '--force-recreate', '--wait', 'fake-telegram-api', 'core'\],\s*\{\s*telegram: true,\s*\},\s*\);/s,
+  );
+  assert.match(text, /waitForAdapterStatus\('telegram', 'healthy'\)/);
+});
+
+void test('AC-F0021-09 / AC-F0021-10 / AC-F0021-11 preserve the shared smoke baseline families and teardown ownership', async () => {
+  const text = await loadText(smokeHarnessPath);
+
+  assert.match(text, /F-0007 base deployment-cell smoke family/);
+  assert.match(text, /F-0007 telegram deployment-cell smoke overlay/);
+  assert.match(text, /projectStarts, 1/);
+  assert.match(text, /telegramOverlayActivations, 1/);
+  assert.match(text, /waitForProjectResourcesToDisappear\(projectName, \{/);
+  assert.match(text, /waitForPortToClose\(defaultPostgresHostPort\)/);
+});
+
+void test('AC-F0021-12 records same-machine smoke timing evidence in the implementation dossier', async () => {
+  const [text, evidenceText] = await Promise.all([
+    loadText(f0021Path),
+    loadText(f0021ImplementationEvidencePath),
+  ]);
+  const evidence = JSON.parse(evidenceText) as {
+    feature_id: string;
+    baseline: { suite_real_s: number; base_family_s: number; telegram_overlay_s: number };
+    candidate: {
+      suite_real_s: number;
+      suite_ms: number;
+      base_family_ms: number;
+      telegram_overlay_ms: number;
+    };
+    runtime: { warm_cache: boolean; vllm_fast_base_image: string; selected_candidate_id: string };
+  };
+
+  assert.match(text, /Delivered implementation evidence/);
+  assert.match(text, /same-machine warm-cache smoke verdict/);
+  assert.match(text, /Baseline shared-runtime snapshot из `F-0007`/);
+  assert.match(text, /implementation-smoke-timing-c01\.json/);
+  assert.match(text, /AC-F0021-12/);
+  assert.equal(evidence.feature_id, 'F-0021');
+  assert.equal(evidence.runtime.warm_cache, true);
+  assert.equal(evidence.runtime.vllm_fast_base_image, 'vllm/vllm-openai-rocm:gemma4');
+  assert.equal(evidence.runtime.selected_candidate_id, 'gemma-4-e4b-it');
+  assert.equal(evidence.baseline.suite_real_s, 321.06);
+  assert.equal(evidence.baseline.base_family_s, 96.02);
+  assert.equal(evidence.baseline.telegram_overlay_s, 14.16);
+  assert.ok(evidence.candidate.suite_real_s > 0);
+  assert.ok(evidence.candidate.suite_ms > 0);
+  assert.ok(evidence.candidate.base_family_ms > 0);
+  assert.ok(evidence.candidate.telegram_overlay_ms > 0);
 });
 
 void test('AC-F0007-03 retains F-0002 startup smoke ownership and removes lease plus perception restart probes from container smoke', async () => {
@@ -96,6 +221,7 @@ void test('AC-F0007-05 keeps an explicit teardown audit for the shared smoke pro
   assert.match(text, /waitForProjectResourcesToDisappear\(projectName, \{/);
   assert.match(text, /ignoredVolumes: \[modelsVolumeName\(\)\]/);
   assert.match(text, /waitForPortToClose\(defaultCoreHostPort\)/);
+  assert.match(text, /waitForPortToClose\(defaultPostgresHostPort\)/);
 });
 
 void test('AC-F0007-06 realigns README and dossier references to the delivered smoke execution model', async () => {

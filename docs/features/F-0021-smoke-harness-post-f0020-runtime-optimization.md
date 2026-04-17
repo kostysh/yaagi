@@ -1,8 +1,8 @@
 ---
 id: F-0021
 title: Оптимизация smoke harness после real vLLM/Gemma runtime
-status: planned
-coverage_gate: deferred
+status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: platform
 depends_on: ["F-0007", "F-0020"]
@@ -137,7 +137,7 @@ links:
 
 ### 5.2 Runtime / deployment surface
 
-- `infra/docker/compose.yaml` exposes a smoke-only PostgreSQL host port used only by the smoke harness.
+- `infra/docker/compose.smoke-base.yaml` exposes a smoke-only PostgreSQL host port used only by the smoke harness, while `infra/docker/compose.yaml` keeps product runtime surface unchanged.
 - `infra/docker/deployment-cell.smoke.ts` and its helpers own one persistent `pg` client lifecycle per smoke run.
 - The base family still starts through one shared `yaagi-phase0` project.
 - Telegram scenarios remain an overlay over the shared base runtime and keep reuse of the already started `vllm-fast` container.
@@ -176,6 +176,15 @@ Telegram-family assertions that must remain present after the refactor:
 
 - `overlay readiness baseline`: Telegram overlay activation still proves that the telegram adapter becomes healthy on top of the shared deployment cell.
 - `telegram ingest baseline`: fake Bot API ingest still proves one telegram stimulus enters `stimulus_inbox`, one reactive tick completes, and the durable envelope/source-kind fields remain consistent with the current telegram smoke path.
+
+#### Delivered implementation evidence
+
+- Реализованный harness перевёл steady-state PostgreSQL polling на один direct `pg` client, сохранил один shared `vllm-fast` runtime и убрал redundant Telegram overlay rebuild path.
+- Durable evidence artifact: `.dossier/evidence/F-0021/implementation-smoke-timing-c01.json`.
+- Финальный same-machine warm-cache smoke verdict после implementation: `pnpm smoke:cell` `real 304.57`, `F-0007 deployment-cell smoke suite` `304276.76881 ms`, `F-0007 base deployment-cell smoke family` `88602.883143 ms`, `F-0007 telegram deployment-cell smoke overlay` `11952.834793 ms`.
+- Baseline shared-runtime snapshot из `F-0007`: `321.06s` total, `96.02s` base family, `14.16s` Telegram overlay.
+- Следовательно, `AC-F0021-12` закрыт: total suite wall-clock не регрессировал относительно baseline, а оба targeted orchestration path (`base family`, `Telegram overlay`) стали быстрее.
+- Warm/cold note: evidence снято на той же машине с warm `models_state`/HF cache и без повторного скачивания model weights.
 
 ### 5.6 Adversarial semantics
 

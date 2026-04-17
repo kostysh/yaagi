@@ -2,9 +2,13 @@ import assert from 'node:assert/strict';
 import net from 'node:net';
 import test from 'node:test';
 import path from 'node:path';
+import { inspect } from 'node:util';
+import { Client } from 'pg';
+import { runSmokeActivationWithFence } from './smoke-activation-fence.ts';
 import { repoEnvFilePath, repoRoot, run, waitForHttp } from './helpers.ts';
 
 const composeFile = path.join(repoRoot(), 'infra', 'docker', 'compose.yaml');
+const smokeBaseComposeFile = path.join(repoRoot(), 'infra', 'docker', 'compose.smoke-base.yaml');
 const telegramSmokeComposeFile = path.join(
   repoRoot(),
   'infra',
@@ -13,6 +17,8 @@ const telegramSmokeComposeFile = path.join(
 );
 const projectName = 'yaagi-phase0';
 const defaultCoreHostPort = 18080;
+const defaultPostgresHostPort = Number(process.env['YAAGI_SMOKE_POSTGRES_HOST_PORT'] ?? '15432');
+const smokePostgresQueryTimeoutMs = 5_000;
 
 const smokeLifecycleMetrics = {
   projectStarts: 0,
@@ -25,6 +31,7 @@ const smokeRuntimeIdentity = {
   telegramOverlayVllmFastContainerId: '' as string,
 };
 const expectedRuntimeResets = 14;
+let smokePostgresClient: Client | null = null;
 
 function coreBaseUrl(port = defaultCoreHostPort): string {
   return `http://127.0.0.1:${port}`;
@@ -120,7 +127,9 @@ set agent_id = excluded.agent_id,
 
 async function compose(args: string[], options: ComposeOptions = {}) {
   const { telegram = false, ...runOptions } = options;
-  const composeFiles = telegram ? [composeFile, telegramSmokeComposeFile] : [composeFile];
+  const composeFiles = telegram
+    ? [composeFile, smokeBaseComposeFile, telegramSmokeComposeFile]
+    : [composeFile, smokeBaseComposeFile];
   const envFilePath = repoEnvFilePath();
 
   return run(
@@ -140,6 +149,7 @@ async function compose(args: string[], options: ComposeOptions = {}) {
         DOCKER_BUILDKIT: '0',
         COMPOSE_DOCKER_CLI_BUILD: '0',
         YAAGI_CORE_HOST_PORT: String(defaultCoreHostPort),
+        YAAGI_SMOKE_POSTGRES_HOST_PORT: String(defaultPostgresHostPort),
       },
       ...runOptions,
     },
@@ -237,6 +247,7 @@ function modelsVolumeName(): string {
 async function tearDownSmokeProject(options: ComposeOptions = {}): Promise<void> {
   const preservedModelsVolume = modelsVolumeName();
 
+  await closeSmokePostgres();
   await compose(['down', '--remove-orphans'], options).catch(() => {});
   await Promise.all([
     removeVolume(`${projectName}_postgres_data`),
@@ -247,22 +258,111 @@ async function tearDownSmokeProject(options: ComposeOptions = {}): Promise<void>
     ignoredVolumes: [preservedModelsVolume],
   });
   await waitForPortToClose(defaultCoreHostPort);
+  await waitForPortToClose(defaultPostgresHostPort);
 }
 
 async function resetSmokeProjects(): Promise<void> {
+  await closeSmokePostgres();
   await tearDownSmokeProject({
     rejectOnNonZeroExitCode: false,
     telegram: true,
   });
 }
 
-async function queryPostgres(sql: string, options: { telegram?: boolean } = {}): Promise<string> {
-  const { stdout } = await compose(
-    ['exec', '-T', 'postgres', 'psql', '-U', 'yaagi', '-d', 'yaagi', '-tAc', sql],
-    options,
-  );
+async function connectSmokePostgres(timeoutMs = 20_000): Promise<void> {
+  if (smokePostgresClient) {
+    return;
+  }
 
-  return stdout.trim();
+  const deadline = Date.now() + timeoutMs;
+  let lastError: unknown = null;
+
+  while (Date.now() <= deadline) {
+    const candidate = new Client({
+      host: '127.0.0.1',
+      port: defaultPostgresHostPort,
+      database: 'yaagi',
+      user: 'yaagi',
+      password: 'yaagi',
+      connectionTimeoutMillis: 2_000,
+      query_timeout: smokePostgresQueryTimeoutMs,
+      statement_timeout: smokePostgresQueryTimeoutMs,
+    });
+
+    try {
+      await candidate.connect();
+      smokePostgresClient = candidate;
+      return;
+    } catch (error) {
+      lastError = error;
+      await candidate.end().catch(() => {});
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+  }
+
+  throw new Error(
+    `timed out connecting direct smoke postgres channel on 127.0.0.1:${defaultPostgresHostPort}: ${inspect(lastError)}`,
+  );
+}
+
+async function closeSmokePostgres(): Promise<void> {
+  if (!smokePostgresClient) {
+    return;
+  }
+
+  const activeClient = smokePostgresClient;
+  smokePostgresClient = null;
+  await activeClient.end().catch(() => {});
+}
+
+function requireSmokePostgresClient(): Client {
+  assert.ok(smokePostgresClient, 'direct smoke postgres channel must be connected before queries');
+  return smokePostgresClient;
+}
+
+function postgresScalarToText(value: unknown): string {
+  if (value == null) {
+    return '';
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  throw new Error(`unexpected non-scalar postgres query value: ${inspect(value)}`);
+}
+
+type PostgresRowArrayResult = {
+  rows?: unknown[][];
+};
+
+async function queryPostgres(sql: string, _options: { telegram?: boolean } = {}): Promise<string> {
+  void _options;
+  const result = (await requireSmokePostgresClient().query({
+    text: sql,
+    rowMode: 'array',
+  })) as PostgresRowArrayResult | PostgresRowArrayResult[];
+
+  const rows = Array.isArray(result)
+    ? result.flatMap((entry) => entry.rows ?? [])
+    : (result.rows ?? []);
+
+  return rows
+    .map((row) => {
+      const [value] = row;
+      return postgresScalarToText(value);
+    })
+    .join('\n')
+    .trim();
+}
+
+async function queryPostgresJson<T>(sql: string, options: { telegram?: boolean } = {}): Promise<T> {
+  return JSON.parse(await queryPostgres(sql, options)) as T;
 }
 
 async function execCoreScript(
@@ -332,23 +432,23 @@ async function enqueueFakeTelegramUpdate(input: {
   );
 }
 
-async function waitForPostgresValue(
+async function waitForPostgresPredicate(
   sql: string,
-  expected: string,
   timeoutMs = 20_000,
   options: { telegram?: boolean } = {},
 ): Promise<void> {
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() <= deadline) {
-    if ((await queryPostgres(sql, options)) === expected) {
+    const value = (await queryPostgres(sql, options)).trim().toLowerCase();
+    if (value === 't' || value === 'true') {
       return;
     }
 
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
 
-  throw new Error(`timed out waiting for postgres query to return ${expected}: ${sql}`);
+  throw new Error(`timed out waiting for postgres predicate to converge: ${sql}`);
 }
 
 async function waitForAdapterStatus(
@@ -394,22 +494,39 @@ async function composeServiceContainerId(
   return stdout.trim();
 }
 
+async function fenceSmokeActivationFailure(options: ComposeOptions = {}): Promise<void> {
+  await tearDownSmokeProject({ ...options, rejectOnNonZeroExitCode: false }).catch(() => {});
+}
+
 async function startSmokeProject(options: ComposeOptions = {}): Promise<void> {
-  await compose(['up', '-d', '--build'], options);
-  await waitForHttp(coreHealthUrl());
-  smokeLifecycleMetrics.projectStarts += 1;
-  smokeRuntimeIdentity.baseVllmFastContainerId = await composeServiceContainerId('vllm-fast');
+  await runSmokeActivationWithFence(
+    async () => {
+      await compose(['up', '-d', '--build', '--wait'], options);
+      await connectSmokePostgres();
+      smokeLifecycleMetrics.projectStarts += 1;
+      smokeRuntimeIdentity.baseVllmFastContainerId = await composeServiceContainerId('vllm-fast');
+    },
+    () => fenceSmokeActivationFailure(options),
+  );
 }
 
 async function activateTelegramOverlay(): Promise<void> {
-  await compose(['up', '-d', '--build', 'vllm-fast', 'fake-telegram-api'], { telegram: true });
-  await compose(['up', '-d', '--build', '--force-recreate', 'core'], { telegram: true });
-  await waitForHttp(coreHealthUrl());
-  await waitForAdapterStatus('telegram', 'healthy');
-  smokeLifecycleMetrics.telegramOverlayActivations += 1;
-  smokeRuntimeIdentity.telegramOverlayVllmFastContainerId = await composeServiceContainerId(
-    'vllm-fast',
-    { telegram: true },
+  await runSmokeActivationWithFence(
+    async () => {
+      await compose(
+        ['up', '-d', '--no-build', '--force-recreate', '--wait', 'fake-telegram-api', 'core'],
+        {
+          telegram: true,
+        },
+      );
+      await waitForAdapterStatus('telegram', 'healthy');
+      smokeLifecycleMetrics.telegramOverlayActivations += 1;
+      smokeRuntimeIdentity.telegramOverlayVllmFastContainerId = await composeServiceContainerId(
+        'vllm-fast',
+        { telegram: true },
+      );
+    },
+    () => fenceSmokeActivationFailure({ telegram: true }),
   );
 }
 
@@ -432,6 +549,10 @@ async function prepareFreshRuntimeScenario(options: ComposeOptions = {}): Promis
 
   await compose(['start', 'core'], options);
   await waitForHttp(coreHealthUrl());
+
+  if (options.telegram) {
+    await waitForAdapterStatus('telegram', 'healthy');
+  }
 }
 
 void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t) => {
@@ -1006,10 +1127,18 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
             '1',
           );
 
-          await waitForPostgresValue(
-            "select count(*)::text from polyphony_runtime.homeostat_snapshots where cadence_kind = 'periodic';",
-            '1',
+          await waitForPostgresPredicate(
+            "select exists(select 1 from polyphony_runtime.homeostat_snapshots where cadence_kind = 'periodic')::text;",
             15_000,
+          );
+
+          assert.ok(
+            Number(
+              await queryPostgres(
+                "select count(*)::text from polyphony_runtime.homeostat_snapshots where cadence_kind = 'periodic';",
+              ),
+            ) >= 1,
+            'expected at least one periodic homeostat snapshot after scheduler cadence',
           );
 
           assert.equal(
@@ -1087,6 +1216,7 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
                 rollbackMetric: rollbackScore?.metricValue,
                 rollbackStatus: rollbackScore?.status,
                 rollbackEvidenceRefs: rollbackScore?.evidenceRefs ?? [],
+                snapshotId: result.snapshot.snapshotId,
               }),
             );
           `),
@@ -1094,6 +1224,7 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
             rollbackMetric: number;
             rollbackStatus: string;
             rollbackEvidenceRefs: string[];
+            snapshotId: string;
           };
 
           assert.equal(auditPayload.rollbackMetric, 1);
@@ -1110,7 +1241,7 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
           );
           assert.equal(
             await queryPostgres(
-              "select rollback_frequency::text from polyphony_runtime.homeostat_snapshots where cadence_kind = 'periodic' order by created_at desc limit 1;",
+              `select rollback_frequency::text from polyphony_runtime.homeostat_snapshots where snapshot_id = '${auditPayload.snapshotId}';`,
             ),
             '1.0000',
           );
@@ -1337,33 +1468,60 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
           assert.equal(ingestPayload.deduplicated, false);
           assert.equal(ingestPayload.tickAdmission?.accepted, true);
 
-          await waitForPostgresValue(
-            "select count(*)::text from polyphony_runtime.stimulus_inbox where source_kind = 'http' and normalized_json ->> 'signalType' = 'http.operator.message';",
-            '1',
-          );
-          await waitForPostgresValue(
-            "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed';",
-            '1',
+          await waitForPostgresPredicate(
+            `select (
+              exists(
+                select 1
+                from polyphony_runtime.stimulus_inbox
+                where source_kind = 'http'
+                  and normalized_json ->> 'signalType' = 'http.operator.message'
+              )
+              and exists(
+                select 1
+                from polyphony_runtime.ticks
+                where tick_kind = 'reactive'
+                  and trigger_kind = 'system'
+                  and status = 'completed'
+              )
+            )::text;`,
           );
 
-          assert.equal(
-            await queryPostgres(
-              "select normalized_json -> 'envelope' ->> 'source' from polyphony_runtime.stimulus_inbox where source_kind = 'http' and normalized_json ->> 'signalType' = 'http.operator.message' limit 1;",
-            ),
-            'http',
+          const ingestionEvidence = await queryPostgresJson<{
+            source: string | null;
+            threadId: string | null;
+            tickSourceKind: string | null;
+          }>(
+            `select json_build_object(
+              'source',
+              (
+                select normalized_json -> 'envelope' ->> 'source'
+                from polyphony_runtime.stimulus_inbox
+                where source_kind = 'http'
+                  and normalized_json ->> 'signalType' = 'http.operator.message'
+                limit 1
+              ),
+              'threadId',
+              (
+                select normalized_json -> 'envelope' ->> 'threadId'
+                from polyphony_runtime.stimulus_inbox
+                where source_kind = 'http'
+                  and normalized_json ->> 'signalType' = 'http.operator.message'
+                limit 1
+              ),
+              'tickSourceKind',
+              (
+                select request_json -> 'perception' -> 'sourceKinds' ->> 0
+                from polyphony_runtime.ticks
+                where tick_kind = 'reactive'
+                  and trigger_kind = 'system'
+                  and status = 'completed'
+                limit 1
+              )
+            )::text;`,
           );
-          assert.equal(
-            await queryPostgres(
-              "select normalized_json -> 'envelope' ->> 'threadId' from polyphony_runtime.stimulus_inbox where source_kind = 'http' and normalized_json ->> 'signalType' = 'http.operator.message' limit 1;",
-            ),
-            'operator-http',
-          );
-          assert.equal(
-            await queryPostgres(
-              "select request_json -> 'perception' -> 'sourceKinds' ->> 0 from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' limit 1;",
-            ),
-            'http',
-          );
+          assert.equal(ingestionEvidence.source, 'http');
+          assert.equal(ingestionEvidence.threadId, 'operator-http');
+          assert.equal(ingestionEvidence.tickSourceKind, 'http');
         },
       );
 
@@ -1390,54 +1548,83 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
 
           assert.equal(ingestResponse.status, 202);
 
-          await waitForPostgresValue(
-            "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' and result_json ? 'decision';",
-            '1',
-          );
-          await waitForPostgresValue(
-            "select count(*)::text from polyphony_runtime.episodes where result_json ? 'decision';",
-            '1',
-          );
-          await waitForPostgresValue(
-            "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' and selected_coalition_id is not null;",
-            '1',
-          );
-          await waitForPostgresValue(
-            "select count(*)::text from polyphony_runtime.field_journal_entries where tick_id in (select tick_id from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed');",
-            '1',
+          await waitForPostgresPredicate(
+            `with completed_tick as (
+              select tick_id
+              from polyphony_runtime.ticks
+              where tick_kind = 'reactive'
+                and trigger_kind = 'system'
+                and status = 'completed'
+                and result_json ? 'decision'
+                and selected_coalition_id is not null
+              order by created_at desc
+              limit 1
+            )
+            select (
+              exists(select 1 from completed_tick)
+              and exists(
+                select 1
+                from polyphony_runtime.episodes
+                where result_json ? 'decision'
+              )
+              and exists(
+                select 1
+                from polyphony_runtime.field_journal_entries
+                where tick_id = (select tick_id from completed_tick)
+              )
+            )::text;`,
           );
 
-          const selectedCoalitionId = await queryPostgres(
-            "select selected_coalition_id from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' limit 1;",
+          const decisionEvidence = await queryPostgresJson<{
+            selectedCoalitionId: string | null;
+            winningCoalitionId: string | null;
+            actionType: string | null;
+            expectedSubjectStateSchemaVersion: string | null;
+            observedSubjectStateSchemaVersion: string | null;
+            legacyDecisionTables: string | null;
+          }>(
+            `with completed_tick as (
+              select tick_id, selected_coalition_id, result_json
+              from polyphony_runtime.ticks
+              where tick_kind = 'reactive'
+                and trigger_kind = 'system'
+                and status = 'completed'
+                and result_json ? 'decision'
+                and selected_coalition_id is not null
+              order by created_at desc
+              limit 1
+            )
+            select json_build_object(
+              'selectedCoalitionId',
+              (select selected_coalition_id from completed_tick),
+              'winningCoalitionId',
+              (select result_json -> 'narrativeMemetic' -> 'winningCoalition' ->> 'coalitionId' from completed_tick),
+              'actionType',
+              (select result_json -> 'decision' -> 'action' ->> 'type' from completed_tick),
+              'expectedSubjectStateSchemaVersion',
+              (select schema_version from platform_bootstrap.schema_state where id = 1),
+              'observedSubjectStateSchemaVersion',
+              (select result_json -> 'decisionTrace' ->> 'subjectStateSchemaVersion' from completed_tick),
+              'legacyDecisionTables',
+              (
+                select count(*)::text
+                from information_schema.tables
+                where table_schema = 'polyphony_runtime'
+                  and table_name in ('decision_contexts', 'decision_history')
+              )
+            )::text;`,
           );
-          assert.equal(selectedCoalitionId.length > 0, true);
+          assert.equal((decisionEvidence.selectedCoalitionId ?? '').length > 0, true);
+          assert.equal(decisionEvidence.winningCoalitionId, decisionEvidence.selectedCoalitionId);
+          assert.match(
+            decisionEvidence.actionType ?? '',
+            /^(none|tool_call|reflect|schedule_job)$/,
+          );
           assert.equal(
-            await queryPostgres(
-              "select result_json -> 'narrativeMemetic' -> 'winningCoalition' ->> 'coalitionId' from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' limit 1;",
-            ),
-            selectedCoalitionId,
+            decisionEvidence.observedSubjectStateSchemaVersion,
+            decisionEvidence.expectedSubjectStateSchemaVersion,
           );
-
-          const actionType = await queryPostgres(
-            "select result_json -> 'decision' -> 'action' ->> 'type' from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' order by created_at desc limit 1;",
-          );
-          assert.match(actionType, /^(none|tool_call|reflect|schedule_job)$/);
-
-          const expectedSubjectStateSchemaVersion = await queryPostgres(
-            'select schema_version from platform_bootstrap.schema_state where id = 1;',
-          );
-          assert.equal(
-            await queryPostgres(
-              "select result_json -> 'decisionTrace' ->> 'subjectStateSchemaVersion' from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' order by created_at desc limit 1;",
-            ),
-            expectedSubjectStateSchemaVersion,
-          );
-          assert.equal(
-            await queryPostgres(
-              "select count(*)::text from information_schema.tables where table_schema = 'polyphony_runtime' and table_name in ('decision_contexts', 'decision_history');",
-            ),
-            '0',
-          );
+          assert.equal(decisionEvidence.legacyDecisionTables, '0');
 
           const missingRouteResponse = await fetch(`${coreBaseUrl()}/decision`);
           assert.equal(missingRouteResponse.status, 404);
@@ -1466,35 +1653,67 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
 
           assert.equal(ingestResponse.status, 202);
 
-          await waitForPostgresValue(
-            "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' and action_id is not null;",
-            '1',
-            45_000,
-          );
-          await waitForPostgresValue(
-            "select count(*)::text from polyphony_runtime.action_log where tick_id = (select tick_id from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' order by created_at desc limit 1);",
-            '1',
+          await waitForPostgresPredicate(
+            `with completed_tick as (
+              select tick_id, action_id
+              from polyphony_runtime.ticks
+              where tick_kind = 'reactive'
+                and trigger_kind = 'system'
+                and status = 'completed'
+              order by created_at desc
+              limit 1
+            )
+            select (
+              exists(select 1 from completed_tick where action_id is not null)
+              and exists(
+                select 1
+                from polyphony_runtime.action_log
+                where tick_id = (select tick_id from completed_tick)
+              )
+            )::text;`,
             45_000,
           );
 
-          const tickActionId = await queryPostgres(
-            "select action_id from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' order by created_at desc limit 1;",
-          );
-          const logActionId = await queryPostgres(
-            "select action_id from polyphony_runtime.action_log where tick_id = (select tick_id from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' order by created_at desc limit 1) order by created_at desc limit 1;",
-          );
-          const verdictKind = await queryPostgres(
-            "select action_kind from polyphony_runtime.action_log where tick_id = (select tick_id from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' order by created_at desc limit 1) order by created_at desc limit 1;",
-          );
-
-          assert.equal(logActionId, tickActionId);
-          assert.match(verdictKind, /^(conscious_inaction|review_request|tool_call|schedule_job)$/);
-          assert.equal(
-            await queryPostgres(
-              "select result_json -> 'executive' ->> 'actionId' from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' order by created_at desc limit 1;",
+          const executiveEvidence = await queryPostgresJson<{
+            tickActionId: string | null;
+            logActionId: string | null;
+            verdictKind: string | null;
+            executiveActionId: string | null;
+          }>(
+            `with completed_tick as (
+              select tick_id, action_id, result_json
+              from polyphony_runtime.ticks
+              where tick_kind = 'reactive'
+                and trigger_kind = 'system'
+                and status = 'completed'
+              order by created_at desc
+              limit 1
             ),
-            tickActionId,
+            latest_action as (
+              select action_id, action_kind
+              from polyphony_runtime.action_log
+              where tick_id = (select tick_id from completed_tick)
+              order by created_at desc
+              limit 1
+            )
+            select json_build_object(
+              'tickActionId',
+              (select action_id from completed_tick),
+              'logActionId',
+              (select action_id from latest_action),
+              'verdictKind',
+              (select action_kind from latest_action),
+              'executiveActionId',
+              (select result_json -> 'executive' ->> 'actionId' from completed_tick)
+            )::text;`,
           );
+
+          assert.equal(executiveEvidence.logActionId, executiveEvidence.tickActionId);
+          assert.match(
+            executiveEvidence.verdictKind ?? '',
+            /^(conscious_inaction|review_request|tool_call|schedule_job)$/,
+          );
+          assert.equal(executiveEvidence.executiveActionId, executiveEvidence.tickActionId);
 
           const missingRouteResponse = await fetch(`${coreBaseUrl()}/actions`);
           assert.equal(missingRouteResponse.status, 404);
@@ -1600,48 +1819,66 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
       await t.test(
         'AC-F0005-02 ingests a Telegram update from a fake Bot API inside the deployment cell',
         async () => {
-          await waitForAdapterStatus('telegram', 'healthy');
-
           await enqueueFakeTelegramUpdate({
             updateId: 1,
             chatId: '12345',
             text: 'smoke telegram message',
           });
 
-          await waitForPostgresValue(
-            "select count(*)::text from polyphony_runtime.stimulus_inbox where source_kind = 'telegram';",
-            '1',
-            20_000,
-            { telegram: true },
-          );
-          await waitForPostgresValue(
-            "select count(*)::text from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed';",
-            '1',
-            20_000,
+          await waitForPostgresPredicate(
+            `select (
+              exists(
+                select 1
+                from polyphony_runtime.stimulus_inbox
+                where source_kind = 'telegram'
+              )
+              and exists(
+                select 1
+                from polyphony_runtime.ticks
+                where tick_kind = 'reactive'
+                  and trigger_kind = 'system'
+                  and status = 'completed'
+              )
+            )::text;`,
+            45_000,
             { telegram: true },
           );
 
-          assert.equal(
-            await queryPostgres(
-              "select normalized_json -> 'envelope' ->> 'source' from polyphony_runtime.stimulus_inbox where source_kind = 'telegram' limit 1;",
-              { telegram: true },
-            ),
-            'telegram',
+          const telegramEvidence = await queryPostgresJson<{
+            source: string | null;
+            threadId: string | null;
+            tickSourceKind: string | null;
+          }>(
+            `select json_build_object(
+              'source',
+              (
+                select normalized_json -> 'envelope' ->> 'source'
+                from polyphony_runtime.stimulus_inbox
+                where source_kind = 'telegram'
+                limit 1
+              ),
+              'threadId',
+              (
+                select normalized_json -> 'envelope' ->> 'threadId'
+                from polyphony_runtime.stimulus_inbox
+                where source_kind = 'telegram'
+                limit 1
+              ),
+              'tickSourceKind',
+              (
+                select request_json -> 'perception' -> 'sourceKinds' ->> 0
+                from polyphony_runtime.ticks
+                where tick_kind = 'reactive'
+                  and trigger_kind = 'system'
+                  and status = 'completed'
+                limit 1
+              )
+            )::text;`,
+            { telegram: true },
           );
-          assert.equal(
-            await queryPostgres(
-              "select normalized_json -> 'envelope' ->> 'threadId' from polyphony_runtime.stimulus_inbox where source_kind = 'telegram' limit 1;",
-              { telegram: true },
-            ),
-            '12345',
-          );
-          assert.equal(
-            await queryPostgres(
-              "select request_json -> 'perception' -> 'sourceKinds' ->> 0 from polyphony_runtime.ticks where tick_kind = 'reactive' and trigger_kind = 'system' and status = 'completed' limit 1;",
-              { telegram: true },
-            ),
-            'telegram',
-          );
+          assert.equal(telegramEvidence.source, 'telegram');
+          assert.equal(telegramEvidence.threadId, '12345');
+          assert.equal(telegramEvidence.tickSourceKind, 'telegram');
         },
       );
     });
@@ -1684,4 +1921,5 @@ void test('AC-F0007-05 tears down suite-scoped smoke projects without orphaned d
     ignoredVolumes: [modelsVolumeName()],
   });
   await waitForPortToClose(defaultCoreHostPort);
+  await waitForPortToClose(defaultPostgresHostPort);
 });

@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-17-034-patch-template-e39e088d",
+    "created_at": "2026-04-17T20:37:14.722Z",
+    "sequence": 34,
+    "target_item_keys": [
+      "CF-028"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-028",
+      "action": "replace_fields",
+      "fields": {
+        "delivery_state": "implemented"
+      }
+    }
+  ]
+}

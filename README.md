@@ -56,6 +56,7 @@ Canonical engineering decisions for the repo:
 - minimum GitHub Actions testing workflow: `.github/workflows/test.yml` runs `pnpm quality:check` then `pnpm test` on `pull_request` and `push` to `master`
 - containerized phase-0 smoke verification: `pnpm smoke:cell`
   runs a suite-scoped deployment-cell harness with deterministic runtime resets between individual scenarios inside each scenario family instead of per-test full `compose down/up`, and Telegram-specific smoke overlays reuse the same shared `vllm-fast` runtime instead of booting a second model stack
+  the harness also keeps one smoke-only direct PostgreSQL client over a smoke overlay port instead of repeated `docker compose exec postgres psql` polling during steady-state waits
 
 Repo-level ADRs:
 - `docs/adr/ADR-2026-03-19-canonical-runtime-toolchain.md`

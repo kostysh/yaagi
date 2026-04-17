@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-17T18:23:00.831Z_
+_Last sync: 2026-04-17T19:56:56.886Z_
 
 ## Features
 
@@ -30,7 +30,7 @@ _Last sync: 2026-04-17T18:23:00.831Z_
 | F-0018 | Профиль безопасности и изоляции | done | strict | safety | F-0002, F-0010, F-0013, F-0016, F-0017 | runtime,infra,governance,api,workspace,network,safety | `../features/F-0018-security-and-isolation-profile.md` |
 | F-0019 | Консолидация, event envelope и graceful shutdown | done | strict | lifecycle | F-0003, F-0004, F-0011 | runtime,db,lifecycle,governance,reporting | `../features/F-0019-consolidation-event-envelope-graceful-shutdown.md` |
 | F-0020 | Реальный vLLM-serving и promotion model dependencies | done | strict | models | F-0002, F-0008, F-0014, F-0015 | runtime,infra,models,artifacts,workshop | `../features/F-0020-real-vllm-serving-and-promotion-model-dependencies.md` |
-| F-0021 | Оптимизация smoke harness после real vLLM/Gemma runtime | planned | deferred | platform | F-0007, F-0020 | runtime,infra,verification,smoke,db | `../features/F-0021-smoke-harness-post-f0020-runtime-optimization.md` |
+| F-0021 | Оптимизация smoke harness после real vLLM/Gemma runtime | done | strict | platform | F-0007, F-0020 | runtime,infra,verification,smoke,db | `../features/F-0021-smoke-harness-post-f0020-runtime-optimization.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph

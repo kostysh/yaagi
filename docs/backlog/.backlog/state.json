@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-17T17:11:37.073Z",
+  "updated_at": "2026-04-17T20:37:59.129Z",
   "last_refresh_at": "2026-04-17T17:11:37.073Z",
   "context": {
     "glossary": [
@@ -1468,7 +1468,7 @@
       "item_key": "CF-028",
       "title": "Оптимизация smoke harness после real vLLM/Gemma runtime",
       "type": "feature",
-      "delivery_state": "planned",
+      "delivery_state": "implemented",
       "gaps": [],
       "depends_on_keys": [
         "CF-022",
@@ -1497,7 +1497,7 @@
       "needs_attention": false,
       "attention_reason_codes": [],
       "attention_reasons": [],
-      "ready_for_next_step": true
+      "ready_for_next_step": false
     }
   ],
   "todos": [

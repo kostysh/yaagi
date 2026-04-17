@@ -47,6 +47,7 @@ void test('AC-F0006-01 фиксирует полный direct dependency verdict
     '@typescript-eslint/parser': '^8.57.2',
     eslint: '^10.1.0',
     globals: '^17.4.0',
+    pg: '^8.20.0',
     typescript: '^5.9.3',
   });
 
