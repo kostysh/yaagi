@@ -60,6 +60,10 @@ void test('AC-F0019-13 AC-F0019-14 AC-F0019-15 closes admission before wait and 
       order.push('stop-perception');
       return Promise.resolve();
     },
+    stopRuntimeSkills: () => {
+      order.push('stop-runtime-skills');
+      return Promise.resolve();
+    },
     stopTickRuntime: () => {
       order.push('stop-tick-runtime');
       activeWork = [];
@@ -80,6 +84,7 @@ void test('AC-F0019-13 AC-F0019-14 AC-F0019-15 closes admission before wait and 
     'record:shutting_down',
     'stop-workshop',
     'stop-homeostat',
+    'stop-runtime-skills',
     'stop-perception',
     'stop-tick-runtime',
     'list-active:0',
@@ -140,6 +145,7 @@ void test('AC-F0019-14 waits for in-progress tick admission before graceful-shut
     stopWorkshopWorker: () => Promise.resolve(),
     stopPeriodicHomeostatWorker: () => Promise.resolve(),
     stopPerceptionController: () => Promise.resolve(),
+    stopRuntimeSkills: () => Promise.resolve(),
     stopTickRuntime: () => {
       activeWork = [];
       return Promise.resolve();

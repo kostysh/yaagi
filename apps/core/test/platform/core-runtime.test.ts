@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createCoreRuntime, loadCoreRuntimeConfig } from '../../src/platform/index.ts';
@@ -269,10 +269,7 @@ void test('AC-F0002-02 materializes writable runtime paths from seed before star
         path.join(root, 'workspace/body/.gitkeep'),
         'utf8',
       );
-      const materializedSkillsKeep = await readFile(
-        path.join(root, 'workspace/skills/.gitkeep'),
-        'utf8',
-      );
+      const materializedSkillsEntries = await readdir(path.join(root, 'workspace/skills'));
       const materializedModelKeep = await readFile(path.join(root, 'models/base/.gitkeep'), 'utf8');
       const materializedDatasetKeep = await readFile(
         path.join(root, 'data/datasets/.gitkeep'),
@@ -280,7 +277,7 @@ void test('AC-F0002-02 materializes writable runtime paths from seed before star
       );
 
       assert.equal(materializedBodyKeep, '');
-      assert.equal(materializedSkillsKeep, '');
+      assert.deepEqual(materializedSkillsEntries, []);
       assert.equal(materializedModelKeep, '');
       assert.equal(materializedDatasetKeep, '');
       assert.deepEqual(startupOrder, ['runtime']);

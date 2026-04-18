@@ -1,5 +1,6 @@
 import path from 'node:path';
-import { access, cp, mkdir, readdir, rm, stat } from 'node:fs/promises';
+import { access, cp, lstat, mkdir, readdir, rm, stat } from 'node:fs/promises';
+import { syncSkillTreeFromSeed } from '@yaagi/skills';
 import type { CoreRuntimeConfig } from './core-config.ts';
 
 type MaterializationState = 'seeded' | 'reused';
@@ -30,6 +31,26 @@ const ensureDirectory = async (targetPath: string): Promise<void> => {
   await mkdir(targetPath, { recursive: true });
 };
 
+const assertNoSymlinkSegments = async (targetPath: string): Promise<void> => {
+  const resolvedTargetPath = path.resolve(targetPath);
+  const { root } = path.parse(resolvedTargetPath);
+  const segments = resolvedTargetPath.slice(root.length).split(path.sep).filter(Boolean);
+  let currentPath = root;
+
+  for (const segment of segments) {
+    currentPath = path.join(currentPath, segment);
+    const entryStat = await lstat(currentPath).catch(() => null);
+
+    if (!entryStat) {
+      break;
+    }
+
+    if (entryStat.isSymbolicLink()) {
+      throw new Error(`runtime path must not traverse a symlinked segment: ${currentPath}`);
+    }
+  }
+};
+
 const isPlaceholderTree = async (targetPath: string): Promise<boolean> => {
   let entries: string[];
   try {
@@ -57,9 +78,9 @@ const isPlaceholderTree = async (targetPath: string): Promise<boolean> => {
     }
 
     const entryPath = path.join(targetPath, entryName);
-    let entryStat: Awaited<ReturnType<typeof stat>>;
+    let entryStat: Awaited<ReturnType<typeof lstat>>;
     try {
-      entryStat = await stat(entryPath);
+      entryStat = await lstat(entryPath);
     } catch (error) {
       if (
         error instanceof Error &&
@@ -112,6 +133,8 @@ const materializeDirectory = async (
   sourcePath: string,
   targetPath: string,
 ): Promise<MaterializationState> => {
+  await assertNoSymlinkSegments(sourcePath);
+  await assertNoSymlinkSegments(targetPath);
   await assertExists(sourcePath);
   await ensureDirectory(targetPath);
 
@@ -146,6 +169,27 @@ const materializeDirectory = async (
   return 'seeded';
 };
 
+const materializeSkillDirectory = async (
+  sourcePath: string,
+  targetPath: string,
+): Promise<MaterializationState> => {
+  await assertNoSymlinkSegments(sourcePath);
+  await assertNoSymlinkSegments(targetPath);
+  await assertExists(sourcePath);
+  await ensureDirectory(targetPath);
+
+  if (!(await isPlaceholderTree(targetPath))) {
+    return 'reused';
+  }
+
+  await syncSkillTreeFromSeed({
+    seedRootPath: sourcePath,
+    workspaceRootPath: targetPath,
+  });
+
+  return 'seeded';
+};
+
 export async function materializeRuntimeSeed(
   config: CoreRuntimeConfig,
 ): Promise<RuntimeSeedMaterializationResult> {
@@ -156,8 +200,18 @@ export async function materializeRuntimeSeed(
 
   return {
     body: await materializeDirectory(config.seedBodyPath, config.workspaceBodyPath),
-    skills: await materializeDirectory(config.seedSkillsPath, config.workspaceSkillsPath),
+    skills: await materializeSkillDirectory(config.seedSkillsPath, config.workspaceSkillsPath),
     models: await materializeDirectory(config.seedModelsPath, config.modelsPath),
     data: await materializeDirectory(config.seedDataPath, config.dataPath),
   };
+}
+
+export async function syncRuntimeSkillsFromSeed(config: CoreRuntimeConfig): Promise<void> {
+  assertSeparatedBoundary(config);
+  await assertNoSymlinkSegments(config.seedSkillsPath);
+  await assertNoSymlinkSegments(config.workspaceSkillsPath);
+  await syncSkillTreeFromSeed({
+    seedRootPath: config.seedSkillsPath,
+    workspaceRootPath: config.workspaceSkillsPath,
+  });
 }

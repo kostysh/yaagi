@@ -1,0 +1,17 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-18-001-cf013-implemented",
+    "created_at": "2026-04-18T03:43:43Z",
+    "sequence": 40,
+    "target_item_keys": ["CF-013"]
+  },
+  "operations": [
+    {
+      "item_key": "CF-013",
+      "action": "replace_fields",
+      "fields": {
+        "delivery_state": "implemented"
+      }
+    }
+  ]
+}

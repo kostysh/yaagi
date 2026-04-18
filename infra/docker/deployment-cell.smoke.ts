@@ -634,7 +634,7 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
               JSON.stringify({
                 seedConstitution: await canAccess('/seed/constitution/constitution.yaml'),
                 workspaceBody: await canAccess('/workspace/body/.gitkeep'),
-                workspaceSkills: await canAccess('/workspace/skills/.gitkeep'),
+                workspaceSkills: await canAccess('/workspace/skills'),
                 modelsBase: await canAccess('/models/base/.gitkeep'),
                 dataDatasets: await canAccess('/data/datasets/.gitkeep'),
                 seedWriteErrorCode,

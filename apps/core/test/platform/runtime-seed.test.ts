@@ -1,22 +1,38 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chmod, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { loadCoreRuntimeConfig } from '../../src/platform/core-config.ts';
-import { materializeRuntimeSeed } from '../../src/platform/runtime-seed.ts';
+import {
+  materializeRuntimeSeed,
+  syncRuntimeSkillsFromSeed,
+} from '../../src/platform/runtime-seed.ts';
+
+// Covers: AC-F0022-07, AC-F0022-08, AC-F0022-13, AC-F0022-14, AC-F0022-19
 
 const createSeedFixture = async (): Promise<string> => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'yaagi-runtime-seed-'));
 
   await mkdir(path.join(root, 'seed/body'), { recursive: true });
-  await mkdir(path.join(root, 'seed/skills'), { recursive: true });
+  await mkdir(path.join(root, 'seed/skills/demo-skill/references'), { recursive: true });
   await mkdir(path.join(root, 'seed/constitution'), { recursive: true });
   await mkdir(path.join(root, 'seed/models/base'), { recursive: true });
   await mkdir(path.join(root, 'seed/data/datasets'), { recursive: true });
 
   await writeFile(path.join(root, 'seed/body/seed-body.txt'), 'seed-body', 'utf8');
-  await writeFile(path.join(root, 'seed/skills/seed-skills.txt'), 'seed-skills', 'utf8');
+  await writeFile(
+    path.join(root, 'seed/skills/demo-skill/SKILL.md'),
+    '# Demo Skill\n\nSeed-backed runtime skill.\n',
+    'utf8',
+  );
+  await writeFile(
+    path.join(root, 'seed/skills/demo-skill/references/checklist.md'),
+    '- seeded\n',
+    'utf8',
+  );
+  await mkdir(path.join(root, 'seed/skills/broken-skill'), { recursive: true });
+  await writeFile(path.join(root, 'seed/skills/broken-skill/README.md'), 'broken', 'utf8');
   await writeFile(
     path.join(root, 'seed/constitution/constitution.yaml'),
     [
@@ -140,9 +156,10 @@ void test('AC-F0002-05 materializes empty runtime volumes from seed and preserve
       'seed-body',
     );
     assert.equal(
-      await readFile(path.join(root, 'workspace/skills/seed-skills.txt'), 'utf8'),
-      'seed-skills',
+      await readFile(path.join(root, 'workspace/skills/demo-skill/SKILL.md'), 'utf8'),
+      '# Demo Skill\n\nSeed-backed runtime skill.\n',
     );
+    await assert.rejects(readFile(path.join(root, 'workspace/skills/broken-skill/README.md')));
     assert.equal(await readFile(path.join(root, 'models/base/model.txt'), 'utf8'), 'seed-model');
     assert.match(
       await readFile(path.join(root, 'models/base/vllm-fast-manifest.json'), 'utf8'),
@@ -168,6 +185,59 @@ void test('AC-F0002-05 materializes empty runtime volumes from seed and preserve
       'runtime',
     );
     await assert.rejects(readFile(path.join(root, 'workspace/body/seed-body-2.txt'), 'utf8'));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+void test('AC-F0022-19 explicit skill sync replaces stale workspace skills from the canonical seed tree', async () => {
+  const root = await createSeedFixture();
+
+  try {
+    const config = loadCoreRuntimeConfig({
+      YAAGI_SEED_ROOT_PATH: path.join(root, 'seed'),
+      YAAGI_WORKSPACE_BODY_PATH: path.join(root, 'workspace/body'),
+      YAAGI_WORKSPACE_SKILLS_PATH: path.join(root, 'workspace/skills'),
+      YAAGI_MODELS_PATH: path.join(root, 'models'),
+      YAAGI_DATA_PATH: path.join(root, 'data'),
+    });
+
+    await mkdir(path.join(root, 'workspace/skills/stale-skill'), { recursive: true });
+    await writeFile(path.join(root, 'workspace/skills/stale-skill/SKILL.md'), '# stale\n', 'utf8');
+
+    await syncRuntimeSkillsFromSeed(config);
+
+    assert.equal(
+      await readFile(path.join(root, 'workspace/skills/demo-skill/SKILL.md'), 'utf8'),
+      '# Demo Skill\n\nSeed-backed runtime skill.\n',
+    );
+    await assert.rejects(
+      readFile(path.join(root, 'workspace/skills/broken-skill/README.md'), 'utf8'),
+    );
+    await assert.rejects(
+      readFile(path.join(root, 'workspace/skills/stale-skill/SKILL.md'), 'utf8'),
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+void test('AC-F0022-14 rejects skill sync when the configured runtime path traverses a symlinked segment', async () => {
+  const root = await createSeedFixture();
+
+  try {
+    await mkdir(path.join(root, 'outside-runtime'), { recursive: true });
+    await symlink(path.join(root, 'outside-runtime'), path.join(root, 'workspace-link'));
+
+    const config = loadCoreRuntimeConfig({
+      YAAGI_SEED_ROOT_PATH: path.join(root, 'seed'),
+      YAAGI_WORKSPACE_BODY_PATH: path.join(root, 'workspace/body'),
+      YAAGI_WORKSPACE_SKILLS_PATH: path.join(root, 'workspace-link/skills'),
+      YAAGI_MODELS_PATH: path.join(root, 'models'),
+      YAAGI_DATA_PATH: path.join(root, 'data'),
+    });
+
+    await assert.rejects(syncRuntimeSkillsFromSeed(config), /symlinked segment/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

@@ -55,6 +55,7 @@ void test('AC-F0006-01 фиксирует полный direct dependency verdict
     '@ai-sdk/openai-compatible': '2.0.37',
     '@yaagi/contracts': 'workspace:*',
     '@yaagi/db': 'workspace:*',
+    '@yaagi/skills': 'workspace:*',
     ai: '6.0.138',
     chokidar: '^5.0.0',
     hono: '^4.12.9',

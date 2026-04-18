@@ -1,8 +1,8 @@
 ---
 id: F-0022
 title: Слой skills и процедур
-status: planned
-coverage_gate: deferred
+status: done
+coverage_gate: strict
 owners: ["@codex"]
 area: skills
 depends_on: ["F-0002", "F-0010", "F-0020"]
@@ -423,33 +423,33 @@ Planning close-out rule: before `plan-slice` step closure, `CF-013` must be actu
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0022-01 | Spec-conformance review of `F-0022` as sole skill-packaging owner seam | planned |
-| AC-F0022-02 | Boundary review against `F-0002` ownership of seed/workspace materialization | planned |
-| AC-F0022-03 | Boundary review against `F-0010` ownership of bounded tools/actions | planned |
-| AC-F0022-04 | Boundary review against `F-0020` and AI SDK substrate ownership | planned |
-| AC-F0022-05 | Package-root contract checks for `seed/skills/<skill-id>/` | planned |
-| AC-F0022-06 | Skill package shape validation for `SKILL.md`, `references/`, `scripts/`, `assets/` | planned |
-| AC-F0022-07 | Seed-protection checks proving `seed/skills` remains the only tracked source of truth | planned |
-| AC-F0022-08 | Materialization integration for `seed/skills -> workspace/skills` | planned |
-| AC-F0022-09 | Negative proof that seed-only presence does not imply usable skill | planned |
-| AC-F0022-10 | Negative proof that workspace-only presence does not imply usable skill | planned |
-| AC-F0022-11 | Positive-path integration for `valid package -> materialized copy -> adapter load -> active verdict` | planned |
-| AC-F0022-12 | Adapter-boundary conformance review for AI SDK-compatible projection without ownership transfer | planned |
-| AC-F0022-13 | Negative-path coverage for invalid package -> unavailable fail-closed | planned |
-| AC-F0022-14 | Negative-path coverage for missing or failed materialization -> unavailable fail-closed | planned |
-| AC-F0022-15 | Negative-path coverage for adapter-load failure -> unavailable fail-closed | planned |
-| AC-F0022-16 | Spec-conformance proof that v1 introduces no lifecycle-state model | planned |
-| AC-F0022-17 | Spec-conformance proof that v1 introduces no separate DB/runtime registry | planned |
-| AC-F0022-18 | Final verification bundle links package-contract validation proof | planned |
-| AC-F0022-19 | Final verification bundle links seed/workspace separation, materialization proof and valid-only listing proof | planned |
-| AC-F0022-20 | Final verification bundle links adapter-load, reload and fail-closed proof | planned |
-| AC-F0022-21 | Unit/contract tests for built-in single-package validator | planned |
-| AC-F0022-22 | Tree-validation tests for mixed valid/invalid skill sets | planned |
-| AC-F0022-23 | Integration tests proving runtime list contains only valid skills | planned |
-| AC-F0022-24 | Diagnostics contract tests proving invalid skills remain observable with reason | planned |
-| AC-F0022-25 | Reload integration proving workspace-only watch and revalidation | planned |
-| AC-F0022-26 | Transition tests proving `valid -> invalid` removes skill from active list | planned |
-| AC-F0022-27 | Transition tests proving `invalid -> valid` restores skill only after successful revalidation and load | planned |
+| AC-F0022-01 | `implementation` spec-conformance review against `F-0022`, `AGENTS.md`, `system.md` and adjacent feature boundaries | implemented |
+| AC-F0022-02 | `apps/core/test/platform/runtime-seed.test.ts` + implementation spec-conformance review for `F-0002` ownership of the shared materialization boundary | implemented |
+| AC-F0022-03 | Implementation spec-conformance review for `F-0010` ownership of bounded tools/actions | implemented |
+| AC-F0022-04 | Implementation spec-conformance review for `F-0020` and `ADR-2026-03-25` ownership of AI SDK substrate | implemented |
+| AC-F0022-05 | `packages/skills/test/skills.contract.test.ts` canonical package-root validation + delivered demo skill under `seed/skills/demo-skill/` | implemented |
+| AC-F0022-06 | `packages/skills/test/skills.contract.test.ts` skill package shape validation for `SKILL.md`, `references/`, `scripts/`, `assets/` | implemented |
+| AC-F0022-07 | `apps/core/test/platform/runtime-seed.test.ts` + `apps/core/test/runtime/skills-runtime.integration.test.ts` prove `seed/skills` stays the canonical tracked source | implemented |
+| AC-F0022-08 | `apps/core/test/platform/runtime-seed.test.ts` materialization and explicit sync coverage for `seed/skills -> workspace/skills` | implemented |
+| AC-F0022-09 | `apps/core/test/runtime/skills-runtime.integration.test.ts` negative proof that seed-only presence does not imply usable skill | implemented |
+| AC-F0022-10 | `apps/core/test/runtime/skills-runtime.integration.test.ts` negative proof that workspace-only or stale copies do not imply usable skill | implemented |
+| AC-F0022-11 | `packages/skills/test/skills.contract.test.ts` + `apps/core/test/runtime/skills-runtime.integration.test.ts` positive path `valid package -> materialized copy -> adapter load -> active verdict` | implemented |
+| AC-F0022-12 | `apps/core/src/runtime/skills-runtime.ts` + implementation spec-conformance review for adapter-boundary without ownership transfer | implemented |
+| AC-F0022-13 | `packages/skills/test/skills.contract.test.ts` invalid-package fail-closed coverage | implemented |
+| AC-F0022-14 | `apps/core/test/runtime/skills-runtime.integration.test.ts` + `apps/core/test/platform/runtime-seed.test.ts` missing/broken materialization fail-closed coverage | implemented |
+| AC-F0022-15 | `apps/core/test/runtime/skills-runtime.integration.test.ts` load-failure/unavailable coverage on invalid workspace package | implemented |
+| AC-F0022-16 | Implementation spec-conformance review proving v1 keeps skills package-based and introduces no lifecycle-state model | implemented |
+| AC-F0022-17 | Implementation spec-conformance review proving v1 introduces no separate DB/runtime registry | implemented |
+| AC-F0022-18 | `dossier-verify --step implementation` verification bundle links package-contract validation proof | implemented |
+| AC-F0022-19 | `apps/core/test/platform/runtime-seed.test.ts`, `apps/core/test/runtime/skills-runtime.integration.test.ts` and `dossier-verify --step implementation` cover seed/workspace separation, materialization proof and valid-only listing | implemented |
+| AC-F0022-20 | `apps/core/test/runtime/skills-runtime.integration.test.ts` + `dossier-verify --step implementation` cover adapter-load, reload and fail-closed proof | implemented |
+| AC-F0022-21 | `packages/skills/test/skills.contract.test.ts` built-in single-package validator | implemented |
+| AC-F0022-22 | `packages/skills/test/skills.contract.test.ts` tree-validation for mixed valid/invalid skill sets | implemented |
+| AC-F0022-23 | `apps/core/test/runtime/skills-runtime.integration.test.ts` proves runtime list contains only valid skills | implemented |
+| AC-F0022-24 | `apps/core/test/runtime/skills-runtime.integration.test.ts` proves invalid skills remain observable in diagnostics with reason | implemented |
+| AC-F0022-25 | `apps/core/test/runtime/skills-runtime.integration.test.ts` workspace-only reload and revalidation | implemented |
+| AC-F0022-26 | `apps/core/test/runtime/skills-runtime.integration.test.ts` transition `valid -> invalid` removes skill from active list | implemented |
+| AC-F0022-27 | `apps/core/test/runtime/skills-runtime.integration.test.ts` transition `invalid -> valid` restores skill only after successful revalidation and load | implemented |
 
 ## 9. Decision log (ADR blocks)
 
@@ -459,15 +459,16 @@ Planning close-out rule: before `plan-slice` step closure, `CF-013` must be actu
 
 - Backlog item key: CF-013
 - Status progression: `proposed -> shaped -> planned -> in_progress -> done`
-- Next expected workflow step: `implementation`
 - Intake log: `.dossier/logs/F-0022/feature-intake-c01.md`
 - Spec log: `.dossier/logs/F-0022/spec-compact-c01.md`
 - Plan log: `.dossier/logs/F-0022/plan-slice-c01.md`
+- Implementation log: `.dossier/logs/F-0022/implementation-c01.md`
 - Issue:
 - PRs:
 
 ## 11. Change log
 
-- 2026-04-18: Initial dossier created from backlog item `CF-013` at backlog delivery state `defined`.
-- 2026-04-18: `spec-compact` shaped the seam as repo-owned skill packaging/materialization/adapter-consumption without lifecycle states or a separate registry.
-- 2026-04-18: `plan-slice` added built-in validation utility, valid-only runtime listing, one minimal demo-skill as first proof target, workspace-only auto-reload semantics, stop points, risk-to-proof mapping, drift guard and real usage audit.
+- 2026-04-18 [intake]: Initial dossier created from backlog item `CF-013` at backlog delivery state `defined`.
+- 2026-04-18 [clarification]: `spec-compact` shaped the seam as repo-owned skill packaging/materialization/adapter-consumption without lifecycle states or a separate registry.
+- 2026-04-18 [planning]: `plan-slice` added built-in validation utility, valid-only runtime listing, one minimal demo-skill as first proof target, workspace-only auto-reload semantics, stop points, risk-to-proof mapping, drift guard and real usage audit.
+- 2026-04-18 [implementation]: delivered `@yaagi/skills` package validation/loading/sync substrate, demo-skill seed content, runtime valid-only catalog with workspace-only reload and internal diagnostics, full repo gates `format -> typecheck -> lint -> test`, and passing `pnpm smoke:cell` on the runtime-affecting final tree.

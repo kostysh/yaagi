@@ -25,6 +25,7 @@ import type {
   BaselineModelProfileDiagnostic,
   ModelHealthSummary,
 } from '../runtime/model-router.ts';
+import type { SkillRuntimeDiagnostics } from '../runtime/skills-runtime.ts';
 
 const BOOT_POLL_INTERVAL_MS = 1_000;
 const PUBLIC_FAST_MODEL_ALIAS = 'model-fast';
@@ -65,6 +66,8 @@ export type CoreRuntimeDependencies = {
     getRicherModelRegistryHealthSummary?(): Promise<OperatorRicherRegistryHealthSummary>;
     getServingDependencyStates?(): Promise<ServingDependencyState[]>;
     peekServingDependencyStates?(): ServingDependencyState[];
+    getSkillRuntimeDiagnostics?(): Promise<SkillRuntimeDiagnostics>;
+    syncSkillsFromSeed?(): Promise<void>;
     ingestHttpStimulus?(input: unknown): Promise<{
       stimulusId: string;
       deduplicated: boolean;
@@ -95,6 +98,8 @@ export type CoreRuntime = {
   health(): Promise<CoreRuntimeHealth>;
   start(): Promise<{ url: string }>;
   stop(): Promise<void>;
+  getSkillRuntimeDiagnostics(): Promise<SkillRuntimeDiagnostics>;
+  syncSkillsFromSeed(): Promise<void>;
   fetch(request: Request): Promise<Response>;
 };
 
@@ -509,6 +514,20 @@ export function createCoreRuntime(
     health,
     start,
     stop,
+    getSkillRuntimeDiagnostics: async (): Promise<SkillRuntimeDiagnostics> =>
+      (await runtimeLifecycle.getSkillRuntimeDiagnostics?.()) ?? {
+        generatedAt: new Date().toISOString(),
+        seedRootPath: config.seedSkillsPath,
+        workspaceRootPath: config.workspaceSkillsPath,
+        rootErrors: { seed: [], workspace: ['skills_runtime_unavailable'] },
+        rootWarnings: { seed: [], workspace: [] },
+        skills: [],
+        validSkillIds: [],
+        activeSkillIds: [],
+      },
+    syncSkillsFromSeed: async (): Promise<void> => {
+      await runtimeLifecycle.syncSkillsFromSeed?.();
+    },
     fetch: async (request: Request) => app.fetch(request),
   };
 }

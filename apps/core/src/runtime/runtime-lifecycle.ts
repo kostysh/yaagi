@@ -106,6 +106,7 @@ import {
   type WorkshopWorker,
 } from '../workshop/index.ts';
 import type { WorkshopPromotionPackage } from '@yaagi/contracts/workshop';
+import { createRuntimeSkillsService, type SkillRuntimeDiagnostics } from './skills-runtime.ts';
 
 type RuntimeLifecycle = {
   start(): Promise<void>;
@@ -171,6 +172,8 @@ type RuntimeLifecycle = {
   getModelOrganHealthReportInput(): Promise<ModelOrganHealthReportInput>;
   getServingDependencyStates(): Promise<ServingDependencyState[]>;
   peekServingDependencyStates(): ServingDependencyState[];
+  getSkillRuntimeDiagnostics(): Promise<SkillRuntimeDiagnostics>;
+  syncSkillsFromSeed(): Promise<void>;
 };
 
 export const startBoundedWorkshopWorker = async (
@@ -1131,6 +1134,7 @@ export type GracefulShutdownSequencePorts = {
   }): Promise<void>;
   stopWorkshopWorker(): Promise<void>;
   stopPeriodicHomeostatWorker(): Promise<void>;
+  stopRuntimeSkills(): Promise<void>;
   stopPerceptionController(): Promise<void>;
   stopTickRuntime(): Promise<void>;
   now(): string;
@@ -1163,6 +1167,7 @@ export const runGracefulShutdownSequence = async (
 
   await ports.stopWorkshopWorker();
   await ports.stopPeriodicHomeostatWorker();
+  await ports.stopRuntimeSkills();
   await ports.stopPerceptionController();
   await ports.stopTickRuntime();
 
@@ -1341,6 +1346,7 @@ export function createPhase0RuntimeLifecycle(
     store: createDbBackedPerceptionStore(config),
     requestReactiveTick: requestTickWithPromotedDependencyGate,
   });
+  const runtimeSkills = createRuntimeSkillsService(config);
 
   tickRuntime = createTickRuntime({
     store: createDbBackedTickRuntimeStore(config, {
@@ -1591,6 +1597,7 @@ export function createPhase0RuntimeLifecycle(
 
         await developmentGovernor.recoverActiveFreeze();
         await expandedModelEcology.syncRicherSourceDiagnostics();
+        await runtimeSkills.start();
         await startBoundedWorkshopWorker(workshopWorker);
         await periodicHomeostatWorker.start();
 
@@ -1608,6 +1615,7 @@ export function createPhase0RuntimeLifecycle(
       } catch (error) {
         await workshopWorker.stop().catch(() => {});
         await periodicHomeostatWorker.stop().catch(() => {});
+        await runtimeSkills.stop().catch(() => {});
         await perceptionController.stop().catch(() => {});
         if (tickRuntime) {
           await tickRuntime.stop().catch(() => {});
@@ -1643,6 +1651,9 @@ export function createPhase0RuntimeLifecycle(
           await periodicHomeostatWorker.stop().catch(() => {});
         },
         stopPerceptionController: () => perceptionController.stop(),
+        stopRuntimeSkills: async () => {
+          await runtimeSkills.stop();
+        },
         stopTickRuntime: async () => {
           if (tickRuntime) {
             await tickRuntime.stop();
@@ -1729,6 +1740,12 @@ export function createPhase0RuntimeLifecycle(
     },
     peekServingDependencyStates(): ServingDependencyState[] {
       return buildServingDependencyStates(fastDependencyMonitor.peekState());
+    },
+    getSkillRuntimeDiagnostics(): Promise<SkillRuntimeDiagnostics> {
+      return Promise.resolve(runtimeSkills.getDiagnostics());
+    },
+    async syncSkillsFromSeed(): Promise<void> {
+      await runtimeSkills.syncFromSeed();
     },
   };
 }

@@ -51,6 +51,12 @@ export {
   type LifecycleConsolidationService,
 } from './lifecycle-consolidation.ts';
 export {
+  createRuntimeSkillsService,
+  type RuntimeSkillsService,
+  type SkillAvailabilityState,
+  type SkillRuntimeDiagnostics,
+} from './skills-runtime.ts';
+export {
   createDbBackedWorkshopService,
   createWorkshopJobGateway,
   createWorkshopService,

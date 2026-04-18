@@ -50,6 +50,9 @@ importers:
       '@yaagi/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@yaagi/skills':
+        specifier: workspace:*
+        version: link:../../packages/skills
       ai:
         specifier: 6.0.138
         version: 6.0.138(zod@4.3.6)
