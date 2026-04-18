@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-17T20:37:59.130Z",
-  "next_apply_index": 37,
+  "updated_at": "2026-04-18T00:18:05.858Z",
+  "next_apply_index": 38,
   "packets": [
     {
       "packet_id": "f0947cdd-67be-4f98-9cbd-bec31fce4589",
@@ -503,6 +503,24 @@
       "kind": "patch-item",
       "target_item_keys": [
         "CF-028"
+      ]
+    },
+    {
+      "patch_id": "2026-04-18-037-attention-review-closeout",
+      "apply_index": 37,
+      "canonical_path": "patches/6a45e98c497f--2026-04-18-037-attention-review-closeout.json",
+      "content_hash": "6a45e98c497f5d9e0a2e55d36dfb348b23520ae2768b7dbc0530975046cd9d80",
+      "sequence": 37,
+      "applied_at": "2026-04-18T00:18:05.858Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-013",
+        "CF-014",
+        "CF-015",
+        "CF-019",
+        "CF-025",
+        "CF-026",
+        "CF-027"
       ]
     }
   ]
