@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-17T19:56:56.886Z_
+_Last sync: 2026-04-18T00:28:26.638Z_
 
 ## Features
 
@@ -31,6 +31,7 @@ _Last sync: 2026-04-17T19:56:56.886Z_
 | F-0019 | Консолидация, event envelope и graceful shutdown | done | strict | lifecycle | F-0003, F-0004, F-0011 | runtime,db,lifecycle,governance,reporting | `../features/F-0019-consolidation-event-envelope-graceful-shutdown.md` |
 | F-0020 | Реальный vLLM-serving и promotion model dependencies | done | strict | models | F-0002, F-0008, F-0014, F-0015 | runtime,infra,models,artifacts,workshop | `../features/F-0020-real-vllm-serving-and-promotion-model-dependencies.md` |
 | F-0021 | Оптимизация smoke harness после real vLLM/Gemma runtime | done | strict | platform | F-0007, F-0020 | runtime,infra,verification,smoke,db | `../features/F-0021-smoke-harness-post-f0020-runtime-optimization.md` |
+| F-0022 | Слой skills и процедур | proposed | deferred | skills | F-0002, F-0010, F-0020 | runtime,workspace,tooling,skills | `../features/F-0022-skills-and-procedural-layer.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -59,6 +60,7 @@ graph TD
   F0019["F-0019 Консолидация, event envelope и graceful shutdown"]
   F0020["F-0020 Реальный vLLM-serving и promotion model dependencies"]
   F0021["F-0021 Оптимизация smoke harness после real vLLM/Gemma runtime"]
+  F0022["F-0022 Слой skills и процедур"]
   F0001 --> F0002
   F0003 --> F0001
   F0003 --> F0002
@@ -132,6 +134,9 @@ graph TD
   F0020 --> F0015
   F0021 --> F0007
   F0021 --> F0020
+  F0022 --> F0002
+  F0022 --> F0010
+  F0022 --> F0020
 ```
 <!-- END GENERATED DEP_GRAPH -->
 
@@ -218,4 +223,6 @@ graph TD
 - **WARN** F-0020 — Vague wording in executable sections: "fast" in "- Canonical owner for replacing the phase-0 stub-capable `vllm-fast` continuity slot with real `vLLM` inference over the canonical deployment-cell path."; "fast" in "- Explicit fast-first slice: one real `vllm-fast` organ must be live and smoke-proven before any claim about a real local-model runtime is accepted.". Rewrite the statement more concretely.
 - **WARN** F-0021 — Potential compound ACs detected: AC-F0021-02, AC-F0021-07, AC-F0021-08, AC-F0021-11, AC-F0021-12, AC-F0021-12, AC-F0021-07, AC-F0021-01, AC-F0021-06, AC-F0021-09, AC-F0021-03, AC-F0021-08, AC-F0021-11, AC-F0021-12, AC-F0021-01, AC-F0021-01, AC-F0021-06, AC-F0021-03, AC-F0021-12, AC-F0021-09. Prefer one obligation per AC.
 - **WARN** F-0021 — Vague wording in executable sections: "fast" in "- Telegram overlay не должен снова материализовать второй `vllm-fast` runtime или второй `Gemma` stack."; "fast" in "- **AC-F0021-04:** Telegram overlay reuses the same already-started `vllm-fast` model runtime as the base smoke family.". Rewrite the statement more concretely.
+- **WARN** F-0022 — No acceptance criteria IDs found yet. Add at least one AC-F....-.. entry before leaving the proposed intake state.
+- **WARN** F-0022 — Coverage map rows are recommended even when coverage is deferred.
 <!-- END GENERATED RED_FLAGS -->
