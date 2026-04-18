@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-18T01:27:46.748Z",
+  "updated_at": "2026-04-18T02:16:12.055Z",
   "sources": [
     {
       "source_id": "5b9f63ff-21ce-440c-a3a3-7416945dde4f",
@@ -155,7 +155,7 @@
       "note": "Canonical system architecture",
       "hash": "c1d5889491a99d9d72584eadef571ad1b805b95b92f3277c836aeab0b30090c0",
       "registered_at": "2026-04-09T23:44:44.538Z",
-      "last_checked_at": "2026-04-18T01:27:46.748Z"
+      "last_checked_at": "2026-04-18T02:16:12.055Z"
     },
     {
       "source_id": "ef27eeb6-7dfa-408b-a240-1712dd407575",
@@ -210,7 +210,7 @@
       "note": "Canonical Russian Polyphony concept",
       "hash": "c8030fe4d6e54c594c0b72c0cb628b1d9daf4aa81abef21742a84b205718a71a",
       "registered_at": "2026-04-09T23:44:44.599Z",
-      "last_checked_at": "2026-04-18T01:27:46.748Z"
+      "last_checked_at": "2026-04-18T02:16:12.055Z"
     },
     {
       "source_id": "97107644-d070-4cb0-bfe3-aa581331229c",
@@ -221,7 +221,7 @@
       "note": "Legacy candidate backlog used for migration and legacy CF traceability",
       "hash": "136d786fff392aa470a6313d13b81736eafdbf5d914330a5f774c194eab66b9a",
       "registered_at": "2026-04-09T23:44:45.352Z",
-      "last_checked_at": "2026-04-18T01:27:46.748Z"
+      "last_checked_at": "2026-04-18T02:16:12.055Z"
     },
     {
       "source_id": "9d061028-1d37-4f85-9919-f6321ed1f995",
@@ -243,7 +243,7 @@
       "note": "Legacy roadmap matrix used to normalize non-intaken delivery states",
       "hash": "a0a725f8e0d2c80467a64544198cfd833a4acb6b62efd2bc3fc264dafd8f7c7f",
       "registered_at": "2026-04-09T23:44:45.414Z",
-      "last_checked_at": "2026-04-18T01:27:46.748Z"
+      "last_checked_at": "2026-04-18T02:16:12.055Z"
     }
   ]
 }
