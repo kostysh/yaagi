@@ -571,21 +571,5 @@
         "CF-015"
       ]
     },
-    {
-      "patch_id": "2026-04-21-042-f0023-clear-dependent-review-todos",
-      "apply_index": 42,
-      "canonical_path": ".dossier/backlog/patches/1984114e8519--2026-04-21-042-f0023-clear-dependent-review-todos.patch.json",
-      "content_hash": "1984114e8519a83575e6fad18b69afdc66245e55a0e4d7c5d870b881688aa32c",
-      "sequence": 42,
-      "applied_at": "2026-04-21T15:33:45.621Z",
-      "kind": "patch-item",
-      "target_item_keys": [
-        "CF-014",
-        "CF-019",
-        "CF-025",
-        "CF-026",
-        "CF-027"
-      ]
-    }
   ]
 }
