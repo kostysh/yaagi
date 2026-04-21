@@ -1,0 +1,18 @@
+{
+  "source_review_id": "sr-101e300d-dc80-4a8b-a11d-0a3f1849f368",
+  "source_id": "101e300d-dc80-4a8b-a11d-0a3f1849f368",
+  "source_label": "docs/ssot/features/F-0018-security-and-isolation-profile.md",
+  "previous_hash": "c7052f1e0b1e16601ae23f8187752367875ff6f6b1bd02b5c724a50ac1c604bf",
+  "current_hash": "31d24dd4fa70f3dbc38ed28bdfb5041afc325c5b6b1a0e9155bde38374bac393",
+  "status": "closed",
+  "linked_item_keys": [
+    "CF-014"
+  ],
+  "linked_item_count": 1,
+  "opened_at": "2026-04-21T14:54:31.041Z",
+  "closed_at": "2026-04-21T14:57:35.780Z",
+  "resolved_at": "2026-04-21T14:57:35.780Z",
+  "outcome": "no_backlog_change",
+  "resolution_kind": "ack",
+  "resolution_ref": "ack-source-review"
+}

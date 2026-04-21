@@ -1,0 +1,29 @@
+{
+  "source_review_id": "sr-4ffa2197-8f9f-4d98-a615-36b03c2cc660",
+  "source_id": "4ffa2197-8f9f-4d98-a615-36b03c2cc660",
+  "source_label": "docs/notes/backlog-legacy/working-system-roadmap-matrix-2026-03-26.md",
+  "previous_hash": "a0a725f8e0d2c80467a64544198cfd833a4acb6b62efd2bc3fc264dafd8f7c7f",
+  "current_hash": "71258bf9f373e9a921c6ee5859d072652f53b90840c06970c3373ff90c63a3a7",
+  "status": "closed",
+  "linked_item_keys": [
+    "CF-012",
+    "CF-013",
+    "CF-014",
+    "CF-015",
+    "CF-016",
+    "CF-018",
+    "CF-019",
+    "CF-023",
+    "CF-024",
+    "CF-025",
+    "CF-026",
+    "CF-027"
+  ],
+  "linked_item_count": 12,
+  "opened_at": "2026-04-21T14:54:31.041Z",
+  "closed_at": "2026-04-21T14:57:35.903Z",
+  "resolved_at": "2026-04-21T14:57:35.903Z",
+  "outcome": "no_backlog_change",
+  "resolution_kind": "ack",
+  "resolution_ref": "ack-source-review"
+}

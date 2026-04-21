@@ -1,0 +1,16 @@
+{
+  "source_review_id": "sr-a81e772a-16a8-48fd-9854-dea832ad39cb",
+  "source_id": "a81e772a-16a8-48fd-9854-dea832ad39cb",
+  "source_label": "docs/adr/ADR-2026-03-23-no-technical-debt-rule.md",
+  "previous_hash": "381c5cf627aef156af4658bf395fc457c7a408db9d07e7d08f9fddd885075bcf",
+  "current_hash": "0721ee15d336b5c91d060d8bcea8a25cd415f5c17a72dbd15c192de25c5b24e0",
+  "status": "closed",
+  "linked_item_keys": [],
+  "linked_item_count": 0,
+  "opened_at": "2026-04-21T14:54:31.041Z",
+  "closed_at": "2026-04-21T14:57:36.195Z",
+  "resolved_at": "2026-04-21T14:57:36.195Z",
+  "outcome": "no_backlog_change",
+  "resolution_kind": "ack",
+  "resolution_ref": "ack-source-review"
+}

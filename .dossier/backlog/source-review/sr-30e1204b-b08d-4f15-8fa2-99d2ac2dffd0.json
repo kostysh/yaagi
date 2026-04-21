@@ -1,0 +1,18 @@
+{
+  "source_review_id": "sr-30e1204b-b08d-4f15-8fa2-99d2ac2dffd0",
+  "source_id": "30e1204b-b08d-4f15-8fa2-99d2ac2dffd0",
+  "source_label": "docs/ssot/features/F-0017-git-managed-body-evolution-and-stable-snapshots.md",
+  "previous_hash": "b0c04a4637ad08879774c3da94da152eb190cca758fb484a5ae40482bd52c3ba",
+  "current_hash": "0439e7e0678b65a7240cc3eaaf2bd953ad97e8bfd142e023ebbba0bdefda60c6",
+  "status": "closed",
+  "linked_item_keys": [
+    "CF-012"
+  ],
+  "linked_item_count": 1,
+  "opened_at": "2026-04-21T14:54:31.041Z",
+  "closed_at": "2026-04-21T14:57:35.841Z",
+  "resolved_at": "2026-04-21T14:57:35.841Z",
+  "outcome": "no_backlog_change",
+  "resolution_kind": "ack",
+  "resolution_ref": "ack-source-review"
+}

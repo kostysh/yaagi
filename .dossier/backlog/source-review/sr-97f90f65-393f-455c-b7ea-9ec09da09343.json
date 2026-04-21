@@ -1,0 +1,18 @@
+{
+  "source_review_id": "sr-97f90f65-393f-455c-b7ea-9ec09da09343",
+  "source_id": "97f90f65-393f-455c-b7ea-9ec09da09343",
+  "source_label": "docs/ssot/features/F-0019-consolidation-event-envelope-graceful-shutdown.md",
+  "previous_hash": "ebb040b37a370cd508a385581ea3cefe3df5612ef78b6e68780aa8cd5070d544",
+  "current_hash": "0de46d6c60ae52c3e31f13203113891777d06160b2c0230908e5014fc61b4585",
+  "status": "closed",
+  "linked_item_keys": [
+    "CF-018"
+  ],
+  "linked_item_count": 1,
+  "opened_at": "2026-04-21T14:54:31.041Z",
+  "closed_at": "2026-04-21T14:57:36.077Z",
+  "resolved_at": "2026-04-21T14:57:36.077Z",
+  "outcome": "no_backlog_change",
+  "resolution_kind": "ack",
+  "resolution_ref": "ack-source-review"
+}

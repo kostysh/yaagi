@@ -1,0 +1,18 @@
+{
+  "source_review_id": "sr-9d061028-1d37-4f85-9919-f6321ed1f995",
+  "source_id": "9d061028-1d37-4f85-9919-f6321ed1f995",
+  "source_label": "docs/notes/backlog-legacy/local-vllm-model-shortlist-2026-03-24.md",
+  "previous_hash": "f004904de20605b7ca4c31e9cef83815aa50118959d7fe4a28459c41e2a2b795",
+  "current_hash": "c21e92b7344fd3a9cb82b88d94d87a4bafbfd3cb206b7aae7b83bdc613768f14",
+  "status": "closed",
+  "linked_item_keys": [
+    "CF-023"
+  ],
+  "linked_item_count": 1,
+  "opened_at": "2026-04-21T14:54:31.041Z",
+  "closed_at": "2026-04-21T14:57:36.138Z",
+  "resolved_at": "2026-04-21T14:57:36.138Z",
+  "outcome": "no_backlog_change",
+  "resolution_kind": "ack",
+  "resolution_ref": "ack-source-review"
+}
