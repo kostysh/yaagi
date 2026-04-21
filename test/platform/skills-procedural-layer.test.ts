@@ -17,7 +17,7 @@ void test('AC-F0022-01 AC-F0022-02 AC-F0022-03 AC-F0022-04 keeps the skills seam
   const skillsPackageJson = await readJson<PackageJson>('packages/skills/package.json');
   const corePackageJson = await readJson<PackageJson>('apps/core/package.json');
   const dossier = await readFile(
-    path.join(repoRoot, 'docs/features/F-0022-skills-and-procedural-layer.md'),
+    path.join(repoRoot, 'docs/ssot/features/F-0022-skills-and-procedural-layer.md'),
     'utf8',
   );
   const runtimeSkillsSource = await readFile(
@@ -37,7 +37,7 @@ void test('AC-F0022-01 AC-F0022-02 AC-F0022-03 AC-F0022-04 keeps the skills seam
 
 void test('AC-F0022-16 AC-F0022-17 keeps lifecycle states and a separate registry out of scope for v1', async () => {
   const dossier = await readFile(
-    path.join(repoRoot, 'docs/features/F-0022-skills-and-procedural-layer.md'),
+    path.join(repoRoot, 'docs/ssot/features/F-0022-skills-and-procedural-layer.md'),
     'utf8',
   );
   const runtimeSkillsSource = await readFile(

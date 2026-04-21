@@ -1,0 +1,1321 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-04-09T23:44:11.048Z",
+  "updated_at": "2026-04-18T03:44:52.603Z",
+  "last_refresh_at": "2026-04-18T03:44:52.603Z",
+  "context": {
+    "glossary": [
+      {
+        "term": "deployment cell",
+        "definition": "The canonical multi-service runtime boundary that hosts the Polyphony core, PostgreSQL, model organs, and workshop workers.",
+        "aliases": [
+          "cell"
+        ]
+      },
+      {
+        "term": "identity-bearing core",
+        "definition": "The single long-lived Polyphony runtime that owns subject continuity, bounded action, and workflow orchestration.",
+        "aliases": [
+          "polyphony core"
+        ]
+      },
+      {
+        "term": "organ",
+        "definition": "A bounded non-personal model or capability surface used by the core as a cognitive or operational organ.",
+        "aliases": [
+          "model organ"
+        ]
+      }
+    ],
+    "key_strategy": {
+      "item_key_space": "Preserve legacy CF-* seam identifiers as stable backlog item keys during migration to the unified dossier-engineer runtime.",
+      "delivery_state_rule": "Legacy intaken maps to implemented by explicit operator instruction; confirmed maps to planned; remaining candidate seams stay defined unless a carried migration gap blocks them.",
+      "source_traceability": "Architecture and legacy planning inputs stay attached through registered source IDs, while current truth is read from dossier-engineer backlog state after packet apply."
+    },
+    "target_system": [
+      {
+        "area": "runtime",
+        "summary": "One long-lived identity-bearing agent runs in ticks and owns bounded action, continuity, and workflow orchestration.",
+        "services": [
+          "polyphony-core"
+        ],
+        "public_http": false
+      },
+      {
+        "area": "state",
+        "summary": "PostgreSQL is the canonical state kernel while the body and skills live in a Git-governed workspace.",
+        "stores": [
+          "postgres",
+          "git-workspace"
+        ],
+        "public_http": false
+      },
+      {
+        "area": "models",
+        "summary": "Local model services act as organs behind the runtime rather than separate personalities.",
+        "services": [
+          "vllm-fast",
+          "vllm-deep",
+          "vllm-pool"
+        ],
+        "public_http": false
+      },
+      {
+        "area": "workshop",
+        "summary": "Datasets, training, evaluation, and bounded promotion stay on the canonical workshop/runtime boundary.",
+        "services": [
+          "workshop"
+        ],
+        "public_http": false
+      },
+      {
+        "area": "operations",
+        "summary": "Verification and deployment use the canonical pnpm toolchain, root quality gates, and containerized smoke path.",
+        "commands": [
+          "pnpm quality:fix",
+          "pnpm quality:check",
+          "pnpm smoke:cell"
+        ],
+        "public_http": false
+      }
+    ],
+    "as_built": [
+      {
+        "area": "implemented-backbone",
+        "implemented_seams": [
+          "CF-001",
+          "CF-002",
+          "CF-003",
+          "CF-004",
+          "CF-005",
+          "CF-006",
+          "CF-007",
+          "CF-008",
+          "CF-009",
+          "CF-010",
+          "CF-011",
+          "CF-017",
+          "CF-020",
+          "CF-021",
+          "CF-022"
+        ],
+        "note": "The delivered backbone already covers boot, runtime, state, perception, routing, bounded action, homeostat, operator API, model ecology, workshop, platform, and smoke harness seams."
+      },
+      {
+        "area": "pending-seams",
+        "pending_seams": [
+          "CF-012",
+          "CF-013",
+          "CF-014",
+          "CF-015",
+          "CF-016",
+          "CF-018",
+          "CF-019",
+          "CF-023",
+          "CF-024",
+          "CF-025",
+          "CF-026",
+          "CF-027"
+        ],
+        "note": "These seams remain backlog-owned and must now progress through the merged dossier-engineer backlog-to-delivery flow instead of the legacy candidate table."
+      },
+      {
+        "area": "migration",
+        "legacy_inputs": [
+          "feature-candidates.md",
+          "working-system-roadmap-matrix-2026-03-26.md",
+          "local-vllm-model-shortlist-2026-03-24.md"
+        ],
+        "note": "Legacy planning documents stay as supporting migration inputs only and are no longer the live backlog state."
+      },
+      {
+        "area": "delivery-state",
+        "explicit_rule": [
+          "intaken=>implemented",
+          "confirmed=>planned"
+        ],
+        "note": "Candidate seams stay defined until the new backlog/dossier workflow advances them through explicit specification, planning, and closure."
+      },
+      {
+        "area": "pending-seams-current",
+        "pending_seams": [
+          "CF-012",
+          "CF-013",
+          "CF-014",
+          "CF-015",
+          "CF-016",
+          "CF-018",
+          "CF-019",
+          "CF-024",
+          "CF-025",
+          "CF-026",
+          "CF-027"
+        ],
+        "implemented_since_baseline": [
+          "CF-023"
+        ],
+        "planned_followups": [
+          "CF-028"
+        ],
+        "note": "Current follow-up state after real-serving closure: CF-023 moved to implemented, while smoke-harness optimization continues as separate backlog delta CF-028."
+      }
+    ],
+    "claims": [],
+    "contracts": [],
+    "data_domains": [],
+    "quality_attributes": [],
+    "policy_decisions": []
+  },
+  "items": [
+    {
+      "item_key": "CF-001",
+      "title": "Конституционный контур запуска и восстановления",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-002",
+        "CF-003",
+        "CF-004",
+        "CF-009",
+        "CF-012",
+        "CF-021"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-002",
+      "title": "Тиковый runtime, scheduler и эпизодическая линия времени",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-001",
+        "CF-020"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-003",
+        "CF-004",
+        "CF-005",
+        "CF-006",
+        "CF-007",
+        "CF-009",
+        "CF-015",
+        "CF-018",
+        "CF-021"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-003",
+      "title": "Ядро субъектного состояния и модель памяти",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-001",
+        "CF-002"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-005",
+        "CF-008",
+        "CF-009",
+        "CF-015",
+        "CF-016",
+        "CF-017",
+        "CF-018",
+        "CF-021"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-004",
+      "title": "Буфер восприятия и сенсорные адаптеры",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-001",
+        "CF-002"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-005",
+        "CF-007",
+        "CF-009",
+        "CF-017",
+        "CF-021",
+        "CF-027"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-005",
+      "title": "Нарративный и меметический контур рассуждения",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-002",
+        "CF-003",
+        "CF-004"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-008",
+        "CF-016",
+        "CF-018"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-006",
+      "title": "Базовый маршрутизатор моделей и профили органов",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-002",
+        "CF-020"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-007",
+        "CF-009",
+        "CF-010",
+        "CF-017",
+        "CF-023",
+        "CF-027"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-007",
+      "title": "Исполнительный центр и ограниченный слой действий",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-002",
+        "CF-004",
+        "CF-006",
+        "CF-017",
+        "CF-020"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-008",
+        "CF-012",
+        "CF-013",
+        "CF-014",
+        "CF-015"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-008",
+      "title": "Гомеостат и операционные guardrails",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-003",
+        "CF-005",
+        "CF-007"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-016"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-009",
+      "title": "HTTP API управления и интроспекции",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-001",
+        "CF-002",
+        "CF-003",
+        "CF-004",
+        "CF-006",
+        "CF-010"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-016",
+        "CF-024",
+        "CF-026"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-010",
+      "title": "Расширенная модельная экология и здоровье реестра",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-006",
+        "CF-020"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-009",
+        "CF-011",
+        "CF-015",
+        "CF-019",
+        "CF-023"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-011",
+      "title": "Контур workshop для датасетов, обучения, оценки и promotion",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-010"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-012",
+        "CF-016",
+        "CF-019",
+        "CF-023"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-012",
+      "title": "Git-управляемая эволюция тела и стабильные снапшоты",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-001",
+        "CF-007",
+        "CF-011",
+        "CF-016"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [
+        "4ffa2197-8f9f-4d98-a615-36b03c2cc660"
+      ],
+      "implementation_source_ids": [
+        "30e1204b-b08d-4f15-8fa2-99d2ac2dffd0"
+      ],
+      "test_source_ids": [
+        "30e1204b-b08d-4f15-8fa2-99d2ac2dffd0"
+      ],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-014"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-013",
+      "title": "Слой skills и процедур",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-007",
+        "CF-020",
+        "CF-023"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [
+        "4ffa2197-8f9f-4d98-a615-36b03c2cc660"
+      ],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-014",
+      "title": "Профиль безопасности и изоляции",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-020",
+        "CF-007",
+        "CF-012",
+        "CF-016",
+        "CF-024",
+        "CF-015"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [
+        "4ffa2197-8f9f-4d98-a615-36b03c2cc660"
+      ],
+      "implementation_source_ids": [
+        "101e300d-dc80-4a8b-a11d-0a3f1849f368"
+      ],
+      "test_source_ids": [
+        "101e300d-dc80-4a8b-a11d-0a3f1849f368"
+      ],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-027"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-015",
+      "title": "Наблюдаемость и диагностические отчёты",
+      "type": "feature",
+      "delivery_state": "defined",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-002",
+        "CF-003",
+        "CF-007",
+        "CF-010",
+        "CF-016",
+        "CF-018"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [
+        "4ffa2197-8f9f-4d98-a615-36b03c2cc660"
+      ],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-014",
+        "CF-025",
+        "CF-026",
+        "CF-027"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": true
+    },
+    {
+      "item_key": "CF-016",
+      "title": "Development Governor и управление изменениями",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-003",
+        "CF-005",
+        "CF-008",
+        "CF-009",
+        "CF-011"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [
+        "4ffa2197-8f9f-4d98-a615-36b03c2cc660"
+      ],
+      "implementation_source_ids": [
+        "ef27eeb6-7dfa-408b-a240-1712dd407575"
+      ],
+      "test_source_ids": [
+        "ef27eeb6-7dfa-408b-a240-1712dd407575"
+      ],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-012",
+        "CF-014",
+        "CF-015",
+        "CF-019",
+        "CF-025",
+        "CF-027"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-017",
+      "title": "Context Builder и structured decision harness",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-003",
+        "CF-004",
+        "CF-006"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-007"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-018",
+      "title": "Консолидация, event envelope и graceful shutdown",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-002",
+        "CF-003",
+        "CF-005"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [
+        "4ffa2197-8f9f-4d98-a615-36b03c2cc660"
+      ],
+      "implementation_source_ids": [
+        "97f90f65-393f-455c-b7ea-9ec09da09343"
+      ],
+      "test_source_ids": [
+        "97f90f65-393f-455c-b7ea-9ec09da09343"
+      ],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-015",
+        "CF-025"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-019",
+      "title": "Специализированные органы и политика вывода из эксплуатации",
+      "type": "feature",
+      "delivery_state": "defined",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-010",
+        "CF-011",
+        "CF-016",
+        "CF-023",
+        "CF-025"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [
+        "4ffa2197-8f9f-4d98-a615-36b03c2cc660"
+      ],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": true
+    },
+    {
+      "item_key": "CF-020",
+      "title": "Канонический scaffold монорепы и deployment cell",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-002",
+        "CF-006",
+        "CF-007",
+        "CF-010",
+        "CF-013",
+        "CF-014",
+        "CF-021",
+        "CF-022",
+        "CF-023",
+        "CF-024",
+        "CF-025"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-021",
+      "title": "Актуализация базовых зависимостей и выравнивание инструментального стека",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-001",
+        "CF-002",
+        "CF-003",
+        "CF-004",
+        "CF-020"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-022"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-022",
+      "title": "Детерминированный smoke harness и suite-scoped lifecycle deployment cell",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-020",
+        "CF-021"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-025",
+        "CF-028"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-023",
+      "title": "Реальный vLLM-serving и promotion model dependencies",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-020",
+        "CF-006",
+        "CF-010",
+        "CF-011"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [
+        "4ffa2197-8f9f-4d98-a615-36b03c2cc660",
+        "9d061028-1d37-4f85-9919-f6321ed1f995"
+      ],
+      "implementation_source_ids": [
+        "d53951b9-90dd-4afc-b7e0-df4dfd03a867"
+      ],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-013",
+        "CF-019",
+        "CF-025",
+        "CF-028"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    },
+    {
+      "item_key": "CF-024",
+      "title": "Аутентификация, авторизация и operator RBAC",
+      "type": "feature",
+      "delivery_state": "defined",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-020",
+        "CF-009"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [
+        "4ffa2197-8f9f-4d98-a615-36b03c2cc660"
+      ],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-014",
+        "CF-026",
+        "CF-027"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": true
+    },
+    {
+      "item_key": "CF-025",
+      "title": "Deploy/release automation и rollback orchestration",
+      "type": "feature",
+      "delivery_state": "defined",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-020",
+        "CF-022",
+        "CF-023",
+        "CF-015",
+        "CF-016",
+        "CF-018"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [
+        "4ffa2197-8f9f-4d98-a615-36b03c2cc660"
+      ],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [
+        "CF-019",
+        "CF-026"
+      ],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": true
+    },
+    {
+      "item_key": "CF-026",
+      "title": "Support / operability contract и incident discipline",
+      "type": "feature",
+      "delivery_state": "defined",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-009",
+        "CF-015",
+        "CF-024",
+        "CF-025"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [
+        "4ffa2197-8f9f-4d98-a615-36b03c2cc660"
+      ],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": true
+    },
+    {
+      "item_key": "CF-027",
+      "title": "Policy profiles, consultant admission и phase-6 governance closure",
+      "type": "feature",
+      "delivery_state": "defined",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-004",
+        "CF-006",
+        "CF-014",
+        "CF-015",
+        "CF-016",
+        "CF-024"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "97107644-d070-4cb0-bfe3-aa581331229c"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f"
+      ],
+      "plan_source_ids": [
+        "4ffa2197-8f9f-4d98-a615-36b03c2cc660"
+      ],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": true
+    },
+    {
+      "item_key": "CF-028",
+      "title": "Оптимизация smoke harness после real vLLM/Gemma runtime",
+      "type": "feature",
+      "delivery_state": "implemented",
+      "gaps": [],
+      "depends_on_keys": [
+        "CF-022",
+        "CF-023"
+      ],
+      "origin_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "99b920fb-a72a-4372-94bd-28dce36af456"
+      ],
+      "specification_source_ids": [
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "99b920fb-a72a-4372-94bd-28dce36af456"
+      ],
+      "plan_source_ids": [
+        "99b920fb-a72a-4372-94bd-28dce36af456"
+      ],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": [],
+      "reverse_dependency_keys": [],
+      "open_todo_ids": [],
+      "needs_attention": false,
+      "attention_reason_codes": [],
+      "attention_reasons": [],
+      "ready_for_next_step": false
+    }
+  ],
+  "todos": []
+}

@@ -1,0 +1,563 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-04-09T23:44:11.048Z",
+  "updated_at": "2026-04-18T03:44:27.997Z",
+  "next_apply_index": 41,
+  "packets": [
+    {
+      "packet_id": "f0947cdd-67be-4f98-9cbd-bec31fce4589",
+      "apply_index": 1,
+      "canonical_path": ".dossier/backlog/packets/2f6b30a55731--packet.template.json",
+      "content_hash": "2f6b30a557319c98b94510fa491695c506bd48f55a3858b5153e006f300c56fe",
+      "applied_at": "2026-04-09T23:46:55.933Z",
+      "item_keys": [
+        "CF-001",
+        "CF-002",
+        "CF-003",
+        "CF-004",
+        "CF-005",
+        "CF-006",
+        "CF-007",
+        "CF-008",
+        "CF-009",
+        "CF-010",
+        "CF-011",
+        "CF-012",
+        "CF-013",
+        "CF-014",
+        "CF-015",
+        "CF-016",
+        "CF-017",
+        "CF-018",
+        "CF-019",
+        "CF-020",
+        "CF-021",
+        "CF-022",
+        "CF-023",
+        "CF-024",
+        "CF-025",
+        "CF-026",
+        "CF-027"
+      ]
+    },
+    {
+      "packet_id": "3626ef44-d82d-45f1-86fc-73bec5ad9441",
+      "apply_index": 35,
+      "canonical_path": ".dossier/backlog/packets/3ebdcd681116--58e93468d0bd--cf028-smoke-harness-follow-up.json",
+      "content_hash": "3ebdcd681116fbef07cdd34508aaf7900a084bd2bbd048fb879c0a006717ded9",
+      "applied_at": "2026-04-17T17:01:49.742Z",
+      "item_keys": [
+        "CF-028"
+      ]
+    }
+  ],
+  "patches": [
+    {
+      "patch_id": "2026-04-10-001-cf013-cf019-gap-closure",
+      "apply_index": 2,
+      "canonical_path": ".dossier/backlog/patches/37a07d89143a--001-patch.template.json",
+      "content_hash": "37a07d89143a536e5783d02309b3e45833586b490a8889331d75aeb9def7381f",
+      "sequence": 1,
+      "applied_at": "2026-04-10T00:19:25.085Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-013",
+        "CF-019"
+      ]
+    },
+    {
+      "patch_id": "2026-04-10-002-cf016-specified",
+      "apply_index": 3,
+      "canonical_path": ".dossier/backlog/patches/accfa621a0ec--002-patch.template.json",
+      "content_hash": "973f3a39057d2d285bfaff1044efa5ff91ac82c78dff4d375f43579293f2b915",
+      "sequence": 2,
+      "applied_at": "2026-04-10T01:04:35.415Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-016"
+      ]
+    },
+    {
+      "patch_id": "2026-04-10-003-cf016-dependency-realignment",
+      "apply_index": 4,
+      "canonical_path": ".dossier/backlog/patches/95f7563c9f44--003-patch.template.json",
+      "content_hash": "91a6212097bb8577b4c7512860db4f6ad4fb598633d12b5b0be971dd36f4468d",
+      "sequence": 3,
+      "applied_at": "2026-04-10T01:25:28.971Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-016"
+      ]
+    },
+    {
+      "patch_id": "2026-04-10-004-cf009-remove-governor-cycle",
+      "apply_index": 5,
+      "canonical_path": ".dossier/backlog/patches/2ea47e141faf--004-patch.template.json",
+      "content_hash": "2ea47e141faffaa24c644233a581f502d0fc27e182e0954a1e9161adeb28a440",
+      "sequence": 4,
+      "applied_at": "2026-04-10T01:45:38.660Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-009"
+      ]
+    },
+    {
+      "patch_id": "2026-04-10-005-review-todo-hygiene-after-governor-spec-compact",
+      "apply_index": 6,
+      "canonical_path": ".dossier/backlog/patches/9bf2964f3815--005-patch.template.json",
+      "content_hash": "9bf2964f3815f860b411d1309c96534ac26d6b048cdda5c4d09fe432d1557a6a",
+      "sequence": 5,
+      "applied_at": "2026-04-10T02:01:55.879Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-001",
+        "CF-002",
+        "CF-003",
+        "CF-004",
+        "CF-005",
+        "CF-006",
+        "CF-007",
+        "CF-008",
+        "CF-009",
+        "CF-010",
+        "CF-011",
+        "CF-012",
+        "CF-013",
+        "CF-014",
+        "CF-015",
+        "CF-016",
+        "CF-017",
+        "CF-018",
+        "CF-019",
+        "CF-020",
+        "CF-021",
+        "CF-022",
+        "CF-023",
+        "CF-024",
+        "CF-025",
+        "CF-026",
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-10-006-cf-016-plan-slice-planned",
+      "apply_index": 7,
+      "canonical_path": ".dossier/backlog/patches/b5e9231eafc3--006-patch.template.json",
+      "content_hash": "b5e9231eafc32f202bdf25d4b37731baa85b3f84eda67c0b5dea5c320a8f67e0",
+      "sequence": 6,
+      "applied_at": "2026-04-10T10:32:38.649Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-016"
+      ]
+    },
+    {
+      "patch_id": "2026-04-10-007-close-cf-016-planned-dependency-review",
+      "apply_index": 8,
+      "canonical_path": ".dossier/backlog/patches/66ffac51a9e4--007-patch.template.json",
+      "content_hash": "66ffac51a9e42f6c394c33a4d8e61e2472d7127fbad1b298ee2461ce33985b39",
+      "sequence": 7,
+      "applied_at": "2026-04-10T10:33:23.697Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-012",
+        "CF-014",
+        "CF-015",
+        "CF-019",
+        "CF-025",
+        "CF-026",
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-10-008-actualize-cf-016-implemented",
+      "apply_index": 9,
+      "canonical_path": ".dossier/backlog/patches/fc10dd366d46--008-patch.template.json",
+      "content_hash": "fc10dd366d46796a63f10f3bc715a722077109ce007ca6e05c8f4cdf4a3df4b1",
+      "sequence": 8,
+      "applied_at": "2026-04-10T12:44:27.597Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-016"
+      ]
+    },
+    {
+      "patch_id": "2026-04-10-009-close-cf-016-implemented-review",
+      "apply_index": 10,
+      "canonical_path": ".dossier/backlog/patches/18b6b61aed0f--009-patch.template.json",
+      "content_hash": "18b6b61aed0f5c99e65420ed2bda009839913b19a1ef2980b4e13d12574a465f",
+      "sequence": 9,
+      "applied_at": "2026-04-10T12:45:22.891Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-012",
+        "CF-014",
+        "CF-015",
+        "CF-016",
+        "CF-019",
+        "CF-025",
+        "CF-026",
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-10-010-cf012-specified",
+      "apply_index": 11,
+      "canonical_path": ".dossier/backlog/patches/b961edda66bd--010-patch.template.json",
+      "content_hash": "b961edda66bdff26072a000eaab0911c635bcb30ef8416d421e263875321057c",
+      "sequence": 10,
+      "applied_at": "2026-04-10T18:09:12.166Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-012"
+      ]
+    },
+    {
+      "patch_id": "2026-04-10-011-clear-cf012-dependency-review",
+      "apply_index": 12,
+      "canonical_path": ".dossier/backlog/patches/dd536535d944--011-patch.template.json",
+      "content_hash": "dd536535d944d933d46a267cec1f888a4e2799b2f336e0c80ed86ccad20a4a2a",
+      "sequence": 11,
+      "applied_at": "2026-04-10T18:10:00.175Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-014",
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-10-012-cf012-planned",
+      "apply_index": 13,
+      "canonical_path": ".dossier/backlog/patches/64b744a3f201--012-patch.template.json",
+      "content_hash": "64b744a3f2010a81ffc2813bae16fe8f5f847a0e7759112a972feea07f2b2f66",
+      "sequence": 12,
+      "applied_at": "2026-04-10T18:42:51.462Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-012"
+      ]
+    },
+    {
+      "patch_id": "2026-04-10-013-cf012-dependent-todo-reviewed",
+      "apply_index": 14,
+      "canonical_path": ".dossier/backlog/patches/b4da68b77fc7--013-patch.template.json",
+      "content_hash": "b4da68b77fc7d9e349d6d70ce9061540f0a7c5d1b35f6487b54da769f56f6d6a",
+      "sequence": 13,
+      "applied_at": "2026-04-10T18:44:55.699Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-014",
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-13-014-cf012-implemented",
+      "apply_index": 15,
+      "canonical_path": ".dossier/backlog/patches/f5d52781de13--014-patch.template.json",
+      "content_hash": "f5d52781de13f48609f25ae8c7d04b46d539fdb07c82b3d7fb176e9f8d2ea6d8",
+      "sequence": 14,
+      "applied_at": "2026-04-13T15:06:48.563Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-012"
+      ]
+    },
+    {
+      "patch_id": "2026-04-13-015-close-reviewed-mutation-todos",
+      "apply_index": 16,
+      "canonical_path": ".dossier/backlog/patches/868e448e8a8a--015-close-mutation-todos.template.json",
+      "content_hash": "868e448e8a8adaa063396c4de5bc11fb158d8e5e9753b7920de1ef1683d649cc",
+      "sequence": 15,
+      "applied_at": "2026-04-13T15:07:46.788Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-012",
+        "CF-014",
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-14-016-cf-014-intake-boundary-realignment",
+      "apply_index": 17,
+      "canonical_path": ".dossier/backlog/patches/1e083e086ac6--2026-04-14-001-cf-014-intake-boundary-realignment.json",
+      "content_hash": "1e083e086ac6d77d179dd758e51215b160ad6a055950f268f0c4e17d504cf4e4",
+      "sequence": 16,
+      "applied_at": "2026-04-14T20:50:16.942Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-014"
+      ]
+    },
+    {
+      "patch_id": "2026-04-14-017-f-0018-spec-compact-actualization",
+      "apply_index": 18,
+      "canonical_path": ".dossier/backlog/patches/849f681a437b--2026-04-14-002-f-0018-spec-compact-actualization.template.json",
+      "content_hash": "849f681a437bb86249fde47793f38c71321142e226c0767c10ee2c0c940d1cc8",
+      "sequence": 17,
+      "applied_at": "2026-04-14T21:04:38.240Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-014"
+      ]
+    },
+    {
+      "patch_id": "2026-04-14-018-f-0018-clear-cf-027-dependency-review",
+      "apply_index": 19,
+      "canonical_path": ".dossier/backlog/patches/c55d59e73174--2026-04-14-003-f-0018-clear-cf-027-dependency-review.template.json",
+      "content_hash": "c55d59e73174b8fc18a13727234c1abd4313b1a6654ac4213edc341219f96796",
+      "sequence": 18,
+      "applied_at": "2026-04-14T21:05:13.045Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-14-019-f-0018-plan-slice-actualization",
+      "apply_index": 20,
+      "canonical_path": ".dossier/backlog/patches/f62c9fc3a195--2026-04-14-004-f-0018-plan-slice-actualization.template.json",
+      "content_hash": "f62c9fc3a195832632b6381e85b0e8d5348af91373ad12a20f74d86ff07ea431",
+      "sequence": 19,
+      "applied_at": "2026-04-14T21:21:07.312Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-014"
+      ]
+    },
+    {
+      "patch_id": "2026-04-14-020-f-0018-clear-cf-027-plan-review",
+      "apply_index": 21,
+      "canonical_path": ".dossier/backlog/patches/72fc566cdd74--2026-04-14-005-f-0018-clear-cf-027-plan-review.template.json",
+      "content_hash": "72fc566cdd740df271ca593a60b17d9d39c1c0b7d4c88371d96e80bd2c25256a",
+      "sequence": 20,
+      "applied_at": "2026-04-14T21:21:39.466Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-14-021-f-0018-add-cf-015-dependency",
+      "apply_index": 22,
+      "canonical_path": ".dossier/backlog/patches/3c70de1e1bdf--2026-04-14-021-f-0018-add-cf-015-dependency.template.json",
+      "content_hash": "3c70de1e1bdf57bdf77e44fbbf930ac0924698cf7633e5d2e775f88c16eb779b",
+      "sequence": 21,
+      "applied_at": "2026-04-14T21:29:55.222Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-014"
+      ]
+    },
+    {
+      "patch_id": "2026-04-14-022-f-0018-clear-cf-027-after-cf-015-dependency",
+      "apply_index": 23,
+      "canonical_path": ".dossier/backlog/patches/cd803cfc1b6b--2026-04-14-022-f-0018-clear-cf-027-after-cf-015-dependency.template.json",
+      "content_hash": "cd803cfc1b6ba6f59a99506978aee1f5ad4c3469a9993d9816e16ca7090efe52",
+      "sequence": 22,
+      "applied_at": "2026-04-14T21:30:22.064Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-15-023-f-0018-implemented",
+      "apply_index": 24,
+      "canonical_path": ".dossier/backlog/patches/611b80d4e305--2026-04-15-f-0018-implemented.template.json",
+      "content_hash": "611b80d4e305e403106f41e455bcf6f172156355ef44276937b90d6542dafdfe",
+      "sequence": 23,
+      "applied_at": "2026-04-14T23:52:33.152Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-014"
+      ]
+    },
+    {
+      "patch_id": "2026-04-15-024-f-0018-review-todos-clear",
+      "apply_index": 25,
+      "canonical_path": ".dossier/backlog/patches/025927bfeea9--2026-04-15-f-0018-review-todos-clear.template.json",
+      "content_hash": "025927bfeea90816b93fa33638adc92e345e61a03d7bcc8405f84e7fd0f156d6",
+      "sequence": 24,
+      "applied_at": "2026-04-14T23:53:10.154Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-014",
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-15-025-f-0019-spec-compact-actualization",
+      "apply_index": 26,
+      "canonical_path": ".dossier/backlog/patches/1664c7c62a83--2026-04-15-025-f-0019-spec-compact-actualization.template.json",
+      "content_hash": "1664c7c62a8397f74f97c5bf25452bf2f88d4fedd01caa68929adeefadc5acb4",
+      "sequence": 25,
+      "applied_at": "2026-04-15T15:13:37.233Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-018"
+      ]
+    },
+    {
+      "patch_id": "2026-04-15-026-f-0019-plan-slice-actualization",
+      "apply_index": 27,
+      "canonical_path": ".dossier/backlog/patches/6a3f1ca0a474--2026-04-15-026-f-0019-plan-slice-actualization.template.json",
+      "content_hash": "6a3f1ca0a474bd793e719509cffb24f3e857d4130c574bd7dfa66d4b17c63958",
+      "sequence": 26,
+      "applied_at": "2026-04-15T15:59:21.806Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-018"
+      ]
+    },
+    {
+      "patch_id": "2026-04-15-027-f-0019-implemented",
+      "apply_index": 28,
+      "canonical_path": ".dossier/backlog/patches/9dbc09d02b06--2026-04-15-027-f-0019-implemented.template.json",
+      "content_hash": "9dbc09d02b065b59abd7f75794e9be6594bd832fba878e097397633531d46e2c",
+      "sequence": 27,
+      "applied_at": "2026-04-15T17:21:00.514Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-018"
+      ]
+    },
+    {
+      "patch_id": "2026-04-15-028-f-0019-clear-self-review-todos",
+      "apply_index": 29,
+      "canonical_path": ".dossier/backlog/patches/42a1615abba1--2026-04-15-028-f-0019-clear-self-review-todos.template.json",
+      "content_hash": "42a1615abba1054236d55d2a221235be0e8812e53df5eadf7f19f6c2195d9e8c",
+      "sequence": 28,
+      "applied_at": "2026-04-15T17:27:58.107Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-018"
+      ]
+    },
+    {
+      "patch_id": "2026-04-16-029-patch-template-1c6e56f1",
+      "apply_index": 30,
+      "canonical_path": ".dossier/backlog/patches/2aae81868b8b--cf023-spec-compact.patch.json",
+      "content_hash": "2aae81868b8bdbdf4bd4e748d4f598f264993625ab500c0f9aeba09036321286",
+      "sequence": 29,
+      "applied_at": "2026-04-16T19:20:43.255Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-023"
+      ]
+    },
+    {
+      "patch_id": "2026-04-16-030-patch-template-57fc586c",
+      "apply_index": 31,
+      "canonical_path": ".dossier/backlog/patches/f3fa3942e516--f0020-plan-slice.patch.json",
+      "content_hash": "f3fa3942e5164c8a2ecae7e3aa64417ee03ba60452edbdbac702f2fb55fc8e63",
+      "sequence": 30,
+      "applied_at": "2026-04-16T19:59:27.239Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-023"
+      ]
+    },
+    {
+      "patch_id": "2026-04-16-031-patch-template-78fb6775",
+      "apply_index": 32,
+      "canonical_path": ".dossier/backlog/patches/e1353fb2e89c--f0020-add-cf011-dep.patch.json",
+      "content_hash": "e1353fb2e89cb147f907d8d25a3e001b24711731431e87fd60fb5d7fd43a02c2",
+      "sequence": 31,
+      "applied_at": "2026-04-16T20:32:25.395Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-023"
+      ]
+    },
+    {
+      "patch_id": "2026-04-17-032-patch-template-77bf189f",
+      "apply_index": 33,
+      "canonical_path": ".dossier/backlog/patches/ed7fa9011717--cf023-structured-output-source.patch.json",
+      "content_hash": "ed7fa90117174c0f662618f7c775109cf6e56b015f56353e42c5c30dee461386",
+      "sequence": 32,
+      "applied_at": "2026-04-17T11:30:00.983Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-023"
+      ]
+    },
+    {
+      "patch_id": "2026-04-17-033-cf023-implementation-closeout",
+      "apply_index": 34,
+      "canonical_path": ".dossier/backlog/patches/b8ea53f00674--2026-04-17-033-cf023-implementation-closeout.patch.json",
+      "content_hash": "b8ea53f006742f1e2ffc0ec009f9097cf409ecfc1569a0f525bb15762ec1bf1c",
+      "sequence": 33,
+      "applied_at": "2026-04-17T15:40:37.098Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-023"
+      ]
+    },
+    {
+      "patch_id": "2026-04-17-034-patch-template-e39e088d",
+      "apply_index": 36,
+      "canonical_path": ".dossier/backlog/patches/6c4cb51cec67--cf028-implementation.patch.json",
+      "content_hash": "6c4cb51cec674d7990c230157e298771835a0843008d9b2b1c2d5f6528c99539",
+      "sequence": 34,
+      "applied_at": "2026-04-17T20:37:59.130Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-028"
+      ]
+    },
+    {
+      "patch_id": "2026-04-18-037-attention-review-closeout",
+      "apply_index": 37,
+      "canonical_path": ".dossier/backlog/patches/6a45e98c497f--2026-04-18-037-attention-review-closeout.json",
+      "content_hash": "6a45e98c497f5d9e0a2e55d36dfb348b23520ae2768b7dbc0530975046cd9d80",
+      "sequence": 37,
+      "applied_at": "2026-04-18T00:18:05.858Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-013",
+        "CF-014",
+        "CF-015",
+        "CF-019",
+        "CF-025",
+        "CF-026",
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-18-038-f0022-spec-compact-ec5ff5ff",
+      "apply_index": 38,
+      "canonical_path": ".dossier/backlog/patches/1422085fe5e8--55a81e106ce4--f0022-spec-compact.patch.json",
+      "content_hash": "1422085fe5e8d8043188f1218e4fb26b1c4cd29328354758b7f76b09c917cbe7",
+      "sequence": 38,
+      "applied_at": "2026-04-18T01:05:32.129Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-013"
+      ]
+    },
+    {
+      "patch_id": "2026-04-18-039-f0022-plan-slice-actualization",
+      "apply_index": 39,
+      "canonical_path": ".dossier/backlog/patches/b8d8e34f79c0--5d47e08c1e2a--f0022-plan-slice.patch.json",
+      "content_hash": "b8d8e34f79c0c81f49d3ae3f94f1c21478e2d1dfe6ecbd697e7aafba09cd74d5",
+      "sequence": 39,
+      "applied_at": "2026-04-18T02:12:48.599Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-013"
+      ]
+    },
+    {
+      "patch_id": "2026-04-18-001-cf013-implemented",
+      "apply_index": 40,
+      "canonical_path": ".dossier/backlog/patches/098d9e0db22a--2026-04-18-001-cf013-implemented.patch.json",
+      "content_hash": "098d9e0db22a75ae17a804c0e29d91a45269bc410c0a9d3a20bf6307ecc4abf6",
+      "sequence": 40,
+      "applied_at": "2026-04-18T03:44:27.997Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-013"
+      ]
+    }
+  ]
+}

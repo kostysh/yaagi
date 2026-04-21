@@ -33,7 +33,7 @@ void test('AC-F0006-01 фиксирует полный direct dependency verdict
   const dossier = await readFile(
     path.join(
       repoRoot,
-      'docs/features/F-0006-baseline-dependency-refresh-and-toolchain-alignment.md',
+      'docs/ssot/features/F-0006-baseline-dependency-refresh-and-toolchain-alignment.md',
     ),
     'utf8',
   );
@@ -94,7 +94,7 @@ void test('AC-F0006-03 keeps the canonical runtime surfaces green on the AI SDK 
   const dossier = await readFile(
     path.join(
       repoRoot,
-      'docs/features/F-0006-baseline-dependency-refresh-and-toolchain-alignment.md',
+      'docs/ssot/features/F-0006-baseline-dependency-refresh-and-toolchain-alignment.md',
     ),
     'utf8',
   );
@@ -155,7 +155,7 @@ void test('AC-F0006-04 сохраняет канонический verification 
   const dossier = await readFile(
     path.join(
       repoRoot,
-      'docs/features/F-0006-baseline-dependency-refresh-and-toolchain-alignment.md',
+      'docs/ssot/features/F-0006-baseline-dependency-refresh-and-toolchain-alignment.md',
     ),
     'utf8',
   );

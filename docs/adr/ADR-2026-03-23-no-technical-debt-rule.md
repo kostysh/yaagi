@@ -47,7 +47,7 @@
 Canonical artifact для follow-up фиксируется так:
 
 - existing feature dossier, если долг относится к уже intaken feature;
-- backlog root `docs/backlog/` через `backlog-engineer` (`packet` для нового seam, `patch-item` для существующего backlog item), если долг раскрывает ещё не intaken seam;
+- backlog root `.dossier/backlog/` через `dossier-engineer` (`packet` для нового seam, `patch-item` для существующего backlog item), если долг раскрывает ещё не intaken seam;
 - `docs/adr/ADR-*.md`, если долг cross-cutting.
 
 Automation support:

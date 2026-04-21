@@ -1,17 +1,17 @@
 # AGENTS.md
 
-This repository uses the `backlog-engineer` and `dossier-engineer` skills.
+This repository uses the `unified-dossier-engineer` skill.
 This file contains repo-specific overlays only.
 
 ## Single sources of truth
 - Global navigation index: `docs/ssot/index.md`
 - Repo architecture overview: `docs/architecture/system.md`
-- Per-feature canonical doc: `docs/features/F-*.md` (Feature Dossier)
+- Per-feature canonical doc: `docs/ssot/features/F-*.md` (Feature Dossier)
 
 ## Backlog workflow
-- Backlog root: `docs/backlog/`
-- Backlog shaping, task selection, readiness checks, gaps, attention, and lifecycle actualization use `backlog-engineer`
-- Legacy planning inputs retained for migration and historical traceability: `docs/backlog/feature-candidates.md`, `docs/backlog/working-system-roadmap-matrix-2026-03-26.md`, `docs/backlog/local-vllm-model-shortlist-2026-03-24.md`
+- Backlog root: `.dossier/backlog/`
+- Backlog shaping, task selection, readiness checks, source review, gaps, attention, and lifecycle actualization use the canonical unified `dossier-engineer` runtime
+- Legacy planning inputs retained for migration and historical traceability: `docs/notes/backlog-legacy/feature-candidates.md`, `docs/notes/backlog-legacy/working-system-roadmap-matrix-2026-03-26.md`, `docs/notes/backlog-legacy/local-vllm-model-shortlist-2026-03-24.md`
 
 ## Repo-level engineering contracts
 - Canonical toolchain and runtime notes: `README.md`
@@ -26,13 +26,12 @@ This file contains repo-specific overlays only.
 6. Before starting `spec-compact` or `plan-slice`, perform and surface an explicit assessment of whether Codex Plan mode is needed. If planning mode is required, ask using the canonical skill prompt in the user's language and wait for the user's decision. After any accepted Plan mode phase, the normal dossier step artifacts and checks are still required.
 7. Backlog and dossier automation must call the canonical installed skill scripts directly; checked-in local CLI copies or wrappers are not valid.
 8. Dossier stage logs under `.dossier/logs/`, including package-based implementation logs, must be written in the operator's language for the current session.
-9. Keep this file overlay-only. Default dossier workflow, independent-review rules, and step-closure protocol live in the `dossier-engineer` skill and should not be duplicated here unless this repository intentionally tightens them.
+9. Keep this file overlay-only. Default unified backlog/dossier workflow, independent-review rules, and step-closure protocol live in the `unified-dossier-engineer` skill and should not be duplicated here unless this repository intentionally tightens them.
 
 ## Skill automation
-- Use the installed canonical `backlog-engineer` and `dossier-engineer` runtimes directly.
-- In repo docs, `backlog-engineer <command>` and `dossier-engineer <command>` are shorthand for those installed skill scripts; absolute local paths are intentionally omitted.
-- Run `backlog-engineer` from `docs/backlog/` or otherwise point it at that backlog root explicitly.
-- Do not restore checked-in wrappers or local CLI copies for either skill.
+- Use the installed canonical `dossier-engineer` runtime from the `unified-dossier-engineer` skill directly.
+- In repo docs, `dossier-engineer <command>` is shorthand for that installed skill runtime; absolute local paths are intentionally omitted.
+- Do not restore checked-in wrappers, split-model launchers, or local CLI copies.
 
 ## Common commands
 - Format code: `pnpm format`
@@ -47,17 +46,17 @@ This file contains repo-specific overlays only.
 ## Skill command quick reference
 - Audit repo debt markers: `dossier-engineer debt-audit`
 - Audit changed-scope debt markers: `dossier-engineer debt-audit --changed-only`
-- Backlog status: `backlog-engineer status`
-- Backlog queue: `backlog-engineer queue`
-- Backlog gaps: `backlog-engineer gaps`
-- Backlog attention: `backlog-engineer attention`
-- Backlog report: `backlog-engineer report`
+- Backlog status: `dossier-engineer status`
+- Backlog queue: `dossier-engineer queue`
+- Backlog gaps: `dossier-engineer gaps`
+- Backlog attention: `dossier-engineer attention`
+- Backlog report: `dossier-engineer report`
 - Refresh index: `dossier-engineer index-refresh`
 - Sync index only: `dossier-engineer sync-index`
 - Lint dossiers: `dossier-engineer lint-dossiers`
 - Audit coverage: `dossier-engineer coverage-audit`
 - Print dependency graph: `dossier-engineer dependency-graph`
-- Resolve next action for one dossier: `dossier-engineer next-step --dossier docs/features/F-0001-foo.md`
+- Resolve next action for one dossier: `dossier-engineer next-step --dossier docs/ssot/features/F-0001-foo.md`
 - Verify step bundle: `dossier-engineer dossier-verify --step implementation --changed-only`
-- Persist review: `dossier-engineer review-artifact --dossier docs/features/F-0001-foo.md --step implementation --verdict PASS`
-- Close step: `dossier-engineer dossier-step-close --dossier docs/features/F-0001-foo.md --step implementation --verify-artifact ... --review-artifact ...`
+- Persist review: `dossier-engineer review-artifact --dossier docs/ssot/features/F-0001-foo.md --step implementation --verdict PASS`
+- Close step: `dossier-engineer dossier-step-close --dossier docs/ssot/features/F-0001-foo.md --step implementation --verify-artifact ... --review-artifact ...`

@@ -1,0 +1,4 @@
+reports/*.md
+reports/*.mmd
+mutation.lock
+source-review/*.tmp-*

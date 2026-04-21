@@ -16,25 +16,25 @@ Yet Another AGI
 
 Canonical documentation entry points:
 - `docs/architecture/system.md`
-- `docs/backlog/`
+- `.dossier/backlog/`
 - `docs/ssot/index.md`
-- `docs/features/F-*.md`
+- `docs/ssot/features/F-*.md`
 
 Canonical automation path:
 - Root `pnpm` scripts cover repository-local quality, test, and smoke flows only.
-- Backlog and dossier automation is executed through the installed canonical `backlog-engineer` and `dossier-engineer` skill runtimes.
-- In repo docs, `backlog-engineer <command>` and `dossier-engineer <command>` are shorthand for those installed skill scripts; absolute local paths are intentionally omitted.
+- Backlog and dossier automation is executed through the installed canonical `dossier-engineer` runtime from the `unified-dossier-engineer` skill.
+- In repo docs, `dossier-engineer <command>` is shorthand for that installed skill runtime; absolute local paths are intentionally omitted.
 - The repository does not vend embedded local copies, wrappers, or package aliases for those CLIs.
 
 Common backlog and dossier commands:
-- `backlog-engineer status`
-- `backlog-engineer queue`
-- `backlog-engineer gaps`
+- `dossier-engineer status`
+- `dossier-engineer queue`
+- `dossier-engineer gaps`
 - `dossier-engineer index-refresh`
 - `dossier-engineer sync-index`
 - `dossier-engineer lint-dossiers`
 - `dossier-engineer coverage-audit`
-- `dossier-engineer next-step --dossier docs/features/F-0001-constitutional-boot-recovery.md`
+- `dossier-engineer next-step --dossier docs/ssot/features/F-0001-constitutional-boot-recovery.md`
 - `dossier-engineer dossier-verify --step implementation --changed-only`
 - `dossier-engineer dependency-graph`
 
