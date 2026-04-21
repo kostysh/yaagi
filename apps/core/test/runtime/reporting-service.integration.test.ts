@@ -567,8 +567,10 @@ void test('AC-F0023-10 keeps model-health report-run provenance stable across mi
   const first = await service.getReportingBundle();
   modelHealthMode = 'fresh';
   const second = await service.getReportingBundle();
+  const freshOrganErrorRate = await service.loadOrganErrorRateSource();
   modelHealthMode = 'missing';
   const third = await service.getReportingBundle();
+  const missingOrganErrorRate = await service.loadOrganErrorRateSource();
 
   assert.equal(first.reportRuns.modelHealth?.availabilityStatus, REPORT_AVAILABILITY.UNAVAILABLE);
   assert.equal(second.reportRuns.modelHealth?.availabilityStatus, REPORT_AVAILABILITY.FRESH);
@@ -576,6 +578,14 @@ void test('AC-F0023-10 keeps model-health report-run provenance stable across mi
   assert.equal(first.reports.modelHealth.length, 0);
   assert.equal(second.reports.modelHealth.length, 1);
   assert.equal(third.reports.modelHealth.length, 0);
+  assert.deepEqual(freshOrganErrorRate, {
+    reportRunId: second.reportRuns.modelHealth?.reportRunId ?? '',
+    materializedAt: second.reportRuns.modelHealth?.materializedAt ?? '',
+    availability: REPORT_AVAILABILITY.FRESH,
+    metricValue: 0.02,
+    evidenceRefs: ['report:model_health:code.deep@shared'],
+  });
+  assert.equal(missingOrganErrorRate, null);
   assert.notEqual(
     first.reportRuns.modelHealth?.reportRunId,
     second.reportRuns.modelHealth?.reportRunId,

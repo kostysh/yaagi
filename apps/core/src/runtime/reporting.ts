@@ -193,6 +193,37 @@ const defaultPublicationMetadata = (): ReportPublicationMetadata => ({
   },
 });
 
+const toOrganErrorRateSource = (
+  reportRun: ReportRunRow,
+  reports: ModelHealthReport[],
+): OrganErrorRateSource | null => {
+  if (reportRun.availabilityStatus === REPORT_AVAILABILITY.UNAVAILABLE) {
+    return null;
+  }
+
+  const numericRows = reports.filter(
+    (report) =>
+      report.errorRate != null &&
+      report.availability !== REPORT_AVAILABILITY.UNAVAILABLE &&
+      report.healthStatus !== 'unavailable',
+  );
+  if (numericRows.length === 0) {
+    return null;
+  }
+
+  return {
+    reportRunId: reportRun.reportRunId,
+    materializedAt: reportRun.materializedAt,
+    availability: reportRun.availabilityStatus,
+    metricValue: Math.max(...numericRows.map((report) => report.errorRate ?? 0)),
+    evidenceRefs: Array.from(
+      new Set(
+        numericRows.map((report) => `report:model_health:${report.profileId ?? report.organId}`),
+      ),
+    ).sort(),
+  };
+};
+
 const uniqueSorted = (values: string[]): string[] =>
   Array.from(new Set(values.filter((entry) => entry.trim().length > 0))).sort();
 
@@ -635,8 +666,8 @@ export const createReportingService = (options: ReportingServiceOptions): Report
     getDevelopmentDiagnosticsReport: materializeDevelopmentDiagnosticsReport,
     getLifecycleDiagnosticsReport: materializeLifecycleDiagnosticsReport,
     async loadOrganErrorRateSource(): Promise<OrganErrorRateSource | null> {
-      await materializeModelHealthReports();
-      return await options.store.loadOrganErrorRateSource();
+      const modelHealthFamily = await materializeModelHealthFamily();
+      return toOrganErrorRateSource(modelHealthFamily.reportRun, modelHealthFamily.reports);
     },
     async publishReportArtifact(input: PublishReportArtifactInput): Promise<ReportRunRow> {
       const reportRun = await options.store.getReportRun(input.reportRunId);
