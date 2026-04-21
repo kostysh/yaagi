@@ -1,0 +1,157 @@
+{
+  "version": 1,
+  "generated_at": "2026-04-21T22:01:58.983Z",
+  "feature_id": "F-0023",
+  "feature_cycle_id": "fc-F-0023-mo8rctl7",
+  "identity": {
+    "feature_id": "F-0023",
+    "feature_cycle_id": "fc-F-0023-mo8rctl7",
+    "backlog_item_key": "CF-015"
+  },
+  "lifecycle": {
+    "feature_cycle_time_ms": null,
+    "intake": {
+      "cycle_ids": [
+        "intake-52969e8c"
+      ],
+      "log_paths": [
+        ".dossier/logs/feature-intake/F-0023--fc-F-0023-mo8rctl7.md"
+      ],
+      "session_ids": [],
+      "start_ts": "2026-04-21T15:07:43.435Z",
+      "intake_process_complete_ts": "2026-04-21T15:07:43.435Z"
+    },
+    "stages": {
+      "spec-compact": {
+        "cycle_ids": [
+          "spec-compact-b5dbf449"
+        ],
+        "log_paths": [
+          ".dossier/logs/spec-compact/F-0023--fc-F-0023-mo8rctl7--spec-compact-b5dbf449.md"
+        ],
+        "session_ids": [],
+        "start_ts": "2026-04-21T15:16:27.300Z",
+        "local_gates_green_ts": null,
+        "process_complete_ts": null,
+        "step_close_ts": null,
+        "step_artifacts": [],
+        "first_review_agent_started_ts": null,
+        "final_pass_ts": null
+      },
+      "plan-slice": {
+        "cycle_ids": [
+          "plan-slice-d2cff2ee"
+        ],
+        "log_paths": [
+          ".dossier/logs/plan-slice/F-0023--fc-F-0023-mo8rctl7--plan-slice-d2cff2ee.md"
+        ],
+        "session_ids": [],
+        "start_ts": "2026-04-21T15:30:42.661Z",
+        "local_gates_green_ts": null,
+        "process_complete_ts": null,
+        "step_close_ts": null,
+        "step_artifacts": [],
+        "first_review_agent_started_ts": null,
+        "final_pass_ts": null
+      },
+      "implementation": {
+        "cycle_ids": [
+          "implementation-9c19b2e4"
+        ],
+        "log_paths": [
+          ".dossier/logs/implementation/F-0023--fc-F-0023-mo8rctl7--implementation-9c19b2e4.md"
+        ],
+        "session_ids": [],
+        "start_ts": "2026-04-21T16:22:01.157Z",
+        "local_gates_green_ts": "2026-04-21T21:58:55.802Z",
+        "process_complete_ts": null,
+        "step_close_ts": null,
+        "step_artifacts": [],
+        "first_review_agent_started_ts": null,
+        "final_pass_ts": null
+      },
+      "change-proposal": {
+        "cycle_ids": [],
+        "log_paths": [],
+        "session_ids": [],
+        "start_ts": null,
+        "local_gates_green_ts": null,
+        "process_complete_ts": null,
+        "step_close_ts": null,
+        "step_artifacts": [],
+        "first_review_agent_started_ts": null,
+        "final_pass_ts": null
+      }
+    }
+  },
+  "metrics": {
+    "phase_cycle_time_ms": {
+      "feature-intake": 0,
+      "spec-compact": null,
+      "plan-slice": null,
+      "implementation": null,
+      "change-proposal": null
+    },
+    "review_loop_time_ms": null,
+    "rerounds_per_feature": 0,
+    "first_pass_close": null,
+    "closure_latency_ms": null,
+    "verification_failures_total": 0,
+    "backlog_actualization_failures_total": 0,
+    "operator_interventions_total": 0
+  },
+  "session_index_records": [
+    {
+      "version": 1,
+      "feature_cycle_id": "fc-F-0023-mo8rctl7",
+      "feature_id": "F-0023",
+      "backlog_item_key": "CF-015",
+      "stage": "feature-intake",
+      "session_id": null,
+      "trace_runtime": "codex",
+      "trace_locator_kind": "session_id",
+      "stage_log_path": ".dossier/logs/feature-intake/F-0023--fc-F-0023-mo8rctl7.md",
+      "start_ts": "2026-04-21T15:07:43.435Z",
+      "end_ts": "2026-04-21T15:07:43.435Z"
+    },
+    {
+      "version": 1,
+      "feature_cycle_id": "fc-F-0023-mo8rctl7",
+      "feature_id": "F-0023",
+      "backlog_item_key": "CF-015",
+      "stage": "implementation",
+      "session_id": null,
+      "trace_runtime": "codex",
+      "trace_locator_kind": "session_id",
+      "stage_log_path": ".dossier/logs/implementation/F-0023--fc-F-0023-mo8rctl7--implementation-9c19b2e4.md",
+      "start_ts": "2026-04-21T16:22:01.157Z",
+      "end_ts": null
+    },
+    {
+      "version": 1,
+      "feature_cycle_id": "fc-F-0023-mo8rctl7",
+      "feature_id": "F-0023",
+      "backlog_item_key": "CF-015",
+      "stage": "plan-slice",
+      "session_id": null,
+      "trace_runtime": "codex",
+      "trace_locator_kind": "session_id",
+      "stage_log_path": ".dossier/logs/plan-slice/F-0023--fc-F-0023-mo8rctl7--plan-slice-d2cff2ee.md",
+      "start_ts": "2026-04-21T15:30:42.661Z",
+      "end_ts": null
+    },
+    {
+      "version": 1,
+      "feature_cycle_id": "fc-F-0023-mo8rctl7",
+      "feature_id": "F-0023",
+      "backlog_item_key": "CF-015",
+      "stage": "spec-compact",
+      "session_id": null,
+      "trace_runtime": "codex",
+      "trace_locator_kind": "session_id",
+      "stage_log_path": ".dossier/logs/spec-compact/F-0023--fc-F-0023-mo8rctl7--spec-compact-b5dbf449.md",
+      "start_ts": "2026-04-21T15:16:27.300Z",
+      "end_ts": null
+    }
+  ]
+}

@@ -63,7 +63,9 @@ none
 
 ## Review events
 
-- Implementation self-review и canonical review-artifact будут записаны только после прохождения root quality bundle, `pnpm smoke:cell` и backlog actualization для `CF-015`.
+- Root behavior verification passed on the implementation snapshot with `pnpm format`, `pnpm typecheck`, `pnpm lint`, `pnpm test` и `pnpm smoke:cell`.
+- Первый `dossier-verify` surfaced one strict-coverage trace gap (`AC-F0023-06` missing explicit test reference); gap closed без runtime/code-path mutation отдельным test-trace commit `9aa10c5`.
+- Canonical review artifact persisted as `.dossier/reviews/F-0023/implementation-review.json` with verdict `PASS` on committed snapshot `9aa10c5`.
 
 ## Backlog follow-up
 
@@ -80,7 +82,15 @@ none
 
 ## Close-out
 
-- pending canonical `implementation -> patch-item -> dossier-verify -> review-artifact -> dossier-step-close -> lifecycle-refresh`
+- Backlog actualization completed through:
+  - `.dossier/backlog/patches/59c46b2fc5e6--f0023-implementation-closeout.patch.json`
+  - `.dossier/backlog/patches/03bdb87272b7--f0023-dependent-review-closeout.patch.json`
+- Verification artifact: `.dossier/verification/F-0023/implementation.json`
+- Review artifact: `.dossier/reviews/F-0023/implementation-review.json`
+- Step-close artifact: `.dossier/steps/F-0023/implementation-close.json`
+- Lifecycle refresh outputs:
+  - `.dossier/metrics/F-0023/fc-F-0023-mo8rctl7.json`
+  - `.dossier/retro/session-index.jsonl`
 
 ## Notes
 
