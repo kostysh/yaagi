@@ -415,7 +415,13 @@ type ModelHealthReport = {
 
 - `coverage_gate` remains `deferred` at `spec-compact` close because this stage shaped executable ACs and a forecast coverage map before any implementation-owned tests exist. The gate must move to `strict` no later than the first implementation slice that claims delivered report surfaces.
 
+### Plan mode assessment
+
+- Verdict: `not required`
+- Reason: `CF-015` remained a bounded single-item shaping task with a known source set (`docs/architecture/system.md`, legacy candidate notes, backlog state and the selected dossier shell), so `spec-compact` did not require multi-track decomposition, unresolved cross-repo planning or user-facing plan branching that would justify Codex Plan mode before shaping.
+
 ## 11. Change log
 
 - 2026-04-21: [feature-intake] Initial dossier created from backlog item `CF-015` at backlog delivery state `defined`.
 - 2026-04-21: [spec-compact] Shaped `CF-015` into a canonical observability/reporting seam with explicit report families, Homeostat read contract, owner boundaries, first-phase slices and no-op backlog actualization verdict.
+- 2026-04-21: [process-fix] Surfaced the explicit pre-`spec-compact` Plan mode decision in the dossier so the stage bundle stays externally auditable.
