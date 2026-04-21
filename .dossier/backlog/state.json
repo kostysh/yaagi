@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-21T14:54:31.041Z",
+  "updated_at": "2026-04-21T15:33:45.620Z",
   "last_refresh_at": "2026-04-21T14:54:31.041Z",
   "context": {
     "glossary": [
@@ -744,7 +744,7 @@
       "item_key": "CF-015",
       "title": "Наблюдаемость и диагностические отчёты",
       "type": "feature",
-      "delivery_state": "defined",
+      "delivery_state": "planned",
       "gaps": [],
       "depends_on_keys": [
         "CF-002",

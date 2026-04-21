@@ -1,7 +1,7 @@
 ---
 id: F-0023
 title: Наблюдаемость и диагностические отчёты
-status: shaped
+status: planned
 coverage_gate: deferred
 backlog_item_key: CF-015
 owners: ["@codex"]
@@ -340,6 +340,21 @@ type ModelHealthReport = {
 - **Verification:** boundary tests, usage audit, smoke if public read routes or runtime topology change.
 - Depends on: `F-0013`, `CF-025`, `CF-026`; owner `@codex`; unblock condition: public read exposure and downstream operational consumers remain read-only over `CF-015`.
 
+### Plan-slice commitments
+
+- **PL-F0023-01:** `SL-F0023-01` is the mandatory first implementation package because `report_runs`, report family enums and boundary ownership are the contract substrate for every later slice and for backlog actualization to `planned`.
+- **PL-F0023-02:** `SL-F0023-02` and `SL-F0023-03` may execute only after `SL-F0023-01` lands, because identity continuity, stable snapshot inventory and Homeostat health consumption all depend on the canonical run/freshness contract instead of ad hoc direct reads.
+- **PL-F0023-03:** `SL-F0023-04` stays blocked until both the foundational contract slice and at least one canonical report-family materialization slice are live, so development/lifecycle diagnostics inherit the same availability/degraded semantics.
+- **PL-F0023-04:** `SL-F0023-05` is the last slice because downstream publication and usage audit are only truthful after the underlying report families, freshness semantics and read-only owner boundaries already exist.
+
+### Planned implementation order
+
+1. `SL-F0023-01` to land `report_runs`, report-family contracts and the no-foreign-write boundary proof.
+2. `SL-F0023-02` to materialize identity continuity plus stable snapshot inventory on top of the canonical run contract.
+3. `SL-F0023-03` to materialize model/organ health and wire the `F-0012` `organ_error_rate` read path.
+4. `SL-F0023-04` to add development and lifecycle diagnostic summaries with explicit degraded semantics.
+5. `SL-F0023-05` to expose bounded publication/export plus usage audit over the already delivered report families.
+
 ## 7. Task list (implementation units)
 
 - **T-F0023-01:** Define `report_runs` contract, report family enums and family-specific payload contracts. Covers: AC-F0023-01, AC-F0023-10, AC-F0023-15.
@@ -408,20 +423,22 @@ type ModelHealthReport = {
 
 ### Backlog actualization verdict
 
-- Verdict: `no-op`
-- Reason: `spec-compact` clarified the existing selected backlog item `CF-015` without changing its dependency set, blocker set or introducing a new backlog seam.
+- Verdict: `patch existing item`
+- Target: `CF-015`
+- Patch intent: advance backlog delivery state from `defined` to `planned` without changing dependencies, blockers or source-review truth.
 
 ### Coverage gate note
 
 - `coverage_gate` remains `deferred` at `spec-compact` close because this stage shaped executable ACs and a forecast coverage map before any implementation-owned tests exist. The gate must move to `strict` no later than the first implementation slice that claims delivered report surfaces.
 
-### Plan mode assessment
+### Plan mode assessments
 
-- Verdict: `not required`
-- Reason: `CF-015` remained a bounded single-item shaping task with a known source set (`docs/architecture/system.md`, legacy candidate notes, backlog state and the selected dossier shell), so `spec-compact` did not require multi-track decomposition, unresolved cross-repo planning or user-facing plan branching that would justify Codex Plan mode before shaping.
+- `spec-compact`: `not required` because `CF-015` remained a bounded single-item shaping task with a known source set (`docs/architecture/system.md`, legacy candidate notes, backlog state and the selected dossier shell), so `spec-compact` did not require multi-track decomposition, unresolved cross-repo planning or user-facing plan branching that would justify Codex Plan mode before shaping.
+- `plan-slice`: `not required` because the shaped dossier already fixed one bounded five-slice sequence, the dependency graph was stable, and this step only had to translate those slices into executable implementation order, backlog actualization intent and proof obligations rather than branch into a user-facing planning tree.
 
 ## 11. Change log
 
 - 2026-04-21: [feature-intake] Initial dossier created from backlog item `CF-015` at backlog delivery state `defined`.
 - 2026-04-21: [spec-compact] Shaped `CF-015` into a canonical observability/reporting seam with explicit report families, Homeostat read contract, owner boundaries, first-phase slices and no-op backlog actualization verdict.
 - 2026-04-21: [process-fix] Surfaced the explicit pre-`spec-compact` Plan mode decision in the dossier so the stage bundle stays externally auditable.
+- 2026-04-21: [plan-slice] Promoted `CF-015` to `planned`, fixed the five-slice implementation order, recorded the backlog patch intent for `CF-015`, and surfaced the explicit pre-`plan-slice` Plan mode decision.
