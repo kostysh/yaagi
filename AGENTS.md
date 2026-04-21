@@ -26,7 +26,8 @@ This file contains repo-specific overlays only.
 6. Before starting `spec-compact` or `plan-slice`, perform and surface an explicit assessment of whether Codex Plan mode is needed. If planning mode is required, ask using the canonical skill prompt in the user's language and wait for the user's decision. After any accepted Plan mode phase, the normal dossier step artifacts and checks are still required.
 7. Backlog and dossier automation must call the canonical installed skill scripts directly; checked-in local CLI copies or wrappers are not valid.
 8. Dossier stage logs under `.dossier/logs/`, including package-based implementation logs, must be written in the operator's language for the current session.
-9. Keep this file overlay-only. Default unified backlog/dossier workflow, independent-review rules, and step-closure protocol live in the `unified-dossier-engineer` skill and should not be duplicated here unless this repository intentionally tightens them.
+9. Every task that writes, changes, or reviews code must use the `implementation-discipline` skill together with the relevant domain or review skill; this is repo-wide enforcement, not optional guidance.
+10. Keep this file overlay-only. Default unified backlog/dossier workflow, independent-review rules, and step-closure protocol live in the `unified-dossier-engineer` skill and should not be duplicated here unless this repository intentionally tightens them.
 
 ## Skill automation
 - Use the installed canonical `dossier-engineer` runtime from the `unified-dossier-engineer` skill directly.
