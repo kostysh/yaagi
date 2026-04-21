@@ -438,3 +438,151 @@ void test('AC-F0023-05 AC-F0023-12 keeps missing model-health upstream bounded t
     'stable_snapshot:snapshot-9',
   );
 });
+
+void test('AC-F0023-10 keeps model-health report-run provenance stable across missing-to-fresh-to-missing replays', async () => {
+  const harness = createReportingDbHarness();
+  const store = createReportingStore(harness.db);
+  let modelHealthMode: 'missing' | 'fresh' = 'missing';
+  const service = createReportingService({
+    store,
+    now: createNowSequence(
+      '2026-04-21T18:40:00.000Z',
+      '2026-04-21T18:40:01.000Z',
+      '2026-04-21T18:40:02.000Z',
+      '2026-04-21T18:40:03.000Z',
+      '2026-04-21T18:40:04.000Z',
+      '2026-04-21T18:40:05.000Z',
+      '2026-04-21T18:40:06.000Z',
+      '2026-04-21T18:40:07.000Z',
+      '2026-04-21T18:40:08.000Z',
+      '2026-04-21T18:40:09.000Z',
+      '2026-04-21T18:40:10.000Z',
+      '2026-04-21T18:40:11.000Z',
+      '2026-04-21T18:40:12.000Z',
+      '2026-04-21T18:40:13.000Z',
+      '2026-04-21T18:40:14.000Z',
+    ),
+    createId: createIdSequence(),
+    loadIdentityContinuitySource() {
+      return Promise.resolve({
+        availability: REPORT_AVAILABILITY.FRESH,
+        sourceRefs: ['agent_state:polyphony-core'],
+        sourceOwnerRefs: [REPORT_SOURCE_OWNER.TICK_RUNTIME],
+        report: {
+          runtimeMode: 'live' as const,
+          currentTickRef: 'tick:tick-40',
+          lastStableSnapshotRef: 'stable_snapshot:snapshot-40',
+          recentRecoveryRefs: [],
+        },
+        signaturePayload: {
+          currentTickRef: 'tick:tick-40',
+        },
+      });
+    },
+    loadModelHealthSource() {
+      if (modelHealthMode === 'missing') {
+        return Promise.resolve({
+          availability: REPORT_AVAILABILITY.UNAVAILABLE,
+          sourceRefs: [],
+          sourceOwnerRefs: [],
+          report: [],
+          signaturePayload: {
+            mode: 'missing',
+          },
+        });
+      }
+
+      return Promise.resolve({
+        availability: REPORT_AVAILABILITY.FRESH,
+        sourceRefs: ['model_profile_health:code.deep@shared'],
+        sourceOwnerRefs: [REPORT_SOURCE_OWNER.EXPANDED_MODEL_ECOLOGY],
+        report: [
+          {
+            organId: 'code',
+            profileId: 'code.deep@shared',
+            availability: REPORT_AVAILABILITY.FRESH,
+            healthStatus: 'healthy' as const,
+            errorRate: 0.02,
+            fallbackRef: null,
+            sourceSurfaceRefs: ['model_profile_health:code.deep@shared'],
+          },
+        ],
+        signaturePayload: {
+          mode: 'fresh',
+          profileId: 'code.deep@shared',
+        },
+      });
+    },
+    loadStableSnapshotInventorySource() {
+      return Promise.resolve({
+        availability: REPORT_AVAILABILITY.FRESH,
+        sourceRefs: ['stable_snapshot:snapshot-40'],
+        sourceOwnerRefs: [REPORT_SOURCE_OWNER.BODY_EVOLUTION],
+        report: {
+          latestStableSnapshotRef: 'stable_snapshot:snapshot-40',
+          totalSnapshots: 1,
+          snapshots: [],
+        },
+        signaturePayload: {
+          latestStableSnapshotRef: 'stable_snapshot:snapshot-40',
+        },
+      });
+    },
+    loadDevelopmentDiagnosticsSource() {
+      return Promise.resolve({
+        availability: REPORT_AVAILABILITY.FRESH,
+        sourceRefs: ['development_ledger:ledger-40'],
+        sourceOwnerRefs: [REPORT_SOURCE_OWNER.DEVELOPMENT_GOVERNOR],
+        report: {
+          developmentFreezeActive: false,
+          ledgerEntryCountLast30d: 1,
+          proposalCountLast30d: 0,
+          recentLedgerRefs: ['development_ledger:ledger-40'],
+          recentFailedActionRefs: [],
+        },
+        signaturePayload: {
+          ledgerEntryCountLast30d: 1,
+        },
+      });
+    },
+    loadLifecycleDiagnosticsSource() {
+      return Promise.resolve({
+        availability: REPORT_AVAILABILITY.FRESH,
+        sourceRefs: ['rollback_incident:none'],
+        sourceOwnerRefs: [REPORT_SOURCE_OWNER.LIFECYCLE],
+        report: {
+          rollbackIncidentCountLast30d: 0,
+          gracefulShutdownCountLast30d: 0,
+          recentRollbackRefs: [],
+          recentGracefulShutdownRefs: [],
+          recentCompactionRefs: [],
+        },
+        signaturePayload: {
+          rollbackIncidentCountLast30d: 0,
+        },
+      });
+    },
+  });
+
+  const first = await service.getReportingBundle();
+  modelHealthMode = 'fresh';
+  const second = await service.getReportingBundle();
+  modelHealthMode = 'missing';
+  const third = await service.getReportingBundle();
+
+  assert.equal(first.reportRuns.modelHealth?.availabilityStatus, REPORT_AVAILABILITY.UNAVAILABLE);
+  assert.equal(second.reportRuns.modelHealth?.availabilityStatus, REPORT_AVAILABILITY.FRESH);
+  assert.equal(third.reportRuns.modelHealth?.availabilityStatus, REPORT_AVAILABILITY.UNAVAILABLE);
+  assert.equal(first.reports.modelHealth.length, 0);
+  assert.equal(second.reports.modelHealth.length, 1);
+  assert.equal(third.reports.modelHealth.length, 0);
+  assert.notEqual(
+    first.reportRuns.modelHealth?.reportRunId,
+    second.reportRuns.modelHealth?.reportRunId,
+  );
+  assert.equal(
+    first.reportRuns.modelHealth?.reportRunId,
+    third.reportRuns.modelHealth?.reportRunId,
+  );
+  assert.equal(harness.state.reportRuns.length, 6);
+});

@@ -160,6 +160,11 @@ type ReportingServiceOptions = ReportingSourceLoaders & {
   schemaVersion?: string;
 };
 
+type MaterializedModelHealthFamily = {
+  reportRun: ReportRunRow;
+  reports: ModelHealthReport[];
+};
+
 const REPORTING_SCHEMA_VERSION = '019_reporting_foundation.sql';
 const MODEL_HEALTH_MISSING_SOURCE_REFS = ['model_health:none'];
 const MODEL_HEALTH_MISSING_SOURCE_OWNERS: ReportSourceOwner[] = [
@@ -407,7 +412,7 @@ export const createReportingService = (options: ReportingServiceOptions): Report
     });
   };
 
-  const materializeModelHealthReports = async (): Promise<ModelHealthReport[]> => {
+  const materializeModelHealthFamily = async (): Promise<MaterializedModelHealthFamily> => {
     const materializedAt = now().toISOString();
     const source = await options.loadModelHealthSource({ materializedAt });
     const sourceRefs =
@@ -434,27 +439,36 @@ export const createReportingService = (options: ReportingServiceOptions): Report
       reportRunId: reportRun.reportRunId,
     });
     if (existing.length > 0) {
-      return existing;
+      return {
+        reportRun,
+        reports: existing,
+      };
     }
 
-    return await options.store.replaceModelHealthReports({
-      reportRunId: reportRun.reportRunId,
-      reports: source.report.map((report) => ({
+    return {
+      reportRun,
+      reports: await options.store.replaceModelHealthReports({
         reportRunId: reportRun.reportRunId,
-        reportFamily: REPORT_FAMILY.MODEL_HEALTH,
-        sourceRefs: reportRun.sourceRefsJson,
-        sourceOwnerRefs: reportRun.sourceOwnerRefsJson,
-        availability: report.availability,
-        materializedAt: reportRun.materializedAt,
-        organId: report.organId,
-        profileId: report.profileId,
-        healthStatus: report.healthStatus,
-        errorRate: report.errorRate,
-        fallbackRef: report.fallbackRef,
-        sourceSurfaceRefs: report.sourceSurfaceRefs,
-      })),
-    });
+        reports: source.report.map((report) => ({
+          reportRunId: reportRun.reportRunId,
+          reportFamily: REPORT_FAMILY.MODEL_HEALTH,
+          sourceRefs: reportRun.sourceRefsJson,
+          sourceOwnerRefs: reportRun.sourceOwnerRefsJson,
+          availability: report.availability,
+          materializedAt: reportRun.materializedAt,
+          organId: report.organId,
+          profileId: report.profileId,
+          healthStatus: report.healthStatus,
+          errorRate: report.errorRate,
+          fallbackRef: report.fallbackRef,
+          sourceSurfaceRefs: report.sourceSurfaceRefs,
+        })),
+      }),
+    };
   };
+
+  const materializeModelHealthReports = async (): Promise<ModelHealthReport[]> =>
+    (await materializeModelHealthFamily()).reports;
 
   const materializeStableSnapshotInventoryReport =
     async (): Promise<StableSnapshotInventoryReport> => {
@@ -570,22 +584,20 @@ export const createReportingService = (options: ReportingServiceOptions): Report
   const getReportingBundle = async (): Promise<ReportingBundle> => {
     const [
       identityContinuity,
-      modelHealth,
+      modelHealthFamily,
       stableSnapshotInventory,
       developmentDiagnostics,
       lifecycleDiagnostics,
     ] = await Promise.all([
       materializeIdentityContinuityReport(),
-      materializeModelHealthReports(),
+      materializeModelHealthFamily(),
       materializeStableSnapshotInventoryReport(),
       materializeDevelopmentDiagnosticsReport(),
       materializeLifecycleDiagnosticsReport(),
     ]);
     const [identityRun, modelRun, stableRun, developmentRun, lifecycleRun] = await Promise.all([
       options.store.getReportRun(identityContinuity.reportRunId),
-      modelHealth[0]
-        ? options.store.getReportRun(modelHealth[0].reportRunId)
-        : options.store.getLatestReportRun(REPORT_FAMILY.MODEL_HEALTH),
+      options.store.getReportRun(modelHealthFamily.reportRun.reportRunId),
       options.store.getReportRun(stableSnapshotInventory.reportRunId),
       options.store.getReportRun(developmentDiagnostics.reportRunId),
       options.store.getReportRun(lifecycleDiagnostics.reportRunId),
@@ -602,7 +614,7 @@ export const createReportingService = (options: ReportingServiceOptions): Report
       },
       reports: {
         identityContinuity,
-        modelHealth,
+        modelHealth: modelHealthFamily.reports,
         stableSnapshotInventory,
         developmentDiagnostics,
         lifecycleDiagnostics,
