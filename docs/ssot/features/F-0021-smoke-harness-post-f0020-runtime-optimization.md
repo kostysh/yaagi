@@ -180,7 +180,7 @@ Telegram-family assertions that must remain present after the refactor:
 #### Delivered implementation evidence
 
 - Реализованный harness перевёл steady-state PostgreSQL polling на один direct `pg` client, сохранил один shared `vllm-fast` runtime и убрал redundant Telegram overlay rebuild path.
-- Durable evidence artifact: `.dossier/evidence/F-0021/implementation-smoke-timing-c01.json`.
+- Durable evidence artifact: `.dossier/verification/F-0021/implementation-smoke-timing-c01.json`.
 - Финальный same-machine warm-cache smoke verdict после implementation: `pnpm smoke:cell` `real 304.57`, `F-0007 deployment-cell smoke suite` `304276.76881 ms`, `F-0007 base deployment-cell smoke family` `88602.883143 ms`, `F-0007 telegram deployment-cell smoke overlay` `11952.834793 ms`.
 - Baseline shared-runtime snapshot из `F-0007`: `321.06s` total, `96.02s` base family, `14.16s` Telegram overlay.
 - Следовательно, `AC-F0021-12` закрыт: total suite wall-clock не регрессировал относительно baseline, а оба targeted orchestration path (`base family`, `Telegram overlay`) стали быстрее.
