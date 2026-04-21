@@ -1,26 +1,25 @@
 {
   "version": 1,
-  "created_at": "2026-04-21T22:01:37.670Z",
-  "reviewer": "spec-conformance-reviewer",
+  "created_at": "2026-04-21T22:47:32.007Z",
+  "reviewer": "external-audit-stack:Lorentz+Raman+Singer",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0023-observability-and-diagnostic-reporting.md",
   "feature_id": "F-0023",
-  "event_commit": "9aa10c578f321d6625585e6246bb1c5aa07b1263",
+  "event_commit": "dae8e3c",
   "verdict": "PASS",
   "findings": {
     "must_fix": [],
     "should_fix": [],
     "evidence": [
-      "docs/ssot/features/F-0023-observability-and-diagnostic-reporting.md",
-      "apps/core/src/runtime/reporting.ts",
-      "packages/db/src/reporting.ts",
-      "apps/core/src/runtime/homeostat.ts",
-      "apps/core/src/platform/operator-api.ts",
-      "packages/db/test/reporting-materialization.integration.test.ts",
-      "apps/core/test/runtime/reporting-service.integration.test.ts",
-      "apps/core/test/runtime/homeostat-organ-health.integration.test.ts",
-      "apps/core/test/platform/operator-reporting.integration.test.ts"
+      "Lorentz external code review PASS on dae8e3c",
+      "Raman external spec-conformance review PASS on dae8e3c",
+      "Singer external security review PASS on dae8e3c",
+      "pnpm format",
+      "pnpm typecheck",
+      "pnpm lint",
+      "pnpm test",
+      "pnpm smoke:cell"
     ]
   },
-  "notes": "Implementation review against F-0023 ACs/boundaries passed on committed snapshot 9aa10c5: CF-015 remains limited to reporting-owned writes, first-phase report families are materialized from committed source state, F-0012 organ_error_rate reads the canonical model-health surface, and read-only operator exposure stays inside the F-0013 boundary. No blocking spec-conformance gaps were found after the smoke-proven reporting-store fix and strict coverage trace alignment."
+  "notes": "Независимый внешний стек ревью завершен PASS на exact commit dae8e3c: Lorentz=code review PASS, Raman=spec-conformance PASS, Singer=security PASS. Предыдущие self-authored review artifacts признаны недействительными и заменены этим external verdict."
 }
