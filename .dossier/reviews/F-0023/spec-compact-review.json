@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "created_at": "2026-04-21T15:17:44.050Z",
+  "created_at": "2026-04-21T15:27:32.276Z",
   "reviewer": "spec-conformance-reviewer",
   "step": "spec-compact",
   "dossier": "docs/ssot/features/F-0023-observability-and-diagnostic-reporting.md",
   "feature_id": "F-0023",
-  "event_commit": "434fb539b09c68b503ac8ad6f20f9aaab10cdee4",
+  "event_commit": "8daacfbc5758573dc2281e1a2d370d2aff429d9e",
   "verdict": "PASS",
   "findings": {
     "must_fix": [],
@@ -16,5 +16,5 @@
       "docs/notes/backlog-legacy/feature-candidates.md"
     ]
   },
-  "notes": "Boundary review passed: CF-015 stays read-only, Homeostat consumes canonical report surfaces, and backlog actualization remains no-op for the selected item."
+  "notes": "Boundary review passed on the shaped snapshot: CF-015 stays read-only, backlog actualization remains no-op, and the repo-required pre-spec Plan mode assessment is now surfaced explicitly in the dossier."
 }
