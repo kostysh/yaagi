@@ -156,7 +156,7 @@ void test('AC-F0023-04 AC-F0023-07 AC-F0023-08 AC-F0023-09 materializes and read
   assert.equal(latestLifecycle?.availability, REPORT_AVAILABILITY.DEGRADED);
 });
 
-void test('AC-F0023-05 AC-F0023-10 AC-F0023-15 updates publication metadata and feeds the Homeostat organ_error_rate source from the latest model-health report family', async () => {
+void test('AC-F0023-05 AC-F0023-06 AC-F0023-10 AC-F0023-15 updates publication metadata and feeds the Homeostat organ_error_rate source from the latest model-health report family', async () => {
   const harness = createReportingDbHarness();
   const store = createReportingStore(harness.db);
 

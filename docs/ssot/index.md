@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-21T15:34:32.373Z_
+_Last sync: 2026-04-21T21:59:33.073Z_
 
 ## Features
 
@@ -32,7 +32,7 @@ _Last sync: 2026-04-21T15:34:32.373Z_
 | F-0020 | Реальный vLLM-serving и promotion model dependencies | done | strict | models | F-0002, F-0008, F-0014, F-0015 | runtime,infra,models,artifacts,workshop | `features/F-0020-real-vllm-serving-and-promotion-model-dependencies.md` |
 | F-0021 | Оптимизация smoke harness после real vLLM/Gemma runtime | done | strict | platform | F-0007, F-0020 | runtime,infra,verification,smoke,db | `features/F-0021-smoke-harness-post-f0020-runtime-optimization.md` |
 | F-0022 | Слой skills и процедур | done | strict | skills | F-0002, F-0010, F-0020 | runtime,workspace,tooling,skills | `features/F-0022-skills-and-procedural-layer.md` |
-| F-0023 | Наблюдаемость и диагностические отчёты | planned | deferred | observability | F-0003, F-0004, F-0010, F-0014, F-0016, F-0019 | runtime,db,observability,api,governance | `features/F-0023-observability-and-diagnostic-reporting.md` |
+| F-0023 | Наблюдаемость и диагностические отчёты | done | strict | observability | F-0003, F-0004, F-0010, F-0014, F-0016, F-0019 | runtime,db,observability,api,governance | `features/F-0023-observability-and-diagnostic-reporting.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
