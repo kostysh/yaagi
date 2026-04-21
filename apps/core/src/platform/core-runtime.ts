@@ -26,6 +26,7 @@ import type {
   ModelHealthSummary,
 } from '../runtime/model-router.ts';
 import type { SkillRuntimeDiagnostics } from '../runtime/skills-runtime.ts';
+import type { ReportingBundle } from '../runtime/reporting.ts';
 
 const BOOT_POLL_INTERVAL_MS = 1_000;
 const PUBLIC_FAST_MODEL_ALIAS = 'model-fast';
@@ -66,6 +67,7 @@ export type CoreRuntimeDependencies = {
     getRicherModelRegistryHealthSummary?(): Promise<OperatorRicherRegistryHealthSummary>;
     getServingDependencyStates?(): Promise<ServingDependencyState[]>;
     peekServingDependencyStates?(): ServingDependencyState[];
+    getReportingBundle?(): Promise<ReportingBundle>;
     getSkillRuntimeDiagnostics?(): Promise<SkillRuntimeDiagnostics>;
     syncSkillsFromSeed?(): Promise<void>;
     ingestHttpStimulus?(input: unknown): Promise<{

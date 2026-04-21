@@ -34,6 +34,7 @@ import {
   type HomeostatSignalScore,
   type HomeostatSnapshot,
 } from '@yaagi/contracts/runtime';
+import { REPORT_AVAILABILITY, type OrganErrorRateSource } from '@yaagi/contracts/reporting';
 
 type HomeostatFutureSourceState = 'available' | 'stale' | 'missing';
 
@@ -51,6 +52,7 @@ export type HomeostatEvaluationContext = {
   recentCompletedTicks: RecentCompletedTick[];
   narrativeRewriteCountLast24h: number;
   developmentProposalCountLast24h: number | null;
+  organErrorRateSource: OrganErrorRateSource | null;
   rollbackFrequencySource: LifecycleRollbackFrequencySource | null;
   futureSourceStates: {
     developmentProposalRate: HomeostatFutureSourceState;
@@ -418,6 +420,47 @@ const evaluateFutureSignal = (input: {
   };
 };
 
+const evaluateReportBackedSignal = (input: {
+  signalFamily: Extract<HomeostatSignalFamily, 'organ_error_rate'>;
+  source: OrganErrorRateSource | null;
+  sourceState: HomeostatFutureSourceState;
+  fallbackEvidenceRefs: string[];
+}): HomeostatSignalScore => {
+  const threshold = THRESHOLDS[input.signalFamily];
+  if (!input.source) {
+    return evaluateFutureSignal({
+      signalFamily: input.signalFamily,
+      sourceState: input.sourceState,
+      evidenceRefs: input.fallbackEvidenceRefs,
+    });
+  }
+
+  if (input.source.availability === REPORT_AVAILABILITY.FRESH) {
+    return {
+      signalFamily: input.signalFamily,
+      status: HOMEOSTAT_SIGNAL_STATUS.EVALUATED,
+      metricValue: input.source.metricValue,
+      warningThreshold: threshold.warning,
+      criticalThreshold: threshold.critical,
+      severity: metricToSeverity(input.source.metricValue, threshold),
+      evidenceRefs: unique(input.source.evidenceRefs),
+    };
+  }
+
+  return {
+    signalFamily: input.signalFamily,
+    status:
+      input.source.metricValue == null
+        ? HOMEOSTAT_SIGNAL_STATUS.NOT_EVALUABLE
+        : HOMEOSTAT_SIGNAL_STATUS.DEGRADED,
+    metricValue: input.source.metricValue,
+    warningThreshold: threshold.warning,
+    criticalThreshold: threshold.critical,
+    severity: HOMEOSTAT_ALERT_SEVERITY.NONE,
+    evidenceRefs: unique(input.source.evidenceRefs),
+  };
+};
+
 export const evaluateHomeostatSignals = (
   input: HomeostatEvaluationContext,
 ): HomeostatEvaluationResult => {
@@ -476,10 +519,11 @@ export const evaluateHomeostatSignals = (
       metricValue: calculateResourcePressure(input.resourcePostureJson),
       evidenceRefs: ['runtime:resource-posture'],
     }),
-    evaluateFutureSignal({
+    evaluateReportBackedSignal({
       signalFamily: HOMEOSTAT_SIGNAL_FAMILY.ORGAN_ERROR_RATE,
+      source: input.organErrorRateSource,
       sourceState: input.futureSourceStates.organErrorRate,
-      evidenceRefs: ['future:CF-015:model-health-report'],
+      fallbackEvidenceRefs: ['future:CF-015:model-health-report'],
     }),
     input.rollbackFrequencySource
       ? evaluateDeliveredSignal({
@@ -705,6 +749,10 @@ const loadRollbackFrequencySource = async (
 const loadDbBackedHomeostatContext = async (
   client: Client,
   input: { cadenceKind: HomeostatCadenceKind; tickId: string | null; createdAt: string },
+  options: {
+    organErrorRateSource: OrganErrorRateSource | null;
+    organErrorRateSourceState: HomeostatFutureSourceState;
+  },
 ): Promise<HomeostatEvaluationContext> => {
   const tickStore = createTickRuntimeStore(client);
   const narrativeStore = createNarrativeMemeticStore(client);
@@ -733,10 +781,11 @@ const loadDbBackedHomeostatContext = async (
     recentCompletedTicks: await loadRecentCompletedTicks(client),
     narrativeRewriteCountLast24h: await loadNarrativeRewriteCount(client, input.createdAt),
     developmentProposalCountLast24h: await loadDevelopmentProposalCount(client, input.createdAt),
+    organErrorRateSource: options.organErrorRateSource,
     rollbackFrequencySource: await loadRollbackFrequencySource(client, input.createdAt),
     futureSourceStates: {
       developmentProposalRate: 'available',
-      organErrorRate: 'missing',
+      organErrorRate: options.organErrorRateSourceState,
       rollbackFrequency: 'available',
     },
   };
@@ -746,6 +795,7 @@ export const createDbBackedHomeostatService = (
   config: Pick<CoreRuntimeConfig, 'postgresUrl' | 'pgBossSchema'>,
   options: {
     handleReactionRequest?: (request: HomeostatReactionRequest) => Promise<void>;
+    loadOrganErrorRateSource?: () => Promise<OrganErrorRateSource | null>;
   } = {},
 ): HomeostatService => {
   const enqueueReactionRequest = createRuntimeJobEnqueuer({
@@ -756,7 +806,13 @@ export const createDbBackedHomeostatService = (
   return createHomeostatService({
     loadContext: (input) =>
       withRuntimeClient(config.postgresUrl, async (client) => {
-        return await loadDbBackedHomeostatContext(client, input);
+        const organErrorRateSource = options.loadOrganErrorRateSource
+          ? await options.loadOrganErrorRateSource()
+          : null;
+        return await loadDbBackedHomeostatContext(client, input, {
+          organErrorRateSource,
+          organErrorRateSourceState: options.loadOrganErrorRateSource ? 'available' : 'missing',
+        });
       }),
     loadLatestSnapshot: () =>
       withRuntimeClient(config.postgresUrl, async (client) => {

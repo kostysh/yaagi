@@ -100,6 +100,7 @@ import {
   type DevelopmentGovernorService,
 } from './development-governor.ts';
 import { createExpandedModelEcologyService } from './model-ecology.ts';
+import { createDbBackedReportingService, type ReportingBundle } from './reporting.ts';
 import {
   createDbBackedWorkshopService,
   createWorkshopWorker,
@@ -172,6 +173,7 @@ type RuntimeLifecycle = {
   getModelOrganHealthReportInput(): Promise<ModelOrganHealthReportInput>;
   getServingDependencyStates(): Promise<ServingDependencyState[]>;
   peekServingDependencyStates(): ServingDependencyState[];
+  getReportingBundle(): Promise<ReportingBundle>;
   getSkillRuntimeDiagnostics(): Promise<SkillRuntimeDiagnostics>;
   syncSkillsFromSeed(): Promise<void>;
 };
@@ -1220,10 +1222,12 @@ export function createPhase0RuntimeLifecycle(
   let tickRuntime: TickRuntime | null = null;
   const developmentGovernor: DevelopmentGovernorService =
     createDbBackedDevelopmentGovernorService(config);
+  const reportingService = createDbBackedReportingService(config);
   const homeostatService: HomeostatService = createDbBackedHomeostatService(config, {
     handleReactionRequest: async (request) => {
       await developmentGovernor.applyHomeostatReaction(request);
     },
+    loadOrganErrorRateSource: () => reportingService.loadOrganErrorRateSource(),
   });
   const lifecycleConsolidation = createDbBackedLifecycleConsolidationService(config);
   const periodicHomeostatWorker: PeriodicHomeostatWorker = createPeriodicHomeostatWorker(
@@ -1354,6 +1358,11 @@ export function createPhase0RuntimeLifecycle(
         await modelRouter.ensureBaselineProfiles();
       },
       afterCompletedTick: async ({ tickId, occurredAt }) => {
+        try {
+          await reportingService.materializeAllReportFamilies();
+        } catch (error) {
+          console.error('reporting post-commit materialization failed', error);
+        }
         await homeostatService.evaluateTickComplete({
           tickId,
           createdAt: occurredAt,
@@ -1740,6 +1749,9 @@ export function createPhase0RuntimeLifecycle(
     },
     peekServingDependencyStates(): ServingDependencyState[] {
       return buildServingDependencyStates(fastDependencyMonitor.peekState());
+    },
+    getReportingBundle(): Promise<ReportingBundle> {
+      return reportingService.getReportingBundle();
     },
     getSkillRuntimeDiagnostics(): Promise<SkillRuntimeDiagnostics> {
       return Promise.resolve(runtimeSkills.getDiagnostics());

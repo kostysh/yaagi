@@ -151,6 +151,18 @@ export {
   type RollbackIncidentRow,
 } from './lifecycle.ts';
 export {
+  createReportingStore,
+  type ListModelHealthReportsInput,
+  type ListReportRunsInput,
+  type ReplaceModelHealthReportsInput,
+  type RecordReportRunInput,
+  type RecordReportRunResult,
+  type ReportingDbExecutor,
+  type ReportingStore,
+  type ReportRunRow,
+  type UpdateReportPublicationInput,
+} from './reporting.ts';
+export {
   BASELINE_MODEL_PROFILE_ROLE,
   createRuntimeModelProfileStore,
   MODEL_PROFILE_ROLE,

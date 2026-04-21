@@ -47,6 +47,13 @@ export {
   type DevelopmentGovernorService,
 } from './development-governor.ts';
 export {
+  createDbBackedReportingService,
+  createReportingService,
+  type PublishReportArtifactInput,
+  type ReportingBundle,
+  type ReportingService,
+} from './reporting.ts';
+export {
   createDbBackedLifecycleConsolidationService,
   type LifecycleConsolidationService,
 } from './lifecycle-consolidation.ts';

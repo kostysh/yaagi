@@ -1,0 +1,51 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-21-043-f0023-dependent-review-closeout",
+    "created_at": "2026-04-21T19:45:00.000Z",
+    "sequence": 43,
+    "target_item_keys": [
+      "CF-014",
+      "CF-019",
+      "CF-025",
+      "CF-026",
+      "CF-027"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-014",
+      "action": "remove_todo",
+      "todo_ids": [
+        "26111955-ab5b-49c3-9bb7-23a41faa7147"
+      ]
+    },
+    {
+      "item_key": "CF-019",
+      "action": "remove_todo",
+      "todo_ids": [
+        "3a28ac0d-41d8-44cf-b5a1-b063d879e073"
+      ]
+    },
+    {
+      "item_key": "CF-025",
+      "action": "remove_todo",
+      "todo_ids": [
+        "35c9a168-596e-45e7-abe6-0e3722158587"
+      ]
+    },
+    {
+      "item_key": "CF-026",
+      "action": "remove_todo",
+      "todo_ids": [
+        "4c287734-0141-4624-a478-4b439b8b71d6"
+      ]
+    },
+    {
+      "item_key": "CF-027",
+      "action": "remove_todo",
+      "todo_ids": [
+        "e97302da-250b-46ba-9680-40d1a1ecb806"
+      ]
+    }
+  ]
+}

@@ -27,6 +27,7 @@ import type {
   BaselineModelProfileDiagnostic,
   ModelHealthSummary,
 } from '../runtime/model-router.ts';
+import type { ReportingBundle } from '../runtime/reporting.ts';
 
 const PUBLIC_FAST_MODEL_ALIAS = 'model-fast';
 
@@ -42,6 +43,7 @@ export type OperatorRuntimeLifecycle = {
   getRicherModelRegistryHealthSummary?(): Promise<OperatorRicherRegistryHealthSummary>;
   getServingDependencyStates?(): Promise<ServingDependencyState[]>;
   peekServingDependencyStates?(): ServingDependencyState[];
+  getReportingBundle?(): Promise<ReportingBundle>;
   requestTick?(input: {
     requestId: string;
     kind: 'reactive' | 'deliberative' | 'contemplative' | 'consolidation' | 'developmental';
@@ -178,6 +180,7 @@ export function registerOperatorApiRoutes(
     runtimeLifecycle.listTimelineEvents !== undefined ||
     runtimeLifecycle.listEpisodes !== undefined ||
     runtimeLifecycle.getModelRoutingDiagnostics !== undefined ||
+    runtimeLifecycle.getReportingBundle !== undefined ||
     runtimeLifecycle.requestTick !== undefined ||
     runtimeLifecycle.freezeDevelopment !== undefined ||
     runtimeLifecycle.submitDevelopmentProposal !== undefined;
@@ -322,6 +325,19 @@ export function registerOperatorApiRoutes(
       richerRegistryHealth,
       servingDependencies: servingDependencies.map(redactServingDependencyState),
     });
+  });
+
+  app.get('/reports', async (context) => {
+    if (!runtimeLifecycle.getReportingBundle) {
+      return context.json({ error: 'reports_unavailable' }, 503);
+    }
+
+    try {
+      const bundle = await runtimeLifecycle.getReportingBundle();
+      return context.json(bundle);
+    } catch (error) {
+      return context.json({ error: toValidationError(error) }, 500);
+    }
   });
 
   app.post('/control/tick', async (context) => {

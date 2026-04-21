@@ -50,6 +50,10 @@
     "./lifecycle": {
       "types": "./src/lifecycle.ts",
       "default": "./src/lifecycle.ts"
+    },
+    "./reporting": {
+      "types": "./src/reporting.ts",
+      "default": "./src/reporting.ts"
     }
   },
   "dependencies": {

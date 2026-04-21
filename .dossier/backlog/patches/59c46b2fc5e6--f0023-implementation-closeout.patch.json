@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-21-042-f0023-implementation-closeout",
+    "created_at": "2026-04-21T19:40:00.000Z",
+    "sequence": 42,
+    "target_item_keys": [
+      "CF-015"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-015",
+      "action": "replace_fields",
+      "fields": {
+        "delivery_state": "implemented"
+      }
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 ---
 id: F-0023
 title: Наблюдаемость и диагностические отчёты
-status: planned
-coverage_gate: deferred
+status: done
+coverage_gate: strict
 backlog_item_key: CF-015
 owners: ["@codex"]
 area: observability
@@ -250,6 +250,19 @@ type ModelHealthReport = {
 - Deduplication tests for repeated `reporting.materialize` runs over the same normalized source snapshot signature.
 - If implementation later changes runtime startup, scheduler topology or public read routes, root quality gates plus `pnpm smoke:cell` are mandatory.
 
+#### Delivered implementation evidence
+
+- `CF-015` now owns the canonical `report_runs` substrate plus durable first-phase report families in `polyphony_runtime`, delivered through `infra/migrations/019_reporting_foundation.sql`, `packages/contracts/src/reporting.ts`, `packages/db/src/reporting.ts` and `apps/core/src/runtime/reporting.ts`.
+- Post-commit runtime materialization now refreshes the canonical report bundle after committed ticks, `F-0012` `organ_error_rate` reads the `CF-015` model-health surface instead of raw richer-health tables, and `F-0013` exposes the read-only bundle through `GET /reports`.
+- Executable proof now covers contracts, store semantics, report-family materialization, Homeostat consumption and operator-boundary reads in:
+  - `packages/contracts/test/reporting.contract.test.ts`
+  - `packages/db/test/reporting-store.integration.test.ts`
+  - `packages/db/test/reporting-materialization.integration.test.ts`
+  - `apps/core/test/runtime/reporting-service.integration.test.ts`
+  - `apps/core/test/runtime/homeostat-organ-health.integration.test.ts`
+  - `apps/core/test/platform/operator-reporting.integration.test.ts`
+- Final verification bundle for implementation used the canonical repo gate order `pnpm format`, `pnpm typecheck`, `pnpm lint`, then `pnpm test` and `pnpm smoke:cell`. The smoke rerun passed on the delivered reporting path after the store write/readback contract was tightened to avoid invalid aliased `RETURNING` reads during report-family materialization.
+
 ### 5.6 Representation upgrades (triggered only when needed)
 
 #### Boundary operations
@@ -369,21 +382,21 @@ type ModelHealthReport = {
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0023-01 | `packages/contracts/test/reporting.contract.test.ts`; `packages/db/test/reporting-materialization.integration.test.ts` | planned |
-| AC-F0023-02 | `packages/db/test/reporting-materialization.integration.test.ts` | planned |
-| AC-F0023-03 | `packages/db/test/reporting-boundary.integration.test.ts` | planned |
-| AC-F0023-04 | `packages/db/test/reporting-materialization.integration.test.ts`; `apps/core/test/runtime/identity-continuity-report.integration.test.ts` | planned |
-| AC-F0023-05 | `apps/core/test/runtime/homeostat-organ-health.integration.test.ts`; `packages/db/test/reporting-materialization.integration.test.ts` | planned |
-| AC-F0023-06 | `packages/db/test/reporting-materialization.integration.test.ts` | planned |
-| AC-F0023-07 | `packages/db/test/stable-snapshot-inventory.integration.test.ts` | planned |
-| AC-F0023-08 | `packages/db/test/reporting-materialization.integration.test.ts`; `apps/core/test/runtime/development-diagnostics.integration.test.ts` | planned |
-| AC-F0023-09 | `packages/db/test/reporting-materialization.integration.test.ts`; `apps/core/test/runtime/lifecycle-diagnostics.integration.test.ts` | planned |
-| AC-F0023-10 | `packages/contracts/test/reporting.contract.test.ts` | planned |
-| AC-F0023-11 | `apps/api/test/reporting-read-routes.integration.test.ts` | planned |
-| AC-F0023-12 | `packages/db/test/reporting-materialization.integration.test.ts`; `packages/contracts/test/reporting.contract.test.ts` | planned |
-| AC-F0023-13 | `apps/core/test/runtime/reporting-usage-audit.integration.test.ts` | planned |
-| AC-F0023-14 | `packages/db/test/reporting-materialization.integration.test.ts` | planned |
-| AC-F0023-15 | `packages/contracts/test/reporting.contract.test.ts`; `packages/db/test/reporting-materialization.integration.test.ts` | planned |
+| AC-F0023-01 | `packages/contracts/test/reporting.contract.test.ts`; `packages/db/test/reporting-store.integration.test.ts` | implemented |
+| AC-F0023-02 | `packages/db/test/reporting-store.integration.test.ts`; `apps/core/test/runtime/reporting-service.integration.test.ts` | implemented |
+| AC-F0023-03 | `packages/contracts/test/reporting.contract.test.ts`; `packages/db/test/reporting-store.integration.test.ts` | implemented |
+| AC-F0023-04 | `packages/db/test/reporting-materialization.integration.test.ts`; `apps/core/test/runtime/reporting-service.integration.test.ts` | implemented |
+| AC-F0023-05 | `packages/db/test/reporting-materialization.integration.test.ts`; `apps/core/test/runtime/homeostat-organ-health.integration.test.ts` | implemented |
+| AC-F0023-06 | `packages/db/test/reporting-materialization.integration.test.ts`; `apps/core/test/runtime/reporting-service.integration.test.ts` | implemented |
+| AC-F0023-07 | `packages/db/test/reporting-materialization.integration.test.ts`; `apps/core/test/runtime/reporting-service.integration.test.ts` | implemented |
+| AC-F0023-08 | `packages/db/test/reporting-materialization.integration.test.ts`; `apps/core/test/runtime/reporting-service.integration.test.ts` | implemented |
+| AC-F0023-09 | `packages/db/test/reporting-materialization.integration.test.ts`; `apps/core/test/runtime/reporting-service.integration.test.ts` | implemented |
+| AC-F0023-10 | `packages/contracts/test/reporting.contract.test.ts`; `packages/db/test/reporting-store.integration.test.ts`; `apps/core/test/runtime/reporting-service.integration.test.ts` | implemented |
+| AC-F0023-11 | `apps/core/test/platform/operator-reporting.integration.test.ts`; `apps/core/test/runtime/reporting-service.integration.test.ts` | implemented |
+| AC-F0023-12 | `apps/core/test/runtime/reporting-service.integration.test.ts`; `apps/core/test/runtime/homeostat-organ-health.integration.test.ts` | implemented |
+| AC-F0023-13 | `apps/core/test/runtime/reporting-service.integration.test.ts`; `apps/core/test/platform/operator-reporting.integration.test.ts` | implemented |
+| AC-F0023-14 | `packages/db/test/reporting-materialization.integration.test.ts`; `apps/core/test/runtime/reporting-service.integration.test.ts` | implemented |
+| AC-F0023-15 | `packages/contracts/test/reporting.contract.test.ts`; `packages/db/test/reporting-store.integration.test.ts`; `packages/db/test/reporting-materialization.integration.test.ts` | implemented |
 
 ## 9. Decision log (ADR blocks)
 
@@ -425,11 +438,11 @@ type ModelHealthReport = {
 
 - Verdict: `patch existing item`
 - Target: `CF-015`
-- Patch intent: advance backlog delivery state from `defined` to `planned` without changing dependencies, blockers or source-review truth.
+- Patch intent: advance backlog delivery state from `planned` to `implemented` without changing dependencies, blockers or source-review truth.
 
 ### Coverage gate note
 
-- `coverage_gate` remains `deferred` at `spec-compact` close because this stage shaped executable ACs and a forecast coverage map before any implementation-owned tests exist. The gate must move to `strict` no later than the first implementation slice that claims delivered report surfaces.
+- `coverage_gate` is now `strict`: every `AC-F0023-*` has named executable coverage in the delivered contracts/store/runtime/operator test surfaces, and the final implementation bundle also includes full root quality gates plus the required container smoke path because runtime lifecycle and operator reads changed.
 
 ### Plan mode assessments
 
@@ -442,3 +455,4 @@ type ModelHealthReport = {
 - 2026-04-21: [spec-compact] Shaped `CF-015` into a canonical observability/reporting seam with explicit report families, Homeostat read contract, owner boundaries, first-phase slices and no-op backlog actualization verdict.
 - 2026-04-21: [process-fix] Surfaced the explicit pre-`spec-compact` Plan mode decision in the dossier so the stage bundle stays externally auditable.
 - 2026-04-21: [plan-slice] Promoted `CF-015` to `planned`, fixed the five-slice implementation order, recorded the backlog patch intent for `CF-015`, and surfaced the explicit pre-`plan-slice` Plan mode decision.
+- 2026-04-21 [implementation]: delivered canonical report contracts, `report_runs` storage, first-phase report-family materialization, `F-0012` Homeostat consumption, read-only `F-0013` operator exposure, executable AC coverage, a passing root quality bundle, and a passing container smoke path; implementation closure also actualized `CF-015` to `implemented`.
