@@ -44,6 +44,48 @@ ESSENTIAL_SNAPSHOT_FILES = (
 )
 
 
+def env_override(name: str) -> str | None:
+    value = os.environ.get(name, "").strip()
+    return value or None
+
+
+def override_int(name: str, default: int, minimum: int) -> int:
+    raw_value = env_override(name)
+    if raw_value is None:
+        return default
+
+    value = int(raw_value)
+    if value < minimum:
+        raise RuntimeError(f"{name} must be >= {minimum}, got {raw_value}")
+    return value
+
+
+def override_float(name: str, default: float, minimum_exclusive: float, maximum: float) -> float:
+    raw_value = env_override(name)
+    if raw_value is None:
+        return default
+
+    value = float(raw_value)
+    if value <= minimum_exclusive or value > maximum:
+        raise RuntimeError(
+            f"{name} must be > {minimum_exclusive} and <= {maximum}, got {raw_value}"
+        )
+    return value
+
+
+def override_bool(name: str, default: bool) -> bool:
+    raw_value = env_override(name)
+    if raw_value is None:
+        return default
+
+    normalized = raw_value.lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise RuntimeError(f"{name} must be a boolean string, got {raw_value}")
+
+
 def copy_missing_tree(source_root: Path, target_root: Path) -> None:
     target_root.mkdir(parents=True, exist_ok=True)
 
@@ -113,12 +155,24 @@ def resolve_serving_config(manifest: dict) -> dict:
         "servedModelName": serving.get("servedModelName", "phase-0-fast"),
         "dtype": serving.get("dtype", "bfloat16"),
         "tensorParallelSize": int(serving.get("tensorParallelSize", 1)),
-        "maxModelLen": int(serving.get("maxModelLen", 16384)),
-        "gpuMemoryUtilization": float(serving.get("gpuMemoryUtilization", 0.82)),
-        "maxNumSeqs": int(serving.get("maxNumSeqs", 4)),
+        "maxModelLen": override_int(
+            "VLLM_FAST_SERVING_MAX_MODEL_LEN", int(serving.get("maxModelLen", 16384)), 1
+        ),
+        "gpuMemoryUtilization": override_float(
+            "VLLM_FAST_SERVING_GPU_MEMORY_UTILIZATION",
+            float(serving.get("gpuMemoryUtilization", 0.82)),
+            0.0,
+            1.0,
+        ),
+        "maxNumSeqs": override_int(
+            "VLLM_FAST_SERVING_MAX_NUM_SEQS", int(serving.get("maxNumSeqs", 4)), 1
+        ),
         "generationConfig": serving.get("generationConfig", "vllm"),
         "attentionBackend": serving.get("attentionBackend"),
         "limitMmPerPrompt": serving.get("limitMmPerPrompt"),
+        "enforceEager": override_bool(
+            "VLLM_FAST_SERVING_ENFORCE_EAGER", bool(serving.get("enforceEager", False))
+        ),
     }
 
 
@@ -279,6 +333,9 @@ def build_vllm_command(snapshot_path: Path, serving: dict) -> list[str]:
 
     if isinstance(serving.get("limitMmPerPrompt"), str) and serving["limitMmPerPrompt"].strip():
         command.extend(["--limit-mm-per-prompt", serving["limitMmPerPrompt"].strip()])
+
+    if serving.get("enforceEager"):
+        command.append("--enforce-eager")
 
     return command
 

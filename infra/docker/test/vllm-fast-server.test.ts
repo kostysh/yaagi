@@ -73,3 +73,41 @@ void test('F-0020 vllm-fast bootstrap rejects malformed qualified manifests', as
 
   assert.match(result.stderr, /selectedCandidateId to match preferredCandidateId/);
 });
+
+void test('F-0020 vllm-fast bootstrap allows bounded serving overrides for smoke-only budgets', async () => {
+  const result = await run(
+    'python3',
+    [
+      '-c',
+      [
+        'import importlib.util, json',
+        "spec = importlib.util.spec_from_file_location('yaagi_vllm_fast_server', 'infra/docker/vllm-fast/server.py')",
+        'module = importlib.util.module_from_spec(spec)',
+        'spec.loader.exec_module(module)',
+        "config = module.resolve_serving_config({'servingConfig': {'maxModelLen': 16384, 'gpuMemoryUtilization': 0.82, 'maxNumSeqs': 4}})",
+        'print(json.dumps(config))',
+      ].join('\n'),
+    ],
+    {
+      cwd: repoRoot(),
+      env: {
+        ...process.env,
+        VLLM_FAST_SERVING_MAX_MODEL_LEN: '4096',
+        VLLM_FAST_SERVING_GPU_MEMORY_UTILIZATION: '0.35',
+        VLLM_FAST_SERVING_MAX_NUM_SEQS: '1',
+        VLLM_FAST_SERVING_ENFORCE_EAGER: 'true',
+      },
+    },
+  );
+
+  const payload = JSON.parse(result.stdout.trim()) as {
+    maxModelLen: number;
+    gpuMemoryUtilization: number;
+    maxNumSeqs: number;
+    enforceEager: boolean;
+  };
+  assert.equal(payload.maxModelLen, 4096);
+  assert.equal(payload.gpuMemoryUtilization, 0.35);
+  assert.equal(payload.maxNumSeqs, 1);
+  assert.equal(payload.enforceEager, true);
+});

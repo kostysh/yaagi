@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import net from 'node:net';
 import test from 'node:test';
 import path from 'node:path';
@@ -19,6 +20,31 @@ const projectName = 'yaagi-phase0';
 const defaultCoreHostPort = 18080;
 const defaultPostgresHostPort = Number(process.env['YAAGI_SMOKE_POSTGRES_HOST_PORT'] ?? '15432');
 const smokePostgresQueryTimeoutMs = 5_000;
+const smokeReactivePredicateTimeoutMs = Number(
+  process.env['YAAGI_SMOKE_REACTIVE_PREDICATE_TIMEOUT_MS'] ?? '90000',
+);
+const smokeMemoryHeadroomBytes = parseByteLimit(
+  process.env['YAAGI_SMOKE_HOST_MEMORY_HEADROOM'] ?? '4g',
+  'YAAGI_SMOKE_HOST_MEMORY_HEADROOM',
+);
+const smokePostgresMemoryLimitBytes = parseByteLimit(
+  process.env['YAAGI_SMOKE_POSTGRES_MEMORY_LIMIT'] ?? '768m',
+  'YAAGI_SMOKE_POSTGRES_MEMORY_LIMIT',
+);
+const smokeVllmFastMemoryLimitBytes = parseByteLimit(
+  process.env['YAAGI_SMOKE_VLLM_FAST_MEMORY_LIMIT'] ?? '20g',
+  'YAAGI_SMOKE_VLLM_FAST_MEMORY_LIMIT',
+);
+const smokeCoreMemoryLimitBytes = parseByteLimit(
+  process.env['YAAGI_SMOKE_CORE_MEMORY_LIMIT'] ?? '1g',
+  'YAAGI_SMOKE_CORE_MEMORY_LIMIT',
+);
+const smokeTelegramApiMemoryLimitBytes = parseByteLimit(
+  process.env['YAAGI_SMOKE_TELEGRAM_API_MEMORY_LIMIT'] ?? '256m',
+  'YAAGI_SMOKE_TELEGRAM_API_MEMORY_LIMIT',
+);
+const smokeBaseBudgetBytes =
+  smokePostgresMemoryLimitBytes + smokeVllmFastMemoryLimitBytes + smokeCoreMemoryLimitBytes;
 
 const smokeLifecycleMetrics = {
   projectStarts: 0,
@@ -44,6 +70,65 @@ function coreHealthUrl(port = defaultCoreHostPort): string {
 type ComposeOptions = Parameters<typeof run>[2] & {
   telegram?: boolean;
 };
+
+function parseByteLimit(input: string, label: string): number {
+  const normalized = input.trim().toLowerCase();
+  const match = normalized.match(/^(\d+(?:\.\d+)?)([kmgt]?i?b?)?$/);
+  assert.ok(match, `${label} must be a byte-size string like 768m or 16g, received ${input}`);
+
+  const value = Number(match[1]);
+  const unit = match[2] ?? 'b';
+  const multipliers: Record<string, number> = {
+    b: 1,
+    k: 1024,
+    kb: 1024,
+    kib: 1024,
+    m: 1024 ** 2,
+    mb: 1024 ** 2,
+    mib: 1024 ** 2,
+    g: 1024 ** 3,
+    gb: 1024 ** 3,
+    gib: 1024 ** 3,
+    t: 1024 ** 4,
+    tb: 1024 ** 4,
+    tib: 1024 ** 4,
+  };
+  const multiplier = multipliers[unit];
+  assert.ok(multiplier, `${label} uses unsupported unit in ${input}`);
+  return Math.floor(value * multiplier);
+}
+
+function formatBytes(bytes: number): string {
+  const gib = 1024 ** 3;
+  const mib = 1024 ** 2;
+  if (bytes >= gib) {
+    return `${(bytes / gib).toFixed(2)} GiB`;
+  }
+  return `${Math.ceil(bytes / mib)} MiB`;
+}
+
+async function readMemAvailableBytes(): Promise<number | null> {
+  try {
+    const meminfo = await readFile('/proc/meminfo', 'utf8');
+    const match = meminfo.match(/^MemAvailable:\s+(\d+)\s+kB$/m);
+    return match ? Number(match[1]) * 1024 : null;
+  } catch {
+    return null;
+  }
+}
+
+async function ensureSmokeHostMemoryHeadroom(extraBudgetBytes = 0): Promise<void> {
+  const memAvailableBytes = await readMemAvailableBytes();
+  if (memAvailableBytes == null) {
+    return;
+  }
+
+  const requiredBytes = extraBudgetBytes + smokeMemoryHeadroomBytes;
+  assert.ok(
+    memAvailableBytes >= requiredBytes,
+    `refusing to start smoke: host MemAvailable ${formatBytes(memAvailableBytes)} is below required ${formatBytes(requiredBytes)} (requested budget ${formatBytes(extraBudgetBytes)} + headroom ${formatBytes(smokeMemoryHeadroomBytes)})`,
+  );
+}
 
 const runtimeResetSql = `
 truncate table
@@ -499,6 +584,7 @@ async function fenceSmokeActivationFailure(options: ComposeOptions = {}): Promis
 }
 
 async function startSmokeProject(options: ComposeOptions = {}): Promise<void> {
+  await ensureSmokeHostMemoryHeadroom(smokeBaseBudgetBytes);
   await runSmokeActivationWithFence(
     async () => {
       await compose(['up', '-d', '--build', '--wait'], options);
@@ -511,6 +597,7 @@ async function startSmokeProject(options: ComposeOptions = {}): Promise<void> {
 }
 
 async function activateTelegramOverlay(): Promise<void> {
+  await ensureSmokeHostMemoryHeadroom(smokeTelegramApiMemoryLimitBytes);
   await runSmokeActivationWithFence(
     async () => {
       await compose(
@@ -1484,6 +1571,7 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
                   and status = 'completed'
               )
             )::text;`,
+            smokeReactivePredicateTimeoutMs,
           );
 
           const ingestionEvidence = await queryPostgresJson<{
@@ -1573,6 +1661,7 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
                 where tick_id = (select tick_id from completed_tick)
               )
             )::text;`,
+            smokeReactivePredicateTimeoutMs,
           );
 
           const decisionEvidence = await queryPostgresJson<{
@@ -1671,7 +1760,7 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
                 where tick_id = (select tick_id from completed_tick)
               )
             )::text;`,
-            45_000,
+            smokeReactivePredicateTimeoutMs,
           );
 
           const executiveEvidence = await queryPostgresJson<{
@@ -1840,7 +1929,7 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
                   and status = 'completed'
               )
             )::text;`,
-            45_000,
+            smokeReactivePredicateTimeoutMs,
             { telegram: true },
           );
 

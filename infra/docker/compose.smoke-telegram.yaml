@@ -3,6 +3,10 @@ services:
     image: python:3.13-alpine
     working_dir: /app
     command: ["python", "/app/server.py"]
+    mem_limit: "${YAAGI_SMOKE_TELEGRAM_API_MEMORY_LIMIT:-256m}"
+    memswap_limit: "${YAAGI_SMOKE_TELEGRAM_API_MEMORY_SWAP_LIMIT:-256m}"
+    cpus: "${YAAGI_SMOKE_TELEGRAM_API_CPUS:-0.50}"
+    pids_limit: 128
     read_only: true
     tmpfs:
       - /tmp

@@ -9,24 +9,28 @@ const smokeBaseComposePath = path.join(repoRoot, 'infra', 'docker', 'compose.smo
 const f0003Path = path.join(
   repoRoot,
   'docs',
+  'ssot',
   'features',
   'F-0003-tick-runtime-scheduler-episodic-timeline.md',
 );
 const f0005Path = path.join(
   repoRoot,
   'docs',
+  'ssot',
   'features',
   'F-0005-perception-buffer-and-sensor-adapters.md',
 );
 const f0007Path = path.join(
   repoRoot,
   'docs',
+  'ssot',
   'features',
   'F-0007-deterministic-smoke-harness-and-suite-scoped-cell-lifecycle.md',
 );
 const f0021Path = path.join(
   repoRoot,
   'docs',
+  'ssot',
   'features',
   'F-0021-smoke-harness-post-f0020-runtime-optimization.md',
 );
@@ -35,7 +39,7 @@ const readmePath = path.join(repoRoot, 'README.md');
 const f0021ImplementationEvidencePath = path.join(
   repoRoot,
   '.dossier',
-  'evidence',
+  'verification',
   'F-0021',
   'implementation-smoke-timing-c01.json',
 );
@@ -94,6 +98,51 @@ void test('AC-F0021-01 / AC-F0021-02 keep steady-state smoke PostgreSQL access o
   assert.match(smokeBaseCompose, /YAAGI_SMOKE_POSTGRES_HOST_PORT/);
   assert.doesNotMatch(composeYaml, /YAAGI_SMOKE_POSTGRES_HOST_PORT/);
   assert.match(readme, /one smoke-only direct PostgreSQL client/);
+});
+
+void test('smoke-only compose overlays keep hard resource budgets and bounded vllm-fast serving knobs out of the product compose path', async () => {
+  const [smokeBaseCompose, telegramOverlay, composeYaml] = await Promise.all([
+    loadText(smokeBaseComposePath),
+    loadText(path.join(repoRoot, 'infra', 'docker', 'compose.smoke-telegram.yaml')),
+    loadText(path.join(repoRoot, 'infra', 'docker', 'compose.yaml')),
+  ]);
+
+  assert.match(smokeBaseCompose, /YAAGI_SMOKE_VLLM_FAST_MEMORY_LIMIT/);
+  assert.match(smokeBaseCompose, /YAAGI_SMOKE_VLLM_FAST_MEMORY_SWAP_LIMIT/);
+  assert.match(smokeBaseCompose, /YAAGI_SMOKE_VLLM_FAST_CPUS/);
+  assert.match(smokeBaseCompose, /YAAGI_SMOKE_VLLM_FAST_MAX_MODEL_LEN/);
+  assert.match(smokeBaseCompose, /YAAGI_SMOKE_VLLM_FAST_GPU_MEMORY_UTILIZATION/);
+  assert.match(smokeBaseCompose, /YAAGI_SMOKE_VLLM_FAST_MAX_NUM_SEQS/);
+  assert.match(smokeBaseCompose, /YAAGI_SMOKE_VLLM_FAST_ENFORCE_EAGER/);
+  assert.match(smokeBaseCompose, /YAAGI_SMOKE_CORE_MEMORY_LIMIT/);
+  assert.match(smokeBaseCompose, /YAAGI_SMOKE_POSTGRES_MEMORY_LIMIT/);
+  assert.match(telegramOverlay, /YAAGI_SMOKE_TELEGRAM_API_MEMORY_LIMIT/);
+  assert.doesNotMatch(composeYaml, /YAAGI_SMOKE_VLLM_FAST_MEMORY_LIMIT/);
+  assert.doesNotMatch(composeYaml, /VLLM_FAST_SERVING_MAX_MODEL_LEN/);
+});
+
+void test('deployment-cell smoke keeps an explicit host-memory preflight before starting the bounded compose project', async () => {
+  const text = await loadText(smokeHarnessPath);
+
+  assert.match(text, /import \{ readFile \} from 'node:fs\/promises';/);
+  assert.match(text, /const smokeMemoryHeadroomBytes = parseByteLimit\(/);
+  assert.match(text, /const smokeBaseBudgetBytes =/);
+  assert.match(text, /async function readMemAvailableBytes/);
+  assert.match(text, /async function ensureSmokeHostMemoryHeadroom/);
+  assert.match(text, /await ensureSmokeHostMemoryHeadroom\(smokeBaseBudgetBytes\);/);
+  assert.match(text, /await ensureSmokeHostMemoryHeadroom\(smokeTelegramApiMemoryLimitBytes\);/);
+});
+
+void test('reactive smoke scenarios use one explicit latency budget for bounded inference waits under the smoke-only vllm profile', async () => {
+  const text = await loadText(smokeHarnessPath);
+
+  assert.match(text, /const smokeReactivePredicateTimeoutMs = Number\(/);
+  assert.match(text, /YAAGI_SMOKE_REACTIVE_PREDICATE_TIMEOUT_MS/);
+  assert.match(text, /waitForPostgresPredicate\([\s\S]*smokeReactivePredicateTimeoutMs,\s*\);/);
+  assert.match(
+    text,
+    /waitForPostgresPredicate\([\s\S]*smokeReactivePredicateTimeoutMs,\s*\{ telegram: true \},\s*\);/,
+  );
 });
 
 void test('AC-F0021-03 / AC-F0021-04 / AC-F0021-05 keep Telegram overlay on the shared runtime without rebuilds', async () => {
