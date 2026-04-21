@@ -176,6 +176,7 @@ void test('AC-F0023-05 AC-F0023-06 AC-F0023-10 AC-F0023-15 updates publication m
     return;
   }
 
+  const firstReplaceStart = harness.queries.length;
   await store.replaceModelHealthReports({
     reportRunId: first.reportRun.reportRunId,
     reports: [
@@ -195,6 +196,8 @@ void test('AC-F0023-05 AC-F0023-06 AC-F0023-10 AC-F0023-15 updates publication m
       },
     ],
   });
+  assert.equal(harness.queries.length - firstReplaceStart, 1);
+  assert.match(harness.queries[firstReplaceStart] ?? '', /jsonb_to_recordset/i);
 
   const second = await store.recordReportRun({
     reportRunId: 'report-run:model-health:new',
@@ -212,6 +215,7 @@ void test('AC-F0023-05 AC-F0023-06 AC-F0023-10 AC-F0023-15 updates publication m
     return;
   }
 
+  const secondReplaceStart = harness.queries.length;
   await store.replaceModelHealthReports({
     reportRunId: second.reportRun.reportRunId,
     reports: [
@@ -245,6 +249,8 @@ void test('AC-F0023-05 AC-F0023-06 AC-F0023-10 AC-F0023-15 updates publication m
       },
     ],
   });
+  assert.equal(harness.queries.length - secondReplaceStart, 1);
+  assert.match(harness.queries[secondReplaceStart] ?? '', /jsonb_to_recordset/i);
 
   const updated = await store.updateReportPublication({
     reportRunId: second.reportRun.reportRunId,

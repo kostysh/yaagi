@@ -146,6 +146,7 @@ const toLifecycleRow = (
 export const createReportingDbHarness = (): {
   db: ReportingDbExecutor;
   state: HarnessState;
+  queries: string[];
 } => {
   const state: HarnessState = {
     reportRuns: [],
@@ -155,6 +156,7 @@ export const createReportingDbHarness = (): {
     developmentDiagnosticsReports: [],
     lifecycleDiagnosticsReports: [],
   };
+  const queries: string[] = [];
   let transactionBackup: HarnessState | null = null;
 
   const query = (async (sqlText: unknown, params: unknown[] = []) => {
@@ -163,6 +165,7 @@ export const createReportingDbHarness = (): {
       throw new Error('reporting db harness supports only text queries');
     }
 
+    queries.push(sqlText);
     const sql = normalizeSql(sqlText);
 
     if (sql === 'begin') {
@@ -305,31 +308,54 @@ export const createReportingDbHarness = (): {
     }
 
     if (
-      sql.startsWith('delete from polyphony_runtime.model_health_reports where report_run_id = $1')
+      sql.includes('jsonb_to_recordset($2::jsonb)') &&
+      sql.includes('insert into polyphony_runtime.model_health_reports')
     ) {
       state.modelHealthReports = state.modelHealthReports.filter(
         (entry) => entry.reportRunId !== params[0],
       );
-      return { rows: [] };
-    }
 
-    if (sql.startsWith('insert into polyphony_runtime.model_health_reports')) {
-      const report: ModelHealthReport = {
-        reportRunId: params[1] as string,
-        reportFamily: 'model_health',
-        sourceRefs: findReportRun(state, params[1] as string).sourceRefsJson,
-        sourceOwnerRefs: findReportRun(state, params[1] as string).sourceOwnerRefsJson,
-        availability: params[8] as ModelHealthReport['availability'],
-        materializedAt: params[9] as string,
-        organId: params[2] as string,
-        profileId: (params[3] as string | null) ?? null,
-        healthStatus: params[4] as ModelHealthReport['healthStatus'],
-        errorRate: (params[5] as number | null) ?? null,
-        fallbackRef: (params[6] as string | null) ?? null,
-        sourceSurfaceRefs: parseJson<string[]>(params[7]),
+      const incoming = parseJson<
+        Array<{
+          report_run_id: string;
+          organ_id: string;
+          profile_id: string | null;
+          health_status: ModelHealthReport['healthStatus'];
+          error_rate: number | null;
+          fallback_ref: string | null;
+          source_surface_refs_json: string[];
+          availability_status: ModelHealthReport['availability'];
+          materialized_at: string;
+        }>
+      >(params[1]);
+
+      for (const row of incoming) {
+        state.modelHealthReports.push({
+          reportRunId: row.report_run_id,
+          reportFamily: 'model_health',
+          sourceRefs: findReportRun(state, row.report_run_id).sourceRefsJson,
+          sourceOwnerRefs: findReportRun(state, row.report_run_id).sourceOwnerRefsJson,
+          availability: row.availability_status,
+          materializedAt: row.materialized_at,
+          organId: row.organ_id,
+          profileId: row.profile_id,
+          healthStatus: row.health_status,
+          errorRate: row.error_rate,
+          fallbackRef: row.fallback_ref,
+          sourceSurfaceRefs: row.source_surface_refs_json,
+        });
+      }
+
+      return {
+        rows: state.modelHealthReports
+          .filter((entry) => entry.reportRunId === params[0])
+          .sort(
+            (left, right) =>
+              left.organId.localeCompare(right.organId) ||
+              (left.profileId ?? '').localeCompare(right.profileId ?? ''),
+          )
+          .map((entry) => toModelRow(state, entry)),
       };
-      state.modelHealthReports.push(report);
-      return { rows: [toModelRow(state, report)] };
     }
 
     if (
@@ -451,5 +477,6 @@ export const createReportingDbHarness = (): {
   return {
     db: { query } as ReportingDbExecutor,
     state,
+    queries,
   };
 };

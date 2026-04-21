@@ -176,6 +176,7 @@ void test('AC-F0023-02 AC-F0023-12 AC-F0023-14 materializes all first-phase repo
 void test('AC-F0023-10 AC-F0023-11 AC-F0023-13 publishes bounded report artifacts and keeps operator/release/support consumers on the canonical report bundle', async () => {
   const harness = createReportingDbHarness();
   const store = createReportingStore(harness.db);
+  let modelHealthVariant: 'initial' | 'changed' = 'initial';
   const service = createReportingService({
     store,
     now: createNowSequence(
@@ -206,24 +207,33 @@ void test('AC-F0023-10 AC-F0023-11 AC-F0023-13 publishes bounded report artifact
       });
     },
     loadModelHealthSource() {
+      const changed = modelHealthVariant === 'changed';
       return Promise.resolve({
-        availability: REPORT_AVAILABILITY.DEGRADED,
-        sourceRefs: ['model_profile_health:code.deep@shared'],
+        availability: changed ? REPORT_AVAILABILITY.FRESH : REPORT_AVAILABILITY.DEGRADED,
+        sourceRefs: [
+          changed
+            ? 'model_profile_health:code.deep.v2@shared'
+            : 'model_profile_health:code.deep@shared',
+        ],
         sourceOwnerRefs: [REPORT_SOURCE_OWNER.EXPANDED_MODEL_ECOLOGY],
         report: [
           {
             organId: 'code',
-            profileId: 'code.deep@shared',
-            availability: REPORT_AVAILABILITY.DEGRADED,
-            healthStatus: 'degraded' as const,
-            errorRate: 0.12,
+            profileId: changed ? 'code.deep.v2@shared' : 'code.deep@shared',
+            availability: changed ? REPORT_AVAILABILITY.FRESH : REPORT_AVAILABILITY.DEGRADED,
+            healthStatus: changed ? ('healthy' as const) : ('degraded' as const),
+            errorRate: changed ? 0.03 : 0.12,
             fallbackRef: 'model_profile:code.deep.fallback@shared',
-            sourceSurfaceRefs: ['model_profile_health:code.deep@shared'],
+            sourceSurfaceRefs: [
+              changed
+                ? 'model_profile_health:code.deep.v2@shared'
+                : 'model_profile_health:code.deep@shared',
+            ],
           },
         ],
         signaturePayload: {
-          profileId: 'code.deep@shared',
-          errorRate: 0.12,
+          profileId: changed ? 'code.deep.v2@shared' : 'code.deep@shared',
+          errorRate: changed ? 0.03 : 0.12,
         },
       });
     },
@@ -281,7 +291,11 @@ void test('AC-F0023-10 AC-F0023-11 AC-F0023-13 publishes bounded report artifact
   });
 
   const bundle = await service.getReportingBundle();
+  const modelHealthRunId = bundle.reportRuns.modelHealth?.reportRunId;
+  assert.ok(modelHealthRunId);
+  modelHealthVariant = 'changed';
   const published = await service.publishReportArtifact({
+    reportRunId: modelHealthRunId,
     reportFamily: REPORT_FAMILY.MODEL_HEALTH,
     channel: REPORT_PUBLICATION_CHANNEL.METRICS,
     ref: 'metric:model_health',
@@ -309,7 +323,118 @@ void test('AC-F0023-10 AC-F0023-11 AC-F0023-13 publishes bounded report artifact
   assert.equal(operatorView.modelHealthCount, 1);
   assert.equal(releaseView.stableSnapshotCount, 2);
   assert.equal(supportView.rollbackIncidentCountLast30d, 3);
+  assert.equal(published.reportRunId, modelHealthRunId);
   assert.equal(published.publicationJson.metrics?.status, REPORT_PUBLICATION_STATUS.PUBLISHED);
   assert.equal(published.publicationJson.metrics?.ref, 'metric:model_health');
   assert.equal(published.publicationJson.metrics?.detail, 'release-gate');
+});
+
+void test('AC-F0023-05 AC-F0023-12 keeps missing model-health upstream bounded to the affected report family', async () => {
+  const harness = createReportingDbHarness();
+  const store = createReportingStore(harness.db);
+  const service = createReportingService({
+    store,
+    now: createNowSequence(
+      '2026-04-21T18:30:00.000Z',
+      '2026-04-21T18:30:01.000Z',
+      '2026-04-21T18:30:02.000Z',
+      '2026-04-21T18:30:03.000Z',
+      '2026-04-21T18:30:04.000Z',
+      '2026-04-21T18:30:05.000Z',
+    ),
+    createId: createIdSequence(),
+    loadIdentityContinuitySource() {
+      return Promise.resolve({
+        availability: REPORT_AVAILABILITY.FRESH,
+        sourceRefs: ['agent_state:polyphony-core'],
+        sourceOwnerRefs: [REPORT_SOURCE_OWNER.TICK_RUNTIME],
+        report: {
+          runtimeMode: 'live' as const,
+          currentTickRef: 'tick:tick-9',
+          lastStableSnapshotRef: 'stable_snapshot:snapshot-9',
+          recentRecoveryRefs: [],
+        },
+        signaturePayload: {
+          currentTickRef: 'tick:tick-9',
+        },
+      });
+    },
+    loadModelHealthSource() {
+      return Promise.resolve({
+        availability: REPORT_AVAILABILITY.UNAVAILABLE,
+        sourceRefs: [],
+        sourceOwnerRefs: [],
+        report: [],
+        signaturePayload: {
+          missingUpstream: true,
+        },
+      });
+    },
+    loadStableSnapshotInventorySource() {
+      return Promise.resolve({
+        availability: REPORT_AVAILABILITY.FRESH,
+        sourceRefs: ['stable_snapshot:snapshot-9'],
+        sourceOwnerRefs: [REPORT_SOURCE_OWNER.BODY_EVOLUTION],
+        report: {
+          latestStableSnapshotRef: 'stable_snapshot:snapshot-9',
+          totalSnapshots: 1,
+          snapshots: [],
+        },
+        signaturePayload: {
+          latestStableSnapshotRef: 'stable_snapshot:snapshot-9',
+        },
+      });
+    },
+    loadDevelopmentDiagnosticsSource() {
+      return Promise.resolve({
+        availability: REPORT_AVAILABILITY.FRESH,
+        sourceRefs: ['development_ledger:ledger-12'],
+        sourceOwnerRefs: [REPORT_SOURCE_OWNER.DEVELOPMENT_GOVERNOR],
+        report: {
+          developmentFreezeActive: false,
+          ledgerEntryCountLast30d: 1,
+          proposalCountLast30d: 0,
+          recentLedgerRefs: ['development_ledger:ledger-12'],
+          recentFailedActionRefs: [],
+        },
+        signaturePayload: {
+          ledgerEntryCountLast30d: 1,
+        },
+      });
+    },
+    loadLifecycleDiagnosticsSource() {
+      return Promise.resolve({
+        availability: REPORT_AVAILABILITY.FRESH,
+        sourceRefs: ['rollback_incident:none'],
+        sourceOwnerRefs: [REPORT_SOURCE_OWNER.LIFECYCLE],
+        report: {
+          rollbackIncidentCountLast30d: 0,
+          gracefulShutdownCountLast30d: 0,
+          recentRollbackRefs: [],
+          recentGracefulShutdownRefs: [],
+          recentCompactionRefs: [],
+        },
+        signaturePayload: {
+          rollbackIncidentCountLast30d: 0,
+        },
+      });
+    },
+  });
+
+  const bundle = await service.getReportingBundle();
+
+  assert.equal(harness.state.reportRuns.length, 5);
+  assert.equal(bundle.reportRuns.identityContinuity?.availabilityStatus, REPORT_AVAILABILITY.FRESH);
+  assert.equal(bundle.reportRuns.modelHealth?.availabilityStatus, REPORT_AVAILABILITY.UNAVAILABLE);
+  assert.deepEqual(bundle.reportRuns.modelHealth?.sourceRefsJson, ['model_health:none']);
+  assert.deepEqual(bundle.reportRuns.modelHealth?.sourceOwnerRefsJson, [
+    REPORT_SOURCE_OWNER.BASELINE_MODEL_ROUTING,
+    REPORT_SOURCE_OWNER.EXPANDED_MODEL_ECOLOGY,
+  ]);
+  assert.deepEqual(bundle.reports.modelHealth, []);
+  assert.equal(bundle.reports.identityContinuity?.currentTickRef, 'tick:tick-9');
+  assert.equal(
+    bundle.reports.stableSnapshotInventory?.latestStableSnapshotRef,
+    'stable_snapshot:snapshot-9',
+  );
 });

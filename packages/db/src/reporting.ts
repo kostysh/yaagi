@@ -197,22 +197,6 @@ function asUtcIso(column: string, alias: string): string {
   return `to_char(${column} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "${alias}"`;
 }
 
-const transaction = async <T>(db: ReportingDbExecutor, run: () => Promise<T>): Promise<T> => {
-  await db.query('begin');
-  try {
-    const result = await run();
-    await db.query('commit');
-    return result;
-  } catch (error) {
-    try {
-      await db.query('rollback');
-    } catch {
-      // Preserve the original error.
-    }
-    throw error;
-  }
-};
-
 const normalizeTimestamp = (value: unknown, field: string): string => {
   if (typeof value === 'string') {
     return value;
@@ -868,55 +852,75 @@ export const createReportingStore = (db: ReportingDbExecutor): ReportingStore =>
   async replaceModelHealthReports(
     input: ReplaceModelHealthReportsInput,
   ): Promise<ModelHealthReport[]> {
-    return await transaction(db, async () => {
-      await db.query(`delete from ${modelHealthReportsTable} where report_run_id = $1`, [
+    const result = await db.query<QueryResultRow>(
+      `with cleared as (
+         delete from ${modelHealthReportsTable}
+         where report_run_id = $1
+       ),
+       incoming as (
+         select *
+         from jsonb_to_recordset($2::jsonb) as payload(
+           report_run_id text,
+           organ_id text,
+           profile_id text,
+           health_status text,
+           error_rate double precision,
+           fallback_ref text,
+           source_surface_refs_json jsonb,
+           availability_status text,
+           materialized_at timestamptz
+         )
+       ),
+       inserted as (
+         insert into ${modelHealthReportsTable} (
+           report_row_id,
+           report_run_id,
+           organ_id,
+           profile_id,
+           health_status,
+           error_rate,
+           fallback_ref,
+           source_surface_refs_json,
+           availability_status,
+           materialized_at
+         )
+         select
+           report_run_id || ':' || organ_id || ':' || coalesce(profile_id, 'none'),
+           report_run_id,
+           organ_id,
+           profile_id,
+           health_status,
+           error_rate,
+           fallback_ref,
+           source_surface_refs_json,
+           availability_status,
+           materialized_at
+         from incoming
+       )
+       select ${modelHealthColumns}
+       from ${modelHealthReportsTable} mhr
+       inner join ${reportRunsTable} rr on rr.report_run_id = mhr.report_run_id
+       where mhr.report_run_id = $1
+       order by mhr.organ_id asc, mhr.profile_id asc nulls first`,
+      [
         input.reportRunId,
-      ]);
+        stableJson(
+          input.reports.map((report) => ({
+            report_run_id: input.reportRunId,
+            organ_id: report.organId,
+            profile_id: report.profileId,
+            health_status: report.healthStatus,
+            error_rate: report.errorRate,
+            fallback_ref: report.fallbackRef,
+            source_surface_refs_json: report.sourceSurfaceRefs,
+            availability_status: report.availability,
+            materialized_at: report.materializedAt,
+          })),
+        ),
+      ],
+    );
 
-      const rows: ModelHealthReport[] = [];
-      for (const report of input.reports) {
-        await db.query(
-          `insert into ${modelHealthReportsTable} (
-             report_row_id,
-             report_run_id,
-             organ_id,
-             profile_id,
-             health_status,
-             error_rate,
-             fallback_ref,
-             source_surface_refs_json,
-             availability_status,
-             materialized_at
-           ) values (
-             $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10::timestamptz
-           )`,
-          [
-            `${input.reportRunId}:${report.organId}:${report.profileId ?? 'none'}`,
-            input.reportRunId,
-            report.organId,
-            report.profileId,
-            report.healthStatus,
-            report.errorRate,
-            report.fallbackRef,
-            stableJson(report.sourceSurfaceRefs),
-            report.availability,
-            report.materializedAt,
-          ],
-        );
-      }
-
-      const result = await db.query<QueryResultRow>(
-        `select ${modelHealthColumns}
-         from ${modelHealthReportsTable} mhr
-         inner join ${reportRunsTable} rr on rr.report_run_id = mhr.report_run_id
-         where mhr.report_run_id = $1
-         order by mhr.organ_id asc, mhr.profile_id asc nulls first`,
-        [input.reportRunId],
-      );
-      rows.push(...result.rows.map(normalizeModelHealthReport));
-
-      return rows;
-    });
+    return result.rows.map(normalizeModelHealthReport);
   },
 
   async listModelHealthReports(

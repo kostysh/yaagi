@@ -127,6 +127,7 @@ export type ReportingBundle = {
 };
 
 export type PublishReportArtifactInput = {
+  reportRunId: string;
   reportFamily: ReportFamily;
   channel: ReportPublicationChannel;
   ref: string;
@@ -160,6 +161,11 @@ type ReportingServiceOptions = ReportingSourceLoaders & {
 };
 
 const REPORTING_SCHEMA_VERSION = '019_reporting_foundation.sql';
+const MODEL_HEALTH_MISSING_SOURCE_REFS = ['model_health:none'];
+const MODEL_HEALTH_MISSING_SOURCE_OWNERS: ReportSourceOwner[] = [
+  REPORT_SOURCE_OWNER.BASELINE_MODEL_ROUTING,
+  REPORT_SOURCE_OWNER.EXPANDED_MODEL_ECOLOGY,
+];
 
 const defaultPublicationMetadata = (): ReportPublicationMetadata => ({
   [REPORT_PUBLICATION_CHANNEL.METRICS]: {
@@ -404,15 +410,21 @@ export const createReportingService = (options: ReportingServiceOptions): Report
   const materializeModelHealthReports = async (): Promise<ModelHealthReport[]> => {
     const materializedAt = now().toISOString();
     const source = await options.loadModelHealthSource({ materializedAt });
+    const sourceRefs =
+      source.sourceRefs.length > 0 ? source.sourceRefs : MODEL_HEALTH_MISSING_SOURCE_REFS;
+    const sourceOwnerRefs =
+      source.sourceOwnerRefs.length > 0
+        ? source.sourceOwnerRefs
+        : MODEL_HEALTH_MISSING_SOURCE_OWNERS;
     const reportRun = await recordRun(
       REPORT_FAMILY.MODEL_HEALTH,
       materializedAt,
       source.availability,
-      source.sourceRefs,
-      source.sourceOwnerRefs,
+      sourceRefs,
+      sourceOwnerRefs,
       {
-        sourceRefs: source.sourceRefs,
-        sourceOwnerRefs: source.sourceOwnerRefs,
+        sourceRefs,
+        sourceOwnerRefs,
         availability: source.availability,
         payload: source.signaturePayload,
       },
@@ -615,20 +627,15 @@ export const createReportingService = (options: ReportingServiceOptions): Report
       return await options.store.loadOrganErrorRateSource();
     },
     async publishReportArtifact(input: PublishReportArtifactInput): Promise<ReportRunRow> {
-      const bundle = await getReportingBundle();
-      const reportRun =
-        input.reportFamily === REPORT_FAMILY.IDENTITY_CONTINUITY
-          ? bundle.reportRuns.identityContinuity
-          : input.reportFamily === REPORT_FAMILY.MODEL_HEALTH
-            ? bundle.reportRuns.modelHealth
-            : input.reportFamily === REPORT_FAMILY.STABLE_SNAPSHOT_INVENTORY
-              ? bundle.reportRuns.stableSnapshotInventory
-              : input.reportFamily === REPORT_FAMILY.DEVELOPMENT_DIAGNOSTICS
-                ? bundle.reportRuns.developmentDiagnostics
-                : bundle.reportRuns.lifecycleDiagnostics;
-
+      const reportRun = await options.store.getReportRun(input.reportRunId);
       if (!reportRun) {
-        throw new Error(`missing report run for ${input.reportFamily}`);
+        throw new Error(`missing report run ${input.reportRunId}`);
+      }
+
+      if (reportRun.reportFamily !== input.reportFamily) {
+        throw new Error(
+          `report run ${input.reportRunId} belongs to ${reportRun.reportFamily}, not ${input.reportFamily}`,
+        );
       }
 
       const nextPublication = {
@@ -916,20 +923,28 @@ export const createDbBackedReportingService = (
         reports.length === 0
           ? REPORT_AVAILABILITY.UNAVAILABLE
           : mostDegradedAvailability(reports.map((report) => report.availability));
+      const sourceOwnerRefs =
+        reports.length === 0
+          ? MODEL_HEALTH_MISSING_SOURCE_OWNERS
+          : (uniqueSorted([
+              ...(baselineProfiles.length > 0 ? [REPORT_SOURCE_OWNER.BASELINE_MODEL_ROUTING] : []),
+              ...(richerProfiles.length > 0 ? [REPORT_SOURCE_OWNER.EXPANDED_MODEL_ECOLOGY] : []),
+            ]) as ReportSourceOwner[]);
+      const sourceRefs =
+        reports.length === 0
+          ? MODEL_HEALTH_MISSING_SOURCE_REFS
+          : uniqueSorted(
+              reports.flatMap((report) =>
+                report.sourceSurfaceRefs.length > 0
+                  ? report.sourceSurfaceRefs
+                  : [`model_health:none:${report.organId}`],
+              ),
+            );
 
       return {
         availability,
-        sourceRefs: uniqueSorted(
-          reports.flatMap((report) =>
-            report.sourceSurfaceRefs.length > 0
-              ? report.sourceSurfaceRefs
-              : [`model_health:none:${report.organId}`],
-          ),
-        ),
-        sourceOwnerRefs: uniqueSorted([
-          ...(baselineProfiles.length > 0 ? [REPORT_SOURCE_OWNER.BASELINE_MODEL_ROUTING] : []),
-          ...(richerProfiles.length > 0 ? [REPORT_SOURCE_OWNER.EXPANDED_MODEL_ECOLOGY] : []),
-        ]) as ReportSourceOwner[],
+        sourceRefs,
+        sourceOwnerRefs,
         report: reports,
         signaturePayload: {
           baselineProfiles,
