@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-21T21:58:24.391Z",
-  "next_apply_index": 45,
+  "updated_at": "2026-04-23T12:47:19.004Z",
+  "next_apply_index": 46,
   "packets": [
     {
       "packet_id": "f0947cdd-67be-4f98-9cbd-bec31fce4589",
@@ -597,6 +597,18 @@
         "CF-025",
         "CF-026",
         "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-23-044-f0024-plan-slice-actualization",
+      "apply_index": 45,
+      "canonical_path": ".dossier/backlog/patches/e9e6d6c87c0f--2026-04-23-044-f0024-plan-slice-actualization.patch.json",
+      "content_hash": "e9e6d6c87c0f2fc6a84331b575a75657b0c3fc1a04737350004c1f48c1b4ad7a",
+      "sequence": 44,
+      "applied_at": "2026-04-23T12:47:19.004Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-024"
       ]
     }
   ]

@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-23T12:06:52.018Z_
+_Last sync: 2026-04-23T12:48:03.836Z_
 
 ## Features
 
@@ -33,7 +33,7 @@ _Last sync: 2026-04-23T12:06:52.018Z_
 | F-0021 | Оптимизация smoke harness после real vLLM/Gemma runtime | done | strict | platform | F-0007, F-0020 | runtime,infra,verification,smoke,db | `features/F-0021-smoke-harness-post-f0020-runtime-optimization.md` |
 | F-0022 | Слой skills и процедур | done | strict | skills | F-0002, F-0010, F-0020 | runtime,workspace,tooling,skills | `features/F-0022-skills-and-procedural-layer.md` |
 | F-0023 | Наблюдаемость и диагностические отчёты | done | strict | observability | F-0003, F-0004, F-0010, F-0014, F-0016, F-0019 | runtime,db,observability,api,governance | `features/F-0023-observability-and-diagnostic-reporting.md` |
-| F-0024 | Аутентификация, авторизация и operator RBAC | shaped | deferred | security | F-0002, F-0013 | api,security,governance,runtime | `features/F-0024-authentication-authorization-operator-rbac.md` |
+| F-0024 | Аутентификация, авторизация и operator RBAC | planned | deferred | security | F-0002, F-0013 | api,security,governance,runtime | `features/F-0024-authentication-authorization-operator-rbac.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -238,5 +238,5 @@ graph TD
 - **WARN** F-0022 — Potential compound ACs detected: AC-F0022-22, AC-F0022-09, AC-F0022-10, AC-F0022-25, AC-F0022-25, AC-F0022-01, AC-F0022-04, AC-F0022-08, AC-F0022-10, AC-F0022-16, AC-F0022-19, AC-F0022-20, AC-F0022-25, AC-F0022-27. Prefer one obligation per AC.
 - **WARN** F-0023 — Change log shows mature replanning, but no short reason tags were found. Prefer tags like `[clarification]`, `[scope realignment]`, `[dependency realignment]`, `[risk discovery]`, or `[contract drift]`.
 - **WARN** F-0023 — Potential compound ACs detected: AC-F0023-01, AC-F0023-02, AC-F0023-03, AC-F0023-04, AC-F0023-05, AC-F0023-06, AC-F0023-07, AC-F0023-08, AC-F0023-10, AC-F0023-11, AC-F0023-12, AC-F0023-13, AC-F0023-14, AC-F0023-15, AC-F0023-01, AC-F0023-04, AC-F0023-05, AC-F0023-08, AC-F0023-02, AC-F0023-11. Prefer one obligation per AC.
-- **WARN** F-0024 — Potential compound ACs detected: AC-F0024-01, AC-F0024-02, AC-F0024-03, AC-F0024-04, AC-F0024-05, AC-F0024-06, AC-F0024-07, AC-F0024-08, AC-F0024-09, AC-F0024-10, AC-F0024-11, AC-F0024-12, AC-F0024-13, AC-F0024-14, AC-F0024-15, AC-F0024-16, AC-F0024-17, AC-F0024-18, AC-F0024-01, AC-F0024-03, AC-F0024-03, AC-F0024-09, AC-F0024-05, AC-F0024-08, AC-F0024-16, AC-F0024-13, AC-F0024-18. Prefer one obligation per AC.
+- **WARN** F-0024 — Potential compound ACs detected: AC-F0024-01, AC-F0024-02, AC-F0024-03, AC-F0024-04, AC-F0024-05, AC-F0024-06, AC-F0024-07, AC-F0024-08, AC-F0024-09, AC-F0024-10, AC-F0024-11, AC-F0024-12, AC-F0024-13, AC-F0024-14, AC-F0024-15, AC-F0024-16, AC-F0024-17, AC-F0024-18, AC-F0024-01, AC-F0024-04, AC-F0024-03, AC-F0024-09, AC-F0024-03, AC-F0024-04, AC-F0024-08, AC-F0024-09, AC-F0024-11, AC-F0024-15. Prefer one obligation per AC.
 <!-- END GENERATED RED_FLAGS -->
