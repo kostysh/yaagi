@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "created_at": "2026-04-23T11:55:45.160Z",
+  "audit_class": "spec-conformance-reviewer",
+  "review_mode": "external",
+  "reviewer": "Boyle",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": "019dba2d-4cb6-7b50-b4ce-e66c3a1eef56",
+  "reviewer_thread_id": "019db9f2-76ae-7f00-90ba-dda2e633f4a5",
+  "step": "feature-intake",
+  "dossier": "docs/ssot/features/F-0024-authentication-authorization-operator-rbac.md",
+  "feature_id": "F-0024",
+  "event_commit": "f56e5873aea988d952120423df7ee5cef2510e17",
+  "implementation_scope": null,
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "FAIL",
+  "findings": {
+    "must_fix": [
+      "Stage-state omits required backlog_followup_required/backlog_followup_kind/backlog_followup_resolved fields, while the feature-intake log records false/null/true; this breaks stage-log/stage-state consistency for the no-backlog-follow-up claim."
+    ],
+    "should_fix": [
+      "Feature-intake log narrative sections are mechanically present but under-informative: Inputs actually used, Backlog handoff decisions, and Index refresh say none despite handoff/source/index evidence."
+    ],
+    "evidence": [
+      "docs/ssot/features/F-0024-authentication-authorization-operator-rbac.md:21 captures CF-024 handoff, state, sources, blockers, dependencies.",
+      ".dossier/logs/feature-intake/F-0024--fc-F-0024-mobf0hcx.md:13 records backlog_followup_required=false, kind=null, resolved=true.",
+      ".dossier/stages/F-0024/feature-intake.json lacks backlog_followup_* fields before remediation.",
+      "Reviewer observed HEAD f56e5873aea988d952120423df7ee5cef2510e17 and no file mutations or HEAD changes by reviewer."
+    ]
+  },
+  "notes": "External independent audit returned FAIL; remediation and rerun required."
+}

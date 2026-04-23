@@ -15,12 +15,33 @@ backlog_followup_kind: null
 backlog_followup_resolved: true
 required_audit_classes:
   - spec-conformance-reviewer
-executed_audit_classes: []
+executed_audit_classes:
+  - spec-conformance-reviewer
 required_external_review_pending: true
-review_events: []
-reviewer_skills: []
-reviewer_agent_ids: []
-review_trace_commits: []
+review_events:
+  - artifact_path: .dossier/reviews/F-0024/feature-intake-review-fail.json
+    at: 2026-04-23T11:55:45.168Z
+    audit_class: spec-conformance-reviewer
+    allowed_by_policy: true
+    event_commit: f56e5873aea988d952120423df7ee5cef2510e17
+    implementation_scope: null
+    invalidated: false
+    must_fix_count: 1
+    recorded_at: 2026-04-23T11:55:45.168Z
+    review_mode: external
+    reviewer: Boyle
+    reviewer_agent_id: 019dba2d-4cb6-7b50-b4ce-e66c3a1eef56
+    reviewer_skill: spec-conformance-reviewer
+    reviewer_thread_id: 019db9f2-76ae-7f00-90ba-dda2e633f4a5
+    security_trigger_reason: null
+    stale: false
+    verdict: FAIL
+reviewer_skills:
+  - spec-conformance-reviewer
+reviewer_agent_ids:
+  - 019dba2d-4cb6-7b50-b4ce-e66c3a1eef56
+review_trace_commits:
+  - f56e5873aea988d952120423df7ee5cef2510e17
 degraded_review_present: false
 invalidated_review_present: false
 stale_review_present: false
@@ -32,19 +53,37 @@ transition_events:
 session_id: null
 trace_runtime: codex
 trace_locator_kind: session_id
+stage_entry_commit: null
+implementation_review_scope: null
+required_security_review: false
+security_trigger_reasons: []
+step_close_ts: null
+step_artifact: null
+process_complete_ts: null
+intake_process_complete_ts: null
+local_gates_green_ts: null
+first_review_agent_started_ts: 2026-04-23T11:55:45.168Z
+final_pass_ts: null
 ---
 
 ## Scope
 
-none
+- Opened one feature cycle for backlog item `CF-024`.
+- Created dossier `docs/ssot/features/F-0024-authentication-authorization-operator-rbac.md` with `status: proposed`.
+- No backlog truth mutation was performed by `feature-intake`.
 
 ## Inputs actually used
 
-none
+- Backlog item key: `CF-024`.
+- Backlog delivery state at intake: `defined`.
+- Backlog sources: `docs/architecture/system.md`, `docs/polyphony_concept.md`, `docs/notes/backlog-legacy/feature-candidates.md`, `docs/notes/backlog-legacy/working-system-roadmap-matrix-2026-03-26.md`.
+- Backlog dependencies: `CF-020`, `CF-009`.
 
 ## Backlog handoff decisions
 
-none
+- One backlog item maps to one feature dossier: `CF-024` -> `F-0024`.
+- Known blockers at intake: none recorded.
+- Delivered prerequisite dossiers recorded in frontmatter: `F-0002`, `F-0013`.
 
 ## Intake findings
 
@@ -56,11 +95,14 @@ none
 
 ## Index refresh
 
-none
+- `feature-intake` ran index refresh and updated `docs/ssot/index.md`.
+- Generated index now includes `F-0024` in the feature table and dependency graph.
 
 ## Backlog follow-up
 
-none
+- `backlog_followup_required: false`.
+- `backlog_followup_kind: null`.
+- `backlog_followup_resolved: true`.
 
 ## Process misses
 
