@@ -21,18 +21,50 @@ backlog_followup_kind: null
 backlog_followup_resolved: true
 required_audit_classes:
   - spec-conformance-reviewer
-executed_audit_classes: []
-required_external_review_pending: true
-review_events: []
-reviewer_skills: []
-reviewer_agent_ids: []
-review_trace_commits: []
+executed_audit_classes:
+  - spec-conformance-reviewer
+required_external_review_pending: false
+review_events:
+  - artifact_path: .dossier/reviews/F-0024/spec-compact-review.json
+    at: 2026-04-23T12:12:24.575Z
+    audit_class: spec-conformance-reviewer
+    allowed_by_policy: true
+    event_commit: 7e8a132465ff2bc8ce62ba485d241dd0c4e617ce
+    implementation_scope: null
+    invalidated: false
+    must_fix_count: 0
+    recorded_at: 2026-04-23T12:12:24.575Z
+    review_mode: external
+    reviewer: Mill
+    reviewer_agent_id: 019dba3e-826f-72f2-bb61-158655847fe8
+    reviewer_skill: spec-conformance-reviewer
+    reviewer_thread_id: 019db9f2-76ae-7f00-90ba-dda2e633f4a5
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
+reviewer_skills:
+  - spec-conformance-reviewer
+reviewer_agent_ids:
+  - 019dba3e-826f-72f2-bb61-158655847fe8
+review_trace_commits:
+  - 7e8a132465ff2bc8ce62ba485d241dd0c4e617ce
 degraded_review_present: false
 invalidated_review_present: false
 stale_review_present: false
 session_id: null
 trace_runtime: codex
 trace_locator_kind: session_id
+stage_entry_commit: null
+implementation_review_scope: null
+required_security_review: false
+security_trigger_reasons: []
+step_close_ts: null
+step_artifact: null
+process_complete_ts: null
+intake_process_complete_ts: null
+local_gates_green_ts: null
+first_review_agent_started_ts: 2026-04-23T12:12:24.575Z
+final_pass_ts: 2026-04-23T12:12:24.575Z
 ---
 
 ## Scope
