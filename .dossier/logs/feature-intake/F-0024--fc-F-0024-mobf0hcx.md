@@ -17,12 +17,11 @@ required_audit_classes:
   - spec-conformance-reviewer
 executed_audit_classes:
   - spec-conformance-reviewer
-required_external_review_pending: true
+required_external_review_pending: false
 review_events:
-  - artifact_path: .dossier/reviews/F-0024/feature-intake-review-fail.json
-    at: 2026-04-23T11:55:45.168Z
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0024/feature-intake-review-fail.json
     audit_class: spec-conformance-reviewer
-    allowed_by_policy: true
     event_commit: f56e5873aea988d952120423df7ee5cef2510e17
     implementation_scope: null
     invalidated: false
@@ -36,12 +35,31 @@ review_events:
     security_trigger_reason: null
     stale: false
     verdict: FAIL
+  - artifact_path: .dossier/reviews/F-0024/feature-intake-review-pass.json
+    at: 2026-04-23T11:59:50.338Z
+    audit_class: spec-conformance-reviewer
+    allowed_by_policy: true
+    event_commit: 07501f81b661f23ace9bc8c365ffef7772e936b2
+    implementation_scope: null
+    invalidated: false
+    must_fix_count: 0
+    recorded_at: 2026-04-23T11:59:50.338Z
+    review_mode: external
+    reviewer: Carson
+    reviewer_agent_id: 019dba33-3383-7573-98f1-25f98c9411b0
+    reviewer_skill: spec-conformance-reviewer
+    reviewer_thread_id: 019db9f2-76ae-7f00-90ba-dda2e633f4a5
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
 reviewer_skills:
   - spec-conformance-reviewer
 reviewer_agent_ids:
   - 019dba2d-4cb6-7b50-b4ce-e66c3a1eef56
+  - 019dba33-3383-7573-98f1-25f98c9411b0
 review_trace_commits:
   - f56e5873aea988d952120423df7ee5cef2510e17
+  - 07501f81b661f23ace9bc8c365ffef7772e936b2
 degraded_review_present: false
 invalidated_review_present: false
 stale_review_present: false
@@ -63,7 +81,7 @@ process_complete_ts: null
 intake_process_complete_ts: null
 local_gates_green_ts: null
 first_review_agent_started_ts: 2026-04-23T11:55:45.168Z
-final_pass_ts: null
+final_pass_ts: 2026-04-23T11:59:50.338Z
 ---
 
 ## Scope
