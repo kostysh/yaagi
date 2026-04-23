@@ -113,10 +113,9 @@ review_events:
     security_trigger_reason: authn/authz/rbac/rate-limit/trust-boundary changes in operator API
     stale: false
     verdict: PASS
-  - artifact_path: .dossier/reviews/F-0024/implementation-spec-conformance-review.json
-    at: 2026-04-23T15:27:37.648Z
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0024/implementation-spec-conformance-review.json
     audit_class: spec-conformance-reviewer
-    allowed_by_policy: true
     event_commit: f82a6242e324377dcc3bc42c7c1caf71cdb10217
     implementation_scope: code-bearing
     invalidated: false
@@ -130,6 +129,103 @@ review_events:
     security_trigger_reason: null
     stale: false
     verdict: PASS
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0024/implementation-spec-conformance-review.json
+    audit_class: spec-conformance-reviewer
+    event_commit: e6a99d451ad176e6aed20dfe2723c9cd686ef1d0
+    implementation_scope: code-bearing
+    invalidated: false
+    must_fix_count: 0
+    recorded_at: 2026-04-23T15:29:49.766Z
+    review_mode: external
+    reviewer: Goodall
+    reviewer_agent_id: 019dbaeb-7ab8-7833-ab6a-b3cd2d91c13a
+    reviewer_skill: spec-conformance-reviewer
+    reviewer_thread_id: 019dbaeb-7ab8-7833-ab6a-b3cd2d91c13a
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0024/implementation-security-review.json
+    audit_class: security-reviewer
+    event_commit: e6a99d451ad176e6aed20dfe2723c9cd686ef1d0
+    implementation_scope: code-bearing
+    invalidated: false
+    must_fix_count: 0
+    recorded_at: 2026-04-23T15:29:51.506Z
+    review_mode: external
+    reviewer: Beauvoir
+    reviewer_agent_id: 019dbaeb-7c0c-7aa1-8d68-e86df6938e76
+    reviewer_skill: security-reviewer
+    reviewer_thread_id: 019dbaeb-7c0c-7aa1-8d68-e86df6938e76
+    security_trigger_reason: authn/authz/rbac/rate-limit/trust-boundary changes in operator API
+    stale: false
+    verdict: PASS
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0024/implementation-code-review.json
+    audit_class: code-reviewer
+    event_commit: e6a99d451ad176e6aed20dfe2723c9cd686ef1d0
+    implementation_scope: code-bearing
+    invalidated: false
+    must_fix_count: 0
+    recorded_at: 2026-04-23T15:29:54.250Z
+    review_mode: external
+    reviewer: Volta
+    reviewer_agent_id: 019dbaeb-7b2f-7a90-9fa2-4c68a2b69490
+    reviewer_skill: code-reviewer
+    reviewer_thread_id: 019dbaeb-7b2f-7a90-9fa2-4c68a2b69490
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0024/implementation-spec-conformance-review.json
+    audit_class: spec-conformance-reviewer
+    event_commit: e6a99d451ad176e6aed20dfe2723c9cd686ef1d0
+    implementation_scope: code-bearing
+    invalidated: false
+    must_fix_count: 0
+    recorded_at: 2026-04-23T15:30:55.167Z
+    review_mode: external
+    reviewer: Goodall
+    reviewer_agent_id: 019dbaeb-7ab8-7833-ab6a-b3cd2d91c13a
+    reviewer_skill: spec-conformance-reviewer
+    reviewer_thread_id: 019dbaeb-7ab8-7833-ab6a-b3cd2d91c13a
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0024/implementation-code-review.json
+    audit_class: code-reviewer
+    event_commit: e6a99d451ad176e6aed20dfe2723c9cd686ef1d0
+    implementation_scope: code-bearing
+    invalidated: false
+    must_fix_count: 0
+    recorded_at: 2026-04-23T15:31:10.498Z
+    review_mode: external
+    reviewer: Volta
+    reviewer_agent_id: 019dbaeb-7b2f-7a90-9fa2-4c68a2b69490
+    reviewer_skill: code-reviewer
+    reviewer_thread_id: 019dbaeb-7b2f-7a90-9fa2-4c68a2b69490
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
+  - artifact_path: .dossier/reviews/F-0024/implementation-security-review.json
+    at: 2026-04-23T15:31:27.847Z
+    audit_class: security-reviewer
+    allowed_by_policy: true
+    event_commit: e6a99d451ad176e6aed20dfe2723c9cd686ef1d0
+    implementation_scope: code-bearing
+    invalidated: false
+    must_fix_count: 0
+    recorded_at: 2026-04-23T15:31:27.847Z
+    review_mode: external
+    reviewer: Beauvoir
+    reviewer_agent_id: 019dbaeb-7c0c-7aa1-8d68-e86df6938e76
+    reviewer_skill: security-reviewer
+    reviewer_thread_id: 019dbaeb-7c0c-7aa1-8d68-e86df6938e76
+    security_trigger_reason: authn/authz/rbac/rate-limit/trust-boundary changes in operator API
+    stale: false
+    verdict: PASS
 reviewer_skills:
   - spec-conformance-reviewer
   - code-reviewer
@@ -140,6 +236,7 @@ reviewer_agent_ids:
   - 019dbaeb-7c0c-7aa1-8d68-e86df6938e76
 review_trace_commits:
   - f82a6242e324377dcc3bc42c7c1caf71cdb10217
+  - e6a99d451ad176e6aed20dfe2723c9cd686ef1d0
 degraded_review_present: false
 invalidated_review_present: false
 stale_review_present: false
@@ -157,7 +254,7 @@ step_artifact: null
 process_complete_ts: null
 intake_process_complete_ts: null
 first_review_agent_started_ts: 2026-04-23T15:24:25.147Z
-final_pass_ts: 2026-04-23T15:27:37.648Z
+final_pass_ts: 2026-04-23T15:31:27.847Z
 ---
 
 ## Scope
@@ -250,8 +347,8 @@ none
   - Targeted auth/RBAC regression suite passed after final security hardening: 25/25.
   - Final `pnpm test` passed: 374/374.
   - Final `pnpm smoke:cell` passed: 21/21.
-- Closure artifacts are still pending:
-  - implementation ready-for-close transition
-  - review artifacts
-  - dossier verification artifact
-  - dossier step-close artifact
+- Closure artifacts created:
+  - implementation ready-for-close transition refreshed
+  - external review artifacts persisted on exact commit `e6a99d4`
+  - dossier verification artifact persisted at `.dossier/verification/F-0024/implementation.json`
+  - dossier step-close artifact persisted at `.dossier/steps/F-0024/implementation-close.json`

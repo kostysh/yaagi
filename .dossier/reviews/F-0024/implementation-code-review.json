@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "created_at": "2026-04-23T15:31:10.486Z",
+  "audit_class": "code-reviewer",
+  "review_mode": "external",
+  "reviewer": "Volta",
+  "reviewer_skill": "code-reviewer",
+  "reviewer_agent_id": "019dbaeb-7b2f-7a90-9fa2-4c68a2b69490",
+  "reviewer_thread_id": "019dbaeb-7b2f-7a90-9fa2-4c68a2b69490",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0024-authentication-authorization-operator-rbac.md",
+  "feature_id": "F-0024",
+  "event_commit": "e6a99d451ad176e6aed20dfe2723c9cd686ef1d0",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "Volta final audit PASS; auth/RBAC targeted 27/27, additional operator/perimeter/config 18/18, pnpm typecheck and git diff --check passed.",
+      "Final fixes reviewed: valid supported-token callers isolated from unknown pre-auth quota; freeze/proposal bounded JSON reads."
+    ]
+  },
+  "notes": "PASS: no confirmed blocking or important merge-risk findings in final diff."
+}
