@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "stage": "feature-intake",
+  "feature_id": "F-0024",
+  "feature_cycle_id": "fc-F-0024-mobf0hcx",
+  "cycle_id": "intake-95162f6e",
+  "log_path": ".dossier/logs/feature-intake/F-0024--fc-F-0024-mobf0hcx.md",
+  "backlog_item_key": "CF-024",
+  "stage_state": "ready_for_close",
+  "start_ts": "2026-04-23T11:45:30.849Z",
+  "entered_ts": "2026-04-23T11:45:30.849Z",
+  "ready_for_close_ts": "2026-04-23T11:45:30.849Z",
+  "transition_events": [
+    {
+      "kind": "entered",
+      "at": "2026-04-23T11:45:30.849Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-23T11:45:30.849Z"
+    }
+  ],
+  "required_audit_classes": [
+    "spec-conformance-reviewer"
+  ],
+  "executed_audit_classes": [],
+  "required_external_review_pending": true,
+  "review_events": [],
+  "reviewer_skills": [],
+  "reviewer_agent_ids": [],
+  "review_trace_commits": [],
+  "degraded_review_present": false,
+  "invalidated_review_present": false,
+  "stale_review_present": false,
+  "session_id": null,
+  "trace_runtime": "codex",
+  "trace_locator_kind": "session_id",
+  "stage_entry_commit": null,
+  "implementation_review_scope": null,
+  "required_security_review": null,
+  "security_trigger_reasons": [],
+  "step_close_ts": null,
+  "step_artifact": null,
+  "process_complete_ts": null,
+  "intake_process_complete_ts": null,
+  "local_gates_green_ts": null,
+  "first_review_agent_started_ts": null,
+  "final_pass_ts": null
+}
