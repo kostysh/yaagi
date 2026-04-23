@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-23T12:48:03.836Z_
+_Last sync: 2026-04-23T15:00:54.637Z_
 
 ## Features
 
@@ -33,7 +33,7 @@ _Last sync: 2026-04-23T12:48:03.836Z_
 | F-0021 | Оптимизация smoke harness после real vLLM/Gemma runtime | done | strict | platform | F-0007, F-0020 | runtime,infra,verification,smoke,db | `features/F-0021-smoke-harness-post-f0020-runtime-optimization.md` |
 | F-0022 | Слой skills и процедур | done | strict | skills | F-0002, F-0010, F-0020 | runtime,workspace,tooling,skills | `features/F-0022-skills-and-procedural-layer.md` |
 | F-0023 | Наблюдаемость и диагностические отчёты | done | strict | observability | F-0003, F-0004, F-0010, F-0014, F-0016, F-0019 | runtime,db,observability,api,governance | `features/F-0023-observability-and-diagnostic-reporting.md` |
-| F-0024 | Аутентификация, авторизация и operator RBAC | planned | deferred | security | F-0002, F-0013 | api,security,governance,runtime | `features/F-0024-authentication-authorization-operator-rbac.md` |
+| F-0024 | Аутентификация, авторизация и operator RBAC | done | strict | security | F-0002, F-0013, F-0016, F-0018 | api,security,governance,runtime | `features/F-0024-authentication-authorization-operator-rbac.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -149,6 +149,8 @@ graph TD
   F0023 --> F0019
   F0024 --> F0002
   F0024 --> F0013
+  F0024 --> F0016
+  F0024 --> F0018
 ```
 <!-- END GENERATED DEP_GRAPH -->
 
@@ -218,7 +220,7 @@ graph TD
 - **WARN** F-0012 — Potential compound ACs detected: AC-F0012-01, AC-F0012-02, AC-F0012-03, AC-F0012-04, AC-F0012-05, AC-F0012-06, AC-F0012-07, AC-F0012-08, AC-F0012-01, AC-F0012-01, AC-F0012-02, AC-F0012-03, AC-F0012-01, AC-F0012-05, AC-F0012-04, AC-F0012-03, AC-F0012-04, AC-F0012-06, AC-F0012-08. Prefer one obligation per AC.
 - **WARN** F-0013 — NFR section looks aspirational. Add a metric, budget/threshold, or observable signal for any normative NFR.
 - **WARN** F-0013 — Planned+ dossier has dependencies, but the slicing plan does not show clear `Depends on:` visibility with owner and unblock condition. Add the dependency note where it affects delivery order.
-- **WARN** F-0013 — Potential compound ACs detected: AC-F0013-01, AC-F0013-02, AC-F0013-03, AC-F0013-04, AC-F0013-05, AC-F0013-06, AC-F0013-07, AC-F0013-08, AC-F0013-01, AC-F0013-02, AC-F0013-04, AC-F0013-05, AC-F0013-06, AC-F0013-01, AC-F0013-08, AC-F0013-01, AC-F0013-03, AC-F0013-04, AC-F0013-05, AC-F0013-07, AC-F0013-08. Prefer one obligation per AC.
+- **WARN** F-0013 — Potential compound ACs detected: AC-F0013-01, AC-F0013-02, AC-F0013-03, AC-F0013-04, AC-F0013-05, AC-F0013-06, AC-F0013-07, AC-F0013-08, AC-F0013-01, AC-F0013-02, AC-F0013-04, AC-F0013-05, AC-F0013-06, AC-F0013-01, AC-F0013-08, AC-F0013-01, AC-F0013-03, AC-F0013-04, AC-F0013-05, AC-F0013-06, AC-F0013-07, AC-F0013-08. Prefer one obligation per AC.
 - **WARN** F-0014 — Planned+ dossier has dependencies, but the slicing plan does not show clear `Depends on:` visibility with owner and unblock condition. Add the dependency note where it affects delivery order.
 - **WARN** F-0014 — Change log shows mature replanning, but no short reason tags were found. Prefer tags like `[clarification]`, `[scope realignment]`, `[dependency realignment]`, `[risk discovery]`, or `[contract drift]`.
 - **WARN** F-0014 — Potential compound ACs detected: AC-F0014-01, AC-F0014-02, AC-F0014-03, AC-F0014-04, AC-F0014-05, AC-F0014-06, AC-F0014-07, AC-F0014-01, AC-F0014-03, AC-F0014-03, AC-F0014-04, AC-F0014-04, AC-F0014-03, AC-F0014-03, AC-F0014-04, AC-F0014-02, AC-F0014-03, AC-F0014-04, AC-F0014-06. Prefer one obligation per AC.
@@ -227,7 +229,7 @@ graph TD
 - **WARN** F-0015 — Planned+ dossier has dependencies, but the slicing plan does not show clear `Depends on:` visibility with owner and unblock condition. Add the dependency note where it affects delivery order.
 - **WARN** F-0015 — Change log shows mature replanning, but no short reason tags were found. Prefer tags like `[clarification]`, `[scope realignment]`, `[dependency realignment]`, `[risk discovery]`, or `[contract drift]`.
 - **WARN** F-0015 — Potential compound ACs detected: AC-F0015-01, AC-F0015-02, AC-F0015-03, AC-F0015-04, AC-F0015-05, AC-F0015-06, AC-F0015-07, AC-F0015-08, AC-F0015-09, AC-F0015-02, AC-F0015-02, AC-F0015-04, AC-F0015-05, AC-F0015-07, AC-F0015-02, AC-F0015-08, AC-F0015-05, AC-F0015-01, AC-F0015-02, AC-F0015-03, AC-F0015-04, AC-F0015-05, AC-F0015-06, AC-F0015-08, AC-F0015-09. Prefer one obligation per AC.
-- **WARN** F-0016 — Potential compound ACs detected: AC-F0016-01, AC-F0016-02, AC-F0016-03, AC-F0016-04, AC-F0016-05, AC-F0016-06, AC-F0016-07, AC-F0016-08, AC-F0016-09, AC-F0016-10, AC-F0016-01, AC-F0016-03, AC-F0016-04, AC-F0016-07, AC-F0016-02, AC-F0016-01, AC-F0016-02, AC-F0016-06, AC-F0016-07, AC-F0016-08, AC-F0016-09, AC-F0016-10. Prefer one obligation per AC.
+- **WARN** F-0016 — Potential compound ACs detected: AC-F0016-01, AC-F0016-02, AC-F0016-03, AC-F0016-04, AC-F0016-05, AC-F0016-06, AC-F0016-07, AC-F0016-08, AC-F0016-09, AC-F0016-10, AC-F0016-01, AC-F0016-03, AC-F0016-04, AC-F0016-07, AC-F0016-02, AC-F0016-01, AC-F0016-02, AC-F0016-04, AC-F0016-06, AC-F0016-07, AC-F0016-08, AC-F0016-09, AC-F0016-10. Prefer one obligation per AC.
 - **WARN** F-0017 — Potential compound ACs detected: AC-F0017-06, AC-F0017-06. Prefer one obligation per AC.
 - **WARN** F-0018 — Potential compound ACs detected: AC-F0018-01, AC-F0018-02, AC-F0018-03, AC-F0018-04, AC-F0018-05, AC-F0018-06, AC-F0018-07, AC-F0018-08, AC-F0018-09, AC-F0018-10, AC-F0018-11, AC-F0018-12, AC-F0018-13, AC-F0018-03, AC-F0018-03, AC-F0018-01, AC-F0018-03, AC-F0018-08, AC-F0018-11, AC-F0018-03, AC-F0018-06, AC-F0018-01, AC-F0018-02, AC-F0018-03, AC-F0018-04, AC-F0018-05, AC-F0018-06, AC-F0018-07, AC-F0018-08, AC-F0018-09, AC-F0018-10, AC-F0018-11, AC-F0018-12, AC-F0018-13. Prefer one obligation per AC.
 - **WARN** F-0020 — NFR section looks aspirational. Add a metric, budget/threshold, or observable signal for any normative NFR.
@@ -238,5 +240,5 @@ graph TD
 - **WARN** F-0022 — Potential compound ACs detected: AC-F0022-22, AC-F0022-09, AC-F0022-10, AC-F0022-25, AC-F0022-25, AC-F0022-01, AC-F0022-04, AC-F0022-08, AC-F0022-10, AC-F0022-16, AC-F0022-19, AC-F0022-20, AC-F0022-25, AC-F0022-27. Prefer one obligation per AC.
 - **WARN** F-0023 — Change log shows mature replanning, but no short reason tags were found. Prefer tags like `[clarification]`, `[scope realignment]`, `[dependency realignment]`, `[risk discovery]`, or `[contract drift]`.
 - **WARN** F-0023 — Potential compound ACs detected: AC-F0023-01, AC-F0023-02, AC-F0023-03, AC-F0023-04, AC-F0023-05, AC-F0023-06, AC-F0023-07, AC-F0023-08, AC-F0023-10, AC-F0023-11, AC-F0023-12, AC-F0023-13, AC-F0023-14, AC-F0023-15, AC-F0023-01, AC-F0023-04, AC-F0023-05, AC-F0023-08, AC-F0023-02, AC-F0023-11. Prefer one obligation per AC.
-- **WARN** F-0024 — Potential compound ACs detected: AC-F0024-01, AC-F0024-02, AC-F0024-03, AC-F0024-04, AC-F0024-05, AC-F0024-06, AC-F0024-07, AC-F0024-08, AC-F0024-09, AC-F0024-10, AC-F0024-11, AC-F0024-12, AC-F0024-13, AC-F0024-14, AC-F0024-15, AC-F0024-16, AC-F0024-17, AC-F0024-18, AC-F0024-01, AC-F0024-04, AC-F0024-03, AC-F0024-09, AC-F0024-03, AC-F0024-04, AC-F0024-08, AC-F0024-09, AC-F0024-11, AC-F0024-15. Prefer one obligation per AC.
+- **WARN** F-0024 — Potential compound ACs detected: AC-F0024-01, AC-F0024-02, AC-F0024-03, AC-F0024-04, AC-F0024-05, AC-F0024-06, AC-F0024-07, AC-F0024-08, AC-F0024-09, AC-F0024-10, AC-F0024-11, AC-F0024-12, AC-F0024-13, AC-F0024-14, AC-F0024-15, AC-F0024-16, AC-F0024-17, AC-F0024-18, AC-F0024-01, AC-F0024-04, AC-F0024-03, AC-F0024-09, AC-F0024-03, AC-F0024-04, AC-F0024-08, AC-F0024-09, AC-F0024-11, AC-F0024-15, AC-F0024-16. Prefer one obligation per AC.
 <!-- END GENERATED RED_FLAGS -->

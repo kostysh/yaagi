@@ -1,10 +1,28 @@
+import { createHash } from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { OPERATOR_AUTH_SCHEMA_VERSION, OPERATOR_ROLE } from '@yaagi/contracts/operator-auth';
+import type { RecordOperatorAuthAuditEventInput } from '@yaagi/db';
 import { createCoreRuntime, loadCoreRuntimeConfig } from '../../src/platform/index.ts';
 import { PHASE0_BASELINE_PROFILE_ID } from '../../src/runtime/index.ts';
+import {
+  OPERATOR_TEST_TOKENS,
+  createOperatorAuthHeaders,
+} from '../../testing/platform-test-fixture.ts';
+
+const sha256 = (value: string): string => createHash('sha256').update(value).digest('hex');
+
+const recordOperatorAuthAuditEvent = (input: RecordOperatorAuthAuditEventInput) =>
+  Promise.resolve({
+    accepted: true as const,
+    event: {
+      ...input,
+      payloadJson: input.payloadJson ?? {},
+    },
+  });
 
 const createTempWorkspace = async (): Promise<string> => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'yaagi-f0008-health-'));
@@ -18,6 +36,7 @@ const createTempWorkspace = async (): Promise<string> => {
   await mkdir(path.join(root, 'seed/data/datasets'), { recursive: true });
   await mkdir(path.join(root, 'seed/data/reports'), { recursive: true });
   await mkdir(path.join(root, 'seed/data/snapshots'), { recursive: true });
+  await mkdir(path.join(root, 'operator-auth'), { recursive: true });
 
   await writeFile(path.join(root, 'seed/body/.gitkeep'), '', 'utf8');
   await writeFile(path.join(root, 'seed/skills/.gitkeep'), '', 'utf8');
@@ -111,6 +130,29 @@ const createTempWorkspace = async (): Promise<string> => {
     ].join('\n'),
     'utf8',
   );
+  await writeFile(
+    path.join(root, 'operator-auth/principals.json'),
+    JSON.stringify(
+      {
+        schemaVersion: OPERATOR_AUTH_SCHEMA_VERSION,
+        principals: [
+          {
+            principalRef: 'operator:test-operator',
+            roles: [OPERATOR_ROLE.OPERATOR],
+            credentials: [
+              {
+                credentialRef: 'credential:test-operator',
+                tokenSha256: sha256(OPERATOR_TEST_TOKENS.operator),
+              },
+            ],
+          },
+        ],
+      },
+      null,
+      2,
+    ),
+    'utf8',
+  );
 
   return root;
 };
@@ -123,6 +165,7 @@ const createConfigEnv = (root: string): NodeJS.ProcessEnv => ({
   YAAGI_WORKSPACE_SKILLS_PATH: path.join(root, 'workspace/skills'),
   YAAGI_MODELS_PATH: path.join(root, 'models'),
   YAAGI_DATA_PATH: path.join(root, 'data'),
+  YAAGI_OPERATOR_AUTH_PRINCIPALS_FILE: path.join(root, 'operator-auth/principals.json'),
   YAAGI_HOST: '127.0.0.1',
 });
 
@@ -143,6 +186,7 @@ void test('AC-F0008-06 / AC-F0020-02 / AC-F0020-04 surfaces baseline profile dia
         createRuntimeLifecycle: () => ({
           start: () => Promise.resolve(),
           stop: () => Promise.resolve(),
+          recordOperatorAuthAuditEvent,
           health: () =>
             Promise.resolve({
               adapters: [],
@@ -298,7 +342,9 @@ void test('AC-F0008-06 / AC-F0020-02 / AC-F0020-04 surfaces baseline profile dia
         ],
       );
 
-      const modelsResponse = await fetch(`${started.url}/models`);
+      const modelsResponse = await fetch(`${started.url}/models`, {
+        headers: createOperatorAuthHeaders('operator'),
+      });
       assert.equal(modelsResponse.status, 200);
 
       const modelsPayload = (await modelsResponse.json()) as {
@@ -439,6 +485,7 @@ void test('AC-F0020-04 prefers fresh serving dependency truth over stale peek st
         createRuntimeLifecycle: () => ({
           start: () => Promise.resolve(),
           stop: () => Promise.resolve(),
+          recordOperatorAuthAuditEvent,
           health: () =>
             Promise.resolve({
               adapters: [],
@@ -509,7 +556,9 @@ void test('AC-F0020-04 prefers fresh serving dependency truth over stale peek st
         ],
       );
 
-      const modelsResponse = await fetch(`${started.url}/models`);
+      const modelsResponse = await fetch(`${started.url}/models`, {
+        headers: createOperatorAuthHeaders('operator'),
+      });
       assert.equal(modelsResponse.status, 200);
       const modelsPayload = (await modelsResponse.json()) as {
         servingDependencies: Array<{

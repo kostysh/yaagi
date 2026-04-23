@@ -148,6 +148,9 @@ void test('AC-F0002-01 loads the phase-0 runtime config from env and repo defaul
     assert.equal(config.port, 8791);
     assert.equal(config.bootTimeoutMs, 3000);
     assert.equal(config.pgBossSchema, 'pgboss');
+    assert.equal(config.operatorAuthPrincipalsFilePath, null);
+    assert.equal(config.operatorAuthRateLimitWindowMs, 60_000);
+    assert.equal(config.operatorAuthRateLimitMaxRequests, 120);
     assert.equal(config.seedRootPath, path.join(root, 'seed'));
     assert.equal(
       config.seedConstitutionPath,

@@ -43,7 +43,7 @@ links:
     - CF-008
 - **User problem:** После поставки `F-0004`, `F-0011`, `F-0012`, `F-0013` и `F-0015` система уже умеет хранить identity-bearing state, публиковать advisory homeostat signals, держать bounded operator control routes и вести workshop candidate lifecycle, но у неё всё ещё нет одного канонического owner-а для development governance. Без такого seam-а freeze decisions, proposal intake, approval evidence и rollback-linked governance truth начинают расползаться между runtime, operator API, workshop и ad hoc helper writes.
 - **Goal:** Зафиксировать один canonical dossier-owner для `Development Governor`, который владеет governor-side writable surfaces, bounded operator-route handoff contracts, bounded internal evidence/proposal gates, durable approval records и rollback-linked governance evidence, но не забирает ownership над workshop lifecycle, operator HTTP framework boundary, caller admission/RBAC, richer model source state, reporting read models, release orchestration или body-evolution execution.
-- **Non-goals:** Эта фича не реализует body/code mutation execution (`CF-012`), read-only reporting materialization (`CF-015`), specialist rollout/retirement policy (`CF-019`), deploy/release execution (`CF-025`), public auth/RBAC (`CF-024`) или mature policy-profile completion (`CF-027`). Она также не должна создавать второй rollout regime рядом с router, workshop или release seams.
+- **Non-goals:** Эта фича не реализует body/code mutation execution (`CF-012`), read-only reporting materialization (`CF-015`), specialist rollout/retirement policy (`CF-019`), deploy/release execution (`CF-025`), public auth/RBAC (`F-0024` / `CF-024`) или mature policy-profile completion (`CF-027`). Она также не должна создавать второй rollout regime рядом с router, workshop или release seams.
 - **Current substrate / baseline:** Delivered prerequisites already exist as `F-0004` subject-state kernel, `F-0011` narrative/memetic seam, `F-0012` advisory homeostat requests, `F-0013` bounded operator control routes and `F-0015` workshop candidate lifecycle truth. The repo-level runtime substrate is already fixed by `ADR-2026-03-25`: `AI SDK + Hono + repo-owned runtime/governance`, so governor behavior must stay repo-owned rather than framework-owned.
 
 ## 2. Scope
@@ -75,7 +75,7 @@ links:
 - Release promotion, deploy orchestration, environment rollout and rollback execution; those remain `CF-025`.
 - Public governor read/introspection API beyond the two bounded submission routes above.
 - Public thaw/unfreeze route in this phase.
-- Operator authN/authZ or route-level RBAC; those remain `CF-024`.
+- Operator authN/authZ or route-level RBAC; those remain `F-0024` / `CF-024`.
 
 ### Constraints
 
@@ -89,7 +89,7 @@ links:
 
 ### Assumptions
 
-- `F-0013` continues to expose the operator HTTP namespace and may delegate the two bounded control routes to the governor gate only after `CF-024` delivers caller admission for those high-risk public paths.
+- `F-0013` continues to expose the operator HTTP namespace and may delegate the two bounded control routes to the governor gate only after `F-0024` admits and authorizes those high-risk public paths.
 - `F-0015` continues to expose canonical candidate/package evidence and does not require governor to infer workshop truth from raw artifacts.
 - Downstream execution seams (`CF-012`, `CF-019`, `CF-025`) will later emit bounded execution-outcome evidence that governor can consume without becoming the executor.
 
@@ -108,8 +108,8 @@ links:
 - **AC-F0016-01:** `F-0016` is the only canonical writer for `development_ledger`, governor-side proposal records, governor-side decision records and development-freeze state.
 - **AC-F0016-02:** Runtime, recovery, workshop, homeostat and human override may reach governor-owned writable surfaces only through bounded governor gates; direct helper writes remain forbidden.
 - **AC-F0016-03:** `F-0012` may publish advisory freeze requests and consume governor evidence for `development_proposal_rate`, but it may not execute freeze state or persist proposal rows.
-- **AC-F0016-04:** The bounded operator-facing governor surface in this phase is reserved to exactly two submission routes: `POST /control/freeze-development` and `POST /control/development-proposals`; without `CF-024` caller admission those public routes remain explicit unavailable while the governor-owned internal gates stay live.
-- **AC-F0016-05:** External proposal submission, once caller admission exists, is operator-only in this phase; until then, non-operator subsystem submission remains internal-first and owner-routed.
+- **AC-F0016-04:** The bounded operator-facing governor surface in this phase is reserved to exactly two submission routes: `POST /control/freeze-development` and `POST /control/development-proposals`; without `F-0024` caller admission and `governor_operator` authorization those public routes fail closed while the governor-owned internal gates stay live.
+- **AC-F0016-05:** External proposal submission is operator-only in this phase after `F-0024` caller admission; non-operator subsystem submission remains internal-first and owner-routed.
 - **AC-F0016-06:** Every accepted external or internal governor write carries durable provenance, evidence refs and an idempotency key or request identity.
 - **AC-F0016-07:** Governor supports exactly four canonical proposal classes in this phase: `model_adapter`, `specialist_model`, `code_change` and `policy_change`.
 - **AC-F0016-08:** Governor may auto-freeze development according to policy, and every freeze decision is durable, attributable and replayable from PostgreSQL evidence.
@@ -149,7 +149,7 @@ Observable NFR signals and budgets:
 
 ### 5.3 API and internal contract surface
 
-- Public operator surface (reserved at the `F-0013` boundary, explicit unavailable until `CF-024` caller admission exists):
+- Public operator surface (reserved at the `F-0013` boundary and admitted by `F-0024` before governor owner-gate invocation):
   - `POST /control/freeze-development`
   - `POST /control/development-proposals`
 - No public `GET` governor routes are introduced in this phase.
@@ -416,7 +416,7 @@ Verification: `packages/contracts/test/governor/governor-contract.test.ts`, `pac
 Delivers: `POST /control/development-proposals`, proposal schemas, idempotent submission, freeze-time rejection, four canonical proposal classes, advisory decision transitions and non-execution approval semantics.
 Covers: AC-F0016-04, AC-F0016-05, AC-F0016-06, AC-F0016-07, AC-F0016-09
 Depends on: `SL-F0016-01`, delivered `F-0013`; unblock condition is a tested active-freeze read path.
-Assumes: external submission remains operator-only until `CF-024` changes public auth/RBAC semantics.
+Assumes: external submission remains operator-only and is admitted by the `F-0024` public auth/RBAC seam before reaching governor owner gates.
 Fallback: if decision lifecycle creates too much review surface, keep the single slice boundary but land the commit series as "submission/frozen rejection" followed by "decision transitions" before requesting slice review.
 Approval path: operator API contract review because this slice introduces a new machine-facing route and error set.
 Verification: `packages/contracts/test/governor/proposal-contract.test.ts`, `apps/core/test/platform/operator-development-proposals.integration.test.ts`, `packages/db/test/development-proposal-lifecycle.integration.test.ts`.
@@ -447,8 +447,8 @@ Verification: `apps/core/test/workshop/governor-evidence-handoff.integration.tes
 | AC-F0016-01 | `apps/core/test/runtime/development-governor-boundary.test.ts`; `packages/db/test/development-governor-store.integration.test.ts`; `packages/contracts/test/governor/freeze-contract.contract.test.ts` | implemented for `SL-F0016-01` freeze path |
 | AC-F0016-02 | `apps/core/test/runtime/development-governor-boundary.test.ts`; `apps/core/test/workshop/governor-evidence-handoff.integration.test.ts`; `packages/db/test/development-proposal-lifecycle.integration.test.ts` | implemented for freeze, proposal, workshop handoff and execution-outcome governor gates |
 | AC-F0016-03 | `apps/core/test/runtime/homeostat-governor-freeze.integration.test.ts` | implemented for critical auto-freeze; warning remains advisory |
-| AC-F0016-04 | `apps/core/test/platform/operator-governor-gating.contract.test.ts`; `apps/core/test/platform/operator-development-proposals.integration.test.ts`; `apps/core/test/runtime/development-governor-perimeter.contract.test.ts` | implemented as reserved public route surface plus live internal governor gates, with public exposure fail-closed until `CF-024` caller admission exists |
-| AC-F0016-05 | `apps/core/test/platform/operator-development-proposals.integration.test.ts`; `apps/core/test/runtime/development-governor-perimeter.contract.test.ts` | implemented as operator-only public route reservation plus internal-first owner-routed submission until external caller admission exists |
+| AC-F0016-04 | `apps/core/test/platform/operator-governor-gating.contract.test.ts`; `apps/core/test/platform/operator-development-proposals.integration.test.ts`; `apps/core/test/runtime/development-governor-perimeter.contract.test.ts` | implemented as reserved public route surface plus live internal governor gates, with public exposure gated by `F-0024` caller admission and downstream owner availability |
+| AC-F0016-05 | `apps/core/test/platform/operator-development-proposals.integration.test.ts`; `apps/core/test/runtime/development-governor-perimeter.contract.test.ts` | implemented as operator-only public route reservation plus internal-first owner-routed submission; external submission now requires `F-0024` caller admission |
 | AC-F0016-06 | `packages/contracts/test/governor/freeze-contract.contract.test.ts`; `packages/db/test/development-governor-store.integration.test.ts`; `packages/contracts/test/governor/proposal-contract.test.ts`; `packages/db/test/development-proposal-lifecycle.integration.test.ts` | implemented for freeze, proposal, proposal-decision and execution-outcome writes |
 | AC-F0016-07 | `packages/contracts/test/governor/proposal-contract.test.ts`; `packages/db/test/development-proposal-lifecycle.integration.test.ts` | implemented for the four canonical proposal classes and decision states |
 | AC-F0016-08 | `infra/docker/deployment-cell.smoke.ts`; `apps/core/test/runtime/homeostat-governor-freeze.integration.test.ts`; `packages/db/test/development-governor-store.integration.test.ts` | implemented for freeze creation, auto-freeze handoff and active-freeze recovery |
@@ -479,7 +479,7 @@ Verification: `apps/core/test/workshop/governor-evidence-handoff.integration.tes
 
 - Backlog item key: CF-016
 - Status progression: `proposed -> shaped -> planned -> in_progress -> done`
-- Current implementation package: `SL-F0016-03` delivered; backlog `CF-016` is actualized to `implemented`, all ACs have test references, the internal governor seam is live, and high-risk public routes stay fail-closed until `CF-024`.
+- Current implementation package: `SL-F0016-03` delivered; backlog `CF-016` is actualized to `implemented`, all ACs have test references, the internal governor seam is live, and high-risk public routes are fail-closed behind `F-0024` caller admission/RBAC.
 - Issue:
 - PRs:
 
@@ -487,7 +487,7 @@ Verification: `apps/core/test/workshop/governor-evidence-handoff.integration.tes
 
 - Activation order matters:
   - contracts, DB schema/store and governor service write gate land before any public route stops returning explicit unavailable;
-  - `POST /control/freeze-development` and `POST /control/development-proposals` may become live only after `CF-024` caller admission exists and persistence/idempotency/rejection coverage is already green;
+  - `POST /control/freeze-development` and `POST /control/development-proposals` may become live only after `F-0024` caller admission exists and persistence/idempotency/rejection coverage is already green;
   - homeostat auto-freeze activates only after explicit `development_proposal_rate` critical-policy mapping tests pass;
   - workshop and execution-evidence intake activates after proposal lifecycle exists;
   - no public thaw route or public governor read API is introduced in this phase.
@@ -497,7 +497,8 @@ Verification: `apps/core/test/workshop/governor-evidence-handoff.integration.tes
 - 2026-04-10: [intake] Initial dossier created from backlog item `CF-016` at backlog delivery state `defined`.
 - 2026-04-10: [spec-compact] Expanded `CF-016` into a shaped first-governor spec with explicit operator routes, internal evidence gates, freeze/proposal lifecycles, advisory-approval boundary and backlog-actualization target `specified`.
 - 2026-04-10: [plan-slice] [scope realignment] Resolved planning questions, set dossier status to `planned`, sequenced three implementation slices and defined task/test/drift-guard coverage for backlog actualization target `planned`.
-- 2026-04-15: [security realignment] `F-0018` implementation proved the public high-risk operator paths still lack `CF-024` caller admission, so the governor surface remains live only through internal owner-routed gates while `/control/freeze-development` and `/control/development-proposals` return explicit unavailable at the public `F-0013` boundary.
+- 2026-04-15: [security realignment] `F-0018` implementation proved the public high-risk operator paths still lacked `CF-024` caller admission, so the governor surface remained live only through internal owner-routed gates while `/control/freeze-development` and `/control/development-proposals` returned explicit unavailable at the public `F-0013` boundary.
+- 2026-04-23: [F-0024 implementation realignment] Public high-risk operator paths now reach the `F-0016` owner gates only after `F-0024` caller admission/RBAC and still fail closed when owner availability, idempotency or governor validation rejects the request.
 - 2026-04-10: [implementation] Started `SL-F0016-01` and implemented the governor freeze path: contracts, PostgreSQL surfaces, store/service write gate, operator freeze route, homeostat critical auto-freeze handoff, active-freeze recovery and boundary/smoke tests.
 - 2026-04-10: [implementation] Implemented `SL-F0016-02` proposal lifecycle: live operator proposal submission route, proposal contracts, idempotent proposal persistence, active-freeze rejection, proposal decision records and advisory-only approval semantics without downstream execution mutation.
 - 2026-04-10: [implementation] Completed `SL-F0016-03` evidence handoff and feature closure: workshop promotion packages map into governor-owned proposal gates without cloning workshop lifecycle truth, internal workshop proposals defer under active freeze, bounded execution-outcome evidence can move approved proposals to `executed` or `rolled_back` without executing downstream mutations, post-lock replay idempotency is guarded, targetless execution outcomes are rejected, and backlog `CF-016` is actualized to `implemented`.

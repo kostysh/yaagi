@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { REPORT_AVAILABILITY, REPORT_FAMILY } from '@yaagi/contracts/reporting';
-import { createPlatformTestRuntime } from '../../testing/platform-test-fixture.ts';
+import {
+  createOperatorAuthHeaders,
+  createPlatformTestRuntime,
+} from '../../testing/platform-test-fixture.ts';
 
 void test('AC-F0023-11 exposes canonical report reads only through the F-0013 operator boundary', async () => {
   const { runtime, cleanup } = await createPlatformTestRuntime({
@@ -54,7 +57,11 @@ void test('AC-F0023-11 exposes canonical report reads only through the F-0013 op
   });
 
   try {
-    const response = await runtime.fetch(new Request('http://yaagi/reports'));
+    const response = await runtime.fetch(
+      new Request('http://yaagi/reports', {
+        headers: createOperatorAuthHeaders('operator'),
+      }),
+    );
     assert.equal(response.status, 200);
 
     const payload = (await response.json()) as {

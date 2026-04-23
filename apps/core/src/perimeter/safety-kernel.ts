@@ -27,7 +27,11 @@ export const F0018_SAFETY_KERNEL: SafetyKernel = safetyKernelSchema.parse({
         allowedAuthorityOwners: [PERIMETER_AUTHORITY_OWNER.TRUSTED_INGRESS],
       },
       code_or_promotion_change: {
-        allowedIngressOwners: [PERIMETER_INGRESS_OWNER.F_0016, PERIMETER_INGRESS_OWNER.F_0017],
+        allowedIngressOwners: [
+          PERIMETER_INGRESS_OWNER.F_0013,
+          PERIMETER_INGRESS_OWNER.F_0016,
+          PERIMETER_INGRESS_OWNER.F_0017,
+        ],
         allowedAuthorityOwners: [
           PERIMETER_AUTHORITY_OWNER.TRUSTED_INGRESS,
           PERIMETER_AUTHORITY_OWNER.GOVERNOR,

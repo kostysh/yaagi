@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPlatformTestRuntime } from '../../testing/platform-test-fixture.ts';
+import {
+  createOperatorAuthHeaders,
+  createPlatformTestRuntime,
+} from '../../testing/platform-test-fixture.ts';
 
 void test('AC-F0014-06 richer model ecology stays separate from operator publication, CF-015 reporting, homeostat consumption and specialist lifecycle policy', async () => {
   const { runtime, cleanup } = await createPlatformTestRuntime({
@@ -32,7 +35,11 @@ void test('AC-F0014-06 richer model ecology stays separate from operator publica
   });
 
   try {
-    const response = await runtime.fetch(new Request('http://yaagi/models'));
+    const response = await runtime.fetch(
+      new Request('http://yaagi/models', {
+        headers: createOperatorAuthHeaders('operator'),
+      }),
+    );
     assert.equal(response.status, 200);
 
     const payload = (await response.json()) as {

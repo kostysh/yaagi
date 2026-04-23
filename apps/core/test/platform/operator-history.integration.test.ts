@@ -6,7 +6,10 @@ import type {
   RuntimeTimelineEventPageInput,
   RuntimeTimelineEventRow,
 } from '@yaagi/db';
-import { createPlatformTestRuntime } from '../../testing/platform-test-fixture.ts';
+import {
+  createOperatorAuthHeaders,
+  createPlatformTestRuntime,
+} from '../../testing/platform-test-fixture.ts';
 
 const timelineRows: RuntimeTimelineEventRow[] = [
   {
@@ -82,7 +85,11 @@ void test('AC-F0013-03 returns stable timeline pagination with opaque cursors', 
   });
 
   try {
-    const firstResponse = await runtime.fetch(new Request('http://yaagi/timeline?limit=2'));
+    const firstResponse = await runtime.fetch(
+      new Request('http://yaagi/timeline?limit=2', {
+        headers: createOperatorAuthHeaders('operator'),
+      }),
+    );
     assert.equal(firstResponse.status, 200);
 
     const firstPayload = (await firstResponse.json()) as {
@@ -112,7 +119,12 @@ void test('AC-F0013-03 returns stable timeline pagination with opaque cursors', 
     assert.ok(nextTimelineCursor);
 
     const secondResponse = await runtime.fetch(
-      new Request(`http://yaagi/timeline?limit=2&cursor=${encodeURIComponent(nextTimelineCursor)}`),
+      new Request(
+        `http://yaagi/timeline?limit=2&cursor=${encodeURIComponent(nextTimelineCursor)}`,
+        {
+          headers: createOperatorAuthHeaders('operator'),
+        },
+      ),
     );
     assert.equal(secondResponse.status, 200);
 
@@ -159,7 +171,11 @@ void test('AC-F0013-03 returns stable episode pagination and bounded cursor vali
   });
 
   try {
-    const firstResponse = await runtime.fetch(new Request('http://yaagi/episodes?limit=2'));
+    const firstResponse = await runtime.fetch(
+      new Request('http://yaagi/episodes?limit=2', {
+        headers: createOperatorAuthHeaders('operator'),
+      }),
+    );
     assert.equal(firstResponse.status, 200);
 
     const firstPayload = (await firstResponse.json()) as {
@@ -177,7 +193,9 @@ void test('AC-F0013-03 returns stable episode pagination and bounded cursor vali
     assert.ok(nextEpisodeCursor);
 
     const secondResponse = await runtime.fetch(
-      new Request(`http://yaagi/episodes?limit=2&cursor=${encodeURIComponent(nextEpisodeCursor)}`),
+      new Request(`http://yaagi/episodes?limit=2&cursor=${encodeURIComponent(nextEpisodeCursor)}`, {
+        headers: createOperatorAuthHeaders('operator'),
+      }),
     );
     assert.equal(secondResponse.status, 200);
 
@@ -200,7 +218,9 @@ void test('AC-F0013-03 returns stable episode pagination and bounded cursor vali
     assert.equal(secondPayload.page.hasMore, false);
 
     const invalidCursorResponse = await runtime.fetch(
-      new Request('http://yaagi/episodes?cursor=not-base64'),
+      new Request('http://yaagi/episodes?cursor=not-base64', {
+        headers: createOperatorAuthHeaders('operator'),
+      }),
     );
     assert.equal(invalidCursorResponse.status, 400);
   } finally {

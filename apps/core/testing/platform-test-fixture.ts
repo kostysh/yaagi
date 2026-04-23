@@ -1,12 +1,40 @@
+import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import {
+  OPERATOR_AUTH_SCHEMA_VERSION,
+  OPERATOR_ROLE,
+  OPERATOR_TOKEN_VERSION,
+} from '@yaagi/contracts/operator-auth';
+import type { RecordOperatorAuthAuditEventInput } from '@yaagi/db';
 import {
   createCoreRuntime,
   loadCoreRuntimeConfig,
   type CoreRuntime,
   type CoreRuntimeDependencies,
 } from '../src/platform/index.ts';
+
+const sha256 = (value: string): string => createHash('sha256').update(value).digest('hex');
+
+const testToken = (role: string): string =>
+  `${OPERATOR_TOKEN_VERSION}_${sha256(role).slice(0, 32)}`;
+
+export const OPERATOR_TEST_TOKENS = Object.freeze({
+  observer: testToken('operator:test-observer'),
+  operator: testToken('operator:test-operator'),
+  governor: testToken('operator:test-governor'),
+});
+
+export type OperatorTestTokenRole = keyof typeof OPERATOR_TEST_TOKENS;
+
+export const createOperatorAuthHeaders = (
+  role: OperatorTestTokenRole = 'operator',
+  headers: Record<string, string> = {},
+): Record<string, string> => ({
+  ...headers,
+  authorization: `Bearer ${OPERATOR_TEST_TOKENS[role]}`,
+});
 
 export const createPlatformTempWorkspace = async (
   prefix = 'yaagi-operator-api-',
@@ -22,6 +50,7 @@ export const createPlatformTempWorkspace = async (
   await mkdir(path.join(root, 'seed/data/datasets'), { recursive: true });
   await mkdir(path.join(root, 'seed/data/reports'), { recursive: true });
   await mkdir(path.join(root, 'seed/data/snapshots'), { recursive: true });
+  await mkdir(path.join(root, 'operator-auth'), { recursive: true });
 
   await writeFile(path.join(root, 'seed/body/.gitkeep'), '', 'utf8');
   await writeFile(path.join(root, 'seed/skills/.gitkeep'), '', 'utf8');
@@ -115,6 +144,49 @@ export const createPlatformTempWorkspace = async (
     ].join('\n'),
     'utf8',
   );
+  await writeFile(
+    path.join(root, 'operator-auth/principals.json'),
+    JSON.stringify(
+      {
+        schemaVersion: OPERATOR_AUTH_SCHEMA_VERSION,
+        principals: [
+          {
+            principalRef: 'operator:test-observer',
+            roles: [OPERATOR_ROLE.OBSERVER],
+            credentials: [
+              {
+                credentialRef: 'credential:test-observer',
+                tokenSha256: sha256(OPERATOR_TEST_TOKENS.observer),
+              },
+            ],
+          },
+          {
+            principalRef: 'operator:test-operator',
+            roles: [OPERATOR_ROLE.OPERATOR],
+            credentials: [
+              {
+                credentialRef: 'credential:test-operator',
+                tokenSha256: sha256(OPERATOR_TEST_TOKENS.operator),
+              },
+            ],
+          },
+          {
+            principalRef: 'operator:test-governor',
+            roles: [OPERATOR_ROLE.GOVERNOR_OPERATOR],
+            credentials: [
+              {
+                credentialRef: 'credential:test-governor',
+                tokenSha256: sha256(OPERATOR_TEST_TOKENS.governor),
+              },
+            ],
+          },
+        ],
+      },
+      null,
+      2,
+    ),
+    'utf8',
+  );
 
   return root;
 };
@@ -127,29 +199,63 @@ export const createPlatformConfigEnv = (root: string): NodeJS.ProcessEnv => ({
   YAAGI_WORKSPACE_SKILLS_PATH: path.join(root, 'workspace/skills'),
   YAAGI_MODELS_PATH: path.join(root, 'models'),
   YAAGI_DATA_PATH: path.join(root, 'data'),
+  YAAGI_OPERATOR_AUTH_PRINCIPALS_FILE: path.join(root, 'operator-auth/principals.json'),
   YAAGI_HOST: '127.0.0.1',
 });
 
 export async function createPlatformTestRuntime(
-  options: { port?: number; prefix?: string; dependencies?: CoreRuntimeDependencies } = {},
+  options: {
+    port?: number;
+    prefix?: string;
+    env?: NodeJS.ProcessEnv;
+    dependencies?: CoreRuntimeDependencies;
+  } = {},
 ): Promise<{
   root: string;
   runtime: CoreRuntime;
   cleanup: () => Promise<void>;
 }> {
   const root = await createPlatformTempWorkspace(options.prefix);
+  const authAuditEvents: RecordOperatorAuthAuditEventInput[] = [];
+  const createRuntimeLifecycle = options.dependencies?.createRuntimeLifecycle;
+  const runtimeDependencies: CoreRuntimeDependencies = {
+    bootstrapDatabase: () => Promise.resolve(),
+    probeConfiguration: () => Promise.resolve(true),
+    probePostgres: () => Promise.resolve(true),
+    probeFastModel: () => Promise.resolve(true),
+    ...options.dependencies,
+    ...(createRuntimeLifecycle
+      ? {
+          createRuntimeLifecycle: (config) => {
+            const lifecycle = createRuntimeLifecycle(config);
+            if (lifecycle.recordOperatorAuthAuditEvent) {
+              return lifecycle;
+            }
+
+            return {
+              ...lifecycle,
+              recordOperatorAuthAuditEvent: (input: RecordOperatorAuthAuditEventInput) => {
+                authAuditEvents.push(input);
+                return Promise.resolve({
+                  accepted: true as const,
+                  event: {
+                    ...input,
+                    payloadJson: input.payloadJson ?? {},
+                  },
+                });
+              },
+            };
+          },
+        }
+      : {}),
+  };
   const runtime = createCoreRuntime(
     loadCoreRuntimeConfig({
       ...createPlatformConfigEnv(root),
+      ...options.env,
       YAAGI_PORT: String(options.port ?? 8890),
     }),
-    {
-      bootstrapDatabase: () => Promise.resolve(),
-      probeConfiguration: () => Promise.resolve(true),
-      probePostgres: () => Promise.resolve(true),
-      probeFastModel: () => Promise.resolve(true),
-      ...options.dependencies,
-    },
+    runtimeDependencies,
   );
 
   return {

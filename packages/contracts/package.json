@@ -35,6 +35,10 @@
       "types": "./src/operator-api.ts",
       "default": "./src/operator-api.ts"
     },
+    "./operator-auth": {
+      "types": "./src/operator-auth.ts",
+      "default": "./src/operator-auth.ts"
+    },
     "./perimeter": {
       "types": "./src/perimeter.ts",
       "default": "./src/perimeter.ts"

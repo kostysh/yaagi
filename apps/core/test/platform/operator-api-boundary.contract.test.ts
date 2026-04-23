@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { SubjectStateSnapshot } from '@yaagi/db';
-import { createPlatformTestRuntime } from '../../testing/platform-test-fixture.ts';
+import {
+  createOperatorAuthHeaders,
+  createPlatformTestRuntime,
+} from '../../testing/platform-test-fixture.ts';
+
+// Coverage refs: AC-F0024-02 AC-F0024-14 AC-F0024-15
 
 const subjectStateSnapshot: SubjectStateSnapshot = {
   subjectStateSchemaVersion: '2026-03-25',
@@ -31,7 +36,11 @@ void test('AC-F0013-01 keeps operator routes absent until canonical owner adapte
   });
 
   try {
-    const stateResponse = await runtime.fetch(new Request('http://yaagi/state'));
+    const stateResponse = await runtime.fetch(
+      new Request('http://yaagi/state', {
+        headers: createOperatorAuthHeaders('operator'),
+      }),
+    );
     const modelsResponse = await runtime.fetch(new Request('http://yaagi/models'));
     const freezeResponse = await runtime.fetch(
       new Request('http://yaagi/control/freeze-development', {
@@ -70,7 +79,11 @@ void test('AC-F0013-01 / AC-F0013-07 / AC-F0013-08 wires operator routes on the 
 
   try {
     const healthResponse = await runtime.fetch(new Request('http://yaagi/health'));
-    const stateResponse = await runtime.fetch(new Request('http://yaagi/state'));
+    const stateResponse = await runtime.fetch(
+      new Request('http://yaagi/state', {
+        headers: createOperatorAuthHeaders('operator'),
+      }),
+    );
     const statePatchResponse = await runtime.fetch(
       new Request('http://yaagi/state', {
         method: 'PATCH',

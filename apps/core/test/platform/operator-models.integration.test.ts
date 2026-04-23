@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PHASE0_BASELINE_PROFILE_ID } from '../../src/runtime/index.ts';
-import { createPlatformTestRuntime } from '../../testing/platform-test-fixture.ts';
+import {
+  createOperatorAuthHeaders,
+  createPlatformTestRuntime,
+} from '../../testing/platform-test-fixture.ts';
 
 void test('AC-F0013-04 / AC-F0020-02 / AC-F0020-04 returns bounded baseline model diagnostics and the F-0014 richer registry projection', async () => {
   const { runtime, cleanup } = await createPlatformTestRuntime({
@@ -76,7 +79,11 @@ void test('AC-F0013-04 / AC-F0020-02 / AC-F0020-04 returns bounded baseline mode
   });
 
   try {
-    const response = await runtime.fetch(new Request('http://yaagi/models'));
+    const response = await runtime.fetch(
+      new Request('http://yaagi/models', {
+        headers: createOperatorAuthHeaders('operator'),
+      }),
+    );
     assert.equal(response.status, 200);
 
     const payload = (await response.json()) as {

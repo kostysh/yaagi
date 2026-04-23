@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPlatformTestRuntime } from '../../testing/platform-test-fixture.ts';
+import {
+  createOperatorAuthHeaders,
+  createPlatformTestRuntime,
+} from '../../testing/platform-test-fixture.ts';
 
 void test('AC-F0014-05 optional richer organs degrade explicitly without becoming hidden boot-critical dependencies', async () => {
   const { runtime, cleanup } = await createPlatformTestRuntime({
@@ -67,7 +70,9 @@ void test('AC-F0014-05 optional richer organs degrade explicitly without becomin
 
   try {
     const started = await runtime.start();
-    const response = await fetch(`${started.url}/models`);
+    const response = await fetch(`${started.url}/models`, {
+      headers: createOperatorAuthHeaders('operator'),
+    });
     assert.equal(response.status, 200);
 
     const payload = (await response.json()) as {

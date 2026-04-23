@@ -24,6 +24,9 @@ export type CoreRuntimeConfig = {
   dataPath: string;
   migrationsDir: string;
   pgBossSchema: string;
+  operatorAuthPrincipalsFilePath: string | null;
+  operatorAuthRateLimitWindowMs: number;
+  operatorAuthRateLimitMaxRequests: number;
   host: string;
   port: number;
   bootTimeoutMs: number;
@@ -40,6 +43,8 @@ const DEFAULT_PORT = 8787;
 const DEFAULT_BOOT_TIMEOUT_MS = 60_000;
 const DEFAULT_PG_BOSS_SCHEMA = 'pgboss';
 const DEFAULT_SEED_ROOT_PATH = 'seed';
+const DEFAULT_OPERATOR_AUTH_RATE_LIMIT_WINDOW_MS = 60_000;
+const DEFAULT_OPERATOR_AUTH_RATE_LIMIT_MAX_REQUESTS = 120;
 
 const requireUrl = (value: string, label: string): string => {
   const url = new URL(value);
@@ -101,6 +106,11 @@ const parsePositiveInteger = (
 const resolvePath = (cwd: string, value: string | undefined, fallback: string): string =>
   path.resolve(cwd, value ?? fallback);
 
+const resolveOptionalPath = (cwd: string, value: string | undefined): string | null => {
+  const trimmed = value?.trim();
+  return trimmed ? path.resolve(cwd, trimmed) : null;
+};
+
 const resolvePathFromRoot = (
   cwd: string,
   rootPath: string,
@@ -150,6 +160,9 @@ const envSchema = z.object({
   YAAGI_DATA_PATH: z.string().optional(),
   YAAGI_MIGRATIONS_DIR: z.string().optional(),
   YAAGI_PGBOSS_SCHEMA: z.string().optional(),
+  YAAGI_OPERATOR_AUTH_PRINCIPALS_FILE: z.string().optional(),
+  YAAGI_OPERATOR_AUTH_RATE_LIMIT_WINDOW_MS: z.string().optional(),
+  YAAGI_OPERATOR_AUTH_RATE_LIMIT_MAX_REQUESTS: z.string().optional(),
   YAAGI_HOST: z.string().optional(),
   YAAGI_PORT: z.string().optional(),
   YAAGI_BOOT_TIMEOUT_MS: z.string().optional(),
@@ -242,6 +255,20 @@ export function loadCoreRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Cor
     dataPath: resolvePath(cwd, parsedEnv.YAAGI_DATA_PATH, 'data'),
     migrationsDir: resolvePath(cwd, parsedEnv.YAAGI_MIGRATIONS_DIR, 'infra/migrations'),
     pgBossSchema: parsedEnv.YAAGI_PGBOSS_SCHEMA ?? DEFAULT_PG_BOSS_SCHEMA,
+    operatorAuthPrincipalsFilePath: resolveOptionalPath(
+      cwd,
+      parsedEnv.YAAGI_OPERATOR_AUTH_PRINCIPALS_FILE,
+    ),
+    operatorAuthRateLimitWindowMs: parsePositiveInteger(
+      parsedEnv.YAAGI_OPERATOR_AUTH_RATE_LIMIT_WINDOW_MS,
+      'YAAGI_OPERATOR_AUTH_RATE_LIMIT_WINDOW_MS',
+      DEFAULT_OPERATOR_AUTH_RATE_LIMIT_WINDOW_MS,
+    ),
+    operatorAuthRateLimitMaxRequests: parsePositiveInteger(
+      parsedEnv.YAAGI_OPERATOR_AUTH_RATE_LIMIT_MAX_REQUESTS,
+      'YAAGI_OPERATOR_AUTH_RATE_LIMIT_MAX_REQUESTS',
+      DEFAULT_OPERATOR_AUTH_RATE_LIMIT_MAX_REQUESTS,
+    ),
     host: parsedEnv.YAAGI_HOST ?? DEFAULT_HOST,
     port: parsePort(parsedEnv.YAAGI_PORT),
     bootTimeoutMs: parsePositiveInteger(

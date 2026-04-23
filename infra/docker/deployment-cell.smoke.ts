@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import test from 'node:test';
 import path from 'node:path';
@@ -7,6 +8,8 @@ import { inspect } from 'node:util';
 import { Client } from 'pg';
 import { runSmokeActivationWithFence } from './smoke-activation-fence.ts';
 import { repoEnvFilePath, repoRoot, run, waitForHttp } from './helpers.ts';
+
+// Coverage refs: AC-F0024-18
 
 const composeFile = path.join(repoRoot(), 'infra', 'docker', 'compose.yaml');
 const smokeBaseComposeFile = path.join(repoRoot(), 'infra', 'docker', 'compose.smoke-base.yaml');
@@ -58,6 +61,15 @@ const smokeRuntimeIdentity = {
 };
 const expectedRuntimeResets = 14;
 let smokePostgresClient: Client | null = null;
+const operatorAuthSchemaVersion = '2026-04-23.operator-auth.v1';
+const operatorTokenVersion = 'opk_v1';
+const smokeOperatorPrincipalsFilePath = path.join(
+  repoRoot(),
+  '.temp',
+  'smoke',
+  'operator-principals.json',
+);
+const smokeOperatorToken = `${operatorTokenVersion}_${sha256('smoke:operator:token').slice(0, 32)}`;
 
 function coreBaseUrl(port = defaultCoreHostPort): string {
   return `http://127.0.0.1:${port}`;
@@ -65,6 +77,17 @@ function coreBaseUrl(port = defaultCoreHostPort): string {
 
 function coreHealthUrl(port = defaultCoreHostPort): string {
   return `${coreBaseUrl(port)}/health`;
+}
+
+function sha256(value: string): string {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+function smokeOperatorAuthHeaders(headers: Record<string, string> = {}): Record<string, string> {
+  return {
+    ...headers,
+    authorization: `Bearer ${smokeOperatorToken}`,
+  };
 }
 
 type ComposeOptions = Parameters<typeof run>[2] & {
@@ -235,9 +258,37 @@ async function compose(args: string[], options: ComposeOptions = {}) {
         COMPOSE_DOCKER_CLI_BUILD: '0',
         YAAGI_CORE_HOST_PORT: String(defaultCoreHostPort),
         YAAGI_SMOKE_POSTGRES_HOST_PORT: String(defaultPostgresHostPort),
+        YAAGI_OPERATOR_AUTH_PRINCIPALS_FILE: smokeOperatorPrincipalsFilePath,
       },
       ...runOptions,
     },
+  );
+}
+
+async function writeSmokeOperatorAuthFile(): Promise<void> {
+  await mkdir(path.dirname(smokeOperatorPrincipalsFilePath), { recursive: true });
+  await writeFile(
+    smokeOperatorPrincipalsFilePath,
+    JSON.stringify(
+      {
+        schemaVersion: operatorAuthSchemaVersion,
+        principals: [
+          {
+            principalRef: 'operator:smoke',
+            roles: ['operator', 'governor_operator'],
+            credentials: [
+              {
+                credentialRef: 'credential:smoke',
+                tokenSha256: sha256(smokeOperatorToken),
+              },
+            ],
+          },
+        ],
+      },
+      null,
+      2,
+    ),
+    'utf8',
   );
 }
 
@@ -644,6 +695,7 @@ async function prepareFreshRuntimeScenario(options: ComposeOptions = {}): Promis
 
 void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t) => {
   await resetSmokeProjects();
+  await writeSmokeOperatorAuthFile();
   let started = false;
 
   try {
@@ -802,7 +854,9 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
             ],
           );
 
-          const modelsResponse = await fetch(`${coreBaseUrl()}/models`);
+          const modelsResponse = await fetch(`${coreBaseUrl()}/models`, {
+            headers: smokeOperatorAuthHeaders(),
+          });
           assert.equal(modelsResponse.status, 200);
           const modelsPayload = (await modelsResponse.json()) as {
             baselineProfiles: Array<{
@@ -1006,7 +1060,9 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
           const expectedSubjectStateSchemaVersion = await queryPostgres(
             'select schema_version from platform_bootstrap.schema_state where id = 1;',
           );
-          const stateResponse = await fetch(`${coreBaseUrl()}/state`);
+          const stateResponse = await fetch(`${coreBaseUrl()}/state`, {
+            headers: smokeOperatorAuthHeaders(),
+          });
           assert.equal(stateResponse.status, 200);
           const statePayload = (await stateResponse.json()) as {
             snapshot: {
@@ -1046,9 +1102,9 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
 
           const proposalResponse = await fetch(`${coreBaseUrl()}/control/development-proposals`, {
             method: 'POST',
-            headers: {
+            headers: smokeOperatorAuthHeaders({
               'content-type': 'application/json',
-            },
+            }),
             body: JSON.stringify({
               requestId: 'smoke-proposal-1',
               proposalKind: 'policy_change',
@@ -1059,52 +1115,44 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
               targetRef: 'policy:development-governor',
             }),
           });
-          assert.equal(proposalResponse.status, 501);
+          assert.equal(proposalResponse.status, 202);
           const proposalPayload = (await proposalResponse.json()) as {
-            available: boolean;
-            action: string;
-            owner: string;
-            reason: string;
+            accepted: boolean;
+            requestId: string;
+            state: string;
           };
-          assert.deepEqual(proposalPayload, {
-            available: false,
-            action: 'development-proposals',
-            owner: 'CF-024',
-            reason: 'caller_admission_required',
-          });
+          assert.equal(proposalPayload.accepted, true);
+          assert.equal(proposalPayload.requestId, 'smoke-proposal-1');
+          assert.equal(proposalPayload.state, 'submitted');
 
           const freezeResponse = await fetch(`${coreBaseUrl()}/control/freeze-development`, {
             method: 'POST',
-            headers: {
+            headers: smokeOperatorAuthHeaders({
               'content-type': 'application/json',
-            },
+            }),
             body: JSON.stringify({
               requestId: 'smoke-freeze-1',
               reason: 'deployment-cell governor freeze smoke',
               evidenceRefs: ['smoke:deployment-cell'],
             }),
           });
-          assert.equal(freezeResponse.status, 501);
+          assert.equal(freezeResponse.status, 202);
           const freezePayload = (await freezeResponse.json()) as {
-            available: boolean;
-            action: string;
-            owner: string;
-            reason: string;
+            accepted: boolean;
+            requestId: string;
+            state: string;
           };
-          assert.deepEqual(freezePayload, {
-            available: false,
-            action: 'freeze-development',
-            owner: 'CF-024',
-            reason: 'caller_admission_required',
-          });
+          assert.equal(freezePayload.accepted, true);
+          assert.equal(freezePayload.requestId, 'smoke-freeze-1');
+          assert.equal(freezePayload.state, 'frozen');
 
           const frozenProposalResponse = await fetch(
             `${coreBaseUrl()}/control/development-proposals`,
             {
               method: 'POST',
-              headers: {
+              headers: smokeOperatorAuthHeaders({
                 'content-type': 'application/json',
-              },
+              }),
               body: JSON.stringify({
                 requestId: 'smoke-proposal-while-frozen',
                 proposalKind: 'policy_change',
@@ -1115,12 +1163,10 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
               }),
             },
           );
-          assert.equal(frozenProposalResponse.status, 501);
+          assert.equal(frozenProposalResponse.status, 409);
           assert.deepEqual(await frozenProposalResponse.json(), {
-            available: false,
-            action: 'development-proposals',
-            owner: 'CF-024',
-            reason: 'caller_admission_required',
+            accepted: false,
+            reason: 'development_frozen',
           });
         },
       );
@@ -1860,7 +1906,9 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
             ),
           );
 
-          const modelsResponse = await fetch(`${coreBaseUrl()}/models`);
+          const modelsResponse = await fetch(`${coreBaseUrl()}/models`, {
+            headers: smokeOperatorAuthHeaders(),
+          });
           assert.equal(modelsResponse.status, 200);
           const modelsPayload = (await modelsResponse.json()) as {
             servingDependencies: Array<{
@@ -1879,9 +1927,9 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
 
           const tickResponse = await fetch(`${coreBaseUrl()}/control/tick`, {
             method: 'POST',
-            headers: {
+            headers: smokeOperatorAuthHeaders({
               'content-type': 'application/json',
-            },
+            }),
             body: JSON.stringify({
               requestId: 'smoke-f0020-promoted-dependency-down',
               kind: 'reactive',

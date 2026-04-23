@@ -1,12 +1,12 @@
 ---
 id: F-0024
 title: Аутентификация, авторизация и operator RBAC
-status: planned
-coverage_gate: deferred
+status: done
+coverage_gate: strict
 backlog_item_key: CF-024
 owners: ["@codex"]
 area: security
-depends_on: ["F-0002", "F-0013"]
+depends_on: ["F-0002", "F-0013", "F-0016", "F-0018"]
 impacts: ["api", "security", "governance", "runtime"]
 created: 2026-04-23
 updated: 2026-04-23
@@ -45,7 +45,7 @@ links:
 - **User problem:** `F-0013` уже delivered one Hono operator route family for bounded introspection and selected control handoff, but it intentionally keeps public authN/authZ, RBAC and caller admission out of scope. `F-0018` hardens trusted paths, but it also explicitly does not decide who the caller is or which route the caller may use. Without `CF-024`, the operator API remains a trusted-local boundary: public exposure, high-risk route enablement, support procedures and later governance closure cannot truthfully claim safe caller admission.
 - **Goal:** Define one canonical owner seam for operator identity, authentication, authorization, route-level permissions, RBAC, rate limiting and request provenance on the existing `F-0013` Hono boundary. The seam must fail closed by default, distinguish read-only introspection from control/governor/human-override paths, and provide trusted caller-admission evidence that downstream owners can consume without creating a second API gateway or a second approval ledger.
 - **Non-goals:** This feature does not create a new HTTP gateway or UI, does not redefine `F-0013` route ownership, does not write governor decisions/proposals owned by `F-0016`, does not implement `F-0018` perimeter/safety-kernel policy, does not implement deploy/release/rollback orchestration (`CF-025`), support runbooks (`CF-026`) or late policy profiles/consultant admission (`CF-027`), and does not grant direct write authority to identity-bearing runtime/state surfaces.
-- **Current substrate / baseline:** `F-0002` provides the canonical `Node 22 + TypeScript + AI SDK + Hono + PostgreSQL` deployment cell. `F-0013` provides the operator Hono namespace and explicit unavailable contracts for high-risk routes until caller admission exists. `F-0016` provides governor-owned freeze/proposal semantics behind owner gates. `F-0018` provides mature perimeter hardening over already-trusted paths and keeps public caller admission assigned to `CF-024`.
+- **Current substrate / baseline:** `F-0002` provides the canonical `Node 22 + TypeScript + AI SDK + Hono + PostgreSQL` deployment cell. `F-0013` provides the operator Hono namespace. `F-0016` provides governor-owned freeze/proposal semantics behind owner gates. `F-0018` provides mature perimeter hardening over already-trusted paths. `F-0024` now supplies the caller-admission/RBAC evidence that lets protected operator routes fail closed instead of relying on trusted-local access.
 
 ### Terms & thresholds
 
@@ -65,7 +65,7 @@ links:
 - Authentication middleware and request context for the existing `F-0013` Hono operator route family.
 - Operator principal model, credential verification contract, session/token expiry, revocation and secret-redaction rules.
 - Route-level authorization and RBAC matrix for:
-  - read-only introspection routes: `GET /state`, `GET /timeline`, `GET /episodes`, `GET /models`;
+  - read-only introspection routes: `GET /state`, `GET /timeline`, `GET /episodes`, `GET /models`, `GET /reports`;
   - bounded runtime control: `POST /control/tick`;
   - high-risk reserved routes: `POST /control/freeze-development`, `POST /control/development-proposals`;
   - future routes admitted only by explicit owner realignment.
@@ -100,13 +100,21 @@ links:
 
 - First implementation may use a local/static credential source or repository-local secret-file contract if it preserves the same principal/session/permission semantics and redaction rules.
 - `F-0013` route contracts are already stable enough for `F-0024` to wrap them without reshaping the route family.
-- `F-0016` has delivered governor-owned freeze/proposal semantics, but public high-risk submission remains blocked until caller admission exists.
+- `F-0016` has delivered governor-owned freeze/proposal semantics; public high-risk submission remains blocked unless `F-0024` caller admission and `F-0016` owner availability both pass.
 - No backlog actualization is required during `spec-compact`: `CF-024` already owns the selected auth/RBAC seam and dependency set remains `CF-020`, `CF-009`.
 
 ### Open questions
 
 - Resolved by `plan-slice`: the first implementation uses a mounted/static operator-principal file for credential verification plus PostgreSQL-backed auth audit events. It does not expose a public admin/bootstrap API.
 - Resolved by `plan-slice`: the first token shape is an opaque bearer API key checked by non-reusable hash/fingerprint; no plaintext token is persisted in config examples, logs, audit events, reports or tests.
+
+### Implementation decisions
+
+- **ID-F0024-01:** The versioned mounted/static principal file is the first credential source. It contains `principalRef`, roles, expiry/revocation metadata and SHA-256 token hashes only; bearer tokens remain external secrets.
+- **ID-F0024-02:** `operator_auth_audit_events` is the only new F-0024 PostgreSQL source surface. The auth service records allow, deny and unavailable decisions before invoking protected handlers; audit failure returns bounded unavailable.
+- **ID-F0024-03:** `F-0013` high-risk routes are now callable only when `F-0024` admits a `governor_operator` caller and the `F-0016` owner gate is available. `F-0024` evidence is propagated as a trusted-ingress ref, not as approval authority.
+- **ID-F0024-04:** `F-0018` trusted-ingress validation accepts `operator-auth-evidence:*` only as caller-admission proof for `F-0013` owner routes; perimeter policy and governor decisions remain separate owners.
+- **ID-F0024-05:** Rate limiting is replay-aware to preserve `F-0013` tick idempotency without letting invalid-token sprays consume valid caller quota: missing, unsupported-version and unknown-credential attempts use separate route-stable buckets, the validated principal file is cached briefly to avoid repeated parsing under supported-token sprays, admitted non-tick routes use principal-scoped buckets, and `tick_control` uses a principal-scoped unique-`requestId` bucket that allows same-`requestId` replays to reach the `F-0013`/`F-0003` owner path.
 
 ### Plan-slice decisions
 
@@ -180,7 +188,7 @@ Route-class mapping:
 
 | Route family | Route class | Minimum role | Downstream owner after allow |
 |---|---|---|---|
-| `GET /state`, `GET /timeline`, `GET /episodes`, `GET /models` | `read_introspection` | `observer` | `F-0013` read adapters and their source owners |
+| `GET /state`, `GET /timeline`, `GET /episodes`, `GET /models`, `GET /reports` | `read_introspection` | `observer` | `F-0013` read adapters and their source owners |
 | `POST /control/tick` | `tick_control` | `operator` | `F-0013` -> `F-0003` runtime request gate |
 | `POST /control/freeze-development` | `governor_submission` | `governor_operator` | `F-0013` -> `F-0016`, only when available |
 | `POST /control/development-proposals` | `governor_submission` | `governor_operator` | `F-0013` -> `F-0016`, only when available |
@@ -366,24 +374,24 @@ Implementation is complete when:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0024-01 | `packages/contracts/test/operator-auth.contract.test.ts`; `apps/core/test/platform/operator-api-boundary.contract.test.ts` | planned |
-| AC-F0024-02 | `apps/core/test/platform/operator-api-boundary.contract.test.ts`; route registry/classifier audit | planned |
-| AC-F0024-03 | `apps/core/test/platform/operator-auth-rbac.integration.test.ts`; `apps/core/test/security/operator-auth-service.contract.test.ts` | planned |
-| AC-F0024-04 | `packages/contracts/test/operator-auth.contract.test.ts`; `apps/core/test/platform/operator-auth-rbac.integration.test.ts` | planned |
-| AC-F0024-05 | `packages/contracts/test/operator-auth.contract.test.ts`; route permission matrix table test | planned |
-| AC-F0024-06 | `apps/core/test/security/operator-auth-service.contract.test.ts`; default-role capability test | planned |
-| AC-F0024-07 | `apps/core/test/platform/operator-control.integration.test.ts`; admitted tick-control integration preserving `requestId` | planned |
-| AC-F0024-08 | `apps/core/test/platform/operator-governor-gating.contract.test.ts` | planned |
-| AC-F0024-09 | `packages/contracts/test/operator-auth.contract.test.ts`; trusted-ingress evidence propagation test | planned |
-| AC-F0024-10 | `apps/core/test/perimeter/perimeter-service.contract.test.ts`; `apps/core/test/platform/operator-governor-gating.contract.test.ts` | planned |
-| AC-F0024-11 | `packages/db/test/operator-auth-store.integration.test.ts`; auth audit redaction test | planned |
-| AC-F0024-12 | `apps/core/test/security/operator-auth-service.contract.test.ts`; deterministic auth error taxonomy test | planned |
-| AC-F0024-13 | `apps/core/test/platform/operator-control.integration.test.ts`; rate-limit/idempotency interaction test | planned |
-| AC-F0024-14 | `apps/core/test/platform/operator-api-boundary.contract.test.ts`; platform health ownership regression | planned |
-| AC-F0024-15 | no-foreign-write usage audit over auth/RBAC implementation imports and stores | planned |
-| AC-F0024-16 | `apps/core/test/platform/operator-auth-config.contract.test.ts`; missing/corrupt auth config fail-closed test | planned |
-| AC-F0024-17 | `apps/core/test/platform/operator-governor-gating.contract.test.ts`; high-risk no-admission/no-owner negative tests | planned |
-| AC-F0024-18 | `pnpm format`; `pnpm typecheck`; `pnpm lint`; `pnpm test`; `pnpm smoke:cell` | planned |
+| AC-F0024-01 | `packages/contracts/test/operator-auth.contract.test.ts`; `apps/core/test/platform/operator-api-boundary.contract.test.ts` | implemented |
+| AC-F0024-02 | `apps/core/test/platform/operator-api-boundary.contract.test.ts`; `packages/contracts/test/operator-auth.contract.test.ts` route classifier audit | implemented |
+| AC-F0024-03 | `apps/core/test/platform/operator-auth-rbac.integration.test.ts`; `apps/core/test/security/operator-auth-service.contract.test.ts` | implemented |
+| AC-F0024-04 | `packages/contracts/test/operator-auth.contract.test.ts`; `apps/core/test/platform/operator-auth-rbac.integration.test.ts` | implemented |
+| AC-F0024-05 | `packages/contracts/test/operator-auth.contract.test.ts`; route permission matrix table test | implemented |
+| AC-F0024-06 | `apps/core/test/security/operator-auth-service.contract.test.ts`; default-role capability tests | implemented |
+| AC-F0024-07 | `apps/core/test/platform/operator-control.integration.test.ts`; admitted tick-control integration preserving `requestId` | implemented |
+| AC-F0024-08 | `apps/core/test/platform/operator-governor-gating.contract.test.ts`; `apps/core/test/platform/operator-development-proposals.integration.test.ts` | implemented |
+| AC-F0024-09 | `packages/contracts/test/operator-auth.contract.test.ts`; `apps/core/test/platform/operator-governor-gating.contract.test.ts`; `apps/core/test/perimeter/perimeter-service.contract.test.ts` | implemented |
+| AC-F0024-10 | `apps/core/test/perimeter/perimeter-service.contract.test.ts`; `apps/core/test/platform/operator-governor-gating.contract.test.ts` | implemented |
+| AC-F0024-11 | `packages/db/test/operator-auth-store.integration.test.ts`; `apps/core/test/security/operator-auth-service.contract.test.ts` auth audit redaction coverage | implemented |
+| AC-F0024-12 | `apps/core/test/security/operator-auth-service.contract.test.ts`; deterministic auth error taxonomy tests | implemented |
+| AC-F0024-13 | `apps/core/test/platform/operator-control.integration.test.ts`; `apps/core/test/platform/operator-auth-rbac.integration.test.ts` rate-limit/idempotency interaction coverage | implemented |
+| AC-F0024-14 | `apps/core/test/platform/operator-api-boundary.contract.test.ts`; `apps/core/test/runtime/health.integration.test.ts` platform health ownership regression | implemented |
+| AC-F0024-15 | auth/RBAC code imports only `operator_auth_audit_events`; high-risk path uses `F-0016` and `F-0018` owner gates, covered by `apps/core/test/perimeter/perimeter-service.contract.test.ts` | implemented |
+| AC-F0024-16 | `apps/core/test/platform/operator-auth-config.contract.test.ts`; `apps/core/test/security/operator-auth-service.contract.test.ts` missing/corrupt config and audit-store fail-closed tests | implemented |
+| AC-F0024-17 | `apps/core/test/platform/operator-governor-gating.contract.test.ts`; `apps/core/test/platform/operator-development-proposals.integration.test.ts` high-risk no-admission/no-owner negative tests | implemented |
+| AC-F0024-18 | `pnpm format`; `pnpm typecheck`; `pnpm lint`; `pnpm test`; `pnpm smoke:cell` | implemented |
 
 ## 9. Decision log (ADR blocks)
 
@@ -418,7 +426,7 @@ Implementation is complete when:
 
 - Backlog item key: CF-024
 - Status progression: `proposed -> shaped -> planned -> in_progress -> done`
-- Current stage: `plan-slice`
+- Current stage: `implementation`
 - Issue:
 - PRs:
 
@@ -427,3 +435,4 @@ Implementation is complete when:
 - 2026-04-23 [intake]: Initial dossier created from backlog item `CF-024` at backlog delivery state `defined`.
 - 2026-04-23 [spec-compact] [scope realignment]: Shaped `F-0024` as the canonical caller-admission/auth/RBAC seam over the existing `F-0013` Hono operator route family; no backlog actualization required.
 - 2026-04-23 [plan-slice] [dependency realignment]: Planned implementation as a fail-closed Hono caller-admission seam with static principal source, PostgreSQL auth audit events, route-class RBAC, `/reports` read-route classification, high-risk `F-0016` owner-gate composition and mandatory smoke verification.
+- 2026-04-23 [implementation] Delivered route-class RBAC, static principal-file auth, PostgreSQL auth-decision audit, fail-closed protected operator routes, high-risk `F-0016` owner-gate composition and `F-0018` trusted-ingress compatibility without introducing a second gateway or persisting plaintext credentials.

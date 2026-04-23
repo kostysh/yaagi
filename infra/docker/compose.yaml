@@ -100,6 +100,9 @@ services:
       YAAGI_TELEGRAM_BOT_TOKEN_FILE: "${YAAGI_TELEGRAM_BOT_TOKEN_FILE:-}"
       YAAGI_TELEGRAM_ALLOWED_CHAT_IDS: "${YAAGI_TELEGRAM_ALLOWED_CHAT_IDS:-}"
       YAAGI_TELEGRAM_API_BASE_URL: "${YAAGI_TELEGRAM_API_BASE_URL:-https://api.telegram.org}"
+      YAAGI_OPERATOR_AUTH_PRINCIPALS_FILE: /run/secrets/yaagi_operator_principals
+      YAAGI_OPERATOR_AUTH_RATE_LIMIT_WINDOW_MS: "${YAAGI_OPERATOR_AUTH_RATE_LIMIT_WINDOW_MS:-60000}"
+      YAAGI_OPERATOR_AUTH_RATE_LIMIT_MAX_REQUESTS: "${YAAGI_OPERATOR_AUTH_RATE_LIMIT_MAX_REQUESTS:-120}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -125,6 +128,7 @@ services:
       - workspace_state:/workspace
       - models_state:/models
       - data_state:/data
+      - ${YAAGI_OPERATOR_AUTH_PRINCIPALS_FILE:-/dev/null}:/run/secrets/yaagi_operator_principals:ro
     networks:
       - core_net
       - db_net

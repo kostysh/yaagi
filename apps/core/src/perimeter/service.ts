@@ -184,10 +184,13 @@ const evaluateRequestAgainstKernel = (
   };
 };
 
+const hasOperatorAuthEvidence = (evidenceRefs: readonly string[]): boolean =>
+  evidenceRefs.some((evidenceRef) => evidenceRef.startsWith('operator-auth-evidence:'));
+
 const createPassThroughAuthorityValidator = (): PerimeterAuthorityValidator => ({
   validate(input): Promise<AuthorityValidationResult> {
     if (input.authorityOwner === 'trusted_ingress') {
-      if (input.ingressOwner === 'F-0013') {
+      if (input.ingressOwner === 'F-0013' && !hasOperatorAuthEvidence(input.evidenceRefs)) {
         return Promise.resolve({
           accepted: false,
           decisionReason: PERIMETER_DECISION_REASON.TRUSTED_INGRESS_MISSING,
@@ -217,7 +220,7 @@ const createDbBackedPerimeterAuthorityValidator = (
   return {
     async validate(input: PerimeterControlRequest): Promise<AuthorityValidationResult> {
       if (input.authorityOwner === 'trusted_ingress') {
-        if (input.ingressOwner === 'F-0013') {
+        if (input.ingressOwner === 'F-0013' && !hasOperatorAuthEvidence(input.evidenceRefs)) {
           return {
             accepted: false,
             decisionReason: PERIMETER_DECISION_REASON.TRUSTED_INGRESS_MISSING,

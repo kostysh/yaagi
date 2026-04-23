@@ -20,8 +20,24 @@ export const OPERATOR_STATE_MAX_ENTITY_LIMIT = 100;
 export const OPERATOR_STATE_MAX_RELATIONSHIP_LIMIT = 200;
 export const OPERATOR_HISTORY_DEFAULT_LIMIT = 20;
 export const OPERATOR_HISTORY_MAX_LIMIT = 100;
+export const OPERATOR_TICK_REQUEST_ID_MAX_LENGTH = DEVELOPMENT_GOVERNOR_REQUEST_ID_MAX_LENGTH;
+export const OPERATOR_TICK_NOTE_MAX_LENGTH = 500;
+export const OPERATOR_TICK_PAYLOAD_MAX_BYTES = 8192;
+export const OPERATOR_TICK_BODY_MAX_BYTES = 12_000;
+export const OPERATOR_GOVERNOR_CONTROL_BODY_MAX_BYTES = 64_000;
 
 const boundedInt = (max: number) => z.coerce.number().int().positive().max(max);
+
+const boundedJsonRecord = (maxBytes: number) =>
+  jsonRecordSchema.superRefine((value, context) => {
+    const byteLength = Buffer.byteLength(JSON.stringify(value), 'utf8');
+    if (byteLength > maxBytes) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `JSON payload must be at most ${maxBytes} bytes`,
+      });
+    }
+  });
 
 export const operatorStateQuerySchema = z.object({
   goalLimit: boundedInt(OPERATOR_STATE_MAX_GOAL_LIMIT).default(25),
@@ -69,10 +85,10 @@ export const operatorTickControlKindSchema = z.enum([
 ]);
 
 export const operatorTickControlRequestSchema = z.object({
-  requestId: z.string().min(1),
+  requestId: z.string().min(1).max(OPERATOR_TICK_REQUEST_ID_MAX_LENGTH),
   kind: operatorTickControlKindSchema,
-  note: z.string().min(1).optional(),
-  payload: jsonRecordSchema.default({}),
+  note: z.string().min(1).max(OPERATOR_TICK_NOTE_MAX_LENGTH).optional(),
+  payload: boundedJsonRecord(OPERATOR_TICK_PAYLOAD_MAX_BYTES).default({}),
 });
 
 export type OperatorTickControlRequest = z.infer<typeof operatorTickControlRequestSchema>;

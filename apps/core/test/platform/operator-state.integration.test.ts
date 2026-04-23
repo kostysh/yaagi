@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { SubjectStateSnapshot, SubjectStateSnapshotInput } from '@yaagi/db';
-import { createPlatformTestRuntime } from '../../testing/platform-test-fixture.ts';
+import {
+  createOperatorAuthHeaders,
+  createPlatformTestRuntime,
+} from '../../testing/platform-test-fixture.ts';
 
 const snapshot: SubjectStateSnapshot = {
   subjectStateSchemaVersion: '2026-03-25',
@@ -77,7 +80,12 @@ void test('AC-F0013-02 returns a bounded read-only subject-state projection and 
 
   try {
     const response = await runtime.fetch(
-      new Request('http://yaagi/state?goalLimit=3&beliefLimit=4&entityLimit=5&relationshipLimit=6'),
+      new Request(
+        'http://yaagi/state?goalLimit=3&beliefLimit=4&entityLimit=5&relationshipLimit=6',
+        {
+          headers: createOperatorAuthHeaders('operator'),
+        },
+      ),
     );
 
     assert.equal(response.status, 200);
@@ -126,7 +134,11 @@ void test('AC-F0013-02 rejects oversized state bounds instead of widening the sn
   });
 
   try {
-    const response = await runtime.fetch(new Request('http://yaagi/state?goalLimit=101'));
+    const response = await runtime.fetch(
+      new Request('http://yaagi/state?goalLimit=101', {
+        headers: createOperatorAuthHeaders('operator'),
+      }),
+    );
     assert.equal(response.status, 400);
 
     const payload = (await response.json()) as { error: string };

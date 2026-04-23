@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPlatformTestRuntime } from '../../testing/platform-test-fixture.ts';
+import { OPERATOR_TICK_BODY_MAX_BYTES } from '@yaagi/contracts/operator-api';
+import {
+  createOperatorAuthHeaders,
+  createPlatformTestRuntime,
+} from '../../testing/platform-test-fixture.ts';
+
+// Coverage refs: AC-F0024-07
 
 void test('AC-F0013-05 forwards operator tick control through the canonical runtime gate with preserved provenance', async () => {
   const forwardedInputs: Array<{
@@ -27,9 +33,10 @@ void test('AC-F0013-05 forwards operator tick control through the canonical runt
     const response = await runtime.fetch(
       new Request('http://yaagi/control/tick', {
         method: 'POST',
-        headers: {
+        headers: createOperatorAuthHeaders('operator', {
           'content-type': 'application/json',
-        },
+          'x-request-id': 'http-request-tick-1',
+        }),
         body: JSON.stringify({
           requestId: 'operator-request-1',
           kind: 'reactive',
@@ -53,20 +60,56 @@ void test('AC-F0013-05 forwards operator tick control through the canonical runt
     assert.equal(forwardedInputs[0]?.kind, 'reactive');
     assert.equal(forwardedInputs[0]?.trigger, 'system');
     assert.match(forwardedInputs[0]?.requestedAt ?? '', /^\d{4}-\d{2}-\d{2}T/);
-    assert.deepEqual(forwardedInputs[0]?.payload, {
-      source: 'operator',
-      operatorControl: {
-        requestedBy: 'operator_api',
-        route: '/control/tick',
-        note: 'manual intervention',
+    const forwardedPayload = forwardedInputs[0]?.payload as {
+      source?: string;
+      operatorControl?: {
+        requestedBy?: string;
+        route?: string;
+        principalRef?: string;
+        sessionRef?: string;
+        admissionEvidenceRef?: string;
+        riskClass?: string;
+        note?: string;
+      };
+    };
+    assert.deepEqual(
+      {
+        ...forwardedPayload,
+        operatorControl: {
+          ...forwardedPayload.operatorControl,
+          sessionRef: '<bounded-session-ref>',
+          admissionEvidenceRef: '<bounded-evidence-ref>',
+        },
       },
-    });
+      {
+        source: 'operator',
+        operatorControl: {
+          requestedBy: 'operator_api',
+          route: '/control/tick',
+          principalRef: 'operator:test-operator',
+          sessionRef: '<bounded-session-ref>',
+          admissionEvidenceRef: '<bounded-evidence-ref>',
+          riskClass: 'control',
+          note: 'manual intervention',
+        },
+      },
+    );
+    assert.match(forwardedPayload.operatorControl?.sessionRef ?? '', /^operator-session:/);
+    assert.match(
+      forwardedPayload.operatorControl?.admissionEvidenceRef ?? '',
+      /^operator-auth-evidence:/,
+    );
+    assert.equal((forwardedPayload.operatorControl?.sessionRef ?? '').length <= 200, true);
+    assert.equal(
+      (forwardedPayload.operatorControl?.admissionEvidenceRef ?? '').length <= 200,
+      true,
+    );
   } finally {
     await cleanup();
   }
 });
 
-void test('AC-F0013-05 rejects missing requestId and preserves deterministic replay semantics', async () => {
+void test('AC-F0013-05 rejects missing requestId before runtime tick owner calls', async () => {
   let callCount = 0;
   const { runtime, cleanup } = await createPlatformTestRuntime({
     dependencies: {
@@ -85,22 +128,85 @@ void test('AC-F0013-05 rejects missing requestId and preserves deterministic rep
     const invalidResponse = await runtime.fetch(
       new Request('http://yaagi/control/tick', {
         method: 'POST',
-        headers: {
+        headers: createOperatorAuthHeaders('operator', {
           'content-type': 'application/json',
-        },
+        }),
         body: JSON.stringify({
           kind: 'reactive',
         }),
       }),
     );
     assert.equal(invalidResponse.status, 400);
+    assert.equal(callCount, 0);
+  } finally {
+    await cleanup();
+  }
+});
 
+void test('AC-F0024-13 rejects oversized tick-control bodies before runtime owner calls', async () => {
+  let callCount = 0;
+  const { runtime, cleanup } = await createPlatformTestRuntime({
+    dependencies: {
+      createRuntimeLifecycle: () => ({
+        start: () => Promise.resolve(),
+        stop: () => Promise.resolve(),
+        requestTick: () => {
+          callCount += 1;
+          return Promise.resolve({ accepted: true });
+        },
+      }),
+    },
+  });
+
+  try {
+    const response = await runtime.fetch(
+      new Request('http://yaagi/control/tick', {
+        method: 'POST',
+        headers: createOperatorAuthHeaders('operator', {
+          'content-type': 'application/json',
+        }),
+        body: JSON.stringify({
+          requestId: 'operator-request-oversized',
+          kind: 'reactive',
+          payload: {
+            oversized: 'x'.repeat(OPERATOR_TICK_BODY_MAX_BYTES),
+          },
+        }),
+      }),
+    );
+
+    assert.equal(response.status, 400);
+    assert.equal(callCount, 0);
+  } finally {
+    await cleanup();
+  }
+});
+
+void test('AC-F0024-13 preserves tick replay after the auth unique-request limit is reached', async () => {
+  let callCount = 0;
+  const { runtime, cleanup } = await createPlatformTestRuntime({
+    env: {
+      YAAGI_OPERATOR_AUTH_RATE_LIMIT_MAX_REQUESTS: '1',
+    },
+    dependencies: {
+      createRuntimeLifecycle: () => ({
+        start: () => Promise.resolve(),
+        stop: () => Promise.resolve(),
+        requestTick: () => {
+          callCount += 1;
+          return Promise.resolve({ accepted: true });
+        },
+      }),
+    },
+  });
+
+  try {
     const firstReplay = await runtime.fetch(
       new Request('http://yaagi/control/tick', {
         method: 'POST',
-        headers: {
+        headers: createOperatorAuthHeaders('operator', {
           'content-type': 'application/json',
-        },
+        }),
         body: JSON.stringify({
           requestId: 'operator-request-replay',
           kind: 'reactive',
@@ -110,11 +216,23 @@ void test('AC-F0013-05 rejects missing requestId and preserves deterministic rep
     const secondReplay = await runtime.fetch(
       new Request('http://yaagi/control/tick', {
         method: 'POST',
-        headers: {
+        headers: createOperatorAuthHeaders('operator', {
           'content-type': 'application/json',
-        },
+        }),
         body: JSON.stringify({
           requestId: 'operator-request-replay',
+          kind: 'reactive',
+        }),
+      }),
+    );
+    const differentRequest = await runtime.fetch(
+      new Request('http://yaagi/control/tick', {
+        method: 'POST',
+        headers: createOperatorAuthHeaders('operator', {
+          'content-type': 'application/json',
+        }),
+        body: JSON.stringify({
+          requestId: 'operator-request-replay-different',
           kind: 'reactive',
         }),
       }),
@@ -122,6 +240,7 @@ void test('AC-F0013-05 rejects missing requestId and preserves deterministic rep
 
     assert.equal(firstReplay.status, 202);
     assert.equal(secondReplay.status, 202);
+    assert.equal(differentRequest.status, 429);
     assert.deepEqual(await firstReplay.json(), await secondReplay.json());
     assert.equal(callCount, 2);
   } finally {
@@ -178,9 +297,9 @@ void test('AC-F0013-05 maps runtime gate rejection reasons to explicit HTTP stat
       const response = await runtime.fetch(
         new Request('http://yaagi/control/tick', {
           method: 'POST',
-          headers: {
+          headers: createOperatorAuthHeaders('operator', {
             'content-type': 'application/json',
-          },
+          }),
           body: JSON.stringify({
             requestId: testCase.requestId,
             kind: 'reactive',

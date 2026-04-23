@@ -24,6 +24,7 @@ import {
   appendRuntimeTimelineEvent,
   createExpandedModelEcologyStore,
   createNarrativeMemeticStore,
+  createOperatorAuthStore,
   createRuntimeActionLogStore,
   createPerceptionStore,
   createRuntimeDbClient,
@@ -37,6 +38,8 @@ import {
   type RuntimeEpisodeRow,
   type RuntimeTimelineEventPageInput,
   type RuntimeTimelineEventRow,
+  type RecordOperatorAuthAuditEventInput,
+  type RecordOperatorAuthAuditEventResult,
   type SubjectStateDelta,
   type SubjectStateSnapshot,
   type SubjectStateSnapshotInput,
@@ -176,6 +179,9 @@ type RuntimeLifecycle = {
   getReportingBundle(): Promise<ReportingBundle>;
   getSkillRuntimeDiagnostics(): Promise<SkillRuntimeDiagnostics>;
   syncSkillsFromSeed(): Promise<void>;
+  recordOperatorAuthAuditEvent(
+    input: RecordOperatorAuthAuditEventInput,
+  ): Promise<RecordOperatorAuthAuditEventResult>;
 };
 
 export const startBoundedWorkshopWorker = async (
@@ -1752,6 +1758,12 @@ export function createPhase0RuntimeLifecycle(
     },
     getReportingBundle(): Promise<ReportingBundle> {
       return reportingService.getReportingBundle();
+    },
+    recordOperatorAuthAuditEvent(input) {
+      return withRuntimeClient(config.postgresUrl, async (client) => {
+        const store = createOperatorAuthStore(client);
+        return store.recordAuthAuditEvent(input);
+      });
     },
     getSkillRuntimeDiagnostics(): Promise<SkillRuntimeDiagnostics> {
       return Promise.resolve(runtimeSkills.getDiagnostics());

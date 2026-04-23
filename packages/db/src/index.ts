@@ -50,6 +50,13 @@ export {
   type RecordPerimeterDecisionResult,
 } from './perimeter.ts';
 export {
+  createOperatorAuthStore,
+  type OperatorAuthDbExecutor,
+  type OperatorAuthStore,
+  type RecordOperatorAuthAuditEventInput,
+  type RecordOperatorAuthAuditEventResult,
+} from './operator-auth.ts';
+export {
   createBodyEvolutionStore,
   type BodyChangeEventRow,
   type BodyChangeProposalRow,

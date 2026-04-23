@@ -166,6 +166,49 @@ void test('AC-F0018-04 denies operator-api trusted ingress until caller admissio
   assert.equal(result.decisionReason, 'trusted_ingress_missing');
 });
 
+void test('AC-F0024-10 allows operator-api freeze trusted ingress only when caller admission evidence is present', async () => {
+  const memory = createMemoryStore();
+  const service = createPerimeterDecisionService({
+    store: memory.store,
+    createDecisionId: () => 'perimeter-decision:freeze-operator-admitted',
+    now: () => new Date('2026-04-23T10:00:00.000Z'),
+  });
+
+  const result = await service.evaluateControlRequest({
+    requestId: 'perimeter-request:freeze-operator-admitted',
+    ingressOwner: PERIMETER_INGRESS_OWNER.F_0013,
+    actionClass: PERIMETER_ACTION_CLASS.FREEZE_DEVELOPMENT,
+    authorityOwner: PERIMETER_AUTHORITY_OWNER.TRUSTED_INGRESS,
+    evidenceRefs: ['operator-auth-evidence:http-request-1'],
+  });
+
+  assert.equal(result.accepted, true);
+  assert.equal(result.verdict, 'allow');
+  assert.equal(result.decisionReason, 'verified_authority');
+});
+
+void test('AC-F0024-10 allows operator-api proposal trusted ingress only when caller admission evidence is present', async () => {
+  const memory = createMemoryStore();
+  const service = createPerimeterDecisionService({
+    store: memory.store,
+    createDecisionId: () => 'perimeter-decision:proposal-operator-admitted',
+    now: () => new Date('2026-04-23T10:01:00.000Z'),
+  });
+
+  const result = await service.evaluateControlRequest({
+    requestId: 'perimeter-request:proposal-operator-admitted',
+    ingressOwner: PERIMETER_INGRESS_OWNER.F_0013,
+    actionClass: PERIMETER_ACTION_CLASS.CODE_OR_PROMOTION_CHANGE,
+    authorityOwner: PERIMETER_AUTHORITY_OWNER.TRUSTED_INGRESS,
+    evidenceRefs: ['operator-auth-evidence:http-request-2'],
+    targetRef: 'policy:development-governor',
+  });
+
+  assert.equal(result.accepted, true);
+  assert.equal(result.verdict, 'allow');
+  assert.equal(result.decisionReason, 'verified_authority');
+});
+
 void test('AC-F0018-04 denies supported paths when trusted ingress is missing', async () => {
   const memory = createMemoryStore();
   const service = createPerimeterDecisionService({

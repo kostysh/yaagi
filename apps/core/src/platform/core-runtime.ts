@@ -21,6 +21,7 @@ import { registerOperatorApiRoutes, type OperatorRuntimeLifecycle } from './oper
 import { materializeRuntimeSeed } from './runtime-seed.ts';
 import { createPhase0RuntimeLifecycle } from '../runtime/runtime-lifecycle.ts';
 import { createVllmFastDependencyMonitor, probeVllmFastTransport } from './vllm-fast-serving.ts';
+import { createOperatorAuthService } from '../security/operator-auth.ts';
 import type {
   BaselineModelProfileDiagnostic,
   ModelHealthSummary,
@@ -374,7 +375,16 @@ export function createCoreRuntime(
     }
   });
 
-  registerOperatorApiRoutes(app, runtimeLifecycle);
+  const operatorAuth = createOperatorAuthService({
+    principalsFilePath: config.operatorAuthPrincipalsFilePath,
+    rateLimitWindowMs: config.operatorAuthRateLimitWindowMs,
+    rateLimitMaxRequests: config.operatorAuthRateLimitMaxRequests,
+    ...(runtimeLifecycle.recordOperatorAuthAuditEvent
+      ? { recordAuditEvent: runtimeLifecycle.recordOperatorAuthAuditEvent.bind(runtimeLifecycle) }
+      : {}),
+  });
+
+  registerOperatorApiRoutes(app, runtimeLifecycle, { operatorAuth });
 
   const waitForDependencies = async (): Promise<void> => {
     const deadline = Date.now() + config.bootTimeoutMs;

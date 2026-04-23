@@ -1,0 +1,188 @@
+{
+  "version": 1,
+  "stage": "implementation",
+  "feature_id": "F-0024",
+  "feature_cycle_id": "fc-F-0024-mobf0hcx",
+  "cycle_id": "implementation-0630afdc",
+  "log_path": ".dossier/logs/implementation/F-0024--fc-F-0024-mobf0hcx--implementation-0630afdc.md",
+  "backlog_item_key": "CF-024",
+  "stage_state": "ready_for_close",
+  "start_ts": "2026-04-23T12:54:50.776Z",
+  "entered_ts": "2026-04-23T12:54:50.776Z",
+  "ready_for_close_ts": "2026-04-23T15:16:52.796Z",
+  "transition_events": [
+    {
+      "kind": "entered",
+      "at": "2026-04-23T12:54:50.776Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-23T14:32:41.793Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-23T14:45:08.223Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-23T15:00:03.746Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-23T15:16:52.796Z"
+    }
+  ],
+  "required_audit_classes": [
+    "spec-conformance-reviewer",
+    "code-reviewer",
+    "security-reviewer"
+  ],
+  "executed_audit_classes": [
+    "spec-conformance-reviewer",
+    "code-reviewer",
+    "security-reviewer"
+  ],
+  "required_external_review_pending": false,
+  "review_events": [
+    {
+      "allowed_by_policy": true,
+      "artifact_path": ".dossier/reviews/F-0024/implementation-spec-conformance-review.json",
+      "audit_class": "spec-conformance-reviewer",
+      "event_commit": "f82a6242e324377dcc3bc42c7c1caf71cdb10217",
+      "implementation_scope": "code-bearing",
+      "invalidated": false,
+      "must_fix_count": 0,
+      "recorded_at": "2026-04-23T15:24:25.147Z",
+      "review_mode": "external",
+      "reviewer": "Goodall",
+      "reviewer_agent_id": "019dbaeb-7ab8-7833-ab6a-b3cd2d91c13a",
+      "reviewer_skill": "spec-conformance-reviewer",
+      "reviewer_thread_id": "019db9f2-76ae-7f00-90ba-dda2e633f4a5",
+      "security_trigger_reason": null,
+      "stale": false,
+      "verdict": "PASS"
+    },
+    {
+      "allowed_by_policy": true,
+      "artifact_path": ".dossier/reviews/F-0024/implementation-code-review.json",
+      "audit_class": "code-reviewer",
+      "event_commit": "f82a6242e324377dcc3bc42c7c1caf71cdb10217",
+      "implementation_scope": "code-bearing",
+      "invalidated": false,
+      "must_fix_count": 0,
+      "recorded_at": "2026-04-23T15:24:33.282Z",
+      "review_mode": "external",
+      "reviewer": "Volta",
+      "reviewer_agent_id": "019dbaeb-7b2f-7a90-9fa2-4c68a2b69490",
+      "reviewer_skill": "code-reviewer",
+      "reviewer_thread_id": "019db9f2-76ae-7f00-90ba-dda2e633f4a5",
+      "security_trigger_reason": null,
+      "stale": false,
+      "verdict": "PASS"
+    },
+    {
+      "allowed_by_policy": true,
+      "artifact_path": ".dossier/reviews/F-0024/implementation-security-review.json",
+      "audit_class": "security-reviewer",
+      "event_commit": "f82a6242e324377dcc3bc42c7c1caf71cdb10217",
+      "implementation_scope": "code-bearing",
+      "invalidated": false,
+      "must_fix_count": 0,
+      "recorded_at": "2026-04-23T15:24:42.233Z",
+      "review_mode": "external",
+      "reviewer": "Beauvoir",
+      "reviewer_agent_id": "019dbaeb-7c0c-7aa1-8d68-e86df6938e76",
+      "reviewer_skill": "security-reviewer",
+      "reviewer_thread_id": "019db9f2-76ae-7f00-90ba-dda2e633f4a5",
+      "security_trigger_reason": "authn/authz/rbac/rate-limit/trust-boundary changes in operator API",
+      "stale": false,
+      "verdict": "PASS"
+    },
+    {
+      "allowed_by_policy": true,
+      "artifact_path": ".dossier/reviews/F-0024/implementation-code-review.json",
+      "audit_class": "code-reviewer",
+      "event_commit": "f82a6242e324377dcc3bc42c7c1caf71cdb10217",
+      "implementation_scope": "code-bearing",
+      "invalidated": false,
+      "must_fix_count": 0,
+      "recorded_at": "2026-04-23T15:27:34.998Z",
+      "review_mode": "external",
+      "reviewer": "Volta",
+      "reviewer_agent_id": "019dbaeb-7b2f-7a90-9fa2-4c68a2b69490",
+      "reviewer_skill": "code-reviewer",
+      "reviewer_thread_id": "019dbaeb-7b2f-7a90-9fa2-4c68a2b69490",
+      "security_trigger_reason": null,
+      "stale": false,
+      "verdict": "PASS"
+    },
+    {
+      "allowed_by_policy": true,
+      "artifact_path": ".dossier/reviews/F-0024/implementation-security-review.json",
+      "audit_class": "security-reviewer",
+      "event_commit": "f82a6242e324377dcc3bc42c7c1caf71cdb10217",
+      "implementation_scope": "code-bearing",
+      "invalidated": false,
+      "must_fix_count": 0,
+      "recorded_at": "2026-04-23T15:27:35.083Z",
+      "review_mode": "external",
+      "reviewer": "Beauvoir",
+      "reviewer_agent_id": "019dbaeb-7c0c-7aa1-8d68-e86df6938e76",
+      "reviewer_skill": "security-reviewer",
+      "reviewer_thread_id": "019dbaeb-7c0c-7aa1-8d68-e86df6938e76",
+      "security_trigger_reason": "authn/authz/rbac/rate-limit/trust-boundary changes in operator API",
+      "stale": false,
+      "verdict": "PASS"
+    },
+    {
+      "allowed_by_policy": true,
+      "artifact_path": ".dossier/reviews/F-0024/implementation-spec-conformance-review.json",
+      "audit_class": "spec-conformance-reviewer",
+      "event_commit": "f82a6242e324377dcc3bc42c7c1caf71cdb10217",
+      "implementation_scope": "code-bearing",
+      "invalidated": false,
+      "must_fix_count": 0,
+      "recorded_at": "2026-04-23T15:27:37.648Z",
+      "review_mode": "external",
+      "reviewer": "Goodall",
+      "reviewer_agent_id": "019dbaeb-7ab8-7833-ab6a-b3cd2d91c13a",
+      "reviewer_skill": "spec-conformance-reviewer",
+      "reviewer_thread_id": "019dbaeb-7ab8-7833-ab6a-b3cd2d91c13a",
+      "security_trigger_reason": null,
+      "stale": false,
+      "verdict": "PASS"
+    }
+  ],
+  "reviewer_skills": [
+    "spec-conformance-reviewer",
+    "code-reviewer",
+    "security-reviewer"
+  ],
+  "reviewer_agent_ids": [
+    "019dbaeb-7ab8-7833-ab6a-b3cd2d91c13a",
+    "019dbaeb-7b2f-7a90-9fa2-4c68a2b69490",
+    "019dbaeb-7c0c-7aa1-8d68-e86df6938e76"
+  ],
+  "review_trace_commits": [
+    "f82a6242e324377dcc3bc42c7c1caf71cdb10217"
+  ],
+  "degraded_review_present": false,
+  "invalidated_review_present": false,
+  "stale_review_present": false,
+  "session_id": null,
+  "trace_runtime": "codex",
+  "trace_locator_kind": "session_id",
+  "stage_entry_commit": "f82a6242e324377dcc3bc42c7c1caf71cdb10217",
+  "implementation_review_scope": "code-bearing",
+  "required_security_review": true,
+  "security_trigger_reasons": [
+    "authn/authz/rbac/rate-limit/trust-boundary changes in operator API"
+  ],
+  "step_close_ts": null,
+  "step_artifact": null,
+  "process_complete_ts": null,
+  "intake_process_complete_ts": null,
+  "local_gates_green_ts": "2026-04-23T15:16:52.796Z",
+  "first_review_agent_started_ts": "2026-04-23T15:24:25.147Z",
+  "final_pass_ts": "2026-04-23T15:27:37.648Z"
+}

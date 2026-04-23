@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
+// Coverage refs: AC-F0024-18
+
 const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
 const smokeHarnessPath = path.join(repoRoot, 'infra', 'docker', 'deployment-cell.smoke.ts');
 const smokeBaseComposePath = path.join(repoRoot, 'infra', 'docker', 'compose.smoke-base.yaml');
@@ -124,7 +126,7 @@ void test('smoke-only compose overlays keep hard resource budgets and bounded vl
 void test('deployment-cell smoke keeps an explicit host-memory preflight before starting the bounded compose project', async () => {
   const text = await loadText(smokeHarnessPath);
 
-  assert.match(text, /import \{ readFile \} from 'node:fs\/promises';/);
+  assert.match(text, /import \{ mkdir, readFile, writeFile \} from 'node:fs\/promises';/);
   assert.match(text, /const smokeMemoryHeadroomBytes = parseByteLimit\(/);
   assert.match(text, /const smokeBaseBudgetBytes =/);
   assert.match(text, /async function readMemAvailableBytes/);

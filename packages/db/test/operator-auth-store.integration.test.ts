@@ -1,0 +1,115 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  OPERATOR_AUTH_DECISION,
+  OPERATOR_AUTH_DENIAL_REASON,
+  OPERATOR_ROUTE_CLASS,
+  OPERATOR_RISK_CLASS,
+  type OperatorAuthAuditEventRow,
+} from '@yaagi/contracts/operator-auth';
+import { createOperatorAuthStore, type OperatorAuthDbExecutor } from '../src/operator-auth.ts';
+
+type Harness = {
+  db: OperatorAuthDbExecutor;
+  events: OperatorAuthAuditEventRow[];
+};
+
+const parseJson = <T>(value: unknown): T => {
+  if (typeof value === 'string') {
+    return JSON.parse(value) as T;
+  }
+
+  return value as T;
+};
+
+const createHarness = (): Harness => {
+  const events: OperatorAuthAuditEventRow[] = [];
+
+  const query = ((sqlText: unknown, params: unknown[] = []) => {
+    if (typeof sqlText !== 'string') {
+      throw new Error('operator auth harness supports only text queries');
+    }
+
+    const sql = sqlText.replace(/\s+/g, ' ').trim().toLowerCase();
+    if (sql.startsWith('insert into polyphony_runtime.operator_auth_audit_events')) {
+      const row: OperatorAuthAuditEventRow = {
+        auditEventId: String(params[0]),
+        requestId: String(params[1]),
+        principalRef: typeof params[2] === 'string' ? String(params[2]) : null,
+        sessionRef: typeof params[3] === 'string' ? String(params[3]) : null,
+        method: String(params[4]),
+        route: String(params[5]),
+        routeClass: params[6] as OperatorAuthAuditEventRow['routeClass'],
+        riskClass: params[7] as OperatorAuthAuditEventRow['riskClass'],
+        decision: params[8] as OperatorAuthAuditEventRow['decision'],
+        denialReason:
+          typeof params[9] === 'string'
+            ? (String(params[9]) as OperatorAuthAuditEventRow['denialReason'])
+            : null,
+        evidenceRef: typeof params[10] === 'string' ? String(params[10]) : null,
+        payloadJson: parseJson<Record<string, unknown>>(params[11]),
+        createdAt: new Date(String(params[12])).toISOString(),
+      };
+      events.push(row);
+      return Promise.resolve({ rows: [row] });
+    }
+
+    throw new Error(`unsupported sql in operator auth harness: ${sqlText}`);
+  }) as OperatorAuthDbExecutor['query'];
+
+  return { db: { query }, events };
+};
+
+void test('AC-F0024-11 records bounded operator auth audit events without plaintext credentials', async () => {
+  const harness = createHarness();
+  const store = createOperatorAuthStore(harness.db);
+
+  const result = await store.recordAuthAuditEvent({
+    auditEventId: 'operator-auth-audit:1',
+    requestId: 'http-request-1',
+    principalRef: 'operator:observer',
+    sessionRef: 'operator-session:observer:primary',
+    method: 'GET',
+    route: '/state',
+    routeClass: OPERATOR_ROUTE_CLASS.READ_INTROSPECTION,
+    riskClass: OPERATOR_RISK_CLASS.READ_ONLY,
+    decision: OPERATOR_AUTH_DECISION.ALLOW,
+    denialReason: null,
+    evidenceRef: 'operator-auth-evidence:http-request-1',
+    payloadJson: { credentialRef: 'credential:observer:primary' },
+    createdAt: '2026-04-23T10:00:00.000Z',
+  });
+
+  assert.equal(result.accepted, true);
+  assert.equal(harness.events.length, 1);
+  assert.equal(result.event.principalRef, 'operator:observer');
+  assert.equal(result.event.decision, OPERATOR_AUTH_DECISION.ALLOW);
+  assert.deepEqual(result.event.payloadJson, { credentialRef: 'credential:observer:primary' });
+  assert.equal('token' in result.event.payloadJson, false);
+  assert.equal('bearer' in result.event.payloadJson, false);
+});
+
+void test('AC-F0024-11 records denied decisions with null principal and bounded reason', async () => {
+  const harness = createHarness();
+  const store = createOperatorAuthStore(harness.db);
+
+  const result = await store.recordAuthAuditEvent({
+    auditEventId: 'operator-auth-audit:2',
+    requestId: 'http-request-2',
+    principalRef: null,
+    sessionRef: null,
+    method: 'POST',
+    route: '/control/tick',
+    routeClass: OPERATOR_ROUTE_CLASS.TICK_CONTROL,
+    riskClass: OPERATOR_RISK_CLASS.CONTROL,
+    decision: OPERATOR_AUTH_DECISION.DENY,
+    denialReason: OPERATOR_AUTH_DENIAL_REASON.UNAUTHENTICATED,
+    evidenceRef: null,
+    createdAt: '2026-04-23T10:01:00.000Z',
+  });
+
+  assert.equal(result.event.principalRef, null);
+  assert.equal(result.event.sessionRef, null);
+  assert.equal(result.event.denialReason, OPERATOR_AUTH_DENIAL_REASON.UNAUTHENTICATED);
+  assert.deepEqual(result.event.payloadJson, {});
+});
