@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "stage": "feature-intake",
+  "feature_id": "F-0026",
+  "feature_cycle_id": "fc-F-0026-mod32etm",
+  "cycle_id": "intake-74e4dcb8",
+  "log_path": ".dossier/logs/feature-intake/F-0026--fc-F-0026-mod32etm.md",
+  "backlog_item_key": "CF-025",
+  "primary_feature_id": "F-0026",
+  "primary_backlog_item_key": "CF-025",
+  "phase_scope": "feature-intake for CF-025 deploy/release automation and rollback orchestration branch",
+  "backlog_lifecycle_target": null,
+  "backlog_lifecycle_current": null,
+  "backlog_lifecycle_reconciled": true,
+  "backlog_actualization_artifacts": [],
+  "backlog_actualization_verdict": "no_lifecycle_target",
+  "backlog_followup_required": false,
+  "backlog_followup_kind": null,
+  "backlog_followup_resolved": true,
+  "stage_state": "ready_for_close",
+  "start_ts": "2026-04-24T15:46:37.834Z",
+  "entered_ts": "2026-04-24T15:46:37.834Z",
+  "ready_for_close_ts": "2026-04-24T15:46:37.834Z",
+  "transition_events": [
+    {
+      "kind": "entered",
+      "at": "2026-04-24T15:46:37.834Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-24T15:46:37.834Z"
+    }
+  ],
+  "required_audit_classes": [
+    "spec-conformance-reviewer"
+  ],
+  "executed_audit_classes": [
+    "spec-conformance-reviewer"
+  ],
+  "required_external_review_pending": false,
+  "review_artifacts": [
+    ".dossier/reviews/F-0026/feature-intake-review-pass.json"
+  ],
+  "verification_artifacts": [
+    ".dossier/verification/F-0026/feature-intake-verify.json"
+  ],
+  "review_events": [
+    {
+      "allowed_by_policy": true,
+      "artifact_path": ".dossier/reviews/F-0026/feature-intake-review-pass.json",
+      "audit_class": "spec-conformance-reviewer",
+      "event_commit": "2f967d18062e4b79d588a92765b6e2598fafa745",
+      "implementation_scope": null,
+      "invalidated": false,
+      "must_fix_count": 0,
+      "recorded_at": "2026-04-24T15:54:44.586Z",
+      "review_mode": "external",
+      "reviewer": "external-agent-euclid",
+      "reviewer_agent_id": "019dc031-e015-7de3-aae7-06a69928d44d",
+      "reviewer_skill": "spec-conformance-reviewer",
+      "reviewer_thread_id": "019dc028-2688-7791-a888-53c3018aa4d8",
+      "security_trigger_reason": null,
+      "stale": false,
+      "verdict": "PASS"
+    },
+    {
+      "allowed_by_policy": true,
+      "artifact_path": ".dossier/reviews/F-0026/feature-intake-review-pass.json",
+      "audit_class": "spec-conformance-reviewer",
+      "event_commit": "b9911030ab96f4df850b0f94570f55439a4b2d52",
+      "implementation_scope": null,
+      "invalidated": false,
+      "must_fix_count": 0,
+      "recorded_at": "2026-04-24T16:06:17.973Z",
+      "review_mode": "external",
+      "reviewer": "external-agent-fermat",
+      "reviewer_agent_id": "019dc03c-673b-7f93-b9a7-5a795945dc9c",
+      "reviewer_skill": "spec-conformance-reviewer",
+      "reviewer_thread_id": "019dc028-2688-7791-a888-53c3018aa4d8",
+      "security_trigger_reason": null,
+      "stale": false,
+      "verdict": "PASS"
+    },
+    {
+      "allowed_by_policy": true,
+      "artifact_path": ".dossier/reviews/F-0026/feature-intake-review-pass.json",
+      "audit_class": "spec-conformance-reviewer",
+      "event_commit": "bcbd82ee434e6619f6b8ba5a65ef0d0df0137fd9",
+      "implementation_scope": null,
+      "invalidated": false,
+      "must_fix_count": 0,
+      "recorded_at": "2026-04-24T16:09:04.843Z",
+      "review_mode": "external",
+      "reviewer": "external-agent-fermat",
+      "reviewer_agent_id": "019dc03c-673b-7f93-b9a7-5a795945dc9c",
+      "reviewer_skill": "spec-conformance-reviewer",
+      "reviewer_thread_id": "019dc03c-673b-7f93-b9a7-5a795945dc9c",
+      "security_trigger_reason": null,
+      "stale": false,
+      "verdict": "PASS"
+    }
+  ],
+  "reviewer_skills": [
+    "spec-conformance-reviewer"
+  ],
+  "reviewer_agent_ids": [
+    "019dc03c-673b-7f93-b9a7-5a795945dc9c"
+  ],
+  "review_trace_commits": [
+    "bcbd82ee434e6619f6b8ba5a65ef0d0df0137fd9"
+  ],
+  "degraded_review_present": false,
+  "invalidated_review_present": false,
+  "stale_review_present": false,
+  "skills_used": [
+    "unified-dossier-engineer"
+  ],
+  "skill_issues": [],
+  "skill_followups": [],
+  "process_misses": [],
+  "session_id": "019dbf3f-4287-7722-9adb-c3ec2482111e",
+  "trace_runtime": "codex",
+  "trace_locator_kind": "session_id",
+  "stage_entry_commit": null,
+  "final_delivery_commit": "2f967d18062e4b79d588a92765b6e2598fafa745",
+  "final_closure_commit": "bcbd82ee434e6619f6b8ba5a65ef0d0df0137fd9",
+  "implementation_review_scope": null,
+  "required_security_review": false,
+  "security_trigger_reasons": [],
+  "step_close_ts": "2026-04-24T16:09:10.759Z",
+  "step_artifact": ".dossier/steps/F-0026/feature-intake-close.json",
+  "process_complete_ts": "2026-04-24T16:09:10.759Z",
+  "intake_process_complete_ts": "2026-04-24T16:09:10.759Z",
+  "local_gates_green_ts": null,
+  "first_review_agent_started_ts": "2026-04-24T15:54:44.586Z",
+  "final_pass_ts": "2026-04-24T16:09:04.843Z"
+}

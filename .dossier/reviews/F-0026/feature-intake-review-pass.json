@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "created_at": "2026-04-24T16:09:04.831Z",
+  "audit_class": "spec-conformance-reviewer",
+  "review_mode": "external",
+  "reviewer": "external-agent-fermat",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": "019dc03c-673b-7f93-b9a7-5a795945dc9c",
+  "reviewer_thread_id": "019dc03c-673b-7f93-b9a7-5a795945dc9c",
+  "step": "feature-intake",
+  "dossier": "docs/ssot/features/F-0026-deploy-release-automation-rollback-orchestration.md",
+  "feature_id": "F-0026",
+  "event_commit": "bcbd82ee434e6619f6b8ba5a65ef0d0df0137fd9",
+  "implementation_scope": null,
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "one backlog item maps to one dossier: CF-025 -> F-0026",
+      "dossier state is proposed with coverage_gate deferred and contains source traceability, dependencies, scope boundaries, constraints, assumptions and open questions",
+      "stage JSON and feature-intake log agree on F-0026, fc-F-0026-mod32etm, CF-025, ready_for_close, no backlog follow-up, verification artifact path and no process misses",
+      "stale close-out wording is absent from the feature-intake log",
+      "verification artifact .dossier/verification/F-0026/feature-intake-verify.json exists and has status pass for index-refresh, lint-dossiers, coverage-audit, debt-audit and git-diff-check",
+      "docs/ssot/index.md includes F-0026 in the generated feature table and dependency graph",
+      "CF-025 backlog state is defined, has no gaps, no attention, ready_for_next_step true, and dependencies CF-020/CF-022/CF-023/CF-015/CF-016/CF-018 are implemented",
+      "proposed-state warnings for missing AC IDs and coverage rows are acceptable before spec-compact"
+    ]
+  },
+  "notes": "PASS: feature-intake for CF-025 -> F-0026 is truthful and closure-ready. One backlog item maps to one feature dossier; dossier state is correctly proposed with coverage_gate deferred; source traceability, dependencies, scope boundaries, constraints, assumptions/open questions, stage JSON, stage log, verification artifact, index entry, and backlog readiness are consistent. Proposed-state warnings for missing AC IDs and coverage rows are acceptable before spec-compact. No must-fix issues remain."
+}
