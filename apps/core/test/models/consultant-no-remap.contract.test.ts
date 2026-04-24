@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  CONSULTANT_ADMISSION_DECISION,
   CONSULTANT_KIND,
   POLICY_REFUSAL_REASON,
   type ConsultantAdmissionDecisionRow,
@@ -123,6 +124,7 @@ void test('AC-F0025-07 refuses consultant execution without remapping to a local
       targetScope: 'phase6.consult',
       selectedModelProfileId: 'consultant.external@phase6',
       explicitAdmissionRef: 'policy-admission:allow:1',
+      explicitAdmissionDecision: CONSULTANT_ADMISSION_DECISION.ALLOW,
       health: {
         status: 'healthy',
         healthRef: 'consultant-health:healthy:1',

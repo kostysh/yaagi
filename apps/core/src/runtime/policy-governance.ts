@@ -74,6 +74,10 @@ export type ConsultantAdmissionInput = {
   targetScope: string;
   selectedModelProfileId: string | null;
   explicitAdmissionRef: string | null;
+  explicitAdmissionDecision:
+    | typeof CONSULTANT_ADMISSION_DECISION.ALLOW
+    | typeof CONSULTANT_ADMISSION_DECISION.DENY
+    | null;
   health: ConsultantHealthInput;
   evidence: PolicyEvidenceBundle;
   requestedAt: string;
@@ -273,6 +277,7 @@ export function createPolicyGovernanceService(
     profile: PolicyProfileRow | null;
     decision:
       | typeof CONSULTANT_ADMISSION_DECISION.ALLOW
+      | typeof CONSULTANT_ADMISSION_DECISION.DENY
       | typeof CONSULTANT_ADMISSION_DECISION.REFUSAL;
     reason: ConsultantAdmissionDecisionRow['reasonCode'];
     payloadJson?: Record<string, unknown>;
@@ -285,6 +290,7 @@ export function createPolicyGovernanceService(
         targetScope: input.admission.targetScope,
         selectedModelProfileId: input.admission.selectedModelProfileId,
         explicitAdmissionRef: input.admission.explicitAdmissionRef,
+        explicitAdmissionDecision: input.admission.explicitAdmissionDecision,
         health: input.admission.health,
         evidenceRefs: evidenceRefs(input.admission.evidence),
         decision: input.decision,
@@ -301,6 +307,7 @@ export function createPolicyGovernanceService(
       evidenceRefs: evidenceRefs(input.admission.evidence),
       payloadJson: {
         explicitAdmissionRef: input.admission.explicitAdmissionRef,
+        explicitAdmissionDecision: input.admission.explicitAdmissionDecision,
         ...input.payloadJson,
       },
       createdAt: input.admission.requestedAt,
@@ -507,12 +514,15 @@ export function createPolicyGovernanceService(
       const refuse = async (
         reason: PolicyRefusalReason,
         detail: string,
+        decisionKind:
+          | typeof CONSULTANT_ADMISSION_DECISION.DENY
+          | typeof CONSULTANT_ADMISSION_DECISION.REFUSAL = CONSULTANT_ADMISSION_DECISION.REFUSAL,
       ): Promise<ConsultantAdmissionResult> => {
         try {
           const decision = await recordConsultantDecision({
             admission: input,
             profile,
-            decision: CONSULTANT_ADMISSION_DECISION.REFUSAL,
+            decision: decisionKind,
             reason,
             payloadJson: { refusalDetail: detail },
           });
@@ -594,10 +604,18 @@ export function createPolicyGovernanceService(
           return await refuse(evidenceFailure, 'required owner evidence is missing or stale');
         }
 
-        if (!input.explicitAdmissionRef) {
+        if (!input.explicitAdmissionRef || !input.explicitAdmissionDecision) {
           return await refuse(
             POLICY_REFUSAL_REASON.MISSING_ADMISSION_DECISION,
             'explicit consultant admission evidence is missing',
+          );
+        }
+
+        if (input.explicitAdmissionDecision === CONSULTANT_ADMISSION_DECISION.DENY) {
+          return await refuse(
+            POLICY_REFUSAL_REASON.CONSULTANT_ADMISSION_DENIED,
+            'explicit consultant admission decision denied execution',
+            CONSULTANT_ADMISSION_DECISION.DENY,
           );
         }
 

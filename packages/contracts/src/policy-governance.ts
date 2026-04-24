@@ -66,6 +66,7 @@ export const POLICY_REFUSAL_REASON = Object.freeze({
   REPORTING_EVIDENCE_MISSING: 'reporting_evidence_missing',
   STALE_EVIDENCE: 'stale_evidence',
   MISSING_ADMISSION_DECISION: 'missing_admission_decision',
+  CONSULTANT_ADMISSION_DENIED: 'consultant_admission_denied',
   UNSUPPORTED_CONSULTANT_KIND: 'unsupported_consultant_kind',
   CONSULTANT_UNHEALTHY: 'consultant_unhealthy',
   EXTERNAL_CONSULTANT_DISABLED: 'external_consultant_disabled',

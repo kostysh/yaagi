@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  CONSULTANT_ADMISSION_DECISION,
   CONSULTANT_KIND,
   PERCEPTION_POLICY_OUTCOME,
   POLICY_ACTIVATION_DECISION,
@@ -211,6 +212,7 @@ const baseAdmissionInput = (requestId: string): ConsultantAdmissionInput => ({
   targetScope: 'phase6.consult',
   selectedModelProfileId: 'consultant.external@phase6',
   explicitAdmissionRef: 'policy-admission:allow:1',
+  explicitAdmissionDecision: CONSULTANT_ADMISSION_DECISION.ALLOW,
   health: {
     status: 'healthy',
     healthRef: 'consultant-health:healthy:1',
@@ -229,6 +231,7 @@ const expectConsultantRefusal = async (input: {
   setup?: (store: ReturnType<typeof createConsultantPolicyStore>['store']) => Promise<void>;
   admissionPatch: Partial<ConsultantAdmissionInput>;
   reason: string;
+  expectedDecision?: ConsultantAdmissionDecisionRow['decision'];
   failConsultantAudit?: boolean;
 }) => {
   await test(input.name, async () => {
@@ -261,6 +264,9 @@ const expectConsultantRefusal = async (input: {
     if (!result.admission.accepted) {
       assert.equal(result.admission.refusal.reason, input.reason);
     }
+    if (input.expectedDecision) {
+      assert.equal(harness.consultantDecisions[0]?.decision, input.expectedDecision);
+    }
   });
 };
 
@@ -281,6 +287,16 @@ void test('AC-F0025-13 blocks every unsupported consultant path before invocatio
     setup: (store) => activateProfile(store, externalConsultantProfile),
     admissionPatch: { explicitAdmissionRef: null },
     reason: POLICY_REFUSAL_REASON.MISSING_ADMISSION_DECISION,
+  });
+  await expectConsultantRefusal({
+    name: 'explicit-denied-admission',
+    setup: (store) => activateProfile(store, externalConsultantProfile),
+    admissionPatch: {
+      explicitAdmissionRef: 'policy-admission:deny:1',
+      explicitAdmissionDecision: CONSULTANT_ADMISSION_DECISION.DENY,
+    },
+    reason: POLICY_REFUSAL_REASON.CONSULTANT_ADMISSION_DENIED,
+    expectedDecision: CONSULTANT_ADMISSION_DECISION.DENY,
   });
   await expectConsultantRefusal({
     name: 'unsupported-consultant-kind',

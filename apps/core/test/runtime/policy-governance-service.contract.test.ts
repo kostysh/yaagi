@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  CONSULTANT_ADMISSION_DECISION,
   CONSULTANT_KIND,
   PERCEPTION_POLICY_OUTCOME,
   PHASE6_GOVERNANCE_EVENT_KIND,
@@ -346,6 +347,7 @@ void test('AC-F0025-04 admits a healthy consultant only after explicit policy ad
       targetScope: 'phase6.consult',
       selectedModelProfileId: 'consultant.external@phase6',
       explicitAdmissionRef: 'policy-admission:allow:1',
+      explicitAdmissionDecision: CONSULTANT_ADMISSION_DECISION.ALLOW,
       health: {
         status: 'healthy',
         healthRef: 'consultant-health:healthy:1',
@@ -364,6 +366,55 @@ void test('AC-F0025-04 admits a healthy consultant only after explicit policy ad
   assert.equal(result.accepted, true);
   assert.equal(result.consultantInvoked, true);
   assert.equal(result.admission.decision.decision, 'allow');
+});
+
+void test('AC-F0025-04 / AC-F0025-05 denies consultant execution after explicit policy denial', async () => {
+  const harness = createPolicyGovernanceMemoryStore();
+  const service = createPolicyGovernanceService({
+    store: harness.store,
+    now: () => '2026-04-24T12:00:00.000Z',
+    createId: () => `consultant-id:${harness.consultantDecisions.length + 1}`,
+  });
+  await activateExternalConsultantProfile(harness.store);
+  let invocationCount = 0;
+
+  const result = await service.executeExternalConsultant(
+    {
+      requestId: 'consultant:deny',
+      consultantKind: CONSULTANT_KIND.EXTERNAL_LLM,
+      targetScope: 'phase6.consult',
+      selectedModelProfileId: 'consultant.external@phase6',
+      explicitAdmissionRef: 'policy-admission:deny:1',
+      explicitAdmissionDecision: CONSULTANT_ADMISSION_DECISION.DENY,
+      health: {
+        status: 'healthy',
+        healthRef: 'consultant-health:healthy:1',
+      },
+      evidence: {
+        callerAdmissionRef: 'operator-auth:allow:1',
+        governorDecisionRef: 'governor:allow:1',
+        perimeterDecisionRef: 'perimeter:allow:1',
+        observedAt: '2026-04-24T12:00:00.000Z',
+      },
+      requestedAt: '2026-04-24T12:00:00.000Z',
+    },
+    () => {
+      invocationCount += 1;
+      return Promise.resolve({ text: 'must not run' });
+    },
+  );
+
+  assert.equal(result.accepted, false);
+  assert.equal(result.consultantInvoked, false);
+  assert.equal(invocationCount, 0);
+  assert.equal(result.admission.accepted, false);
+  if (!result.admission.accepted) {
+    assert.equal(result.admission.decision?.decision, CONSULTANT_ADMISSION_DECISION.DENY);
+    assert.equal(
+      result.admission.refusal.reason,
+      POLICY_REFUSAL_REASON.CONSULTANT_ADMISSION_DENIED,
+    );
+  }
 });
 
 void test('AC-F0025-11 records bounded phase-6 governance events for reporting consumers', async () => {
