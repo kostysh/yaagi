@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "created_at": "2026-04-24T15:15:36.234Z",
+  "audit_class": "spec-conformance-reviewer",
+  "review_mode": "external",
+  "reviewer": "external-spec-conformance-agent",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": "codex-gpt5-spec-conformance-review-20260424",
+  "reviewer_thread_id": "019dc00c-d738-7262-9d89-f0319a39bdbd",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0025-policy-profiles-consultant-admission-phase-6-governance-closure.md",
+  "feature_id": "F-0025",
+  "event_commit": "2b9e8f821b5cbf551958d271deb59135186ef79f",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "Reviewed dossier AC-F0025-01..14 and F-0025 design/implementation boundaries in docs/ssot/features/F-0025-policy-profiles-consultant-admission-phase-6-governance-closure.md at HEAD 2b9e8f821b5cbf551958d271deb59135186ef79f.",
+      "Checked policy-governance contracts, migration, DB store, runtime service, router boundary, perception controller, reporting/boundary tests: packages/contracts/src/policy-governance.ts, infra/migrations/021_policy_governance.sql, packages/db/src/policy-governance.ts, apps/core/src/runtime/policy-governance.ts, apps/core/src/runtime/model-router.ts, apps/core/src/perception/controller.ts.",
+      "Rechecked known blockers: explicit consultant DENY records DENY and does not invoke; conflicting consultant admission replay fails closed before invocation; missing observedAt with maxEvidenceAgeMs returns stale_evidence; active-scope activation uses DB advisory lock and conflict refusal without mutating existing activation history.",
+      "Command passed: node --experimental-strip-types --experimental-test-module-mocks --test --test-reporter=spec apps/core/test/runtime/policy-governance-service.contract.test.ts apps/core/test/models/consultant-admission.integration.test.ts apps/core/test/models/consultant-no-remap.contract.test.ts apps/core/test/perception/perception-policy.integration.test.ts apps/core/test/perception/perception-policy-boundary.contract.test.ts apps/core/test/runtime/policy-governance-boundary.contract.test.ts apps/core/test/runtime/phase6-governance-events.integration.test.ts apps/core/test/platform/policy-governance-config.contract.test.ts packages/contracts/test/policy-governance.contract.test.ts packages/db/test/policy-governance-store.integration.test.ts."
+    ]
+  },
+  "notes": "PASS: F-0025 implementation satisfies mandatory CF-027 implementation ACs at HEAD 2b9e8f8. Policy profiles/activations/admission/perception facts are owned by F-0025, consultant execution is fail-closed and explicitly admitted, perception policy stays on canonical stimulus_inbox references, owner boundaries are preserved, and current known blockers are remediated. No spec-conformance must-fix findings."
+}

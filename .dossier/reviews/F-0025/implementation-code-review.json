@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "created_at": "2026-04-24T15:19:46.297Z",
+  "audit_class": "code-reviewer",
+  "review_mode": "external",
+  "reviewer": "external-code-review-agent",
+  "reviewer_skill": "code-reviewer",
+  "reviewer_agent_id": "codex-external-code-review-agent-2026-04-24",
+  "reviewer_thread_id": "019dc010-0ea2-73a0-8b66-be614c59bdca",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0025-policy-profiles-consultant-admission-phase-6-governance-closure.md",
+  "feature_id": "F-0025",
+  "event_commit": "2b9e8f821b5cbf551958d271deb59135186ef79f",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "Reviewed HEAD 2b9e8f821b5cbf551958d271deb59135186ef79f and diff range 0be3f243^..HEAD.",
+      "Inspected packages/contracts/src/policy-governance.ts, infra/migrations/021_policy_governance.sql, packages/db/src/policy-governance.ts, apps/core/src/runtime/policy-governance.ts, apps/core/src/perception/controller.ts, runtime lifecycle integration, and F-0025 focused tests.",
+      "Verified explicit consultant DENY persists as deny with no invocation; conflicting consultant replay fails closed before invocation; missing observedAt with maxEvidenceAgeMs returns stale_evidence; active-scope activation uses session-level PostgreSQL advisory locking around active resolution and insert on the same pg Client.",
+      "Ran targeted policy-governance node:test files: PASS.",
+      "Ran pnpm typecheck: PASS.",
+      "Ran pnpm test: PASS, 410 tests passed.",
+      "Ran pnpm lint: PASS."
+    ]
+  },
+  "notes": "No blocking code-quality, correctness, regression, or test findings confirmed for F-0025 implementation. Review did not use forked/full-history authoring context and did not modify source files."
+}

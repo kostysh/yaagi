@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "created_at": "2026-04-24T15:24:03.633Z",
+  "audit_class": "security-reviewer",
+  "review_mode": "external",
+  "reviewer": "external-security-review-agent",
+  "reviewer_skill": "security-reviewer",
+  "reviewer_agent_id": "codex-security-review-20260424",
+  "reviewer_thread_id": "019dc013-c855-7cb2-9106-b26f1f1878d7",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0025-policy-profiles-consultant-admission-phase-6-governance-closure.md",
+  "feature_id": "F-0025",
+  "event_commit": "2b9e8f821b5cbf551958d271deb59135186ef79f",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": "policy enforcement, external consultant admission gating, DB audit/governance path, fail-closed behavior",
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "HEAD verified: git rev-parse HEAD = 2b9e8f821b5cbf551958d271deb59135186ef79f",
+      "Reviewed dossier: docs/ssot/features/F-0025-policy-profiles-consultant-admission-phase-6-governance-closure.md",
+      "Reviewed consultant admission and fail-closed service path: apps/core/src/runtime/policy-governance.ts",
+      "Reviewed DB audit/governance store and advisory-lock activation path: packages/db/src/policy-governance.ts",
+      "Reviewed policy-governance schema: infra/migrations/021_policy_governance.sql",
+      "Reviewed router no-remap boundary: apps/core/src/runtime/model-router.ts and apps/core/test/models/consultant-no-remap.contract.test.ts",
+      "Reviewed perception-policy integration: apps/core/src/perception/controller.ts and apps/core/test/perception/perception-policy.integration.test.ts",
+      "Executed focused tests: pnpm test apps/core/test/runtime/policy-governance-service.contract.test.ts apps/core/test/models/consultant-admission.integration.test.ts apps/core/test/models/consultant-no-remap.contract.test.ts apps/core/test/perception/perception-policy.integration.test.ts packages/db/test/policy-governance-store.integration.test.ts packages/contracts/test/policy-governance.contract.test.ts (30 pass, 0 fail)"
+    ]
+  },
+  "notes": "PASS: explicit consultant DENY blocks invocation, conflicting consultant admission replay fails closed before invocation, missing observedAt with maxEvidenceAgeMs fails closed as stale evidence, consultant audit persistence failures fail closed, router no-remap separation is preserved, perception policy decisions are recorded against canonical stimulus refs, and active-scope activation is serialized with PostgreSQL advisory locks around active read plus insert on the same pg Client path. No security-relevant blockers found."
+}
