@@ -18,12 +18,14 @@ backlog_followup_kind: null
 backlog_followup_resolved: true
 review_artifacts:
   - .dossier/reviews/F-0025/feature-intake-review-fail.json
-verification_artifacts: []
+  - .dossier/reviews/F-0025/feature-intake-review-pass.json
+verification_artifacts:
+  - .dossier/verification/F-0025/feature-intake-verify.json
 required_audit_classes:
   - spec-conformance-reviewer
 executed_audit_classes:
   - spec-conformance-reviewer
-required_external_review_pending: true
+required_external_review_pending: false
 review_events:
   - allowed_by_policy: true
     artifact_path: .dossier/reviews/F-0025/feature-intake-review-fail.json
@@ -41,12 +43,28 @@ review_events:
     security_trigger_reason: null
     stale: false
     verdict: FAIL
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0025/feature-intake-review-pass.json
+    audit_class: spec-conformance-reviewer
+    event_commit: 74cd8ce64d3d93f4b3a00efc934611a2b355cdf8
+    implementation_scope: null
+    invalidated: false
+    must_fix_count: 0
+    recorded_at: 2026-04-24T12:35:57.282Z
+    review_mode: external
+    reviewer: codex-gpt5-independent-reviewer
+    reviewer_agent_id: codex-gpt5-2026-04-24-f0025-review
+    reviewer_skill: spec-conformance-reviewer
+    reviewer_thread_id: 019dbf7b-cc94-7a72-8e5d-315fe467bd73
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
 reviewer_skills:
   - spec-conformance-reviewer
 reviewer_agent_ids:
-  - 019dbf6b-7272-7602-b548-7961ca2a63dd
+  - codex-gpt5-2026-04-24-f0025-review
 review_trace_commits:
-  - 2dd54dcef2a76b57151105a9fc56dd7b16d7175e
+  - 74cd8ce64d3d93f4b3a00efc934611a2b355cdf8
 degraded_review_present: false
 invalidated_review_present: false
 stale_review_present: false
@@ -64,18 +82,19 @@ session_id: 019dbf3f-4287-7722-9adb-c3ec2482111e
 trace_runtime: codex
 trace_locator_kind: session_id
 final_delivery_commit: 2dd54dcef2a76b57151105a9fc56dd7b16d7175e
-final_closure_commit: null
-step_artifact: null
+final_closure_commit: 74cd8ce64d3d93f4b3a00efc934611a2b355cdf8
+step_artifact: .dossier/steps/F-0025/feature-intake-close.json
 stage_entry_commit: null
 implementation_review_scope: null
 required_security_review: false
 security_trigger_reasons: []
-step_close_ts: null
-process_complete_ts: null
-intake_process_complete_ts: null
+step_close_ts: 2026-04-24T12:36:28.494Z
+process_complete_ts: 2026-04-24T12:36:28.494Z
+intake_process_complete_ts: 2026-04-24T12:36:28.494Z
 local_gates_green_ts: null
 first_review_agent_started_ts: 2026-04-24T12:24:11.398Z
-final_pass_ts: null
+final_pass_ts: 2026-04-24T12:35:57.282Z
+verification_trace_commit: 74cd8ce64d3d93f4b3a00efc934611a2b355cdf8
 ---
 
 ## Scope

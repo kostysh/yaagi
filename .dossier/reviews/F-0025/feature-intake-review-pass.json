@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "created_at": "2026-04-24T12:35:57.269Z",
+  "audit_class": "spec-conformance-reviewer",
+  "review_mode": "external",
+  "reviewer": "codex-gpt5-independent-reviewer",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": "codex-gpt5-2026-04-24-f0025-review",
+  "reviewer_thread_id": "019dbf7b-cc94-7a72-8e5d-315fe467bd73",
+  "step": "feature-intake",
+  "dossier": "docs/ssot/features/F-0025-policy-profiles-consultant-admission-phase-6-governance-closure.md",
+  "feature_id": "F-0025",
+  "event_commit": "74cd8ce64d3d93f4b3a00efc934611a2b355cdf8",
+  "implementation_scope": null,
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "F-0025 dossier frontmatter and stage state map the feature to exactly one backlog item, CF-027, with primary_feature_id F-0025 and primary_backlog_item_key CF-027.",
+      "CF-027 backlog state is delivery_state defined, ready_for_next_step true, no gaps, and depends_on_keys CF-004, CF-006, CF-014, CF-015, CF-016, CF-024.",
+      "The dossier now has factual Context, Goal, Non-goals, In scope, Out of scope, Constraints, assumptions and open questions for the CF-027 mature-governance boundary.",
+      "Stage log sections now record concrete scope, inputs, backlog handoff decisions, intake findings and index refresh evidence instead of contradictory none placeholders.",
+      "Dossier and stage log explicitly keep CF-025/CF-026 out of scope and do not reown F-0016/F-0018/F-0008/F-0005/F-0023/F-0024 surfaces.",
+      "Verification artifact feature-intake-verify.json records passing index-refresh, coverage-audit, debt-audit and git-diff-check; F-0025 AC and coverage warnings are proposed-intake warnings acceptable for spec-compact."
+    ]
+  },
+  "notes": "PASS: Prior FAIL findings are remediated. F-0025 is a single CF-027 intake with truthful source/dependency/readiness representation and explicit boundaries; missing AC/coverage rows remain acceptable proposed-state warnings deferred to spec-compact."
+}
