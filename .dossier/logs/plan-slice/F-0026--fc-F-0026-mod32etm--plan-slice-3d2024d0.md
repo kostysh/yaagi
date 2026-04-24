@@ -25,18 +25,41 @@ backlog_followup_resolved: false
 backlog_lifecycle_target: planned
 backlog_lifecycle_current: planned
 backlog_lifecycle_reconciled: true
-backlog_actualization_artifacts: []
-backlog_actualization_verdict: current_state_satisfies_target
-review_artifacts: []
-verification_artifacts: []
+backlog_actualization_artifacts:
+  - .dossier/backlog/patches/0478b46727c8--2026-04-24-052-f0026-plan-slice-actualization.patch.json
+backlog_actualization_verdict: actualized_by_backlog_artifact
+review_artifacts:
+  - .dossier/reviews/F-0026/plan-slice-review-pass-external.json
+verification_artifacts:
+  - .dossier/verification/F-0026/plan-slice-verify.json
 required_audit_classes:
   - spec-conformance-reviewer
-executed_audit_classes: []
-required_external_review_pending: true
-review_events: []
-reviewer_skills: []
-reviewer_agent_ids: []
-review_trace_commits: []
+executed_audit_classes:
+  - spec-conformance-reviewer
+required_external_review_pending: false
+review_events:
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0026/plan-slice-review-pass-external.json
+    audit_class: spec-conformance-reviewer
+    event_commit: 4d26040cf05847ecf3dc90078b955e23c80f968f
+    implementation_scope: null
+    invalidated: false
+    must_fix_count: 0
+    recorded_at: 2026-04-24T17:20:01.467Z
+    review_mode: external
+    reviewer: Meitner
+    reviewer_agent_id: 019dc07d-aa2a-72e1-bf03-5b14c71dbaa5
+    reviewer_skill: spec-conformance-reviewer
+    reviewer_thread_id: 019dc07d-aa2a-72e1-bf03-5b14c71dbaa5
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
+reviewer_skills:
+  - spec-conformance-reviewer
+reviewer_agent_ids:
+  - 019dc07d-aa2a-72e1-bf03-5b14c71dbaa5
+review_trace_commits:
+  - 4d26040cf05847ecf3dc90078b955e23c80f968f
 degraded_review_present: false
 invalidated_review_present: false
 stale_review_present: false
@@ -49,8 +72,19 @@ session_id: dad12ca3-6a08-4a60-bd93-827425582d16
 trace_runtime: codex
 trace_locator_kind: session_id
 final_delivery_commit: d17934223b2f812982059232d5c61a8fe57546b1
-final_closure_commit: null
-step_artifact: null
+final_closure_commit: 4d26040cf05847ecf3dc90078b955e23c80f968f
+step_artifact: .dossier/steps/F-0026/plan-slice.json
+stage_entry_commit: null
+implementation_review_scope: null
+required_security_review: false
+security_trigger_reasons: []
+step_close_ts: 2026-04-24T17:22:36.498Z
+process_complete_ts: 2026-04-24T17:22:36.498Z
+intake_process_complete_ts: null
+local_gates_green_ts: null
+first_review_agent_started_ts: 2026-04-24T17:20:01.467Z
+final_pass_ts: 2026-04-24T17:20:01.467Z
+verification_trace_commit: 4d26040cf05847ecf3dc90078b955e23c80f968f
 ---
 
 ## Scope

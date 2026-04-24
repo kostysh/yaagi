@@ -1,0 +1,248 @@
+{
+  "version": 1,
+  "generated_at": "2026-04-24T17:22:39.777Z",
+  "feature_id": "F-0026",
+  "feature_cycle_id": "fc-F-0026-mod32etm",
+  "identity": {
+    "feature_id": "F-0026",
+    "feature_cycle_id": "fc-F-0026-mod32etm",
+    "backlog_item_key": "CF-025"
+  },
+  "lifecycle": {
+    "feature_cycle_time_ms": null,
+    "intake": {
+      "cycle_ids": [
+        "intake-74e4dcb8"
+      ],
+      "log_paths": [
+        ".dossier/logs/feature-intake/F-0026--fc-F-0026-mod32etm.md"
+      ],
+      "session_ids": [
+        "019dbf3f-4287-7722-9adb-c3ec2482111e"
+      ],
+      "start_ts": "2026-04-24T15:46:37.834Z",
+      "intake_process_complete_ts": "2026-04-24T16:09:10.759Z",
+      "review_policy": {
+        "required_audit_classes": [
+          "spec-conformance-reviewer"
+        ],
+        "executed_audit_classes": [
+          "spec-conformance-reviewer"
+        ],
+        "required_external_review_pending": false,
+        "implementation_review_scope": null,
+        "required_security_review": false,
+        "degraded_review_present": false,
+        "invalidated_review_present": false,
+        "stale_review_present": false,
+        "reviewer_skills": [
+          "spec-conformance-reviewer"
+        ],
+        "reviewer_agent_ids": [
+          "019dc03c-673b-7f93-b9a7-5a795945dc9c"
+        ],
+        "review_trace_commits": [
+          "bcbd82ee434e6619f6b8ba5a65ef0d0df0137fd9"
+        ],
+        "security_trigger_reasons": []
+      }
+    },
+    "stages": {
+      "spec-compact": {
+        "cycle_ids": [
+          "spec-compact-ba4e977d"
+        ],
+        "log_paths": [
+          ".dossier/logs/spec-compact/F-0026--fc-F-0026-mod32etm--spec-compact-ba4e977d.md"
+        ],
+        "session_ids": [
+          "019dc028-2688-7791-a888-53c3018aa4d8"
+        ],
+        "start_ts": "2026-04-24T16:32:43.331Z",
+        "local_gates_green_ts": null,
+        "process_complete_ts": "2026-04-24T16:52:53.519Z",
+        "step_close_ts": "2026-04-24T16:52:53.519Z",
+        "step_artifacts": [
+          ".dossier/steps/F-0026/spec-compact.json"
+        ],
+        "first_review_agent_started_ts": "2026-04-24T16:52:38.213Z",
+        "final_pass_ts": "2026-04-24T16:52:38.213Z",
+        "review_policy": {
+          "required_audit_classes": [
+            "spec-conformance-reviewer"
+          ],
+          "executed_audit_classes": [
+            "spec-conformance-reviewer"
+          ],
+          "required_external_review_pending": false,
+          "implementation_review_scope": null,
+          "required_security_review": false,
+          "degraded_review_present": false,
+          "invalidated_review_present": false,
+          "stale_review_present": false,
+          "reviewer_skills": [
+            "spec-conformance-reviewer"
+          ],
+          "reviewer_agent_ids": [],
+          "review_trace_commits": [
+            "99cf69eefd4231ea594bc21a1d9de524c45daea5"
+          ],
+          "security_trigger_reasons": []
+        }
+      },
+      "plan-slice": {
+        "cycle_ids": [
+          "plan-slice-3d2024d0"
+        ],
+        "log_paths": [
+          ".dossier/logs/plan-slice/F-0026--fc-F-0026-mod32etm--plan-slice-3d2024d0.md"
+        ],
+        "session_ids": [
+          "dad12ca3-6a08-4a60-bd93-827425582d16"
+        ],
+        "start_ts": "2026-04-24T17:05:20.598Z",
+        "local_gates_green_ts": null,
+        "process_complete_ts": "2026-04-24T17:22:36.498Z",
+        "step_close_ts": "2026-04-24T17:22:36.498Z",
+        "step_artifacts": [
+          ".dossier/steps/F-0026/plan-slice.json"
+        ],
+        "first_review_agent_started_ts": "2026-04-24T17:20:01.467Z",
+        "final_pass_ts": "2026-04-24T17:20:01.467Z",
+        "review_policy": {
+          "required_audit_classes": [
+            "spec-conformance-reviewer"
+          ],
+          "executed_audit_classes": [
+            "spec-conformance-reviewer"
+          ],
+          "required_external_review_pending": false,
+          "implementation_review_scope": null,
+          "required_security_review": false,
+          "degraded_review_present": false,
+          "invalidated_review_present": false,
+          "stale_review_present": false,
+          "reviewer_skills": [
+            "spec-conformance-reviewer"
+          ],
+          "reviewer_agent_ids": [
+            "019dc07d-aa2a-72e1-bf03-5b14c71dbaa5"
+          ],
+          "review_trace_commits": [
+            "4d26040cf05847ecf3dc90078b955e23c80f968f"
+          ],
+          "security_trigger_reasons": []
+        }
+      },
+      "implementation": {
+        "cycle_ids": [],
+        "log_paths": [],
+        "session_ids": [],
+        "start_ts": null,
+        "local_gates_green_ts": null,
+        "process_complete_ts": null,
+        "step_close_ts": null,
+        "step_artifacts": [],
+        "first_review_agent_started_ts": null,
+        "final_pass_ts": null,
+        "review_policy": {
+          "required_audit_classes": [],
+          "executed_audit_classes": [],
+          "required_external_review_pending": null,
+          "implementation_review_scope": null,
+          "required_security_review": null,
+          "degraded_review_present": null,
+          "invalidated_review_present": null,
+          "stale_review_present": null,
+          "reviewer_skills": [],
+          "reviewer_agent_ids": [],
+          "review_trace_commits": [],
+          "security_trigger_reasons": []
+        }
+      },
+      "change-proposal": {
+        "cycle_ids": [],
+        "log_paths": [],
+        "session_ids": [],
+        "start_ts": null,
+        "local_gates_green_ts": null,
+        "process_complete_ts": null,
+        "step_close_ts": null,
+        "step_artifacts": [],
+        "first_review_agent_started_ts": null,
+        "final_pass_ts": null,
+        "review_policy": {
+          "required_audit_classes": [],
+          "executed_audit_classes": [],
+          "required_external_review_pending": null,
+          "implementation_review_scope": null,
+          "required_security_review": null,
+          "degraded_review_present": null,
+          "invalidated_review_present": null,
+          "stale_review_present": null,
+          "reviewer_skills": [],
+          "reviewer_agent_ids": [],
+          "review_trace_commits": [],
+          "security_trigger_reasons": []
+        }
+      }
+    }
+  },
+  "metrics": {
+    "phase_cycle_time_ms": {
+      "feature-intake": 1352925,
+      "spec-compact": 1210188,
+      "plan-slice": 1035900,
+      "implementation": null,
+      "change-proposal": null
+    },
+    "review_loop_time_ms": 1643254,
+    "rerounds_per_feature": 0,
+    "first_pass_close": null,
+    "closure_latency_ms": null,
+    "verification_failures_total": 0,
+    "backlog_actualization_failures_total": 0,
+    "operator_interventions_total": 0
+  },
+  "session_index_records": [
+    {
+      "version": 1,
+      "feature_cycle_id": "fc-F-0026-mod32etm",
+      "feature_id": "F-0026",
+      "backlog_item_key": "CF-025",
+      "stage": "feature-intake",
+      "session_id": "019dbf3f-4287-7722-9adb-c3ec2482111e",
+      "trace_runtime": "codex",
+      "trace_locator_kind": "session_id",
+      "stage_log_path": ".dossier/logs/feature-intake/F-0026--fc-F-0026-mod32etm.md",
+      "start_ts": "2026-04-24T15:46:37.834Z",
+      "end_ts": "2026-04-24T16:09:10.759Z"
+    },
+    {
+      "version": 1,
+      "feature_cycle_id": "fc-F-0026-mod32etm",
+      "feature_id": "F-0026",
+      "backlog_item_key": "CF-025",
+      "stage": "plan-slice",
+      "session_id": "dad12ca3-6a08-4a60-bd93-827425582d16",
+      "trace_runtime": "codex",
+      "trace_locator_kind": "session_id",
+      "stage_log_path": ".dossier/logs/plan-slice/F-0026--fc-F-0026-mod32etm--plan-slice-3d2024d0.md",
+      "start_ts": "2026-04-24T17:05:20.598Z",
+      "end_ts": "2026-04-24T17:22:36.498Z"
+    },
+    {
+      "version": 1,
+      "feature_cycle_id": "fc-F-0026-mod32etm",
+      "feature_id": "F-0026",
+      "backlog_item_key": "CF-025",
+      "stage": "spec-compact",
+      "session_id": "019dc028-2688-7791-a888-53c3018aa4d8",
+      "trace_runtime": "codex",
+      "trace_locator_kind": "session_id",
+      "stage_log_path": ".dossier/logs/spec-compact/F-0026--fc-F-0026-mod32etm--spec-compact-ba4e977d.md",
+      "start_ts": "2026-04-24T16:32:43.331Z",
+      "end_ts": "2026-04-24T16:52:53.519Z"
+    }
+  ]
+}
