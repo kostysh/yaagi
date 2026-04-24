@@ -139,6 +139,24 @@ const createPolicyGovernanceMemoryStore = (options: MemoryStoreOptions = {}) => 
       if (options.failConsultantAudit) {
         throw new Error('consultant audit unavailable');
       }
+      const existing = consultantDecisions.find(
+        (decision) => decision.requestId === input.requestId,
+      );
+      if (existing) {
+        return Promise.resolve(
+          existing.normalizedRequestHash === input.normalizedRequestHash
+            ? {
+                accepted: true,
+                deduplicated: true,
+                decision: structuredClone(existing),
+              }
+            : {
+                accepted: false,
+                reason: 'conflicting_request_id',
+                decision: structuredClone(existing),
+              },
+        );
+      }
       const decision: ConsultantAdmissionDecisionRow = {
         decisionId: input.decisionId,
         requestId: input.requestId,
@@ -414,6 +432,77 @@ void test('AC-F0025-04 / AC-F0025-05 denies consultant execution after explicit 
       result.admission.refusal.reason,
       POLICY_REFUSAL_REASON.CONSULTANT_ADMISSION_DENIED,
     );
+  }
+});
+
+void test('AC-F0025-05 / AC-F0025-13 fails closed on conflicting consultant admission replay', async () => {
+  const harness = createPolicyGovernanceMemoryStore();
+  const service = createPolicyGovernanceService({
+    store: harness.store,
+    now: () => '2026-04-24T12:00:00.000Z',
+    createId: () => `consultant-id:${harness.consultantDecisions.length + 1}`,
+  });
+  await activateExternalConsultantProfile(harness.store);
+
+  const first = await service.executeExternalConsultant(
+    {
+      requestId: 'consultant:conflicting-replay',
+      consultantKind: CONSULTANT_KIND.EXTERNAL_LLM,
+      targetScope: 'phase6.consult',
+      selectedModelProfileId: 'consultant.external@phase6',
+      explicitAdmissionRef: 'policy-admission:deny:1',
+      explicitAdmissionDecision: CONSULTANT_ADMISSION_DECISION.DENY,
+      health: {
+        status: 'healthy',
+        healthRef: 'consultant-health:healthy:1',
+      },
+      evidence: {
+        callerAdmissionRef: 'operator-auth:allow:1',
+        governorDecisionRef: 'governor:allow:1',
+        perimeterDecisionRef: 'perimeter:allow:1',
+        observedAt: '2026-04-24T12:00:00.000Z',
+      },
+      requestedAt: '2026-04-24T12:00:00.000Z',
+    },
+    () => Promise.resolve({ text: 'must not run' }),
+  );
+  let invocationCount = 0;
+
+  const replay = await service.executeExternalConsultant(
+    {
+      requestId: 'consultant:conflicting-replay',
+      consultantKind: CONSULTANT_KIND.EXTERNAL_LLM,
+      targetScope: 'phase6.consult',
+      selectedModelProfileId: 'consultant.external@phase6',
+      explicitAdmissionRef: 'policy-admission:allow:1',
+      explicitAdmissionDecision: CONSULTANT_ADMISSION_DECISION.ALLOW,
+      health: {
+        status: 'healthy',
+        healthRef: 'consultant-health:healthy:1',
+      },
+      evidence: {
+        callerAdmissionRef: 'operator-auth:allow:1',
+        governorDecisionRef: 'governor:allow:1',
+        perimeterDecisionRef: 'perimeter:allow:1',
+        observedAt: '2026-04-24T12:00:00.000Z',
+      },
+      requestedAt: '2026-04-24T12:00:00.000Z',
+    },
+    () => {
+      invocationCount += 1;
+      return Promise.resolve({ text: 'must not run' });
+    },
+  );
+
+  assert.equal(first.accepted, false);
+  assert.equal(replay.accepted, false);
+  assert.equal(replay.consultantInvoked, false);
+  assert.equal(invocationCount, 0);
+  assert.equal(harness.consultantDecisions.length, 1);
+  assert.equal(harness.consultantDecisions[0]?.decision, CONSULTANT_ADMISSION_DECISION.DENY);
+  assert.equal(replay.admission.accepted, false);
+  if (!replay.admission.accepted) {
+    assert.equal(replay.admission.refusal.reason, POLICY_REFUSAL_REASON.AUDIT_UNAVAILABLE);
   }
 });
 

@@ -313,6 +313,10 @@ export function createPolicyGovernanceService(
       createdAt: input.admission.requestedAt,
     });
 
+    if (!result.accepted) {
+      throw new Error(`conflicting consultant admission request id: ${input.admission.requestId}`);
+    }
+
     return result.decision;
   };
 
