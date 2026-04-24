@@ -1,7 +1,7 @@
 ---
 id: F-0026
 title: Deploy/release automation и rollback orchestration
-status: shaped
+status: planned
 coverage_gate: deferred
 backlog_item_key: CF-025
 owners: ["@codex"]
@@ -91,11 +91,12 @@ links:
 
 ### Open questions (optional)
 
-- What environment vocabulary is canonical for this repository: local, CI smoke cell, staging-like cell, production-like cell, or a smaller set?
-- What is the minimum release evidence bundle: commit/ref, image/artifact identity, migration state, smoke result, model-serving readiness, governor decision, lifecycle rollback target and diagnostic report refs?
-- Which rollback actions can be automated immediately, and which must stay human-gated or governor-gated?
-- Should release evidence live in existing operational stores, new deployment tables, generated artifacts, or both?
-- Does deploy/release/rollback orchestration require a repo-level ADR during `spec-compact`?
+- None after `plan-slice`.
+- Resolved by `spec-compact`: first environment vocabulary is `local` plus `release_cell`.
+- Resolved by `spec-compact`: PostgreSQL owns release decisions/state, while files may hold linked larger evidence artifacts.
+- Resolved by `spec-compact`: failed smoke-on-deploy triggers automatic rollback when a precomputed rollback plan exists and rollback evidence can be recorded.
+- Resolved by `spec-compact`: CLI and protected Operator API both delegate to one release service.
+- Resolved by `plan-slice`: repo-level ADR is still not required before implementation; one is required only if implementation changes shared startup/deployment contracts, introduces a new orchestration substrate or changes cross-feature write ownership.
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
 
@@ -206,7 +207,8 @@ PostgreSQL rows are authoritative for state and decisions. File artifacts are re
 - Operator API tests for caller admission/RBAC and parity with CLI behavior.
 - Boundary tests proving no direct writes to governor, lifecycle, reporting, model-serving or smoke-harness owner surfaces.
 - Smoke coverage proving deploy attempt plus smoke-on-deploy plus automatic rollback on smoke failure.
-- Dossier verification: `dossier-engineer dossier-verify --step spec-compact --dossier docs/ssot/features/F-0026-deploy-release-automation-rollback-orchestration.md`.
+- Dossier verification during `plan-slice`: `dossier-engineer dossier-verify --step plan-slice --dossier docs/ssot/features/F-0026-deploy-release-automation-rollback-orchestration.md`.
+- Implementation verification must include root quality gates and `pnpm smoke:cell` when runtime/startup/deployment behavior changes.
 
 ### 5.6 Representation upgrades (triggered only when needed)
 
@@ -233,68 +235,111 @@ PostgreSQL rows are authoritative for state and decisions. File artifacts are re
 
 ## 6. Slicing plan (2-6 increments)
 
+### Implementation boundary for plan-slice
+
+- First implementation creates one `release-automation` owner surface for contracts, store, service, CLI and protected API routing.
+- The owner surface may add `release_cell` vocabulary and release evidence configuration, but it must keep the existing Docker Compose deployment-cell contract as the substrate.
+- CLI and protected Operator API must use the same release service. Transport-specific code may validate input, but release facts and rollback decisions are owned by the service/store.
+- Release evidence files must be linked from PostgreSQL rows and may not become independent release state.
+- Implementation may change exact file names only if it preserves the semantic owner boundary, test coverage and single-service call path below.
+
 ### SL-F0026-01: Release state contracts and store
 
-- **Result:** contracts and PostgreSQL-backed store for release requests, deploy attempts, release evidence, rollback plans and rollback executions.
-- **Depends on:** `F-0002`, `F-0016`, `F-0019`; owner `@codex`; unblock condition: deployment identity, governor evidence refs and lifecycle rollback refs are linkable.
-- **Verification:** contract tests, DB idempotency tests, missing required evidence rejection tests, boundary tests for foreign-owner write rejection.
+- **Result:** shared release-automation contracts, PostgreSQL migration/store and writable evidence-artifact root handling for release requests, deploy attempts, release evidence, rollback plans and rollback executions.
+- **Primary files:** `packages/contracts/src/release-automation.ts`, `packages/contracts/package.json`, `packages/db/src/release-automation.ts`, `packages/db/src/index.ts`, `infra/migrations/022_release_automation.sql`, `apps/core/src/platform/release-automation.ts`, `apps/core/src/platform/core-config.ts`.
+- **Tests:** `packages/contracts/test/release-automation.contract.test.ts`, `packages/db/test/release-automation-store.integration.test.ts`, `apps/core/test/platform/release-automation-service.contract.test.ts`.
+- **Covers:** AC-F0026-01, AC-F0026-02, AC-F0026-03, AC-F0026-04, AC-F0026-05, AC-F0026-06, AC-F0026-11.
+- Depends on: delivered `F-0002` deployment identity, delivered `F-0016` governor evidence refs and delivered `F-0019` lifecycle rollback refs; owner `@codex`; unblock condition: the implementation can link those refs read-only without writing neighbouring owner tables.
+- **Unblock condition:** contract/store tests prove idempotent release requests, conflicting replay rejection, required rollback-plan/evidence preconditions and PostgreSQL-first release state before CLI or API wiring starts.
 
 ### SL-F0026-02: CLI release path and evidence bundle
 
-- **Result:** CLI/operator script path that prepares release request, verifies rollback plan, runs deploy attempt, attaches release evidence and refuses incomplete evidence.
-- **Depends on:** `SL-F0026-01`, `F-0007`, `F-0020`, `F-0023`; owner `@codex`; unblock condition: smoke command, model readiness refs and diagnostic report refs are available.
-- **Verification:** CLI command tests, missing rollback/evidence tests, release evidence bundle tests.
+- **Result:** root `pnpm` CLI/operator script path that prepares release request, verifies rollback plan, runs a deploy attempt in `local`, attaches release evidence and refuses incomplete evidence.
+- **Primary files:** `scripts/release-cell.ts`, `package.json`, `apps/core/src/platform/release-automation.ts`, `apps/core/src/platform/core-config.ts`, `.env.example`.
+- **Tests:** `test/release-cell.command.test.ts`, `apps/core/test/platform/release-evidence-bundle.contract.test.ts`, `apps/core/test/platform/release-preflight.integration.test.ts`.
+- **Covers:** AC-F0026-02, AC-F0026-04, AC-F0026-05, AC-F0026-06, AC-F0026-07, AC-F0026-11, AC-F0026-13.
+- Depends on: `SL-F0026-01`, delivered `F-0007` smoke command, delivered `F-0020` model-serving readiness and delivered `F-0023` diagnostic report refs; owner `@codex`; unblock condition: CLI can collect all required refs without hidden manual steps.
+- **Unblock condition:** CLI tests prove success, missing rollback plan, missing evidence storage, missing readiness refs and conflicting request ids before smoke/rollback automation starts.
 
 ### SL-F0026-03: Smoke-on-deploy and automatic rollback
 
 - **Result:** deploy attempt runner that executes smoke-on-deploy and automatically rolls back on smoke failure using the precomputed rollback plan.
-- **Depends on:** `SL-F0026-01`, `SL-F0026-02`; owner `@codex`; unblock condition: rollback plan can be executed and terminal evidence can be persisted.
-- **Verification:** failed-smoke auto-rollback tests, rollback-failure critical evidence tests, `pnpm smoke:cell` when runtime/deployment behavior changes.
+- **Primary files:** `apps/core/src/platform/release-automation.ts`, `packages/db/src/release-automation.ts`, `infra/docker/deployment-cell.smoke.ts`, `infra/docker/helpers.ts`.
+- **Tests:** `apps/core/test/platform/release-smoke-rollback.integration.test.ts`, `apps/core/test/platform/release-rollback-failure.contract.test.ts`, `infra/docker/test/release-cell-smoke.test.ts`.
+- **Covers:** AC-F0026-04, AC-F0026-09, AC-F0026-10, AC-F0026-11, AC-F0026-17.
+- Depends on: `SL-F0026-01`, `SL-F0026-02` and executable rollback/evidence persistence; owner `@codex`; unblock condition: rollback plan can be executed and terminal evidence can be persisted even on failed smoke.
+- **Unblock condition:** failed-smoke tests prove automatic rollback, rollback-failure critical evidence and no deploy activation after failed or unavailable smoke.
 
 ### SL-F0026-04: Protected Operator API
 
-- **Result:** protected Operator API endpoints for release request, deploy attempt inspection/action and rollback inspection/action, all delegating to the same service as CLI.
-- **Depends on:** `SL-F0026-01`, `SL-F0026-02`, `F-0024`; owner `@codex`; unblock condition: caller admission and release/operator role checks are enforceable.
-- **Verification:** API auth/RBAC tests, CLI/API parity tests, unauthorized/unauthenticated failure tests.
+- **Result:** protected Operator API endpoints for release request, deploy attempt inspection/action and rollback inspection/action, all delegating to the same release service as CLI.
+- **Primary files:** `packages/contracts/src/operator-api.ts`, `packages/contracts/src/operator-auth.ts`, `apps/core/src/platform/operator-api.ts`, `apps/core/src/platform/core-runtime.ts`, `apps/core/src/platform/release-automation.ts`.
+- **Tests:** `packages/contracts/test/operator-api.contract.test.ts`, `packages/contracts/test/operator-auth.contract.test.ts`, `apps/core/test/platform/operator-release-automation.integration.test.ts`, `apps/core/test/platform/operator-auth-rbac.integration.test.ts`.
+- **Covers:** AC-F0026-07, AC-F0026-08, AC-F0026-11, AC-F0026-13.
+- Depends on: `SL-F0026-01`, `SL-F0026-02` and delivered `F-0024`; owner `@codex`; unblock condition: caller admission and release/operator route permissions are enforceable before release service invocation.
+- **Unblock condition:** API tests prove unauthenticated, unauthorized and missing-downstream-owner paths fail closed, while admitted API and CLI requests produce equivalent release facts.
 
 ### SL-F0026-05: Release readiness audit and final closure
 
-- **Result:** full owner-boundary audit, report/evidence linkage audit, backlog actualization and final quality/smoke proof.
-- **Depends on:** `SL-F0026-01` through `SL-F0026-04`; owner `@codex`; unblock condition: release evidence can be traced across release, governor, lifecycle, reporting and smoke surfaces.
-- **Verification:** usage audit, boundary audit, root quality gates, `pnpm test`, `pnpm smoke:cell`.
+- **Result:** owner-boundary hardening, report/evidence linkage audit, docs/config updates, backlog actualization and final quality/smoke proof.
+- **Primary files:** `apps/core/src/platform/release-automation.ts`, `apps/core/src/runtime/reporting.ts`, `packages/contracts/src/reporting.ts`, `README.md`, `.env.example`, `docs/ssot/features/F-0026-deploy-release-automation-rollback-orchestration.md`.
+- **Tests:** `apps/core/test/platform/release-owner-boundary.contract.test.ts`, `apps/core/test/runtime/reporting-service.integration.test.ts`, `apps/core/test/platform/release-automation-usage-audit.integration.test.ts`.
+- **Covers:** AC-F0026-01, AC-F0026-12, AC-F0026-14, AC-F0026-15, AC-F0026-16, AC-F0026-17.
+- Depends on: `SL-F0026-01` through `SL-F0026-04`; owner `@codex`; unblock condition: release evidence can be traced across release, governor, lifecycle, reporting and smoke surfaces without foreign owner writes.
+- **Unblock condition:** root quality gates and `pnpm smoke:cell` pass, or a truthful blocker is recorded before implementation closure.
+
+### Plan-slice commitments
+
+- **PL-F0026-01:** `SL-F0026-01` lands first so release state, idempotency, rollback-plan preconditions and evidence storage are explicit before any transport or smoke runner exists.
+- **PL-F0026-02:** `SL-F0026-02` lands before Operator API because CLI provides the first low-surface release path and proves the service contract without widening public control routes.
+- **PL-F0026-03:** `SL-F0026-03` lands before protected API because automatic rollback semantics must be service-owned and tested before human/operator routes can trigger or inspect deploy attempts.
+- **PL-F0026-04:** `SL-F0026-04` must stay inside the existing `F-0013` Hono namespace and `F-0024` caller admission/RBAC; no second gateway or public unauthenticated route may appear.
+- **PL-F0026-05:** `SL-F0026-05` is last because boundary scans, report projection checks, docs and final smoke are only truthful after all release facts and control paths exist.
+
+### Planned implementation order
+
+1. Add release-automation contracts, migration, store, config and evidence root handling.
+2. Add the release service and root CLI path for local release preparation/deploy/evidence/rollback.
+3. Add smoke-on-deploy execution and automatic rollback on failed smoke.
+4. Add protected Operator API routes over the same release service.
+5. Add owner-boundary/reporting audits, docs, final coverage refs, root quality gates and `pnpm smoke:cell`.
 
 ## 7. Task list (implementation units)
 
-- **T-F0026-01:** Add release/rollback contracts plus test schema validation. Covers: AC-F0026-01, AC-F0026-02, AC-F0026-05.
-- **T-F0026-02:** Add PostgreSQL migration/store for release requests, deploy attempts, release evidence, rollback plans, rollback executions. Covers: AC-F0026-01, AC-F0026-03, AC-F0026-06.
-- **T-F0026-03:** Add release service that enforces rollback-plan plus evidence-storage preconditions. Covers: AC-F0026-04, AC-F0026-11.
-- **T-F0026-04:** Add CLI path for prepare/deploy/evidence/rollback. Covers: AC-F0026-07, AC-F0026-13.
-- **T-F0026-05:** Wire smoke-on-deploy plus automatic rollback on smoke failure. Covers: AC-F0026-09, AC-F0026-10, AC-F0026-17.
-- **T-F0026-06:** Add protected Operator API routes delegating to the release service. Covers: AC-F0026-07, AC-F0026-08.
-- **T-F0026-07:** Add owner-boundary plus evidence-linkage audit. Covers: AC-F0026-12, AC-F0026-14, AC-F0026-15, AC-F0026-16.
-- **T-F0026-08:** Run final quality, smoke, dossier closure. Covers: AC-F0026-01 through AC-F0026-17.
+- **T-F0026-01** (`SL-F0026-01`): Add `release-automation` contract types and schemas for release request, deploy attempt, evidence bundle, rollback plan and rollback execution. Covers: AC-F0026-01, AC-F0026-02, AC-F0026-05.
+- **T-F0026-02** (`SL-F0026-01`): Add package export for `@yaagi/contracts/release-automation` and contract tests for environment/source/status/ref vocabulary. Covers: AC-F0026-01, AC-F0026-02.
+- **T-F0026-03** (`SL-F0026-01`): Add PostgreSQL migration/store for release requests, deploy attempts, release evidence, rollback plans and rollback executions. Covers: AC-F0026-01, AC-F0026-03, AC-F0026-06.
+- **T-F0026-04** (`SL-F0026-01`): Add release service preflight that rejects missing rollback plan, missing evidence storage, missing governor evidence, missing lifecycle target, missing model readiness and missing smoke harness. Covers: AC-F0026-04, AC-F0026-11.
+- **T-F0026-05** (`SL-F0026-02`): Add root `pnpm` CLI/operator script for prepare, deploy, evidence and rollback actions over the release service. Covers: AC-F0026-07, AC-F0026-13.
+- **T-F0026-06** (`SL-F0026-02`): Add release evidence bundle materialization and file-artifact linking with PostgreSQL as the authoritative decision/state source. Covers: AC-F0026-05, AC-F0026-06.
+- **T-F0026-07** (`SL-F0026-03`): Wire smoke-on-deploy execution into deploy attempts and block activation on failed or unavailable smoke. Covers: AC-F0026-09, AC-F0026-11, AC-F0026-17.
+- **T-F0026-08** (`SL-F0026-03`): Add automatic rollback using the precomputed rollback plan and record rollback execution or critical rollback-failure evidence. Covers: AC-F0026-09, AC-F0026-10.
+- **T-F0026-09** (`SL-F0026-04`): Add protected Operator API contracts/routes for release request, deploy attempt inspection/action and rollback inspection/action. Covers: AC-F0026-07, AC-F0026-08.
+- **T-F0026-10** (`SL-F0026-04`): Add `F-0024` caller admission/RBAC classification and negative API tests for unauthenticated, unauthorized and unavailable owner paths. Covers: AC-F0026-08, AC-F0026-13.
+- **T-F0026-11** (`SL-F0026-05`): Add owner-boundary and evidence-linkage audits proving no direct writes to governor, lifecycle, reporting, model-serving or smoke-harness owner surfaces. Covers: AC-F0026-12, AC-F0026-14, AC-F0026-15, AC-F0026-16.
+- **T-F0026-12** (`SL-F0026-05`): Update docs/config/coverage map and run root quality gates plus `pnpm test` and `pnpm smoke:cell` before implementation closure. Covers: AC-F0026-01 through AC-F0026-17.
 
 ## 8. Test plan & Coverage map
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0026-01 | contracts + DB store ownership tests; owner-boundary audit | planned |
-| AC-F0026-02 | release request contract tests; CLI/API request tests | planned |
-| AC-F0026-03 | DB idempotency plus conflicting replay tests | planned |
-| AC-F0026-04 | release service preflight tests | planned |
-| AC-F0026-05 | release evidence bundle tests | planned |
-| AC-F0026-06 | DB/file artifact reference integration tests | planned |
-| AC-F0026-07 | CLI/API parity tests | planned |
-| AC-F0026-08 | Operator API auth/RBAC tests | planned |
-| AC-F0026-09 | failed-smoke auto-rollback tests | planned |
-| AC-F0026-10 | rollback execution evidence tests | planned |
-| AC-F0026-11 | missing evidence/readiness rejection tests | planned |
-| AC-F0026-12 | no-second-runtime/compose drift tests | planned |
-| AC-F0026-13 | placeholder/manual evidence rejection tests | planned |
-| AC-F0026-14 | governor read-only boundary tests | planned |
-| AC-F0026-15 | lifecycle read-only boundary tests | planned |
-| AC-F0026-16 | reporting read-only boundary tests | planned |
-| AC-F0026-17 | root quality gates plus `pnpm smoke:cell` evidence | planned |
+| AC-F0026-01 | `packages/contracts/test/release-automation.contract.test.ts`; `packages/db/test/release-automation-store.integration.test.ts`; `apps/core/test/platform/release-owner-boundary.contract.test.ts` | planned |
+| AC-F0026-02 | `packages/contracts/test/release-automation.contract.test.ts`; `test/release-cell.command.test.ts`; `apps/core/test/platform/operator-release-automation.integration.test.ts` | planned |
+| AC-F0026-03 | `packages/db/test/release-automation-store.integration.test.ts`; `apps/core/test/platform/release-automation-service.contract.test.ts` | planned |
+| AC-F0026-04 | `apps/core/test/platform/release-preflight.integration.test.ts`; `apps/core/test/platform/release-automation-service.contract.test.ts` | planned |
+| AC-F0026-05 | `apps/core/test/platform/release-evidence-bundle.contract.test.ts`; `packages/db/test/release-automation-store.integration.test.ts` | planned |
+| AC-F0026-06 | `packages/db/test/release-automation-store.integration.test.ts`; `apps/core/test/platform/release-evidence-bundle.contract.test.ts` | planned |
+| AC-F0026-07 | `test/release-cell.command.test.ts`; `apps/core/test/platform/operator-release-automation.integration.test.ts` | planned |
+| AC-F0026-08 | `apps/core/test/platform/operator-release-automation.integration.test.ts`; `apps/core/test/platform/operator-auth-rbac.integration.test.ts`; `packages/contracts/test/operator-auth.contract.test.ts` | planned |
+| AC-F0026-09 | `apps/core/test/platform/release-smoke-rollback.integration.test.ts`; `infra/docker/test/release-cell-smoke.test.ts` | planned |
+| AC-F0026-10 | `apps/core/test/platform/release-smoke-rollback.integration.test.ts`; `apps/core/test/platform/release-rollback-failure.contract.test.ts` | planned |
+| AC-F0026-11 | `apps/core/test/platform/release-preflight.integration.test.ts`; `apps/core/test/platform/release-automation-service.contract.test.ts` | planned |
+| AC-F0026-12 | `apps/core/test/platform/release-owner-boundary.contract.test.ts`; `infra/docker/test/compose-config.test.ts` | planned |
+| AC-F0026-13 | `test/release-cell.command.test.ts`; `apps/core/test/platform/operator-release-automation.integration.test.ts`; `apps/core/test/platform/release-evidence-bundle.contract.test.ts` | planned |
+| AC-F0026-14 | `apps/core/test/platform/release-owner-boundary.contract.test.ts`; `apps/core/test/platform/release-preflight.integration.test.ts` | planned |
+| AC-F0026-15 | `apps/core/test/platform/release-owner-boundary.contract.test.ts`; `apps/core/test/platform/release-smoke-rollback.integration.test.ts` | planned |
+| AC-F0026-16 | `apps/core/test/platform/release-owner-boundary.contract.test.ts`; `apps/core/test/runtime/reporting-service.integration.test.ts` | planned |
+| AC-F0026-17 | root `pnpm format`, `pnpm typecheck`, `pnpm lint`, `pnpm test`; `pnpm smoke:cell`; `infra/docker/test/release-cell-smoke.test.ts` | planned |
 
 ## 9. Decision log (ADR blocks)
 
@@ -303,6 +348,18 @@ PostgreSQL rows are authoritative for state and decisions. File artifacts are re
 - Decision: Plan mode was required and used before this `spec-compact`.
 - Rationale: `CF-025` had several user-visible policy choices that affected environment vocabulary, evidence storage, rollback authority and release control surface. The operator selected `local + release cell`, `PostgreSQL + files`, automatic rollback on failed smoke, `CLI + API`, and feature-local ADR scope.
 - ADR impact: feature-local decision; repo-level ADR remains deferred unless implementation changes shared deployment/startup contracts.
+
+### 2026-04-24: Plan-slice Plan mode assessment
+
+- Decision: Plan mode was not required before this `plan-slice`.
+- Rationale: `spec-compact` already fixed the user-visible policy choices and owner boundary. The remaining work is implementation sequencing over one accepted release-automation surface, with no new repo-level ADR, no competing deployment topology and no open backlog attention.
+- ADR impact: feature-local planning decision; normal dossier artifacts and independent review remain required.
+
+### 2026-04-24: Release owner module
+
+- Decision: first implementation plans one `release-automation` owner module across contracts, DB store, platform service, CLI and protected Operator API.
+- Rationale: a single owner module keeps CLI/API parity testable and prevents release facts from splitting between scripts, API handlers and smoke harness code.
+- ADR impact: feature-local decision; repo-level ADR still required if implementation introduces a second orchestration substrate or changes shared deployment-cell startup behavior.
 
 ### 2026-04-24: Environment vocabulary
 
@@ -332,6 +389,7 @@ PostgreSQL rows are authoritative for state and decisions. File artifacts are re
 
 - Backlog item key: CF-025
 - Status progression: `proposed -> shaped -> planned -> in_progress -> done`
+- Current stage: `implementation`
 - Issue:
 - PRs:
 
@@ -340,3 +398,4 @@ PostgreSQL rows are authoritative for state and decisions. File artifacts are re
 - 2026-04-24: Initial dossier created from backlog item `CF-025` at backlog delivery state `defined`.
 - 2026-04-24: [spec-compact] Expanded `CF-025` into a shaped deploy/release/rollback spec with `local` + `release_cell` environments, PostgreSQL plus file evidence, automatic rollback on failed smoke-on-deploy, and CLI plus protected Operator API control surfaces.
 - 2026-04-24: [verification realignment] Deferred coverage gate for `spec-compact`; strict executable AC coverage is expected during implementation once tests can reference `AC-F0026-*`.
+- 2026-04-24: [plan-slice] [dependency realignment] Planned implementation slices across release contracts/store, CLI evidence path, smoke-on-deploy plus automatic rollback, protected Operator API and owner-boundary/reporting closure, with backlog lifecycle target `planned`.
