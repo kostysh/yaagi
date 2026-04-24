@@ -1,7 +1,7 @@
 ---
 id: F-0025
 title: Policy profiles, consultant admission и phase-6 governance closure
-status: shaped
+status: planned
 coverage_gate: deferred
 backlog_item_key: CF-027
 owners: ["@codex"]
@@ -191,51 +191,130 @@ links:
 - Enforcement activation should require `F-0024` caller admission, `F-0016` governor evidence and `F-0018` perimeter evidence before any high-risk policy profile can become active.
 - Rollback is profile deactivation to the previous active policy version; rollback must not delete decision history.
 
-## 6. Slicing plan (2–6 increments)
+## 6. Slicing plan (2-6 increments)
 
-- **SL-F0025-01: Policy profile store and activation contract**
-  - Depends on: delivered `F-0016`, `F-0018`, `F-0024`; owner `@codex`; unblock condition: append-only profile activation can fail closed without changing neighbouring owners.
-  - Result: versioned profiles, activation decisions, exclusivity checks and structured ambiguity refusal.
-- **SL-F0025-02: Consultant admission and structured refusal**
-  - Depends on: `SL-F0025-01`, delivered `F-0008`; owner `@codex`; unblock condition: consultant path cannot execute without policy admission and audit persistence.
-  - Result: explicit allow/deny/refusal decisions, health/evidence refs and no silent remap/fallback coverage.
-- **SL-F0025-03: Perception policy enforcement**
-  - Depends on: `SL-F0025-01`, delivered `F-0005`; owner `@codex`; unblock condition: policy decisions reference canonical `StimulusEnvelope` / `stimulus_inbox`.
-  - Result: accepted/degraded/refused/human-gated perception-policy decisions without a second intake layer.
-- **SL-F0025-04: Owner-boundary and evidence composition**
-  - Depends on: delivered `F-0016`, `F-0018`, `F-0023`, `F-0024`; owner `@codex`; unblock condition: read-only evidence consumption and reportable governance decision facts are stable.
-  - Result: boundary tests, bounded phase-6 governance events and observability consumption contracts.
-- **SL-F0025-05: Activation hardening and rollback**
-  - Depends on: all prior slices; owner `@codex`; unblock condition: activation/deactivation is auditable and rollback preserves history.
-  - Result: conservative activation path, rollback semantics and end-to-end negative coverage.
+### Execution target
+
+The implementation agent must deliver one complete phase-6 governance policy seam inside the existing `apps/core` runtime. A successful implementation means policy profiles and activations are durable, consultant execution cannot happen without explicit admission, perception-policy decisions are recorded against canonical intake references, and neighbouring owners are consumed only through read-only evidence or bounded service contracts.
+
+### Completion recognition
+
+Implementation is complete when:
+
+- `F-0025` owns new policy-governance contracts, PostgreSQL tables/stores and runtime service APIs for policy profiles, activations, consultant admission, perception-policy decisions and phase-6 governance events;
+- a conservative baseline policy profile exists with external consultant execution disabled by default;
+- policy activation is append-only, exclusive per governed scope and refuses ambiguous or unavailable evidence before changing active posture;
+- consultant-admission checks run before any consultant client invocation and produce structured refusal on missing profile, missing admission, unsupported consultant kind, unhealthy consultant path, stale evidence or unavailable audit persistence;
+- perception-policy enforcement records accepted/degraded/refused/human-gated decisions against canonical `StimulusEnvelope` / `stimulus_inbox` references without creating a shadow durable intake layer;
+- read-only evidence from `F-0024`, `F-0016`, `F-0018`, `F-0023`, `F-0008` and `F-0005` is composed without direct writes to neighbouring owner surfaces;
+- no new boot-critical service, gateway, container, model-serving dependency, release path or support/runbook owner is introduced;
+- root `pnpm format`, `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm smoke:cell` are green before implementation closure because this feature changes runtime decision behavior and persistence.
+
+### Implementation boundaries
+
+- Do not put policy profiles into `model_registry` or make `F-0008` router selection own policy activation.
+- Do not add a second gateway, public consultant endpoint or HTTP namespace outside the existing `F-0013` operator boundary.
+- Do not add operator-facing activation routes unless they are protected by `F-0024` caller admission and delegate high-risk activation checks through `F-0016`.
+- Do not make external consultant configuration boot-critical; unavailable consultants must degrade to structured refusal.
+- Do not persist raw consultant prompts, credentials, bearer tokens or reusable external endpoint secrets in governance events.
+- Do not write `stimulus_inbox` replacement tables, shadow perception buffers or adapter-specific durable raw-event stores.
+- Do not write governor, perimeter, auth/RBAC, router, perception-source, reporting, deployment/release or support/incident source tables directly from `F-0025` code.
+- Do not let policy-profile activation imply router admission, governor approval, perimeter clearance or operator authorization by itself.
+
+### SL-F0025-01: Contracts, migration and policy-profile store
+
+- **Result:** shared policy-governance contracts, migration-owned tables, DB store and conservative baseline profile seed for profiles, activations, consultant admission decisions, perception-policy decisions and phase-6 governance events.
+- **Primary files:** `packages/contracts/src/policy-governance.ts`, `packages/contracts/src/index.ts`, `packages/db/src/policy-governance.ts`, `packages/db/src/index.ts`, `infra/migrations/021_policy_governance.sql`.
+- **Tests:** `packages/contracts/test/policy-governance.contract.test.ts`, `packages/db/test/policy-governance-store.integration.test.ts`.
+- **Covers:** AC-F0025-01, AC-F0025-02, AC-F0025-03, AC-F0025-11, AC-F0025-12.
+- Depends on: delivered `F-0016`, `F-0018`, `F-0024` evidence vocabulary and existing PostgreSQL migration path; owner `@codex`; unblock condition: policy tables can be added without mutating neighbouring owner tables.
+- **Unblock condition:** contract/store tests prove status vocabulary, versioning, append-only activation and exclusive active scope behavior before runtime service wiring starts.
+
+### SL-F0025-02: Runtime policy activation and evidence gate service
+
+- **Result:** `PolicyGovernanceService` that resolves active profiles, records activation/deactivation decisions, enforces evidence requirements, refuses ambiguity/unavailable audit storage and exposes bounded read APIs for later consultant/perception slices.
+- **Primary files:** `apps/core/src/runtime/policy-governance.ts`, `apps/core/src/platform/core-runtime.ts`, `apps/core/src/platform/core-config.ts`, `packages/contracts/src/policy-governance.ts`.
+- **Tests:** `apps/core/test/runtime/policy-governance-service.contract.test.ts`, `apps/core/test/platform/policy-governance-config.contract.test.ts`.
+- **Covers:** AC-F0025-02, AC-F0025-03, AC-F0025-09, AC-F0025-10, AC-F0025-12.
+- Depends on: `SL-F0025-01`, `F-0024` caller evidence, `F-0016` governor evidence and `F-0018` perimeter evidence; owner `@codex`; unblock condition: profile activation can be evaluated from read-only evidence without new public routes.
+- **Unblock condition:** missing profile, duplicate active profile, missing evidence, stale evidence and unavailable audit persistence all fail closed before changing active policy state.
+
+### SL-F0025-03: Consultant admission and router-boundary no-remap guarantees
+
+- **Result:** consultant-admission service and router-boundary adapter that require explicit allow/deny/refusal before any optional consultant client call, while preserving `F-0008` selection/admission separation and forbidding silent local/remapped fallback.
+- **Primary files:** `apps/core/src/runtime/policy-governance.ts`, `apps/core/src/runtime/model-router.ts`, `packages/contracts/src/models.ts`, `packages/contracts/src/policy-governance.ts`.
+- **Tests:** `apps/core/test/models/consultant-admission.integration.test.ts`, `apps/core/test/models/consultant-no-remap.contract.test.ts`, `apps/core/test/models/model-router.contract.test.ts`.
+- **Covers:** AC-F0025-04, AC-F0025-05, AC-F0025-06, AC-F0025-07, AC-F0025-13.
+- Depends on: `SL-F0025-02` and delivered `F-0008`; owner `@codex`; unblock condition: router can ask policy governance for admission without becoming the writer of policy decisions.
+- **Unblock condition:** tests prove no consultant client is invoked when profile, admission, consultant kind, health, evidence or audit storage is missing/unavailable.
+
+### SL-F0025-04: Perception-policy enforcement over canonical intake
+
+- **Result:** perception-policy decision flow that classifies canonical `StimulusEnvelope` / `stimulus_inbox` references as accepted, degraded, refused or human-gated, while preserving `F-0005` intake ownership and avoiding a second durable raw-event layer.
+- **Primary files:** `apps/core/src/perception/controller.ts`, `apps/core/src/perception/index.ts`, `packages/contracts/src/perception.ts`, `packages/contracts/src/policy-governance.ts`, `packages/db/src/policy-governance.ts`.
+- **Tests:** `apps/core/test/perception/perception-policy.integration.test.ts`, `apps/core/test/perception/perception-policy-boundary.contract.test.ts`, `packages/db/test/perception-store.integration.test.ts`.
+- **Covers:** AC-F0025-08, AC-F0025-11, AC-F0025-14.
+- Depends on: `SL-F0025-02` and delivered `F-0005`; owner `@codex`; unblock condition: policy decisions can reference existing intake identifiers without writing a replacement intake surface.
+- **Unblock condition:** unsupported source/policy and human-gated/degraded decisions are auditable, and `stimulus_inbox` remains the canonical durable intake source.
+
+### SL-F0025-05: Owner-boundary hardening, reporting projection and activation closure
+
+- **Result:** boundary/static tests, bounded phase-6 governance event projections for `F-0023` consumers, conservative activation/deactivation rollback checks, docs/config updates and final smoke evidence.
+- **Primary files:** `apps/core/src/runtime/policy-governance.ts`, `apps/core/src/runtime/reporting.ts`, `packages/contracts/src/reporting.ts`, `README.md`, `docs/ssot/features/F-0025-policy-profiles-consultant-admission-phase-6-governance-closure.md`.
+- **Tests:** `apps/core/test/runtime/policy-governance-boundary.contract.test.ts`, `apps/core/test/runtime/phase6-governance-events.integration.test.ts`, `apps/core/test/runtime/reporting-service.integration.test.ts`.
+- **Covers:** AC-F0025-09, AC-F0025-10, AC-F0025-11, AC-F0025-12, AC-F0025-14.
+- Depends on: all prior slices plus delivered `F-0023`; owner `@codex`; unblock condition: source facts exist and can be consumed by reporting without giving reporting write authority.
+- **Unblock condition:** root quality gates and `pnpm smoke:cell` pass, or a truthful blocker is recorded before implementation closure.
+
+### Plan-slice commitments
+
+- **PL-F0025-01:** `SL-F0025-01` lands first so policy/admission/refusal vocabulary is shared and persistence is explicit before runtime code starts.
+- **PL-F0025-02:** `SL-F0025-02` lands before consultant or perception wiring because both depend on active profile resolution, evidence checks and durable decision audit.
+- **PL-F0025-03:** `SL-F0025-03` is isolated from perception work because it composes with `F-0008` and must prove router selection does not become policy admission.
+- **PL-F0025-04:** `SL-F0025-04` is isolated because it touches `F-0005` intake boundaries and must prove no second durable intake layer appears.
+- **PL-F0025-05:** `SL-F0025-05` is last because reporting projection, boundary scans, docs, rollback evidence and smoke are only truthful after all decision surfaces exist.
+
+### Planned implementation order
+
+1. Add policy-governance contracts, migration, DB store and conservative baseline profile seed.
+2. Add runtime policy-governance service with activation/evidence/refusal semantics.
+3. Add consultant-admission checks at the router boundary and no-remap/no-call negative coverage.
+4. Add perception-policy classification over canonical intake references.
+5. Add boundary/reporting projection checks, docs, final coverage references and smoke evidence.
 
 ## 7. Task list (implementation units)
 
-- **T-F0025-01** (`SL-F0025-01`): Define policy-profile domain types, persistence and activation exclusivity checks. Covers: AC-F0025-01, AC-F0025-02, AC-F0025-03.
-- **T-F0025-02** (`SL-F0025-02`): Implement consultant admission service with explicit allow/deny/refusal and audit persistence. Covers: AC-F0025-04, AC-F0025-05, AC-F0025-13.
-- **T-F0025-03** (`SL-F0025-02`): Wire admission to router boundary without changing router ownership. Covers: AC-F0025-06, AC-F0025-07.
-- **T-F0025-04** (`SL-F0025-03`): Implement perception-policy decisions over canonical `StimulusEnvelope` / `stimulus_inbox` refs. Covers: AC-F0025-08.
-- **T-F0025-05** (`SL-F0025-04`): Compose read-only evidence from `F-0024`, `F-0016`, `F-0018`, `F-0023`, `F-0008` and `F-0005`. Covers: AC-F0025-09, AC-F0025-10, AC-F0025-11, AC-F0025-14.
-- **T-F0025-06** (`SL-F0025-05`): Add conservative rollout/rollback controls and no-new-dependency checks. Covers: AC-F0025-12.
+- **T-F0025-01** (`SL-F0025-01`): Add `policy-governance` contract types for profile status, governed scope, activation decision, refusal reason, consultant admission, perception-policy decision and governance event payloads. Covers: AC-F0025-01, AC-F0025-02, AC-F0025-05, AC-F0025-08.
+- **T-F0025-02** (`SL-F0025-01`): Add migration/store for policy profiles, activations, consultant admission decisions, perception-policy decisions and phase-6 governance events. Covers: AC-F0025-01, AC-F0025-02, AC-F0025-03, AC-F0025-11.
+- **T-F0025-03** (`SL-F0025-01`): Seed or bootstrap one conservative baseline policy profile with consultant execution disabled and explicit governed scopes. Covers: AC-F0025-02, AC-F0025-12.
+- **T-F0025-04** (`SL-F0025-02`): Implement runtime profile resolution, activation/deactivation, exclusive-scope checks and structured refusal for ambiguity/unavailable audit storage. Covers: AC-F0025-03, AC-F0025-09, AC-F0025-10.
+- **T-F0025-05** (`SL-F0025-02`): Add read-only evidence adapters for `F-0024`, `F-0016`, `F-0018` and `F-0023` without direct neighbouring writes. Covers: AC-F0025-09, AC-F0025-10, AC-F0025-11, AC-F0025-14.
+- **T-F0025-06** (`SL-F0025-03`): Implement consultant-admission service with explicit allow/deny/refusal, health/evidence refs and audit persistence. Covers: AC-F0025-04, AC-F0025-05, AC-F0025-13.
+- **T-F0025-07** (`SL-F0025-03`): Wire consultant admission at the router boundary while preserving router selection/admission separation. Covers: AC-F0025-06, AC-F0025-07.
+- **T-F0025-08** (`SL-F0025-04`): Implement perception-policy decisions over canonical `StimulusEnvelope` / `stimulus_inbox` refs. Covers: AC-F0025-08, AC-F0025-14.
+- **T-F0025-09** (`SL-F0025-04`): Add refusal/degraded/human-gated perception-policy tests that prove no shadow intake store is introduced. Covers: AC-F0025-08, AC-F0025-11.
+- **T-F0025-10** (`SL-F0025-05`): Add governance event projection and reporting consumption contracts without reporting write authority. Covers: AC-F0025-11, AC-F0025-14.
+- **T-F0025-11** (`SL-F0025-05`): Add boundary/static checks for no writes to governor, perimeter, auth, router, perception source, reporting, deployment or support owner surfaces. Covers: AC-F0025-09, AC-F0025-10, AC-F0025-12, AC-F0025-14.
+- **T-F0025-12** (`SL-F0025-05`): Update docs/coverage map and run root gates plus `pnpm smoke:cell` before implementation closure. Covers: AC-F0025-12, AC-F0025-13, AC-F0025-14.
 
 ## 8. Test plan & Coverage map
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0025-01 | Policy profile ownership/domain contract tests | planned |
-| AC-F0025-02 | Policy profile version/status tests | planned |
-| AC-F0025-03 | Policy activation append-only/exclusivity tests | planned |
-| AC-F0025-04 | Consultant admission pre-invocation contract tests | planned |
-| AC-F0025-05 | Consultant refusal/no-call negative tests | planned |
-| AC-F0025-06 | Router selection/admission separation integration tests | planned |
-| AC-F0025-07 | No silent remap/fallback contract tests | planned |
-| AC-F0025-08 | Perception policy canonical intake integration tests | planned |
-| AC-F0025-09 | Human-gate evidence composition tests | planned |
-| AC-F0025-10 | Perimeter evidence read-only boundary tests | planned |
-| AC-F0025-11 | Governance event/report consumption tests | planned |
-| AC-F0025-12 | No new boot/deploy dependency tests or static checks | planned |
-| AC-F0025-13 | Consultant failure-mode negative coverage | planned |
-| AC-F0025-14 | Owner-boundary integration/static tests | planned |
+| AC-F0025-01 | `packages/contracts/test/policy-governance.contract.test.ts`; `packages/db/test/policy-governance-store.integration.test.ts` | planned |
+| AC-F0025-02 | `packages/contracts/test/policy-governance.contract.test.ts`; `apps/core/test/runtime/policy-governance-service.contract.test.ts` | planned |
+| AC-F0025-03 | `packages/db/test/policy-governance-store.integration.test.ts`; `apps/core/test/runtime/policy-governance-service.contract.test.ts` | planned |
+| AC-F0025-04 | `apps/core/test/models/consultant-admission.integration.test.ts` | planned |
+| AC-F0025-05 | `apps/core/test/models/consultant-admission.integration.test.ts`; `apps/core/test/models/consultant-no-remap.contract.test.ts` | planned |
+| AC-F0025-06 | `apps/core/test/models/consultant-admission.integration.test.ts`; `apps/core/test/models/model-router.contract.test.ts` | planned |
+| AC-F0025-07 | `apps/core/test/models/consultant-no-remap.contract.test.ts` | planned |
+| AC-F0025-08 | `apps/core/test/perception/perception-policy.integration.test.ts`; `apps/core/test/perception/perception-policy-boundary.contract.test.ts` | planned |
+| AC-F0025-09 | `apps/core/test/runtime/policy-governance-service.contract.test.ts`; `apps/core/test/runtime/policy-governance-boundary.contract.test.ts` | planned |
+| AC-F0025-10 | `apps/core/test/runtime/policy-governance-boundary.contract.test.ts` | planned |
+| AC-F0025-11 | `apps/core/test/runtime/phase6-governance-events.integration.test.ts`; `apps/core/test/runtime/reporting-service.integration.test.ts` | planned |
+| AC-F0025-12 | `apps/core/test/platform/policy-governance-config.contract.test.ts`; `apps/core/test/runtime/policy-governance-boundary.contract.test.ts`; `pnpm smoke:cell` | planned |
+| AC-F0025-13 | `apps/core/test/models/consultant-admission.integration.test.ts`; `apps/core/test/models/consultant-no-remap.contract.test.ts` | planned |
+| AC-F0025-14 | `apps/core/test/runtime/policy-governance-boundary.contract.test.ts`; `apps/core/test/perception/perception-policy-boundary.contract.test.ts` | planned |
 
 ## 9. Decision log (ADR blocks)
 
@@ -263,7 +342,8 @@ links:
 ## 10. Progress & links
 
 - Backlog item key: CF-027
-- Status progression: `proposed -> shaped`
+- Status progression: `proposed -> shaped -> planned`
+- Current stage: `implementation`
 - Issue:
 - PRs:
 
@@ -271,3 +351,4 @@ links:
 
 - 2026-04-24: Initial dossier created from backlog item `CF-027` at backlog delivery state `defined`.
 - 2026-04-24 [spec-compact] [scope realignment]: Shaped `F-0025` as the mature phase-6 policy/admission owner without reowning governor, perimeter, router, perception, observability, auth, release or support seams.
+- 2026-04-24 [plan-slice] [dependency realignment]: Planned implementation slices across contracts, DB store, runtime policy service, consultant admission, perception-policy enforcement and owner-boundary/reporting closure, with backlog lifecycle target `planned`.
