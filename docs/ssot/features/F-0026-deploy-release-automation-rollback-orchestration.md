@@ -25,6 +25,7 @@ links:
     - "docs/ssot/features/F-0019-consolidation-event-envelope-graceful-shutdown.md"
     - "docs/ssot/features/F-0020-real-vllm-serving-and-promotion-model-dependencies.md"
     - "docs/ssot/features/F-0023-observability-and-diagnostic-reporting.md"
+    - "docs/ssot/features/F-0024-authentication-authorization-operator-rbac.md"
     - "docs/adr/ADR-2026-03-19-canonical-runtime-toolchain.md"
     - "docs/adr/ADR-2026-03-19-phase0-deployment-cell.md"
     - "docs/adr/ADR-2026-03-19-quality-gate-sequence.md"
