@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-24T15:38:08.985Z",
+  "updated_at": "2026-04-24T16:36:40.436Z",
   "last_refresh_at": "2026-04-24T15:38:08.985Z",
   "context": {
     "glossary": [
@@ -949,11 +949,17 @@
       "quality_attribute_keys": [],
       "policy_decision_keys": [],
       "reverse_dependency_keys": [],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
-      "ready_for_next_step": true
+      "open_todo_ids": [
+        "95fd5d0f-6b8d-4c58-984a-88ec2b06884e"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "dependency_changed"
+      ],
+      "attention_reasons": [
+        "Dependency changed: review CF-025."
+      ],
+      "ready_for_next_step": false
     },
     {
       "item_key": "CF-020",
@@ -1164,7 +1170,7 @@
       "item_key": "CF-025",
       "title": "Deploy/release automation и rollback orchestration",
       "type": "feature",
-      "delivery_state": "defined",
+      "delivery_state": "specified",
       "gaps": [],
       "depends_on_keys": [
         "CF-020",
@@ -1235,11 +1241,17 @@
       "quality_attribute_keys": [],
       "policy_decision_keys": [],
       "reverse_dependency_keys": [],
-      "open_todo_ids": [],
-      "needs_attention": false,
-      "attention_reason_codes": [],
-      "attention_reasons": [],
-      "ready_for_next_step": true
+      "open_todo_ids": [
+        "09cf9fdb-931a-4c47-8481-eb40375d27df"
+      ],
+      "needs_attention": true,
+      "attention_reason_codes": [
+        "dependency_changed"
+      ],
+      "attention_reasons": [
+        "Dependency changed: review CF-025."
+      ],
+      "ready_for_next_step": false
     },
     {
       "item_key": "CF-027",
@@ -1317,5 +1329,30 @@
       "ready_for_next_step": false
     }
   ],
-  "todos": []
+  "todos": [
+    {
+      "todo_id": "09cf9fdb-931a-4c47-8481-eb40375d27df",
+      "item_key": "CF-026",
+      "type": "review_dependency_change",
+      "managed_by": "mutation",
+      "message": "Upstream task changed: CF-025. Review whether this task needs updates.",
+      "created_at": "2026-04-24T16:36:40.433Z",
+      "related_sources": [],
+      "related_item_keys": [
+        "CF-025"
+      ]
+    },
+    {
+      "todo_id": "95fd5d0f-6b8d-4c58-984a-88ec2b06884e",
+      "item_key": "CF-019",
+      "type": "review_dependency_change",
+      "managed_by": "mutation",
+      "message": "Upstream task changed: CF-025. Review whether this task needs updates.",
+      "created_at": "2026-04-24T16:36:40.433Z",
+      "related_sources": [],
+      "related_item_keys": [
+        "CF-025"
+      ]
+    }
+  ]
 }

@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-24T15:46:37.788Z_
+_Last sync: 2026-04-24T16:38:03.485Z_
 
 ## Features
 
@@ -35,7 +35,7 @@ _Last sync: 2026-04-24T15:46:37.788Z_
 | F-0023 | Наблюдаемость и диагностические отчёты | done | strict | observability | F-0003, F-0004, F-0010, F-0014, F-0016, F-0019 | runtime,db,observability,api,governance | `features/F-0023-observability-and-diagnostic-reporting.md` |
 | F-0024 | Аутентификация, авторизация и operator RBAC | done | strict | security | F-0002, F-0013, F-0016, F-0018 | api,security,governance,runtime | `features/F-0024-authentication-authorization-operator-rbac.md` |
 | F-0025 | Policy profiles, consultant admission и phase-6 governance closure | done | strict | governance | F-0005, F-0008, F-0016, F-0018, F-0023, F-0024 | governance,policy,runtime,perception,models | `features/F-0025-policy-profiles-consultant-admission-phase-6-governance-closure.md` |
-| F-0026 | Deploy/release automation и rollback orchestration | proposed | deferred | platform | F-0002, F-0007, F-0020, F-0023, F-0016, F-0019 | platform,deployment,release,rollback,operations | `features/F-0026-deploy-release-automation-rollback-orchestration.md` |
+| F-0026 | Deploy/release automation и rollback orchestration | shaped | strict | platform | F-0002, F-0007, F-0020, F-0023, F-0016, F-0019 | platform,deployment,release,rollback,operations | `features/F-0026-deploy-release-automation-rollback-orchestration.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -258,6 +258,4 @@ graph TD
 - **WARN** F-0023 — Potential compound ACs detected: AC-F0023-01, AC-F0023-02, AC-F0023-03, AC-F0023-04, AC-F0023-05, AC-F0023-06, AC-F0023-07, AC-F0023-08, AC-F0023-10, AC-F0023-11, AC-F0023-12, AC-F0023-13, AC-F0023-14, AC-F0023-15, AC-F0023-01, AC-F0023-04, AC-F0023-05, AC-F0023-08, AC-F0023-02, AC-F0023-11. Prefer one obligation per AC.
 - **WARN** F-0024 — Potential compound ACs detected: AC-F0024-01, AC-F0024-02, AC-F0024-03, AC-F0024-04, AC-F0024-05, AC-F0024-06, AC-F0024-07, AC-F0024-08, AC-F0024-09, AC-F0024-10, AC-F0024-11, AC-F0024-12, AC-F0024-13, AC-F0024-14, AC-F0024-15, AC-F0024-16, AC-F0024-17, AC-F0024-18, AC-F0024-01, AC-F0024-04, AC-F0024-03, AC-F0024-09, AC-F0024-03, AC-F0024-04, AC-F0024-08, AC-F0024-09, AC-F0024-11, AC-F0024-15, AC-F0024-16. Prefer one obligation per AC.
 - **WARN** F-0025 — Potential compound ACs detected: AC-F0025-01, AC-F0025-02, AC-F0025-03, AC-F0025-05, AC-F0025-07, AC-F0025-08, AC-F0025-09, AC-F0025-10, AC-F0025-11, AC-F0025-12, AC-F0025-13, AC-F0025-14, AC-F0025-01, AC-F0025-01, AC-F0025-02, AC-F0025-03, AC-F0025-09, AC-F0025-04, AC-F0025-11, AC-F0025-09, AC-F0025-12. Prefer one obligation per AC.
-- **WARN** F-0026 — No acceptance criteria IDs found yet. Add at least one AC-F....-.. entry before leaving the proposed intake state.
-- **WARN** F-0026 — Coverage map rows are recommended even when coverage is deferred.
 <!-- END GENERATED RED_FLAGS -->
