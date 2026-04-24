@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-24T13:09:25.535Z_
+_Last sync: 2026-04-24T13:55:36.709Z_
 
 ## Features
 
@@ -34,7 +34,7 @@ _Last sync: 2026-04-24T13:09:25.535Z_
 | F-0022 | Слой skills и процедур | done | strict | skills | F-0002, F-0010, F-0020 | runtime,workspace,tooling,skills | `features/F-0022-skills-and-procedural-layer.md` |
 | F-0023 | Наблюдаемость и диагностические отчёты | done | strict | observability | F-0003, F-0004, F-0010, F-0014, F-0016, F-0019 | runtime,db,observability,api,governance | `features/F-0023-observability-and-diagnostic-reporting.md` |
 | F-0024 | Аутентификация, авторизация и operator RBAC | done | strict | security | F-0002, F-0013, F-0016, F-0018 | api,security,governance,runtime | `features/F-0024-authentication-authorization-operator-rbac.md` |
-| F-0025 | Policy profiles, consultant admission и phase-6 governance closure | planned | deferred | governance | F-0005, F-0008, F-0016, F-0018, F-0023, F-0024 | governance,policy,runtime,perception,models | `features/F-0025-policy-profiles-consultant-admission-phase-6-governance-closure.md` |
+| F-0025 | Policy profiles, consultant admission и phase-6 governance closure | done | strict | governance | F-0005, F-0008, F-0016, F-0018, F-0023, F-0024 | governance,policy,runtime,perception,models | `features/F-0025-policy-profiles-consultant-admission-phase-6-governance-closure.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
