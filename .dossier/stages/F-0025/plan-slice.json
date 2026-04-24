@@ -38,14 +38,43 @@
   "required_audit_classes": [
     "spec-conformance-reviewer"
   ],
-  "executed_audit_classes": [],
-  "required_external_review_pending": true,
-  "review_artifacts": [],
-  "verification_artifacts": [],
-  "review_events": [],
-  "reviewer_skills": [],
+  "executed_audit_classes": [
+    "spec-conformance-reviewer"
+  ],
+  "required_external_review_pending": false,
+  "review_artifacts": [
+    ".dossier/reviews/F-0025/plan-slice-review-pass.json"
+  ],
+  "verification_artifacts": [
+    ".dossier/verification/F-0025/plan-slice-verify.json"
+  ],
+  "review_events": [
+    {
+      "allowed_by_policy": true,
+      "artifact_path": ".dossier/reviews/F-0025/plan-slice-review-pass.json",
+      "audit_class": "spec-conformance-reviewer",
+      "event_commit": "581beb0cfcf611d7426f37902d6b98cbdcdc9e8f",
+      "implementation_scope": null,
+      "invalidated": false,
+      "must_fix_count": 0,
+      "recorded_at": "2026-04-24T13:13:56.687Z",
+      "review_mode": "external",
+      "reviewer": "external-plan-slice-review-agent",
+      "reviewer_agent_id": null,
+      "reviewer_skill": "spec-conformance-reviewer",
+      "reviewer_thread_id": "019dbf9e-4d12-7950-baf4-19c12da6e315",
+      "security_trigger_reason": null,
+      "stale": false,
+      "verdict": "PASS"
+    }
+  ],
+  "reviewer_skills": [
+    "spec-conformance-reviewer"
+  ],
   "reviewer_agent_ids": [],
-  "review_trace_commits": [],
+  "review_trace_commits": [
+    "581beb0cfcf611d7426f37902d6b98cbdcdc9e8f"
+  ],
   "degraded_review_present": false,
   "invalidated_review_present": false,
   "stale_review_present": false,
@@ -60,15 +89,15 @@
   "trace_locator_kind": "session_id",
   "stage_entry_commit": null,
   "final_delivery_commit": "4b57fce4d5b48202003f17a672ac3838a6192c8b",
-  "final_closure_commit": null,
+  "final_closure_commit": "581beb0cfcf611d7426f37902d6b98cbdcdc9e8f",
   "implementation_review_scope": null,
-  "required_security_review": null,
+  "required_security_review": false,
   "security_trigger_reasons": [],
-  "step_close_ts": null,
-  "step_artifact": null,
-  "process_complete_ts": null,
+  "step_close_ts": "2026-04-24T13:14:21.437Z",
+  "step_artifact": ".dossier/steps/F-0025/plan-slice.json",
+  "process_complete_ts": "2026-04-24T13:14:21.437Z",
   "intake_process_complete_ts": null,
   "local_gates_green_ts": null,
-  "first_review_agent_started_ts": null,
-  "final_pass_ts": null
+  "first_review_agent_started_ts": "2026-04-24T13:13:56.687Z",
+  "final_pass_ts": "2026-04-24T13:13:56.687Z"
 }
