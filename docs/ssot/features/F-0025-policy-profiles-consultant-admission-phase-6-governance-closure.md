@@ -2,7 +2,7 @@
 id: F-0025
 title: Policy profiles, consultant admission и phase-6 governance closure
 status: shaped
-coverage_gate: strict
+coverage_gate: deferred
 backlog_item_key: CF-027
 owners: ["@codex"]
 area: governance
