@@ -9,6 +9,11 @@ import {
   developmentGovernorEvidenceRefSchema,
   developmentProposalKindSchema,
 } from './governor.ts';
+import {
+  RELEASE_EVIDENCE_REF_MAX_COUNT,
+  RELEASE_REF_MAX_LENGTH,
+  releaseTargetEnvironmentSchema,
+} from './release-automation.ts';
 import { TICK_KIND } from './runtime.ts';
 
 const isoTimestampSchema = z.string().datetime({ offset: true });
@@ -25,6 +30,7 @@ export const OPERATOR_TICK_NOTE_MAX_LENGTH = 500;
 export const OPERATOR_TICK_PAYLOAD_MAX_BYTES = 8192;
 export const OPERATOR_TICK_BODY_MAX_BYTES = 12_000;
 export const OPERATOR_GOVERNOR_CONTROL_BODY_MAX_BYTES = 64_000;
+export const OPERATOR_RELEASE_CONTROL_BODY_MAX_BYTES = 64_000;
 
 const boundedInt = (max: number) => z.coerce.number().int().positive().max(max);
 
@@ -127,3 +133,58 @@ export const operatorDevelopmentProposalRequestSchema = z.object({
 export type OperatorDevelopmentProposalRequest = z.infer<
   typeof operatorDevelopmentProposalRequestSchema
 >;
+
+const releaseRefSchema = z.string().min(1).max(RELEASE_REF_MAX_LENGTH);
+const releaseEvidenceRefsSchema = z
+  .array(releaseRefSchema)
+  .max(RELEASE_EVIDENCE_REF_MAX_COUNT)
+  .default([]);
+
+export const operatorReleaseInspectionQuerySchema = z
+  .object({
+    requestId: releaseRefSchema,
+  })
+  .strict();
+
+export type OperatorReleaseInspectionQuery = z.infer<typeof operatorReleaseInspectionQuerySchema>;
+
+export const operatorReleasePrepareRequestSchema = z
+  .object({
+    requestId: releaseRefSchema,
+    targetEnvironment: releaseTargetEnvironmentSchema,
+    gitRef: releaseRefSchema,
+    rollbackTargetRef: releaseRefSchema,
+    governorEvidenceRef: releaseRefSchema,
+    lifecycleRollbackTargetRef: releaseRefSchema,
+    modelServingReadinessRef: releaseRefSchema,
+    diagnosticReportRefs: releaseEvidenceRefsSchema.refine((refs) => refs.length > 0, {
+      message: 'At least one diagnostic report ref is required',
+    }),
+    evidenceRefs: releaseEvidenceRefsSchema,
+  })
+  .strict();
+
+export type OperatorReleasePrepareRequest = z.infer<typeof operatorReleasePrepareRequestSchema>;
+
+export const operatorReleaseDeployAttemptRequestSchema = z
+  .object({
+    requestId: releaseRefSchema,
+    deployAttemptId: releaseRefSchema.optional(),
+    deploymentIdentity: releaseRefSchema.optional(),
+    migrationState: releaseRefSchema.optional(),
+  })
+  .strict();
+
+export type OperatorReleaseDeployAttemptRequest = z.infer<
+  typeof operatorReleaseDeployAttemptRequestSchema
+>;
+
+export const operatorReleaseRollbackRequestSchema = z
+  .object({
+    requestId: releaseRefSchema,
+    deployAttemptId: releaseRefSchema,
+    rollbackPlanId: releaseRefSchema.optional(),
+  })
+  .strict();
+
+export type OperatorReleaseRollbackRequest = z.infer<typeof operatorReleaseRollbackRequestSchema>;

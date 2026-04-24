@@ -38,3 +38,16 @@ void test('AC-F0018-10 rejects empty external secret files', async () => {
     /empty secret file/i,
   );
 });
+
+void test('AC-F0026-06 treats blank release evidence root as default data subdirectory', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'yaagi-core-config-release-evidence-'));
+  const dataPath = path.join(root, 'data');
+
+  const config = loadCoreRuntimeConfig({
+    YAAGI_DATA_PATH: dataPath,
+    YAAGI_RELEASE_EVIDENCE_ROOT: '',
+  });
+
+  assert.equal(config.dataPath, dataPath);
+  assert.equal(config.releaseEvidenceRootPath, path.join(dataPath, 'release-evidence'));
+});

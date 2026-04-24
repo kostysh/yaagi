@@ -70,6 +70,7 @@ const smokeOperatorPrincipalsFilePath = path.join(
   'operator-principals.json',
 );
 const smokeOperatorToken = `${operatorTokenVersion}_${sha256('smoke:operator:token').slice(0, 32)}`;
+const smokeReleaseOperatorToken = `${operatorTokenVersion}_${sha256('smoke:release-operator:token').slice(0, 32)}`;
 
 function coreBaseUrl(port = defaultCoreHostPort): string {
   return `http://127.0.0.1:${port}`;
@@ -87,6 +88,15 @@ function smokeOperatorAuthHeaders(headers: Record<string, string> = {}): Record<
   return {
     ...headers,
     authorization: `Bearer ${smokeOperatorToken}`,
+  };
+}
+
+function smokeReleaseOperatorAuthHeaders(
+  headers: Record<string, string> = {},
+): Record<string, string> {
+  return {
+    ...headers,
+    authorization: `Bearer ${smokeReleaseOperatorToken}`,
   };
 }
 
@@ -165,6 +175,11 @@ truncate table
   polyphony_runtime.development_proposal_decisions,
   polyphony_runtime.development_proposals,
   polyphony_runtime.development_freezes,
+  polyphony_runtime.release_evidence,
+  polyphony_runtime.rollback_executions,
+  polyphony_runtime.deploy_attempts,
+  polyphony_runtime.rollback_plans,
+  polyphony_runtime.release_requests,
   polyphony_runtime.retention_compaction_runs,
   polyphony_runtime.graceful_shutdown_events,
   polyphony_runtime.rollback_incidents,
@@ -280,6 +295,16 @@ async function writeSmokeOperatorAuthFile(): Promise<void> {
               {
                 credentialRef: 'credential:smoke',
                 tokenSha256: sha256(smokeOperatorToken),
+              },
+            ],
+          },
+          {
+            principalRef: 'operator:smoke-release',
+            roles: ['release_operator'],
+            credentials: [
+              {
+                credentialRef: 'credential:smoke-release',
+                tokenSha256: sha256(smokeReleaseOperatorToken),
               },
             ],
           },
@@ -987,6 +1012,27 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
               "select count(*)::text from polyphony_runtime.model_registry where role in ('reflex', 'deliberation', 'reflection') and status = 'active';",
             ),
             '3',
+          );
+
+          const releaseAuditRequestId = 'smoke-release-control-audit';
+          const releaseResponse = await fetch(`${coreBaseUrl()}/control/releases`, {
+            method: 'POST',
+            headers: smokeReleaseOperatorAuthHeaders({
+              'content-type': 'application/json',
+              'x-request-id': releaseAuditRequestId,
+            }),
+            body: '{}',
+          });
+          assert.equal(releaseResponse.status, 400);
+          assert.equal(
+            await queryPostgres(
+              `select count(*)::text
+               from polyphony_runtime.operator_auth_audit_events
+               where request_id = '${releaseAuditRequestId}'
+                 and route_class = 'release_control'
+                 and decision = 'allow';`,
+            ),
+            '1',
           );
         },
       );

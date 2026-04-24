@@ -1,9 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  OPERATOR_RELEASE_CONTROL_BODY_MAX_BYTES,
   OPERATOR_TICK_NOTE_MAX_LENGTH,
   OPERATOR_TICK_PAYLOAD_MAX_BYTES,
   OPERATOR_TICK_REQUEST_ID_MAX_LENGTH,
+  operatorReleaseDeployAttemptRequestSchema,
+  operatorReleasePrepareRequestSchema,
+  operatorReleaseRollbackRequestSchema,
   operatorTickControlRequestSchema,
 } from '../src/operator-api.ts';
 
@@ -30,6 +34,73 @@ void test('AC-F0024-13 bounds operator tick-control request ids, notes and paylo
       payload: {
         oversized: 'x'.repeat(OPERATOR_TICK_PAYLOAD_MAX_BYTES + 1),
       },
+    }).success,
+    false,
+  );
+});
+
+void test('AC-F0026-02 AC-F0026-08 bounds protected release-control payloads', () => {
+  const prepared = operatorReleasePrepareRequestSchema.parse({
+    requestId: 'release-request:operator',
+    targetEnvironment: 'release_cell',
+    gitRef: 'git:main',
+    rollbackTargetRef: 'git:stable',
+    governorEvidenceRef: 'development-proposal-decision:1',
+    lifecycleRollbackTargetRef: 'graceful_shutdown:shutdown-1',
+    modelServingReadinessRef: 'model_profile_health:code.deep@shared',
+    diagnosticReportRefs: ['report-run:development'],
+  });
+
+  assert.deepEqual(prepared.diagnosticReportRefs, ['report-run:development']);
+  assert.deepEqual(prepared.evidenceRefs, []);
+  assert.equal(
+    operatorReleasePrepareRequestSchema.safeParse({
+      ...prepared,
+      diagnosticReportRefs: [],
+    }).success,
+    false,
+  );
+  assert.equal(
+    operatorReleasePrepareRequestSchema.safeParse({
+      ...prepared,
+      targetEnvironment: 'production',
+    }).success,
+    false,
+  );
+  assert.equal(
+    operatorReleasePrepareRequestSchema.safeParse({
+      ...prepared,
+      evidenceRefs: ['x'.repeat(OPERATOR_RELEASE_CONTROL_BODY_MAX_BYTES)],
+    }).success,
+    false,
+  );
+  assert.equal(
+    operatorReleaseDeployAttemptRequestSchema.safeParse({
+      requestId: 'release-request:operator',
+      deployAttemptId: 'deploy-attempt:operator',
+    }).success,
+    true,
+  );
+  assert.equal(
+    operatorReleaseDeployAttemptRequestSchema.safeParse({
+      requestId: 'release-request:operator',
+      smokeCommand: 'pnpm test',
+    }).success,
+    false,
+  );
+  assert.equal(
+    operatorReleaseRollbackRequestSchema.safeParse({
+      requestId: 'release-request:operator',
+      deployAttemptId: 'deploy-attempt:operator',
+      rollbackPlanId: 'rollback-plan:operator',
+    }).success,
+    true,
+  );
+  assert.equal(
+    operatorReleaseRollbackRequestSchema.safeParse({
+      requestId: 'release-request:operator',
+      deployAttemptId: 'deploy-attempt:operator',
+      trigger: 'operator_manual',
     }).success,
     false,
   );

@@ -184,6 +184,25 @@ export {
   type UpdateReportPublicationInput,
 } from './reporting.ts';
 export {
+  createReleaseAutomationStore,
+  RELEASE_AUTOMATION_WRITE_SURFACES,
+  type CompleteDeployAttemptInput,
+  type CompleteRollbackExecutionInput,
+  type CompleteRollbackExecutionResult,
+  type CreateReleaseRequestInput,
+  type CreateReleaseRequestResult,
+  type CreateRollbackPlanInput,
+  type CreateRollbackPlanResult,
+  type RecordReleaseEvidenceInput,
+  type RecordReleaseEvidenceResult,
+  type RecordRollbackExecutionInput,
+  type RecordRollbackExecutionResult,
+  type ReleaseAutomationDbExecutor,
+  type ReleaseAutomationStore,
+  type StartDeployAttemptInput,
+  type StartDeployAttemptResult,
+} from './release-automation.ts';
+export {
   BASELINE_MODEL_PROFILE_ROLE,
   createRuntimeModelProfileStore,
   MODEL_PROFILE_ROLE,

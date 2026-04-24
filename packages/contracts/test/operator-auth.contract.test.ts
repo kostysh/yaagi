@@ -41,6 +41,18 @@ void test('AC-F0024-01 AC-F0024-05 classifies delivered operator routes without 
     routeClass: OPERATOR_ROUTE_CLASS.GOVERNOR_SUBMISSION,
     riskClass: OPERATOR_RISK_CLASS.HIGH_RISK,
   });
+  assert.deepEqual(classifyOperatorRoute('POST', '/control/releases'), {
+    method: 'POST',
+    path: '/control/releases',
+    routeClass: OPERATOR_ROUTE_CLASS.RELEASE_CONTROL,
+    riskClass: OPERATOR_RISK_CLASS.HIGH_RISK,
+  });
+  assert.deepEqual(classifyOperatorRoute('POST', '/control/release-deploy-attempts'), {
+    method: 'POST',
+    path: '/control/release-deploy-attempts',
+    routeClass: OPERATOR_ROUTE_CLASS.RELEASE_CONTROL,
+    riskClass: OPERATOR_RISK_CLASS.HIGH_RISK,
+  });
   assert.equal(classifyOperatorRoute('GET', '/operator-shadow/state'), null);
 });
 
@@ -79,6 +91,27 @@ void test('AC-F0024-04 AC-F0024-06 keeps default role permissions explicit and d
       OPERATOR_ROUTE_CLASS.GOVERNOR_SUBMISSION,
     ),
     true,
+  );
+  assert.equal(
+    isOperatorRouteClassAllowedForRoles(
+      [OPERATOR_ROLE.GOVERNOR_OPERATOR],
+      OPERATOR_ROUTE_CLASS.RELEASE_CONTROL,
+    ),
+    false,
+  );
+  assert.equal(
+    isOperatorRouteClassAllowedForRoles(
+      [OPERATOR_ROLE.RELEASE_OPERATOR],
+      OPERATOR_ROUTE_CLASS.RELEASE_CONTROL,
+    ),
+    true,
+  );
+  assert.equal(
+    isOperatorRouteClassAllowedForRoles(
+      [OPERATOR_ROLE.OPERATOR],
+      OPERATOR_ROUTE_CLASS.RELEASE_CONTROL,
+    ),
+    false,
   );
   assert.equal(
     isOperatorRouteClassAllowedForRoles(

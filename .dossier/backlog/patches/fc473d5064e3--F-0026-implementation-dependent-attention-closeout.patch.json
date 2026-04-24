@@ -1,0 +1,27 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-24-055-f0026-implementation-dependent-attention-closeout",
+    "created_at": "2026-04-24T18:06:00.000Z",
+    "sequence": 55,
+    "target_item_keys": [
+      "CF-019",
+      "CF-026"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-019",
+      "action": "remove_todo",
+      "todo_ids": [
+        "2a38633d-f9d9-4ee3-a12b-b3befc4fec49"
+      ]
+    },
+    {
+      "item_key": "CF-026",
+      "action": "remove_todo",
+      "todo_ids": [
+        "de25b27c-9b60-40ef-a750-c4d49506bb58"
+      ]
+    }
+  ]
+}

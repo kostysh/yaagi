@@ -13,6 +13,8 @@
     "test": "node --experimental-strip-types --experimental-test-module-mocks --test",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "db:bootstrap": "node --experimental-strip-types packages/db/src/cli/bootstrap.ts",
+    "release:cell": "node --experimental-strip-types scripts/release-cell.ts",
+    "release:cell:local": "node --env-file=.env.local --experimental-strip-types scripts/release-cell.ts",
     "cell:up": "env DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker compose -f infra/docker/compose.yaml up -d --build --wait",
     "cell:up:local": "env DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker compose --env-file .env.local -f infra/docker/compose.yaml up -d --build --wait",
     "cell:down": "docker compose -f infra/docker/compose.yaml down --volumes --remove-orphans",

@@ -24,6 +24,7 @@ export const OPERATOR_TEST_TOKENS = Object.freeze({
   observer: testToken('operator:test-observer'),
   operator: testToken('operator:test-operator'),
   governor: testToken('operator:test-governor'),
+  release: testToken('operator:test-release'),
 });
 
 export type OperatorTestTokenRole = keyof typeof OPERATOR_TEST_TOKENS;
@@ -177,6 +178,16 @@ export const createPlatformTempWorkspace = async (
               {
                 credentialRef: 'credential:test-governor',
                 tokenSha256: sha256(OPERATOR_TEST_TOKENS.governor),
+              },
+            ],
+          },
+          {
+            principalRef: 'operator:test-release',
+            roles: [OPERATOR_ROLE.RELEASE_OPERATOR],
+            credentials: [
+              {
+                credentialRef: 'credential:test-release',
+                tokenSha256: sha256(OPERATOR_TEST_TOKENS.release),
               },
             ],
           },

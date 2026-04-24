@@ -1,8 +1,8 @@
 ---
 id: F-0026
 title: Deploy/release automation и rollback orchestration
-status: planned
-coverage_gate: deferred
+status: done
+coverage_gate: strict
 backlog_item_key: CF-025
 owners: ["@codex"]
 area: platform
@@ -95,7 +95,7 @@ links:
 - Resolved by `spec-compact`: first environment vocabulary is `local` plus `release_cell`.
 - Resolved by `spec-compact`: PostgreSQL owns release decisions/state, while files may hold linked larger evidence artifacts.
 - Resolved by `spec-compact`: failed smoke-on-deploy triggers automatic rollback when a precomputed rollback plan exists and rollback evidence can be recorded.
-- Resolved by `spec-compact`: CLI and protected Operator API both delegate to one release service.
+- Resolved by `spec-compact`: CLI and protected Operator API both delegate to one release service; implementation realignment keeps host-only deploy/rollback executors explicit instead of wiring them into the container runtime by default.
 - Resolved by `plan-slice`: repo-level ADR is still not required before implementation; one is required only if implementation changes shared startup/deployment contracts, introduces a new orchestration substrate or changes cross-feature write ownership.
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
@@ -115,7 +115,7 @@ links:
 
 - **PD-F0026-01:** `F-0026` owns release/deploy/rollback orchestration facts only: release requests, deploy attempts, release evidence, rollback plans and rollback execution records.
 - **PD-F0026-02:** `F-0026` reuses `F-0002` deployment cell, `F-0007` smoke lifecycle, `F-0020` real model-serving readiness, `F-0023` reporting evidence, `F-0016` governor evidence and `F-0019` lifecycle rollback evidence; it does not write their source surfaces.
-- **PD-F0026-03:** The first implementation must support both CLI and protected Operator API entrypoints for the same owner service. The CLI is suitable for CI/operator scripts; the API must stay inside the existing `F-0013` Hono operator boundary and use `F-0024` caller admission/RBAC.
+- **PD-F0026-03:** The first implementation must support both CLI and protected Operator API entrypoints for the same owner service. The CLI is the host/CI execution path for `pnpm smoke:cell` and rollback orchestration. The API must stay inside the existing `F-0013` Hono operator boundary, use `F-0024` caller admission/RBAC and fail closed for deploy/rollback actions when no explicit host-capable executor is configured in that runtime.
 - **PD-F0026-04:** A deploy attempt may start only after a rollback plan exists and evidence storage is writable.
 - **PD-F0026-05:** Failed smoke-on-deploy triggers automatic rollback when the rollback plan is available and admitted. If rollback cannot execute or cannot be recorded, the deploy attempt fails closed and writes critical rollback-failure evidence.
 - **PD-F0026-06:** PostgreSQL is the source for release decisions and state. File artifacts may hold larger reports/logs/snapshots and must be linked from PostgreSQL evidence refs.
@@ -129,7 +129,7 @@ links:
 - **AC-F0026-04:** A deploy attempt cannot start unless the release request has a rollback plan plus writable release-evidence storage.
 - **AC-F0026-05:** A release evidence bundle records commit/ref, deployment identity, migration state, smoke-on-deploy result, model-serving readiness, governor decision/evidence ref, lifecycle rollback target/ref, diagnostic report refs.
 - **AC-F0026-06:** Release evidence may link file artifacts; authoritative decision/state facts must be queryable from PostgreSQL.
-- **AC-F0026-07:** CLI/API entrypoints call the same release service; produced release request, deploy attempt, evidence, rollback records are equivalent.
+- **AC-F0026-07:** CLI/API entrypoints call the same release service; produced release request, deploy attempt, evidence and rollback records are equivalent when the runtime has the same executor capabilities. A runtime without an explicit smoke or rollback executor must fail closed before claiming deploy/rollback success.
 - **AC-F0026-08:** Operator API entrypoints are protected by `F-0024` caller admission/RBAC before invoking any release service behavior.
 - **AC-F0026-09:** Failing smoke-on-deploy automatically triggers rollback using the precomputed rollback plan.
 - **AC-F0026-10:** Automatic rollback records rollback execution evidence linked to the failed deploy attempt, rollback plan, lifecycle evidence, diagnostic report refs.
@@ -164,6 +164,7 @@ links:
   - same semantic operations as CLI;
   - routed through the existing Hono operator namespace;
   - guarded by `F-0024` caller admission and role checks before release service invocation.
+- Host-only smoke/rollback executors are not implicit inside the container Operator API runtime. They must be explicitly supplied by a host/CI path; otherwise deploy and rollback actions return fail-closed unavailable results through the shared release service.
 - No public unauthenticated release, deploy or rollback route is allowed.
 
 ### 5.2 Runtime / deployment surface
@@ -230,7 +231,7 @@ PostgreSQL rows are authoritative for state and decisions. File artifacts are re
 
 - First activation should run in `local` mode and write release evidence without changing external availability.
 - Next activation may enable `release_cell` deploy attempts with auto rollback on failed smoke-on-deploy.
-- Operator API activation must stay fail-closed until `F-0024` caller admission/RBAC is configured.
+- Operator API activation must stay fail-closed until `F-0024` caller admission/RBAC is configured and must also fail closed for deploy/rollback actions unless that runtime has explicit smoke/rollback executors.
 - Rollback must always target the precomputed rollback plan; ad hoc rollback target selection during failure handling is forbidden.
 
 ## 6. Slicing plan (2-6 increments)
@@ -239,14 +240,14 @@ PostgreSQL rows are authoritative for state and decisions. File artifacts are re
 
 - First implementation creates one `release-automation` owner surface for contracts, store, service, CLI and protected API routing.
 - The owner surface may add `release_cell` vocabulary and release evidence configuration, but it must keep the existing Docker Compose deployment-cell contract as the substrate.
-- CLI and protected Operator API must use the same release service. Transport-specific code may validate input, but release facts and rollback decisions are owned by the service/store.
+- CLI and protected Operator API must use the same release service. Transport-specific code may validate input, but release facts and rollback decisions are owned by the service/store. Executor capability is an explicit runtime dependency: the host CLI supplies host-capable smoke/rollback executors, while the container Operator API may fail closed for deploy/rollback until a safe executor seam is configured.
 - Release evidence files must be linked from PostgreSQL rows and may not become independent release state.
 - Implementation may change exact file names only if it preserves the semantic owner boundary, test coverage and single-service call path below.
 
 ### SL-F0026-01: Release state contracts and store
 
 - **Result:** shared release-automation contracts, PostgreSQL migration/store and writable evidence-artifact root handling for release requests, deploy attempts, release evidence, rollback plans and rollback executions.
-- **Primary files:** `packages/contracts/src/release-automation.ts`, `packages/contracts/package.json`, `packages/db/src/release-automation.ts`, `packages/db/src/index.ts`, `infra/migrations/022_release_automation.sql`, `apps/core/src/platform/release-automation.ts`, `apps/core/src/platform/core-config.ts`.
+- **Primary files:** `packages/contracts/src/release-automation.ts`, `packages/contracts/package.json`, `packages/db/src/release-automation.ts`, `packages/db/src/index.ts`, `infra/migrations/022_release_automation.sql`, `infra/migrations/023_release_request_rollback_target_ref.sql`, `infra/migrations/024_release_rollback_execution_running_status.sql`, `infra/migrations/025_release_rollback_execution_plan_deploy_unique.sql`, `apps/core/src/platform/release-automation.ts`, `apps/core/src/platform/core-config.ts`.
 - **Tests:** `packages/contracts/test/release-automation.contract.test.ts`, `packages/db/test/release-automation-store.integration.test.ts`, `apps/core/test/platform/release-automation-service.contract.test.ts`.
 - **Covers:** AC-F0026-01, AC-F0026-02, AC-F0026-03, AC-F0026-04, AC-F0026-05, AC-F0026-06, AC-F0026-11.
 - Depends on: delivered `F-0002` deployment identity, delivered `F-0016` governor evidence refs and delivered `F-0019` lifecycle rollback refs; owner `@codex`; unblock condition: the implementation can link those refs read-only without writing neighbouring owner tables.
@@ -272,12 +273,12 @@ PostgreSQL rows are authoritative for state and decisions. File artifacts are re
 
 ### SL-F0026-04: Protected Operator API
 
-- **Result:** protected Operator API endpoints for release request, deploy attempt inspection/action and rollback inspection/action, all delegating to the same release service as CLI.
-- **Primary files:** `packages/contracts/src/operator-api.ts`, `packages/contracts/src/operator-auth.ts`, `apps/core/src/platform/operator-api.ts`, `apps/core/src/platform/core-runtime.ts`, `apps/core/src/platform/release-automation.ts`.
+- **Result:** protected Operator API endpoints for release request, deploy attempt inspection/action and rollback inspection/action, all delegating to the same release service as CLI and failing closed for deploy/rollback when the container runtime has no explicit host-capable executor.
+- **Primary files:** `packages/contracts/src/operator-api.ts`, `packages/contracts/src/operator-auth.ts`, `apps/core/src/platform/operator-api.ts`, `apps/core/src/runtime/runtime-lifecycle.ts`, `apps/core/testing/platform-test-fixture.ts`, `apps/core/src/platform/release-automation.ts`.
 - **Tests:** `packages/contracts/test/operator-api.contract.test.ts`, `packages/contracts/test/operator-auth.contract.test.ts`, `apps/core/test/platform/operator-release-automation.integration.test.ts`, `apps/core/test/platform/operator-auth-rbac.integration.test.ts`.
 - **Covers:** AC-F0026-07, AC-F0026-08, AC-F0026-11, AC-F0026-13.
 - Depends on: `SL-F0026-01`, `SL-F0026-02` and delivered `F-0024`; owner `@codex`; unblock condition: caller admission and release/operator route permissions are enforceable before release service invocation.
-- **Unblock condition:** API tests prove unauthenticated, unauthorized and missing-downstream-owner paths fail closed, while admitted API and CLI requests produce equivalent release facts.
+- **Unblock condition:** API tests prove unauthenticated, unauthorized, missing-downstream-owner and missing-executor paths fail closed, while admitted API and CLI requests produce equivalent release facts when executor capability is present.
 
 ### SL-F0026-05: Release readiness audit and final closure
 
@@ -323,23 +324,23 @@ PostgreSQL rows are authoritative for state and decisions. File artifacts are re
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0026-01 | `packages/contracts/test/release-automation.contract.test.ts`; `packages/db/test/release-automation-store.integration.test.ts`; `apps/core/test/platform/release-owner-boundary.contract.test.ts` | planned |
-| AC-F0026-02 | `packages/contracts/test/release-automation.contract.test.ts`; `test/release-cell.command.test.ts`; `apps/core/test/platform/operator-release-automation.integration.test.ts` | planned |
-| AC-F0026-03 | `packages/db/test/release-automation-store.integration.test.ts`; `apps/core/test/platform/release-automation-service.contract.test.ts` | planned |
-| AC-F0026-04 | `apps/core/test/platform/release-preflight.integration.test.ts`; `apps/core/test/platform/release-automation-service.contract.test.ts` | planned |
-| AC-F0026-05 | `apps/core/test/platform/release-evidence-bundle.contract.test.ts`; `packages/db/test/release-automation-store.integration.test.ts` | planned |
-| AC-F0026-06 | `packages/db/test/release-automation-store.integration.test.ts`; `apps/core/test/platform/release-evidence-bundle.contract.test.ts` | planned |
-| AC-F0026-07 | `test/release-cell.command.test.ts`; `apps/core/test/platform/operator-release-automation.integration.test.ts` | planned |
-| AC-F0026-08 | `apps/core/test/platform/operator-release-automation.integration.test.ts`; `apps/core/test/platform/operator-auth-rbac.integration.test.ts`; `packages/contracts/test/operator-auth.contract.test.ts` | planned |
-| AC-F0026-09 | `apps/core/test/platform/release-smoke-rollback.integration.test.ts`; `infra/docker/test/release-cell-smoke.test.ts` | planned |
-| AC-F0026-10 | `apps/core/test/platform/release-smoke-rollback.integration.test.ts`; `apps/core/test/platform/release-rollback-failure.contract.test.ts` | planned |
-| AC-F0026-11 | `apps/core/test/platform/release-preflight.integration.test.ts`; `apps/core/test/platform/release-automation-service.contract.test.ts` | planned |
-| AC-F0026-12 | `apps/core/test/platform/release-owner-boundary.contract.test.ts`; `infra/docker/test/compose-config.test.ts` | planned |
-| AC-F0026-13 | `test/release-cell.command.test.ts`; `apps/core/test/platform/operator-release-automation.integration.test.ts`; `apps/core/test/platform/release-evidence-bundle.contract.test.ts` | planned |
-| AC-F0026-14 | `apps/core/test/platform/release-owner-boundary.contract.test.ts`; `apps/core/test/platform/release-preflight.integration.test.ts` | planned |
-| AC-F0026-15 | `apps/core/test/platform/release-owner-boundary.contract.test.ts`; `apps/core/test/platform/release-smoke-rollback.integration.test.ts` | planned |
-| AC-F0026-16 | `apps/core/test/platform/release-owner-boundary.contract.test.ts`; `apps/core/test/runtime/reporting-service.integration.test.ts` | planned |
-| AC-F0026-17 | root `pnpm format`, `pnpm typecheck`, `pnpm lint`, `pnpm test`; `pnpm smoke:cell`; `infra/docker/test/release-cell-smoke.test.ts` | planned |
+| AC-F0026-01 | `packages/contracts/test/release-automation.contract.test.ts`; `packages/db/test/release-automation-store.integration.test.ts`; `apps/core/test/platform/release-owner-boundary.contract.test.ts` | implemented |
+| AC-F0026-02 | `packages/contracts/test/release-automation.contract.test.ts`; `test/release-cell.command.test.ts`; `apps/core/test/platform/operator-release-automation.integration.test.ts` | implemented |
+| AC-F0026-03 | `packages/db/test/release-automation-store.integration.test.ts`; `apps/core/test/platform/release-automation-service.contract.test.ts` | implemented |
+| AC-F0026-04 | `apps/core/test/platform/release-preflight.integration.test.ts`; `apps/core/test/platform/release-automation-service.contract.test.ts` | implemented |
+| AC-F0026-05 | `apps/core/test/platform/release-evidence-bundle.contract.test.ts`; `packages/db/test/release-automation-store.integration.test.ts` | implemented |
+| AC-F0026-06 | `packages/db/test/release-automation-store.integration.test.ts`; `apps/core/test/platform/release-evidence-bundle.contract.test.ts` | implemented |
+| AC-F0026-07 | `test/release-cell.command.test.ts`; `apps/core/test/platform/operator-release-automation.integration.test.ts`; `apps/core/test/platform/release-automation-usage-audit.integration.test.ts` | implemented |
+| AC-F0026-08 | `apps/core/test/platform/operator-release-automation.integration.test.ts`; `apps/core/test/platform/operator-auth-rbac.integration.test.ts`; `packages/contracts/test/operator-auth.contract.test.ts` | implemented |
+| AC-F0026-09 | `apps/core/test/platform/release-smoke-rollback.integration.test.ts`; `infra/docker/test/release-cell-smoke.test.ts` | implemented |
+| AC-F0026-10 | `apps/core/test/platform/release-smoke-rollback.integration.test.ts`; `apps/core/test/platform/release-rollback-failure.contract.test.ts` | implemented |
+| AC-F0026-11 | `apps/core/test/platform/release-preflight.integration.test.ts`; `apps/core/test/platform/release-automation-service.contract.test.ts`; `apps/core/test/platform/operator-release-automation.integration.test.ts` | implemented |
+| AC-F0026-12 | `apps/core/test/platform/release-owner-boundary.contract.test.ts`; `infra/docker/test/compose-config.test.ts`; `infra/docker/test/release-cell-smoke.test.ts` | implemented |
+| AC-F0026-13 | `test/release-cell.command.test.ts`; `apps/core/test/platform/operator-release-automation.integration.test.ts`; `apps/core/test/platform/release-evidence-bundle.contract.test.ts` | implemented |
+| AC-F0026-14 | `apps/core/test/platform/release-owner-boundary.contract.test.ts`; `apps/core/test/platform/release-preflight.integration.test.ts` | implemented |
+| AC-F0026-15 | `apps/core/test/platform/release-owner-boundary.contract.test.ts`; `apps/core/test/platform/release-smoke-rollback.integration.test.ts` | implemented |
+| AC-F0026-16 | `apps/core/test/platform/release-owner-boundary.contract.test.ts`; `apps/core/test/platform/release-automation-usage-audit.integration.test.ts`; `apps/core/test/runtime/reporting-service.integration.test.ts` | implemented |
+| AC-F0026-17 | root `pnpm format`, `pnpm typecheck`, `pnpm lint`, `pnpm test`; `pnpm smoke:cell`; `infra/docker/test/release-cell-smoke.test.ts` | implemented |
 
 ## 9. Decision log (ADR blocks)
 
@@ -385,11 +386,17 @@ PostgreSQL rows are authoritative for state and decisions. File artifacts are re
 - Rationale: CI/operator scripts need CLI, while runtime operators need API access through existing auth/RBAC.
 - ADR impact: feature-local decision; API must stay inside existing `F-0013`/`F-0024` boundaries.
 
+### 2026-04-24: Host executor boundary
+
+- Decision: host-only smoke/rollback executors are wired explicitly into the CLI path and are not implicit defaults for the container Operator API runtime.
+- Rationale: the canonical deployment-cell `core` container has no Docker socket or host `docker compose` control surface. Wiring host commands into that runtime would advertise deploy/rollback capability that cannot execute safely there.
+- ADR impact: feature-local implementation realignment; a repo-level ADR or follow-up dossier is required only if a future slice introduces a shared host executor service or changes deployment-cell startup/orchestration contracts.
+
 ## 10. Progress & links
 
 - Backlog item key: CF-025
 - Status progression: `proposed -> shaped -> planned -> in_progress -> done`
-- Current stage: `implementation`
+- Current stage: `implementation closure`
 - Issue:
 - PRs:
 
@@ -399,3 +406,5 @@ PostgreSQL rows are authoritative for state and decisions. File artifacts are re
 - 2026-04-24: [spec-compact] Expanded `CF-025` into a shaped deploy/release/rollback spec with `local` + `release_cell` environments, PostgreSQL plus file evidence, automatic rollback on failed smoke-on-deploy, and CLI plus protected Operator API control surfaces.
 - 2026-04-24: [verification realignment] Deferred coverage gate for `spec-compact`; strict executable AC coverage is expected during implementation once tests can reference `AC-F0026-*`.
 - 2026-04-24: [plan-slice] [dependency realignment] Planned implementation slices across release contracts/store, CLI evidence path, smoke-on-deploy plus automatic rollback, protected Operator API and owner-boundary/reporting closure, with backlog lifecycle target `planned`.
+- 2026-04-24: [implementation] Added release automation contracts, PostgreSQL state/store, shared release service, root `pnpm release:cell` CLI, protected Operator API/RBAC, deterministic smoke reset coverage and linked evidence-root configuration without adding a second deployment stack.
+- 2026-04-24: [implementation] [runtime realignment] Made host-only smoke/rollback executors explicit on the CLI path and fail-closed by default in the container Operator API runtime; added release-control audit migration coverage and terminal fail-closed rollback/evidence behavior for post-start deploy failures.

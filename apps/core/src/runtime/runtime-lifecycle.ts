@@ -107,6 +107,10 @@ import { createExpandedModelEcologyService } from './model-ecology.ts';
 import { createDbBackedReportingService, type ReportingBundle } from './reporting.ts';
 import { createDbBackedPolicyGovernanceService } from './policy-governance.ts';
 import {
+  createDbBackedReleaseAutomationService,
+  type ReleaseAutomationService,
+} from '../platform/release-automation.ts';
+import {
   createDbBackedWorkshopService,
   createWorkshopWorker,
   type WorkshopWorker,
@@ -164,6 +168,18 @@ type RuntimeLifecycle = {
     evidenceRefs: string[];
     recordedAt: string;
   }): ReturnType<DevelopmentGovernorService['recordProposalExecutionOutcome']>;
+  prepareRelease(
+    input: Parameters<ReleaseAutomationService['prepareRelease']>[0],
+  ): ReturnType<ReleaseAutomationService['prepareRelease']>;
+  runReleaseDeployAttempt(
+    input: Parameters<ReleaseAutomationService['runDeployAttempt']>[0],
+  ): ReturnType<ReleaseAutomationService['runDeployAttempt']>;
+  executeReleaseRollback(
+    input: Parameters<ReleaseAutomationService['executeRollback']>[0],
+  ): ReturnType<ReleaseAutomationService['executeRollback']>;
+  inspectRelease(
+    requestId: Parameters<ReleaseAutomationService['inspectRelease']>[0],
+  ): ReturnType<ReleaseAutomationService['inspectRelease']>;
   ingestHttpStimulus(input: HttpIngestStimulusInput): Promise<StimulusIngestResult>;
   health(): Promise<PerceptionHealthSnapshot>;
   getSubjectStateSnapshot(input?: SubjectStateSnapshotInput): Promise<SubjectStateSnapshot>;
@@ -1231,6 +1247,7 @@ export function createPhase0RuntimeLifecycle(
   let tickRuntime: TickRuntime | null = null;
   const developmentGovernor: DevelopmentGovernorService =
     createDbBackedDevelopmentGovernorService(config);
+  const releaseAutomation = createDbBackedReleaseAutomationService(config);
   const reportingService = createDbBackedReportingService(config);
   const policyGovernance = createDbBackedPolicyGovernanceService(config);
   const homeostatService: HomeostatService = createDbBackedHomeostatService(config, {
@@ -1703,6 +1720,22 @@ export function createPhase0RuntimeLifecycle(
 
     recordProposalExecutionOutcome(input) {
       return developmentGovernor.recordProposalExecutionOutcome(input);
+    },
+
+    prepareRelease(input) {
+      return releaseAutomation.prepareRelease(input);
+    },
+
+    runReleaseDeployAttempt(input) {
+      return releaseAutomation.runDeployAttempt(input);
+    },
+
+    executeReleaseRollback(input) {
+      return releaseAutomation.executeRollback(input);
+    },
+
+    inspectRelease(requestId) {
+      return releaseAutomation.inspectRelease(requestId);
     },
 
     ingestHttpStimulus(input) {

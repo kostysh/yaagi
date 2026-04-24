@@ -16,6 +16,7 @@ export const OPERATOR_ROLE = Object.freeze({
   OBSERVER: 'observer',
   OPERATOR: 'operator',
   GOVERNOR_OPERATOR: 'governor_operator',
+  RELEASE_OPERATOR: 'release_operator',
   ADMIN: 'admin',
   BREAKGLASS_ADMIN: 'breakglass_admin',
 } as const);
@@ -27,6 +28,7 @@ export const OPERATOR_ROUTE_CLASS = Object.freeze({
   READ_INTROSPECTION: 'read_introspection',
   TICK_CONTROL: 'tick_control',
   GOVERNOR_SUBMISSION: 'governor_submission',
+  RELEASE_CONTROL: 'release_control',
   HUMAN_OVERRIDE: 'human_override',
   ADMIN_AUTH: 'admin_auth',
 } as const);
@@ -81,6 +83,7 @@ export const operatorRoleSchema = z.enum([
   OPERATOR_ROLE.OBSERVER,
   OPERATOR_ROLE.OPERATOR,
   OPERATOR_ROLE.GOVERNOR_OPERATOR,
+  OPERATOR_ROLE.RELEASE_OPERATOR,
   OPERATOR_ROLE.ADMIN,
   OPERATOR_ROLE.BREAKGLASS_ADMIN,
 ]);
@@ -90,6 +93,7 @@ export const operatorRouteClassSchema = z.enum([
   OPERATOR_ROUTE_CLASS.READ_INTROSPECTION,
   OPERATOR_ROUTE_CLASS.TICK_CONTROL,
   OPERATOR_ROUTE_CLASS.GOVERNOR_SUBMISSION,
+  OPERATOR_ROUTE_CLASS.RELEASE_CONTROL,
   OPERATOR_ROUTE_CLASS.HUMAN_OVERRIDE,
   OPERATOR_ROUTE_CLASS.ADMIN_AUTH,
 ]);
@@ -196,6 +200,30 @@ export const OPERATOR_ROUTE_DESCRIPTORS = [
     routeClass: OPERATOR_ROUTE_CLASS.GOVERNOR_SUBMISSION,
     riskClass: OPERATOR_RISK_CLASS.HIGH_RISK,
   },
+  {
+    method: 'GET',
+    path: '/control/releases',
+    routeClass: OPERATOR_ROUTE_CLASS.RELEASE_CONTROL,
+    riskClass: OPERATOR_RISK_CLASS.HIGH_RISK,
+  },
+  {
+    method: 'POST',
+    path: '/control/releases',
+    routeClass: OPERATOR_ROUTE_CLASS.RELEASE_CONTROL,
+    riskClass: OPERATOR_RISK_CLASS.HIGH_RISK,
+  },
+  {
+    method: 'POST',
+    path: '/control/release-deploy-attempts',
+    routeClass: OPERATOR_ROUTE_CLASS.RELEASE_CONTROL,
+    riskClass: OPERATOR_RISK_CLASS.HIGH_RISK,
+  },
+  {
+    method: 'POST',
+    path: '/control/release-rollbacks',
+    routeClass: OPERATOR_ROUTE_CLASS.RELEASE_CONTROL,
+    riskClass: OPERATOR_RISK_CLASS.HIGH_RISK,
+  },
 ] as const satisfies readonly OperatorRouteDescriptor[];
 
 export const OPERATOR_ROLE_ROUTE_CLASS_PERMISSIONS: Readonly<
@@ -207,6 +235,7 @@ export const OPERATOR_ROLE_ROUTE_CLASS_PERMISSIONS: Readonly<
     OPERATOR_ROUTE_CLASS.TICK_CONTROL,
   ],
   [OPERATOR_ROLE.GOVERNOR_OPERATOR]: [OPERATOR_ROUTE_CLASS.GOVERNOR_SUBMISSION],
+  [OPERATOR_ROLE.RELEASE_OPERATOR]: [OPERATOR_ROUTE_CLASS.RELEASE_CONTROL],
   [OPERATOR_ROLE.ADMIN]: [OPERATOR_ROUTE_CLASS.ADMIN_AUTH],
   [OPERATOR_ROLE.BREAKGLASS_ADMIN]: [OPERATOR_ROUTE_CLASS.HUMAN_OVERRIDE],
 });

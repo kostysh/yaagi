@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-24T17:08:26.699Z",
-  "next_apply_index": 55,
+  "updated_at": "2026-04-24T17:56:56.528Z",
+  "next_apply_index": 57,
   "packets": [
     {
       "packet_id": "f0947cdd-67be-4f98-9cbd-bec31fce4589",
@@ -717,6 +717,31 @@
       "content_hash": "5f3f989f1ba8eab32713fa52c0b39344bd91f45c4df9fc8d006405529adfc9fe",
       "sequence": 53,
       "applied_at": "2026-04-24T17:08:26.699Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-019",
+        "CF-026"
+      ]
+    },
+    {
+      "patch_id": "2026-04-24-054-f0026-implementation-actualization",
+      "apply_index": 55,
+      "canonical_path": ".dossier/backlog/patches/aaa63249f4c8--F-0026-implementation-backlog-actualization.patch.json",
+      "content_hash": "aaa63249f4c8d4fc4f15ef8f6ef716b26df7998dcba453a4e2d979eb57511725",
+      "sequence": 54,
+      "applied_at": "2026-04-24T17:56:21.527Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-025"
+      ]
+    },
+    {
+      "patch_id": "2026-04-24-055-f0026-implementation-dependent-attention-closeout",
+      "apply_index": 56,
+      "canonical_path": ".dossier/backlog/patches/fc473d5064e3--F-0026-implementation-dependent-attention-closeout.patch.json",
+      "content_hash": "fc473d5064e37af27cdd268f1560fdaacf6cf1ff466ec9a5342b2c86928eff33",
+      "sequence": 55,
+      "applied_at": "2026-04-24T17:56:56.528Z",
       "kind": "patch-item",
       "target_item_keys": [
         "CF-019",

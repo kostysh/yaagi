@@ -74,6 +74,7 @@ void test('AC-F0024-03 protects operator routes while leaving platform health pu
 void test('AC-F0024-04 denies known callers without route permission before downstream owner invocation', async () => {
   let tickCalls = 0;
   let freezeCalls = 0;
+  let releaseCalls = 0;
   const { runtime, cleanup } = await createPlatformTestRuntime({
     dependencies: {
       createRuntimeLifecycle: () => ({
@@ -94,6 +95,13 @@ void test('AC-F0024-04 denies known callers without route permission before down
             decisionOrigin: 'operator',
             deduplicated: false,
             createdAt: '2026-04-23T10:00:00.000Z',
+          });
+        },
+        prepareRelease: () => {
+          releaseCalls += 1;
+          return Promise.resolve({
+            accepted: false,
+            reason: 'idempotency_conflict',
           });
         },
       }),
@@ -125,11 +133,30 @@ void test('AC-F0024-04 denies known callers without route permission before down
         }),
       }),
     );
+    const operatorRelease = await runtime.fetch(
+      new Request('http://yaagi/control/releases', {
+        method: 'POST',
+        headers: createOperatorAuthHeaders('operator', {
+          'content-type': 'application/json',
+        }),
+        body: JSON.stringify({
+          requestId: 'operator-release-rbac',
+          targetEnvironment: 'local',
+          gitRef: 'git:main',
+          rollbackTargetRef: 'git:stable',
+          governorEvidenceRef: 'development-proposal-decision:1',
+          lifecycleRollbackTargetRef: 'graceful_shutdown:shutdown-1',
+          modelServingReadinessRef: 'model_profile_health:code.deep@shared',
+        }),
+      }),
+    );
 
     assert.equal(observerTick.status, 403);
     assert.equal(operatorFreeze.status, 403);
+    assert.equal(operatorRelease.status, 403);
     assert.equal(tickCalls, 0);
     assert.equal(freezeCalls, 0);
+    assert.equal(releaseCalls, 0);
   } finally {
     await cleanup();
   }

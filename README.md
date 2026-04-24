@@ -47,6 +47,7 @@ Canonical engineering decisions for the repo:
 - local secret-bearing overrides: repo-root `.env.local` (gitignored), with checked-in shape in `.env.example`; canonical local-secret launch paths are `pnpm cell:up:local` and `pnpm smoke:cell:local`, while application code continues to read `process.env`
 - external secret-file override is supported for `YAAGI_TELEGRAM_BOT_TOKEN_FILE`, so production/container launches may inject the bot token through Docker secrets or an equivalent mounted secret file instead of repo-tracked config
 - operator routes other than `GET /health` require `YAAGI_OPERATOR_AUTH_PRINCIPALS_FILE`, a mounted/static JSON principal file with `schemaVersion: "2026-04-23.operator-auth.v1"` and SHA-256 token hashes only; missing/corrupt auth config or unavailable auth audit storage fails protected routes closed
+- release automation uses the shared `F-0026` service from both `pnpm release:cell` and protected Operator API routes; release control requires the `release_operator` role, stores release decisions in PostgreSQL, and writes linked evidence artifacts under `YAAGI_RELEASE_EVIDENCE_ROOT` or `${YAAGI_DATA_PATH}/release-evidence`
 - optional richer local model endpoints use `YAAGI_DEEP_MODEL_BASE_URL` and `YAAGI_POOL_MODEL_BASE_URL`; they default to local loopback `:8001/:8002`, stay non-boot-critical, and surface through `F-0014` source diagnostics as explicit unavailable/degraded state when the services are absent
 - canonical fast local-model baseline is `google/gemma-4-E4B-it` over `vllm/vllm-openai-rocm:gemma4`; first cold boot from an empty runtime `/models` volume may take several minutes because the artifact must materialize before `vllm-fast` becomes healthy, and local Docker/smoke runs should prefer `YAAGI_HF_TOKEN_FILE` (with `YAAGI_HF_TOKEN` kept only as a compatibility fallback that local infra automation materializes into a temp secret file)
 - default test runner: `node:test`
@@ -58,6 +59,8 @@ Canonical engineering decisions for the repo:
 - containerized phase-0 smoke verification: `pnpm smoke:cell`
   runs a suite-scoped deployment-cell harness with deterministic runtime resets between individual scenarios inside each scenario family instead of per-test full `compose down/up`, and Telegram-specific smoke overlays reuse the same shared `vllm-fast` runtime instead of booting a second model stack
   the harness also keeps one smoke-only direct PostgreSQL client over a smoke overlay port instead of repeated `docker compose exec postgres psql` polling during steady-state waits
+- local release automation entrypoint: `pnpm release:cell prepare|deploy|inspect|rollback`
+  uses the same service as the protected Operator API, checks canonical governor/lifecycle/model/report refs through read-only owner surfaces, refuses deploy attempts without rollback-plan, evidence-storage and smoke prerequisites, and executes rollback through the existing `pnpm cell:down` deployment-cell path
 
 Repo-level ADRs:
 - `docs/adr/ADR-2026-03-19-canonical-runtime-toolchain.md`

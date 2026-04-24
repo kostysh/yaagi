@@ -62,6 +62,10 @@
     "./reporting": {
       "types": "./src/reporting.ts",
       "default": "./src/reporting.ts"
+    },
+    "./release-automation": {
+      "types": "./src/release-automation.ts",
+      "default": "./src/release-automation.ts"
     }
   },
   "dependencies": {

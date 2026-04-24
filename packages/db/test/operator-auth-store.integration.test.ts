@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   OPERATOR_AUTH_DECISION,
   OPERATOR_AUTH_DENIAL_REASON,
@@ -112,4 +113,41 @@ void test('AC-F0024-11 records denied decisions with null principal and bounded 
   assert.equal(result.event.sessionRef, null);
   assert.equal(result.event.denialReason, OPERATOR_AUTH_DENIAL_REASON.UNAUTHENTICATED);
   assert.deepEqual(result.event.payloadJson, {});
+});
+
+void test('AC-F0026 protected release routes can persist operator auth audit events', async () => {
+  const harness = createHarness();
+  const store = createOperatorAuthStore(harness.db);
+
+  const result = await store.recordAuthAuditEvent({
+    auditEventId: 'operator-auth-audit:release-control',
+    requestId: 'http-request-release-control',
+    principalRef: 'operator:release',
+    sessionRef: 'operator-session:release:primary',
+    method: 'POST',
+    route: '/control/releases',
+    routeClass: OPERATOR_ROUTE_CLASS.RELEASE_CONTROL,
+    riskClass: OPERATOR_RISK_CLASS.CONTROL,
+    decision: OPERATOR_AUTH_DECISION.ALLOW,
+    denialReason: null,
+    evidenceRef: 'operator-auth-evidence:http-request-release-control',
+    payloadJson: { credentialRef: 'credential:release:primary' },
+    createdAt: '2026-04-24T20:00:00.000Z',
+  });
+
+  assert.equal(result.accepted, true);
+  assert.equal(result.event.routeClass, OPERATOR_ROUTE_CLASS.RELEASE_CONTROL);
+  assert.equal(result.event.route, '/control/releases');
+  assert.equal(result.event.principalRef, 'operator:release');
+});
+
+void test('AC-F0026 migration allows release_control in operator auth audit route-class constraint', async () => {
+  const migration = await readFile(
+    'infra/migrations/026_operator_auth_release_control_route_class.sql',
+    'utf8',
+  );
+
+  assert.match(migration, /DROP CONSTRAINT IF EXISTS operator_auth_audit_events_route_class_check/);
+  assert.match(migration, /ADD CONSTRAINT operator_auth_audit_events_route_class_check CHECK/);
+  assert.match(migration, /'release_control'/);
 });

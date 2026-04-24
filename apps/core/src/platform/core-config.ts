@@ -22,6 +22,7 @@ export type CoreRuntimeConfig = {
   workspaceSkillsPath: string;
   modelsPath: string;
   dataPath: string;
+  releaseEvidenceRootPath?: string;
   migrationsDir: string;
   pgBossSchema: string;
   operatorAuthPrincipalsFilePath: string | null;
@@ -103,8 +104,13 @@ const parsePositiveInteger = (
   return parsed;
 };
 
+const optionalEnvValue = (value: string | undefined): string | undefined => {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : undefined;
+};
+
 const resolvePath = (cwd: string, value: string | undefined, fallback: string): string =>
-  path.resolve(cwd, value ?? fallback);
+  path.resolve(cwd, optionalEnvValue(value) ?? fallback);
 
 const resolveOptionalPath = (cwd: string, value: string | undefined): string | null => {
   const trimmed = value?.trim();
@@ -116,7 +122,8 @@ const resolvePathFromRoot = (
   rootPath: string,
   value: string | undefined,
   fallbackRelativePath: string,
-): string => path.resolve(cwd, value ?? path.join(rootPath, fallbackRelativePath));
+): string =>
+  path.resolve(cwd, optionalEnvValue(value) ?? path.join(rootPath, fallbackRelativePath));
 
 const readSecretFile = (
   cwd: string,
@@ -158,6 +165,7 @@ const envSchema = z.object({
   YAAGI_WORKSPACE_SKILLS_PATH: z.string().optional(),
   YAAGI_MODELS_PATH: z.string().optional(),
   YAAGI_DATA_PATH: z.string().optional(),
+  YAAGI_RELEASE_EVIDENCE_ROOT: z.string().optional(),
   YAAGI_MIGRATIONS_DIR: z.string().optional(),
   YAAGI_PGBOSS_SCHEMA: z.string().optional(),
   YAAGI_OPERATOR_AUTH_PRINCIPALS_FILE: z.string().optional(),
@@ -172,6 +180,7 @@ export function loadCoreRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Cor
   const cwd = process.cwd();
   const parsedEnv = envSchema.parse(env);
   const seedRootPath = resolvePath(cwd, parsedEnv.YAAGI_SEED_ROOT_PATH, DEFAULT_SEED_ROOT_PATH);
+  const dataPath = resolvePath(cwd, parsedEnv.YAAGI_DATA_PATH, 'data');
   const telegramEnabled = parseBoolean(parsedEnv.YAAGI_TELEGRAM_ENABLED, false);
   const telegramBotToken =
     parsedEnv.YAAGI_TELEGRAM_BOT_TOKEN?.trim() ||
@@ -252,7 +261,12 @@ export function loadCoreRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Cor
       'workspace/skills',
     ),
     modelsPath: resolvePath(cwd, parsedEnv.YAAGI_MODELS_PATH, 'models'),
-    dataPath: resolvePath(cwd, parsedEnv.YAAGI_DATA_PATH, 'data'),
+    dataPath,
+    releaseEvidenceRootPath: resolvePath(
+      cwd,
+      parsedEnv.YAAGI_RELEASE_EVIDENCE_ROOT,
+      path.join(dataPath, 'release-evidence'),
+    ),
     migrationsDir: resolvePath(cwd, parsedEnv.YAAGI_MIGRATIONS_DIR, 'infra/migrations'),
     pgBossSchema: parsedEnv.YAAGI_PGBOSS_SCHEMA ?? DEFAULT_PG_BOSS_SCHEMA,
     operatorAuthPrincipalsFilePath: resolveOptionalPath(
