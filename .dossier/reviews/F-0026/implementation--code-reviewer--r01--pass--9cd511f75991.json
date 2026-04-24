@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "created_at": "2026-04-24T21:07:02.920Z",
+  "audit_class": "code-reviewer",
+  "artifact_role": "immutable_attempt",
+  "review_mode": "external",
+  "reviewer": "Ohm",
+  "reviewer_skill": "code-reviewer",
+  "reviewer_agent_id": "019dc147-7377-7e81-8b6b-ab191e7ef4c0",
+  "reviewer_thread_id": "019dc028-2688-7791-a888-53c3018aa4d8",
+  "review_attempt_id": "implementation--code-reviewer--r01",
+  "review_round_id": "r01",
+  "review_round_number": 1,
+  "latest_copy_path": ".dossier/reviews/F-0026/implementation--code-reviewer--latest.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0026-deploy-release-automation-rollback-orchestration.md",
+  "feature_id": "F-0026",
+  "event_commit": "9cd511f75991d3a5d9918fe66e307f9d50f38709",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "pnpm format pass",
+      "targeted F-0026 regression tests pass",
+      "pnpm typecheck pass",
+      "pnpm lint pass",
+      "pnpm test pass (455 tests)",
+      "pnpm smoke:cell pass (21 tests)",
+      ".dossier/verification/F-0026/implementation-9cd511f75991.json"
+    ]
+  },
+  "notes": "Проверены блокеры rollback idempotency: Operator API no random rollbackExecutionId, durable running reservation before executor, completeRollbackExecution guards, running status semantics, strict schemas and replay/dedupe paths."
+}

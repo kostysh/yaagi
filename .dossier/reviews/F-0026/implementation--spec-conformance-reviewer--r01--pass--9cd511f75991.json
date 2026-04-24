@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "created_at": "2026-04-24T21:06:44.476Z",
+  "audit_class": "spec-conformance-reviewer",
+  "artifact_role": "immutable_attempt",
+  "review_mode": "external",
+  "reviewer": "Mendel",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": "019dc147-72e1-7e22-92ef-1786f111bdae",
+  "reviewer_thread_id": "019dc028-2688-7791-a888-53c3018aa4d8",
+  "review_attempt_id": "implementation--spec-conformance-reviewer--r01",
+  "review_round_id": "r01",
+  "review_round_number": 1,
+  "latest_copy_path": ".dossier/reviews/F-0026/implementation--spec-conformance-reviewer--latest.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0026-deploy-release-automation-rollback-orchestration.md",
+  "feature_id": "F-0026",
+  "event_commit": "9cd511f75991d3a5d9918fe66e307f9d50f38709",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "pnpm format pass",
+      "targeted F-0026 regression tests pass",
+      "pnpm typecheck pass",
+      "pnpm lint pass",
+      "pnpm test pass (455 tests)",
+      "pnpm smoke:cell pass (21 tests)",
+      ".dossier/verification/F-0026/implementation-9cd511f75991.json"
+    ]
+  },
+  "notes": "Проверено соответствие F-0026: rollbackTargetRef, stable manual rollback replay, durable running reservation before rollback side effect, strict Operator API schemas, replay paths and deploy dedupe."
+}

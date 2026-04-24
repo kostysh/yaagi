@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "created_at": "2026-04-24T23:08:07.467Z",
+  "feature_id": "F-0026",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0026-deploy-release-automation-rollback-orchestration.md",
+  "implementation_step_artifact": ".dossier/steps/F-0026/implementation.json",
+  "implementation_process_complete_ts": "2026-04-24T23:07:27.566Z",
+  "refresh_ran_at": "2026-04-24T23:08:07.142Z",
+  "backlog_last_refresh_at": "2026-04-24T23:08:07.142Z",
+  "refresh_summary": {
+    "changed_sources": [],
+    "source_reviews_created": 0,
+    "source_reviews_updated": 0,
+    "source_review_ids": []
+  },
+  "status_summary": {
+    "total_items": 28,
+    "last_refresh_at": "2026-04-24T23:08:07.142Z",
+    "defined_count": 2,
+    "specified_count": 0,
+    "planned_count": 0,
+    "implemented_count": 26,
+    "gaps_count": 0,
+    "needs_attention_count": 0,
+    "ready_for_next_step_count": 2,
+    "open_todo_count": 0,
+    "artifact_integrity": {
+      "applied_canonical_paths_exist": true,
+      "missing_canonical_paths": []
+    },
+    "open_source_review_count": 0,
+    "source_review_blocked_item_count": 0,
+    "lifecycle_reconciliation_drift_count": 0,
+    "lifecycle_reconciliation_drifts": [],
+    "post_close_hygiene_missing_count": 0,
+    "post_close_hygiene_stale_count": 1,
+    "post_close_hygiene_blocked_count": 0,
+    "post_close_hygiene_missing_feature_ids": [],
+    "post_close_hygiene_stale_feature_ids": [
+      "F-0026"
+    ],
+    "post_close_hygiene_blocked_feature_ids": []
+  },
+  "attention_summary": [],
+  "queue_summary": {
+    "data": [
+      {
+        "root_item_key": "CF-019",
+        "items": [
+          "CF-019"
+        ],
+        "ordering_rule": [
+          "depth",
+          "downstream_dependency_count",
+          "item_key"
+        ]
+      },
+      {
+        "root_item_key": "CF-026",
+        "items": [
+          "CF-026"
+        ],
+        "ordering_rule": [
+          "depth",
+          "downstream_dependency_count",
+          "item_key"
+        ]
+      }
+    ],
+    "warnings": [
+      "Post-close backlog hygiene stale for implementation features: F-0026"
+    ]
+  },
+  "open_source_review_count": 0,
+  "source_review_blocked_item_count": 0,
+  "lifecycle_reconciliation_drift_count": 0,
+  "unresolved_attention_present": false,
+  "backlog_clean": true,
+  "blockers": []
+}

@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "created_at": "2026-04-24T23:07:16.411Z",
+  "audit_class": "security-reviewer",
+  "artifact_role": "latest_copy",
+  "review_mode": "external",
+  "reviewer": "Dewey",
+  "reviewer_skill": "security-reviewer",
+  "reviewer_agent_id": "019dc1b6-94c7-7bc1-9a80-789615756a33",
+  "reviewer_thread_id": "019dc1b6-94c7-7bc1-9a80-789615756a33",
+  "review_attempt_id": "implementation--security-reviewer--r03",
+  "review_round_id": "r03",
+  "review_round_number": 3,
+  "latest_copy_path": ".dossier/reviews/F-0026/implementation-security-review.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0026-deploy-release-automation-rollback-orchestration.md",
+  "feature_id": "F-0026",
+  "event_commit": "a3f5ce9bad4da4383346f6de9b50756e23703119",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": "implementation changes protected release-control Operator API, RBAC route class, host executor boundary, release/rollback persistence and deployment automation",
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "release_control route class with release_operator RBAC and admission before service invocation",
+      "strict API schemas and CLI allowlists reject trigger/rollbackExecutionId/smokeCommand control",
+      "host-only execFile smoke/rollback executors are CLI-injected and not default in container Operator API"
+    ]
+  },
+  "notes": "PASS on committed F-0026 implementation a3f5ce9 after final race-fix; no security findings in auth/RBAC, caller-controlled rollback fields, host executor boundary, DB idempotency, terminal-state writes, migrations or command execution.",
+  "immutable_artifact_path": ".dossier/reviews/F-0026/implementation--security-reviewer--r03--pass--a3f5ce9bad4d.json"
+}
