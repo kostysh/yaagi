@@ -2,7 +2,7 @@
 id: F-0026
 title: Deploy/release automation и rollback orchestration
 status: shaped
-coverage_gate: strict
+coverage_gate: deferred
 backlog_item_key: CF-025
 owners: ["@codex"]
 area: platform
@@ -337,3 +337,4 @@ PostgreSQL rows are authoritative for state and decisions. File artifacts are re
 
 - 2026-04-24: Initial dossier created from backlog item `CF-025` at backlog delivery state `defined`.
 - 2026-04-24: [spec-compact] Expanded `CF-025` into a shaped deploy/release/rollback spec with `local` + `release_cell` environments, PostgreSQL plus file evidence, automatic rollback on failed smoke-on-deploy, and CLI plus protected Operator API control surfaces.
+- 2026-04-24: [verification realignment] Deferred coverage gate for `spec-compact`; strict executable AC coverage is expected during implementation once tests can reference `AC-F0026-*`.
