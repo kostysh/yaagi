@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-24T13:09:59.289Z",
-  "next_apply_index": 50,
+  "updated_at": "2026-04-24T13:52:33.794Z",
+  "next_apply_index": 51,
   "packets": [
     {
       "packet_id": "f0947cdd-67be-4f98-9cbd-bec31fce4589",
@@ -656,6 +656,18 @@
       "content_hash": "6f2ed5560c68d2a8784cb712fd0ff995612811ee613feae46b66a5e4062d16ec",
       "sequence": 48,
       "applied_at": "2026-04-24T13:09:59.289Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-027"
+      ]
+    },
+    {
+      "patch_id": "2026-04-24-049-f0025-implementation-closeout",
+      "apply_index": 50,
+      "canonical_path": ".dossier/backlog/patches/e2ca0a405108--2026-04-24-049-f0025-implementation-closeout.patch.json",
+      "content_hash": "e2ca0a405108181709699acb0e0f852d33390faa59a0189b00756f739c0902cb",
+      "sequence": 49,
+      "applied_at": "2026-04-24T13:52:33.794Z",
       "kind": "patch-item",
       "target_item_keys": [
         "CF-027"

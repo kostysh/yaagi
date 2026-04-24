@@ -74,6 +74,7 @@ export type CoreRuntimeDependencies = {
     ingestHttpStimulus?(input: unknown): Promise<{
       stimulusId: string;
       deduplicated: boolean;
+      policyDecision?: unknown;
       tickAdmission?: { accepted: boolean; reason?: string };
     }>;
     requestTick?(input: {
@@ -360,6 +361,7 @@ export function createCoreRuntime(
           accepted: true,
           stimulusId: result.stimulusId,
           deduplicated: result.deduplicated,
+          ...(result.policyDecision ? { policyDecision: result.policyDecision } : {}),
           tickAdmission: result.tickAdmission ?? null,
         },
         202,

@@ -54,6 +54,19 @@ export {
   type ReportingService,
 } from './reporting.ts';
 export {
+  createDbBackedPolicyGovernanceService,
+  createPolicyGovernanceService,
+  PHASE6_POLICY_GOVERNANCE_EVENT_KIND,
+  type ConsultantAdmissionInput,
+  type ConsultantAdmissionResult,
+  type ConsultantExecutionResult,
+  type PerceptionPolicyEnforcementInput,
+  type PolicyActivationServiceInput,
+  type PolicyActivationServiceResult,
+  type PolicyEvidenceBundle,
+  type PolicyGovernanceService,
+} from './policy-governance.ts';
+export {
   createDbBackedLifecycleConsolidationService,
   type LifecycleConsolidationService,
 } from './lifecycle-consolidation.ts';

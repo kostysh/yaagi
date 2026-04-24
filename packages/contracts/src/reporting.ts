@@ -27,6 +27,7 @@ export const REPORT_SOURCE_OWNER = Object.freeze({
   DEVELOPMENT_GOVERNOR: 'F-0016',
   BODY_EVOLUTION: 'F-0017',
   LIFECYCLE: 'F-0019',
+  PHASE6_POLICY_GOVERNANCE: 'F-0025',
 } as const);
 
 export type ReportSourceOwner = (typeof REPORT_SOURCE_OWNER)[keyof typeof REPORT_SOURCE_OWNER];
@@ -86,6 +87,11 @@ export const REPORTING_FOREIGN_WRITE_SURFACE = Object.freeze({
   GRACEFUL_SHUTDOWN_EVENTS: 'polyphony_runtime.graceful_shutdown_events',
   RETENTION_COMPACTION_RUNS: 'polyphony_runtime.retention_compaction_runs',
   BODY_STABLE_SNAPSHOTS: 'polyphony_runtime.body_stable_snapshots',
+  POLICY_PROFILES: 'polyphony_runtime.policy_profiles',
+  POLICY_PROFILE_ACTIVATIONS: 'polyphony_runtime.policy_profile_activations',
+  CONSULTANT_ADMISSION_DECISIONS: 'polyphony_runtime.consultant_admission_decisions',
+  PERCEPTION_POLICY_DECISIONS: 'polyphony_runtime.perception_policy_decisions',
+  PHASE6_GOVERNANCE_EVENTS: 'polyphony_runtime.phase6_governance_events',
 } as const);
 
 export type ReportingForeignWriteSurface =

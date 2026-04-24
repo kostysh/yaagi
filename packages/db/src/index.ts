@@ -57,6 +57,20 @@ export {
   type RecordOperatorAuthAuditEventResult,
 } from './operator-auth.ts';
 export {
+  CONSERVATIVE_BASELINE_POLICY_PROFILE,
+  createPolicyGovernanceStore,
+  type PolicyGovernanceDbExecutor,
+  type PolicyGovernanceStore,
+  type RecordConsultantAdmissionDecisionInput,
+  type RecordConsultantAdmissionDecisionResult,
+  type RecordPerceptionPolicyDecisionInput,
+  type RecordPerceptionPolicyDecisionResult,
+  type RecordPhase6GovernanceEventInput,
+  type RecordPolicyActivationInput,
+  type RecordPolicyActivationResult,
+  type RecordPolicyProfileInput,
+} from './policy-governance.ts';
+export {
   createBodyEvolutionStore,
   type BodyChangeEventRow,
   type BodyChangeProposalRow,

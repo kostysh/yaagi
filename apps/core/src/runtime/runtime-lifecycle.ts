@@ -14,6 +14,7 @@ import type {
   OperatorRicherRegistryHealthSummary,
   ServingDependencyState,
 } from '@yaagi/contracts/models';
+import type { Phase6GovernanceEventRow } from '@yaagi/contracts/policy-governance';
 import {
   DEFAULT_PERCEPTION_HEALTH,
   type HttpIngestStimulusInput,
@@ -104,6 +105,7 @@ import {
 } from './development-governor.ts';
 import { createExpandedModelEcologyService } from './model-ecology.ts';
 import { createDbBackedReportingService, type ReportingBundle } from './reporting.ts';
+import { createDbBackedPolicyGovernanceService } from './policy-governance.ts';
 import {
   createDbBackedWorkshopService,
   createWorkshopWorker,
@@ -177,6 +179,7 @@ type RuntimeLifecycle = {
   getServingDependencyStates(): Promise<ServingDependencyState[]>;
   peekServingDependencyStates(): ServingDependencyState[];
   getReportingBundle(): Promise<ReportingBundle>;
+  listPhase6GovernanceEvents(input?: { limit?: number }): Promise<Phase6GovernanceEventRow[]>;
   getSkillRuntimeDiagnostics(): Promise<SkillRuntimeDiagnostics>;
   syncSkillsFromSeed(): Promise<void>;
   recordOperatorAuthAuditEvent(
@@ -1229,6 +1232,7 @@ export function createPhase0RuntimeLifecycle(
   const developmentGovernor: DevelopmentGovernorService =
     createDbBackedDevelopmentGovernorService(config);
   const reportingService = createDbBackedReportingService(config);
+  const policyGovernance = createDbBackedPolicyGovernanceService(config);
   const homeostatService: HomeostatService = createDbBackedHomeostatService(config, {
     handleReactionRequest: async (request) => {
       await developmentGovernor.applyHomeostatReaction(request);
@@ -1355,6 +1359,7 @@ export function createPhase0RuntimeLifecycle(
     config,
     store: createDbBackedPerceptionStore(config),
     requestReactiveTick: requestTickWithPromotedDependencyGate,
+    policyGovernance,
   });
   const runtimeSkills = createRuntimeSkillsService(config);
 
@@ -1562,6 +1567,7 @@ export function createPhase0RuntimeLifecycle(
 
       const expectedSchemaVersion = await withRuntimeClient(config.postgresUrl, readSchemaVersion);
       runtimeSchemaVersion = expectedSchemaVersion;
+      await policyGovernance.ensureConservativeBaselinePolicyProfile();
 
       const bootService = new ConstitutionalBootService({
         expectedSchemaVersion,
@@ -1758,6 +1764,9 @@ export function createPhase0RuntimeLifecycle(
     },
     getReportingBundle(): Promise<ReportingBundle> {
       return reportingService.getReportingBundle();
+    },
+    listPhase6GovernanceEvents(input?: { limit?: number }): Promise<Phase6GovernanceEventRow[]> {
+      return policyGovernance.listPhase6GovernanceEvents(input);
     },
     recordOperatorAuthAuditEvent(input) {
       return withRuntimeClient(config.postgresUrl, async (client) => {

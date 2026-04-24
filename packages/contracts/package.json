@@ -43,6 +43,10 @@
       "types": "./src/perimeter.ts",
       "default": "./src/perimeter.ts"
     },
+    "./policy-governance": {
+      "types": "./src/policy-governance.ts",
+      "default": "./src/policy-governance.ts"
+    },
     "./models": {
       "types": "./src/models.ts",
       "default": "./src/models.ts"

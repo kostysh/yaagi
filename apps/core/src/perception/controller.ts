@@ -2,6 +2,10 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import type { TickRequestResult } from '@yaagi/contracts/runtime';
 import {
+  PERCEPTION_POLICY_OUTCOME,
+  type PerceptionPolicyDecisionRow,
+} from '@yaagi/contracts/policy-governance';
+import {
   ADAPTER_HEALTH_STATUS,
   DEFAULT_PERCEPTION_BACKLOG_COUNTS,
   DEFAULT_PERCEPTION_HEALTH,
@@ -44,6 +48,7 @@ const SOURCE_ORDER: SensorSource[] = [
 export type StimulusIngestResult = {
   stimulusId: string;
   deduplicated: boolean;
+  policyDecision?: PerceptionPolicyDecisionRow;
   tickAdmission?: TickRequestResult;
 };
 
@@ -78,6 +83,12 @@ type ControllerOptions = {
     requestedAt: string;
     payload: Record<string, unknown>;
   }) => Promise<TickRequestResult>;
+  policyGovernance?: {
+    enforcePerceptionPolicy(input: {
+      stimulus: StimulusInboxRecord;
+      requestedAt: string;
+    }): Promise<PerceptionPolicyDecisionRow>;
+  };
   now?: () => string;
   createId?: () => string;
   // Test-only hooks for deterministic adapter verification without widening the runtime config.
@@ -226,6 +237,24 @@ export function createPerceptionController(options: ControllerOptions): Percepti
     adapterSnapshots.set(snapshot.source, snapshot);
   };
 
+  const enforcePerceptionPolicy = async (
+    stimulus: StimulusInboxRecord,
+  ): Promise<PerceptionPolicyDecisionRow | undefined> => {
+    if (!options.policyGovernance) {
+      return undefined;
+    }
+
+    return await options.policyGovernance.enforcePerceptionPolicy({
+      stimulus,
+      requestedAt: now(),
+    });
+  };
+
+  const policyAllowsReactiveTick = (decision: PerceptionPolicyDecisionRow | undefined): boolean =>
+    !decision ||
+    decision.outcome === PERCEPTION_POLICY_OUTCOME.ACCEPTED ||
+    decision.outcome === PERCEPTION_POLICY_OUTCOME.DEGRADED;
+
   const ingestSignal = async (signal: SensorSignal): Promise<StimulusIngestResult> => {
     const occurredAt = signal.occurredAt ?? now();
     const priority =
@@ -324,6 +353,20 @@ export function createPerceptionController(options: ControllerOptions): Percepti
             if (merged) {
               target = merged;
               if (isUrgentStimulus(merged) && !existingWasUrgent) {
+                const policyDecision = await enforcePerceptionPolicy(merged);
+                if (!policyAllowsReactiveTick(policyDecision)) {
+                  reportAdapterStatus({
+                    source: signal.source,
+                    status: ADAPTER_HEALTH_STATUS.HEALTHY,
+                    lastSignalAt: target.updatedAt,
+                  });
+                  return {
+                    stimulusId: target.stimulusId,
+                    deduplicated: true,
+                    ...(policyDecision ? { policyDecision } : {}),
+                  };
+                }
+
                 const tickAdmission = await options.requestReactiveTick({
                   requestId: `perception:${merged.stimulusId}`,
                   kind: 'reactive',
@@ -344,6 +387,7 @@ export function createPerceptionController(options: ControllerOptions): Percepti
                 return {
                   stimulusId: target.stimulusId,
                   deduplicated: true,
+                  ...(policyDecision ? { policyDecision } : {}),
                   tickAdmission,
                 };
               }
@@ -376,10 +420,21 @@ export function createPerceptionController(options: ControllerOptions): Percepti
       lastSignalAt: row.occurredAt,
     });
 
+    const policyDecision = await enforcePerceptionPolicy(row);
+
     if (!row.requiresImmediateTick && row.priority !== STIMULUS_PRIORITY.CRITICAL) {
       return {
         stimulusId: row.stimulusId,
         deduplicated: false,
+        ...(policyDecision ? { policyDecision } : {}),
+      };
+    }
+
+    if (!policyAllowsReactiveTick(policyDecision)) {
+      return {
+        stimulusId: row.stimulusId,
+        deduplicated: false,
+        ...(policyDecision ? { policyDecision } : {}),
       };
     }
 
@@ -398,6 +453,7 @@ export function createPerceptionController(options: ControllerOptions): Percepti
     return {
       stimulusId: row.stimulusId,
       deduplicated: false,
+      ...(policyDecision ? { policyDecision } : {}),
       tickAdmission,
     };
   };

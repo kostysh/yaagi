@@ -1,8 +1,8 @@
 ---
 id: F-0025
 title: Policy profiles, consultant admission и phase-6 governance closure
-status: planned
-coverage_gate: deferred
+status: done
+coverage_gate: strict
 backlog_item_key: CF-027
 owners: ["@codex"]
 area: governance
@@ -301,20 +301,20 @@ Implementation is complete when:
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0025-01 | `packages/contracts/test/policy-governance.contract.test.ts`; `packages/db/test/policy-governance-store.integration.test.ts` | planned |
-| AC-F0025-02 | `packages/contracts/test/policy-governance.contract.test.ts`; `apps/core/test/runtime/policy-governance-service.contract.test.ts` | planned |
-| AC-F0025-03 | `packages/db/test/policy-governance-store.integration.test.ts`; `apps/core/test/runtime/policy-governance-service.contract.test.ts` | planned |
-| AC-F0025-04 | `apps/core/test/models/consultant-admission.integration.test.ts` | planned |
-| AC-F0025-05 | `apps/core/test/models/consultant-admission.integration.test.ts`; `apps/core/test/models/consultant-no-remap.contract.test.ts` | planned |
-| AC-F0025-06 | `apps/core/test/models/consultant-admission.integration.test.ts`; `apps/core/test/models/model-router.contract.test.ts` | planned |
-| AC-F0025-07 | `apps/core/test/models/consultant-no-remap.contract.test.ts` | planned |
-| AC-F0025-08 | `apps/core/test/perception/perception-policy.integration.test.ts`; `apps/core/test/perception/perception-policy-boundary.contract.test.ts` | planned |
-| AC-F0025-09 | `apps/core/test/runtime/policy-governance-service.contract.test.ts`; `apps/core/test/runtime/policy-governance-boundary.contract.test.ts` | planned |
-| AC-F0025-10 | `apps/core/test/runtime/policy-governance-boundary.contract.test.ts` | planned |
-| AC-F0025-11 | `apps/core/test/runtime/phase6-governance-events.integration.test.ts`; `apps/core/test/runtime/reporting-service.integration.test.ts` | planned |
-| AC-F0025-12 | `apps/core/test/platform/policy-governance-config.contract.test.ts`; `apps/core/test/runtime/policy-governance-boundary.contract.test.ts`; `pnpm smoke:cell` | planned |
-| AC-F0025-13 | `apps/core/test/models/consultant-admission.integration.test.ts`; `apps/core/test/models/consultant-no-remap.contract.test.ts` | planned |
-| AC-F0025-14 | `apps/core/test/runtime/policy-governance-boundary.contract.test.ts`; `apps/core/test/perception/perception-policy-boundary.contract.test.ts` | planned |
+| AC-F0025-01 | `packages/contracts/test/policy-governance.contract.test.ts`; `packages/db/test/policy-governance-store.integration.test.ts` | implemented |
+| AC-F0025-02 | `packages/contracts/test/policy-governance.contract.test.ts`; `apps/core/test/runtime/policy-governance-service.contract.test.ts` | implemented |
+| AC-F0025-03 | `packages/db/test/policy-governance-store.integration.test.ts`; `apps/core/test/runtime/policy-governance-service.contract.test.ts` | implemented |
+| AC-F0025-04 | `apps/core/test/models/consultant-admission.integration.test.ts`; `apps/core/test/runtime/policy-governance-service.contract.test.ts` | implemented |
+| AC-F0025-05 | `apps/core/test/models/consultant-admission.integration.test.ts`; `apps/core/test/models/consultant-no-remap.contract.test.ts` | implemented |
+| AC-F0025-06 | `apps/core/test/models/consultant-no-remap.contract.test.ts`; `apps/core/test/models/model-router.contract.test.ts` | implemented |
+| AC-F0025-07 | `apps/core/test/models/consultant-no-remap.contract.test.ts`; `apps/core/test/models/consultant-admission.integration.test.ts` | implemented |
+| AC-F0025-08 | `apps/core/test/perception/perception-policy.integration.test.ts`; `apps/core/test/perception/perception-policy-boundary.contract.test.ts` | implemented |
+| AC-F0025-09 | `apps/core/test/runtime/policy-governance-service.contract.test.ts`; `apps/core/test/runtime/policy-governance-boundary.contract.test.ts` | implemented |
+| AC-F0025-10 | `apps/core/test/runtime/policy-governance-boundary.contract.test.ts`; `apps/core/test/runtime/policy-governance-service.contract.test.ts` | implemented |
+| AC-F0025-11 | `apps/core/test/runtime/phase6-governance-events.integration.test.ts`; `packages/contracts/test/reporting.contract.test.ts`; `packages/db/test/policy-governance-store.integration.test.ts` | implemented |
+| AC-F0025-12 | `apps/core/test/platform/policy-governance-config.contract.test.ts`; `apps/core/test/runtime/policy-governance-boundary.contract.test.ts`; `pnpm smoke:cell` | implemented |
+| AC-F0025-13 | `apps/core/test/models/consultant-admission.integration.test.ts`; `apps/core/test/models/consultant-no-remap.contract.test.ts` | implemented |
+| AC-F0025-14 | `apps/core/test/runtime/policy-governance-boundary.contract.test.ts`; `apps/core/test/perception/perception-policy-boundary.contract.test.ts`; `packages/db/test/policy-governance-store.integration.test.ts` | implemented |
 
 ## 9. Decision log (ADR blocks)
 
@@ -342,7 +342,7 @@ Implementation is complete when:
 ## 10. Progress & links
 
 - Backlog item key: CF-027
-- Status progression: `proposed -> shaped -> planned`
+- Status progression: `proposed -> shaped -> planned -> in_progress -> done`
 - Current stage: `implementation`
 - Issue:
 - PRs:
@@ -352,3 +352,4 @@ Implementation is complete when:
 - 2026-04-24: Initial dossier created from backlog item `CF-027` at backlog delivery state `defined`.
 - 2026-04-24 [spec-compact] [scope realignment]: Shaped `F-0025` as the mature phase-6 policy/admission owner without reowning governor, perimeter, router, perception, observability, auth, release or support seams.
 - 2026-04-24 [plan-slice] [dependency realignment]: Planned implementation slices across contracts, DB store, runtime policy service, consultant admission, perception-policy enforcement and owner-boundary/reporting closure, with backlog lifecycle target `planned`.
+- 2026-04-24 [implementation] Delivered policy-governance contracts, PostgreSQL decision-fact tables/store, conservative baseline profile seeding, activation evidence gates, consultant admission-before-invocation, perception-policy classification over canonical intake and owner-boundary/reporting evidence tests without adding a boot-critical consultant dependency or new gateway.
