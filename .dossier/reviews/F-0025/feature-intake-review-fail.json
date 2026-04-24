@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "created_at": "2026-04-24T12:24:11.387Z",
+  "audit_class": "spec-conformance-reviewer",
+  "review_mode": "external",
+  "reviewer": "external-codex-exec",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": "019dbf6b-7272-7602-b548-7961ca2a63dd",
+  "reviewer_thread_id": "019dbf3f-4287-7722-9adb-c3ec2482111e",
+  "step": "feature-intake",
+  "dossier": "docs/ssot/features/F-0025-policy-profiles-consultant-admission-phase-6-governance-closure.md",
+  "feature_id": "F-0025",
+  "event_commit": "2dd54dcef2a76b57151105a9fc56dd7b16d7175e",
+  "implementation_scope": null,
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "FAIL",
+  "findings": {
+    "must_fix": [
+      "Dossier is scaffold-only for CF-027 boundary content: User problem, Goal, Non-goals, In scope and Out of scope are empty despite CF-027 watchpoints requiring explicit seam separation and admission/refusal boundaries.",
+      "Stage log narrative contradicts actual intake facts by recording none for scope, inputs, backlog handoff decisions, and index refresh."
+    ],
+    "should_fix": [
+      "Populate links.docs with the intake source documents already named in the dossier body."
+    ],
+    "evidence": [
+      "External review session 019dbf6b-7272-7602-b548-7961ca2a63dd returned FAIL.",
+      "F-0025 maps one feature to CF-027, but scope boundary content is empty.",
+      "Stage log sections record none while dossier, backlog state, and index contain concrete intake facts."
+    ]
+  },
+  "notes": "External independent review failed. Must-fix before feature-intake closure: fill CF-027 boundary content and correct stage-log narrative telemetry."
+}
