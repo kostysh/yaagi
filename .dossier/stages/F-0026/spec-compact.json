@@ -12,15 +12,17 @@
   "backlog_lifecycle_target": "specified",
   "backlog_lifecycle_current": "specified",
   "backlog_lifecycle_reconciled": true,
-  "backlog_actualization_artifacts": [],
-  "backlog_actualization_verdict": "current_state_satisfies_target",
+  "backlog_actualization_artifacts": [
+    ".dossier/backlog/patches/9cff4f89b443--2026-04-24-050-f0026-spec-compact-actualization.patch.json"
+  ],
+  "backlog_actualization_verdict": "actualized_by_backlog_artifact",
   "backlog_followup_required": false,
   "backlog_followup_kind": null,
   "backlog_followup_resolved": true,
   "stage_state": "ready_for_close",
   "start_ts": "2026-04-24T16:32:43.331Z",
   "entered_ts": "2026-04-24T16:32:43.331Z",
-  "ready_for_close_ts": "2026-04-24T16:37:05.152Z",
+  "ready_for_close_ts": "2026-04-24T16:42:41.632Z",
   "transition_events": [
     {
       "kind": "entered",
@@ -29,19 +31,52 @@
     {
       "kind": "ready_for_close",
       "at": "2026-04-24T16:37:05.152Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-24T16:42:41.632Z"
     }
   ],
   "required_audit_classes": [
     "spec-conformance-reviewer"
   ],
-  "executed_audit_classes": [],
-  "required_external_review_pending": true,
-  "review_artifacts": [],
-  "verification_artifacts": [],
-  "review_events": [],
-  "reviewer_skills": [],
+  "executed_audit_classes": [
+    "spec-conformance-reviewer"
+  ],
+  "required_external_review_pending": false,
+  "review_artifacts": [
+    ".dossier/reviews/F-0026/spec-compact-review-pass.json"
+  ],
+  "verification_artifacts": [
+    ".dossier/verification/F-0026/spec-compact-verify.json"
+  ],
+  "review_events": [
+    {
+      "allowed_by_policy": true,
+      "artifact_path": ".dossier/reviews/F-0026/spec-compact-review-pass.json",
+      "audit_class": "spec-conformance-reviewer",
+      "event_commit": "99cf69eefd4231ea594bc21a1d9de524c45daea5",
+      "implementation_scope": null,
+      "invalidated": false,
+      "must_fix_count": 0,
+      "recorded_at": "2026-04-24T16:52:38.213Z",
+      "review_mode": "external",
+      "reviewer": "external-spec-review-agent",
+      "reviewer_agent_id": null,
+      "reviewer_skill": "spec-conformance-reviewer",
+      "reviewer_thread_id": "019dc065-f390-7383-a756-eb4ab8940c19",
+      "security_trigger_reason": null,
+      "stale": false,
+      "verdict": "PASS"
+    }
+  ],
+  "reviewer_skills": [
+    "spec-conformance-reviewer"
+  ],
   "reviewer_agent_ids": [],
-  "review_trace_commits": [],
+  "review_trace_commits": [
+    "99cf69eefd4231ea594bc21a1d9de524c45daea5"
+  ],
   "degraded_review_present": false,
   "invalidated_review_present": false,
   "stale_review_present": false,
@@ -50,21 +85,29 @@
   ],
   "skill_issues": [],
   "skill_followups": [],
-  "process_misses": [],
+  "process_misses": [
+    {
+      "id": "F0026-COVERAGE-GATE",
+      "category": "verification",
+      "severity": "low",
+      "resolved": true,
+      "summary": "Initial dossier-verify used strict coverage before implementation tests existed, realigned coverage_gate to deferred for spec-compact."
+    }
+  ],
   "session_id": "019dc028-2688-7791-a888-53c3018aa4d8",
   "trace_runtime": "codex",
   "trace_locator_kind": "session_id",
   "stage_entry_commit": null,
-  "final_delivery_commit": "14ee936132f50fef5cfbf0ac8c0d250ed0e15184",
-  "final_closure_commit": null,
+  "final_delivery_commit": "1ccc7611c38982775367b74faab329b2890eb4cd",
+  "final_closure_commit": "99cf69eefd4231ea594bc21a1d9de524c45daea5",
   "implementation_review_scope": null,
-  "required_security_review": null,
+  "required_security_review": false,
   "security_trigger_reasons": [],
-  "step_close_ts": null,
-  "step_artifact": null,
-  "process_complete_ts": null,
+  "step_close_ts": "2026-04-24T16:52:53.519Z",
+  "step_artifact": ".dossier/steps/F-0026/spec-compact.json",
+  "process_complete_ts": "2026-04-24T16:52:53.519Z",
   "intake_process_complete_ts": null,
   "local_gates_green_ts": null,
-  "first_review_agent_started_ts": null,
-  "final_pass_ts": null
+  "first_review_agent_started_ts": "2026-04-24T16:52:38.213Z",
+  "final_pass_ts": "2026-04-24T16:52:38.213Z"
 }

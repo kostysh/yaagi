@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "created_at": "2026-04-24T16:52:38.203Z",
+  "audit_class": "spec-conformance-reviewer",
+  "review_mode": "external",
+  "reviewer": "external-spec-review-agent",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": null,
+  "reviewer_thread_id": "019dc065-f390-7383-a756-eb4ab8940c19",
+  "step": "spec-compact",
+  "dossier": "docs/ssot/features/F-0026-deploy-release-automation-rollback-orchestration.md",
+  "feature_id": "F-0026",
+  "event_commit": "99cf69eefd4231ea594bc21a1d9de524c45daea5",
+  "implementation_scope": null,
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "CF-025 scope mirrored without support/runbook or specialist rollout expansion.",
+      "Plan-mode decisions represented: local + release_cell, PostgreSQL + linked files, automatic rollback on failed smoke, CLI + protected Operator API, feature-local ADR first.",
+      "Backlog lifecycle aligned: CF-025 specified and ready for next step."
+    ]
+  },
+  "notes": "PASS: F-0026 faithfully shapes CF-025 as release/deploy/rollback orchestration owner, preserves neighboring owners as read-only dependencies, represents Plan-mode decisions, and is coherent for plan-slice."
+}

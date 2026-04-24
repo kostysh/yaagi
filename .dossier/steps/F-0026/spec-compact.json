@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "created_at": "2026-04-24T16:52:53.502Z",
+  "feature_id": "F-0026",
+  "dossier": "docs/ssot/features/F-0026-deploy-release-automation-rollback-orchestration.md",
+  "step": "spec-compact",
+  "dossier_status": "shaped",
+  "event_commit": "99cf69eefd4231ea594bc21a1d9de524c45daea5",
+  "review_trace_commit": "99cf69eefd4231ea594bc21a1d9de524c45daea5",
+  "review_trace_commits": [
+    "99cf69eefd4231ea594bc21a1d9de524c45daea5"
+  ],
+  "verification_trace_commit": "99cf69eefd4231ea594bc21a1d9de524c45daea5",
+  "verification_artifact": ".dossier/verification/F-0026/spec-compact-verify.json",
+  "review_artifacts": [
+    ".dossier/reviews/F-0026/spec-compact-review-pass.json"
+  ],
+  "review_freshness": "pass",
+  "required_audit_classes": [
+    "spec-conformance-reviewer"
+  ],
+  "executed_audit_classes": [
+    "spec-conformance-reviewer"
+  ],
+  "required_external_review_pending": false,
+  "implementation_review_scope": null,
+  "required_security_review": false,
+  "degraded_review_present": false,
+  "invalidated_review_present": false,
+  "stale_review_present": false,
+  "reviewer_skills": [
+    "spec-conformance-reviewer"
+  ],
+  "reviewer_agent_ids": [],
+  "security_trigger_reasons": [],
+  "process_complete": true,
+  "blockers": [],
+  "next_step": "plan-slice"
+}
