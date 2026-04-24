@@ -1,0 +1,27 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-24-051-cf025-dependent-review-closeout",
+    "created_at": "2026-04-24T17:00:29.000Z",
+    "sequence": 51,
+    "target_item_keys": [
+      "CF-019",
+      "CF-026"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-019",
+      "action": "remove_todo",
+      "todo_ids": [
+        "95fd5d0f-6b8d-4c58-984a-88ec2b06884e"
+      ]
+    },
+    {
+      "item_key": "CF-026",
+      "action": "remove_todo",
+      "todo_ids": [
+        "09cf9fdb-931a-4c47-8481-eb40375d27df"
+      ]
+    }
+  ]
+}
