@@ -28,6 +28,7 @@ links:
     - "docs/adr/ADR-2026-03-19-canonical-runtime-toolchain.md"
     - "docs/adr/ADR-2026-03-19-phase0-deployment-cell.md"
     - "docs/adr/ADR-2026-03-19-quality-gate-sequence.md"
+    - "docs/adr/ADR-2026-03-23-plan-mode-decision-gate.md"
 ---
 
 ## 1. Context & Goal
