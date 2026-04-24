@@ -36,6 +36,7 @@ const policyProfileActivationsTable = `${RUNTIME_SCHEMA}.policy_profile_activati
 const consultantAdmissionDecisionsTable = `${RUNTIME_SCHEMA}.consultant_admission_decisions`;
 const perceptionPolicyDecisionsTable = `${RUNTIME_SCHEMA}.perception_policy_decisions`;
 const phase6GovernanceEventsTable = `${RUNTIME_SCHEMA}.phase6_governance_events`;
+const policyActivationScopeLockNamespace = 'yaagi.policy_profile_activations.active_scope';
 
 const asUtcIso = (column: string, alias: string): string =>
   `to_char(${column} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "${alias}"`;
@@ -441,6 +442,26 @@ const loadPerceptionPolicyDecisionByRequestId = async (
   return result.rows[0] ? normalizePerceptionPolicyDecisionRow(result.rows[0]) : null;
 };
 
+const acquirePolicyActivationScopeLock = async (
+  db: PolicyGovernanceDbExecutor,
+  scope: PolicyGovernanceScope,
+): Promise<void> => {
+  await db.query(`select pg_advisory_lock(hashtext($1), hashtext($2))`, [
+    policyActivationScopeLockNamespace,
+    scope,
+  ]);
+};
+
+const releasePolicyActivationScopeLock = async (
+  db: PolicyGovernanceDbExecutor,
+  scope: PolicyGovernanceScope,
+): Promise<void> => {
+  await db.query(`select pg_advisory_unlock(hashtext($1), hashtext($2))`, [
+    policyActivationScopeLockNamespace,
+    scope,
+  ]);
+};
+
 export function createPolicyGovernanceStore(db: PolicyGovernanceDbExecutor): PolicyGovernanceStore {
   const resolveActivePolicyActivation = async (
     scope: PolicyGovernanceScope,
@@ -550,70 +571,76 @@ export function createPolicyGovernanceStore(db: PolicyGovernanceDbExecutor): Pol
     async recordPolicyActivation(
       input: RecordPolicyActivationInput,
     ): Promise<RecordPolicyActivationResult> {
-      if (input.decision === POLICY_ACTIVATION_DECISION.ACTIVATE) {
-        const active = await resolveActivePolicyActivation(input.scope);
-        if (
-          active &&
-          (active.profileId !== input.profileId || active.profileVersion !== input.profileVersion)
-        ) {
-          return {
-            accepted: false,
-            reason: 'active_scope_conflict',
-            activation: active,
-          };
+      await acquirePolicyActivationScopeLock(db, input.scope);
+      try {
+        if (input.decision === POLICY_ACTIVATION_DECISION.ACTIVATE) {
+          const active = await resolveActivePolicyActivation(input.scope);
+          if (
+            active &&
+            (active.profileId !== input.profileId || active.profileVersion !== input.profileVersion)
+          ) {
+            return {
+              accepted: false,
+              reason: 'active_scope_conflict',
+              activation: active,
+            };
+          }
         }
-      }
+        const result = await db.query<QueryResultRow>(
+          `insert into ${policyProfileActivationsTable} (
+            activation_id,
+            request_id,
+            normalized_request_hash,
+            profile_id,
+            profile_version,
+            scope,
+            decision,
+            reason_code,
+            actor_ref,
+            evidence_refs_json,
+            activated_at,
+            deactivated_at,
+            created_at
+          ) values (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, $13
+          )
+          on conflict (request_id) do nothing
+          returning ${policyProfileActivationColumns}`,
+          [
+            input.activationId,
+            input.requestId,
+            input.normalizedRequestHash,
+            input.profileId,
+            input.profileVersion,
+            input.scope,
+            input.decision,
+            input.reasonCode,
+            input.actorRef,
+            JSON.stringify(input.evidenceRefs),
+            input.activatedAt,
+            input.deactivatedAt,
+            input.createdAt,
+          ],
+        );
+        const inserted = result.rows[0]
+          ? normalizePolicyProfileActivationRow(result.rows[0])
+          : null;
+        if (inserted) {
+          return { accepted: true, deduplicated: false, activation: inserted };
+        }
 
-      const result = await db.query<QueryResultRow>(
-        `insert into ${policyProfileActivationsTable} (
-          activation_id,
-          request_id,
-          normalized_request_hash,
-          profile_id,
-          profile_version,
-          scope,
-          decision,
-          reason_code,
-          actor_ref,
-          evidence_refs_json,
-          activated_at,
-          deactivated_at,
-          created_at
-        ) values (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, $13
-        )
-        on conflict (request_id) do nothing
-        returning ${policyProfileActivationColumns}`,
-        [
-          input.activationId,
-          input.requestId,
-          input.normalizedRequestHash,
-          input.profileId,
-          input.profileVersion,
-          input.scope,
-          input.decision,
-          input.reasonCode,
-          input.actorRef,
-          JSON.stringify(input.evidenceRefs),
-          input.activatedAt,
-          input.deactivatedAt,
-          input.createdAt,
-        ],
-      );
-      const inserted = result.rows[0] ? normalizePolicyProfileActivationRow(result.rows[0]) : null;
-      if (inserted) {
-        return { accepted: true, deduplicated: false, activation: inserted };
-      }
+        const existing = await loadActivationByRequestId(db, input.requestId);
+        if (!existing) {
+          throw new Error(`failed to load policy activation ${input.requestId} after conflict`);
+        }
+        if (existing.normalizedRequestHash !== input.normalizedRequestHash) {
+          return { accepted: false, reason: 'conflicting_request_id', activation: existing };
+        }
 
-      const existing = await loadActivationByRequestId(db, input.requestId);
-      if (!existing) {
-        throw new Error(`failed to load policy activation ${input.requestId} after conflict`);
+        return { accepted: true, deduplicated: true, activation: existing };
+      } finally {
+        await releasePolicyActivationScopeLock(db, input.scope);
       }
-      if (existing.normalizedRequestHash !== input.normalizedRequestHash) {
-        return { accepted: false, reason: 'conflicting_request_id', activation: existing };
-      }
-
-      return { accepted: true, deduplicated: true, activation: existing };
     },
 
     resolveActivePolicyActivation,

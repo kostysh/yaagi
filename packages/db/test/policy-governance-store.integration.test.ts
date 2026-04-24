@@ -23,19 +23,28 @@ import {
 const sortDesc = <T extends { createdAt: string }>(rows: T[]): T[] =>
   [...rows].sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 
-const createPolicyGovernanceDbHarness = (): {
+type PolicyGovernanceDbHarnessOptions = {
+  requireActiveScopeLock?: boolean;
+};
+
+const createPolicyGovernanceDbHarness = (
+  options: PolicyGovernanceDbHarnessOptions = {},
+): {
   db: PolicyGovernanceDbExecutor;
   profiles: PolicyProfileRow[];
   activations: PolicyProfileActivationRow[];
   consultantDecisions: ConsultantAdmissionDecisionRow[];
   perceptionDecisions: PerceptionPolicyDecisionRow[];
   events: Phase6GovernanceEventRow[];
+  activationLockTrace: string[];
 } => {
   const profiles: PolicyProfileRow[] = [];
   const activations: PolicyProfileActivationRow[] = [];
   const consultantDecisions: ConsultantAdmissionDecisionRow[] = [];
   const perceptionDecisions: PerceptionPolicyDecisionRow[] = [];
   const events: Phase6GovernanceEventRow[] = [];
+  const activeScopeLocks = new Set<string>();
+  const activationLockTrace: string[] = [];
 
   const query = ((sqlText: unknown, params: unknown[] = []) => {
     if (typeof sqlText !== 'string') {
@@ -43,6 +52,20 @@ const createPolicyGovernanceDbHarness = (): {
     }
 
     const sql = sqlText.replace(/\s+/g, ' ').trim().toLowerCase();
+
+    if (sql.startsWith('select pg_advisory_lock')) {
+      const scope = String(params[1]);
+      activeScopeLocks.add(scope);
+      activationLockTrace.push(`lock:${scope}`);
+      return Promise.resolve({ rows: [] });
+    }
+
+    if (sql.startsWith('select pg_advisory_unlock')) {
+      const scope = String(params[1]);
+      activeScopeLocks.delete(scope);
+      activationLockTrace.push(`unlock:${scope}`);
+      return Promise.resolve({ rows: [{ pg_advisory_unlock: true }] });
+    }
 
     if (sql.startsWith('insert into polyphony_runtime.policy_profiles')) {
       const existingIndex = profiles.findIndex(
@@ -97,6 +120,11 @@ const createPolicyGovernanceDbHarness = (): {
       sql.includes('from polyphony_runtime.policy_profile_activations') &&
       sql.includes('where scope = $1')
     ) {
+      const scope = String(params[0]);
+      if (options.requireActiveScopeLock && !activeScopeLocks.has(scope)) {
+        throw new Error(`active policy activation read for ${scope} must hold advisory lock`);
+      }
+      activationLockTrace.push(`active-read:${scope}`);
       return Promise.resolve({
         rows: sortDesc(activations.filter((activation) => activation.scope === params[0])).slice(
           0,
@@ -110,6 +138,16 @@ const createPolicyGovernanceDbHarness = (): {
       if (existing) {
         return Promise.resolve({ rows: [] });
       }
+      if (
+        options.requireActiveScopeLock &&
+        params[6] === POLICY_ACTIVATION_DECISION.ACTIVATE &&
+        !activeScopeLocks.has(String(params[5]))
+      ) {
+        throw new Error(
+          `active policy activation insert for ${String(params[5])} must hold advisory lock`,
+        );
+      }
+      activationLockTrace.push(`insert:${String(params[5])}`);
       const row: PolicyProfileActivationRow = {
         activationId: String(params[0]),
         requestId: String(params[1]),
@@ -231,6 +269,7 @@ const createPolicyGovernanceDbHarness = (): {
     consultantDecisions,
     perceptionDecisions,
     events,
+    activationLockTrace,
   };
 };
 
@@ -312,6 +351,64 @@ void test('AC-F0025-03 keeps activation decisions append-only and refuses active
   assert.equal(replay.deduplicated, true);
   assert.equal(conflict.accepted, false);
   assert.equal(conflict.reason, 'active_scope_conflict');
+  assert.equal(harness.activations.length, 1);
+});
+
+void test('AC-F0025-03 serializes active-scope activation with a DB advisory lock', async () => {
+  const harness = createPolicyGovernanceDbHarness({ requireActiveScopeLock: true });
+  const store = createPolicyGovernanceStore(harness.db);
+  await store.recordPolicyProfile(CONSERVATIVE_BASELINE_POLICY_PROFILE);
+
+  const activation = await store.recordPolicyActivation({
+    activationId: 'policy-activation:serialized',
+    requestId: 'policy-activation-request:serialized',
+    normalizedRequestHash: 'hash-serialized',
+    profileId: CONSERVATIVE_BASELINE_POLICY_PROFILE.profileId,
+    profileVersion: CONSERVATIVE_BASELINE_POLICY_PROFILE.profileVersion,
+    scope: POLICY_GOVERNANCE_SCOPE.CONSULTANT_ADMISSION,
+    decision: POLICY_ACTIVATION_DECISION.ACTIVATE,
+    reasonCode: 'activated',
+    actorRef: 'operator:1',
+    evidenceRefs: ['auth:allow:1'],
+    activatedAt: '2026-04-24T00:00:00.000Z',
+    deactivatedAt: null,
+    createdAt: '2026-04-24T00:00:00.000Z',
+  });
+
+  await store.recordPolicyProfile({
+    ...CONSERVATIVE_BASELINE_POLICY_PROFILE,
+    profileId: 'policy.phase6.racing',
+    profileVersion: '2026-04-24.racing',
+  });
+  const conflict = await store.recordPolicyActivation({
+    activationId: 'policy-activation:racing',
+    requestId: 'policy-activation-request:racing',
+    normalizedRequestHash: 'hash-racing',
+    profileId: 'policy.phase6.racing',
+    profileVersion: '2026-04-24.racing',
+    scope: POLICY_GOVERNANCE_SCOPE.CONSULTANT_ADMISSION,
+    decision: POLICY_ACTIVATION_DECISION.ACTIVATE,
+    reasonCode: 'activated',
+    actorRef: 'operator:2',
+    evidenceRefs: ['auth:allow:2'],
+    activatedAt: '2026-04-24T00:01:00.000Z',
+    deactivatedAt: null,
+    createdAt: '2026-04-24T00:01:00.000Z',
+  });
+
+  assert.equal(activation.accepted, true);
+  assert.equal(conflict.accepted, false);
+  assert.equal(conflict.reason, 'active_scope_conflict');
+  assert.equal(conflict.activation.requestId, 'policy-activation-request:serialized');
+  assert.deepEqual(harness.activationLockTrace, [
+    `lock:${POLICY_GOVERNANCE_SCOPE.CONSULTANT_ADMISSION}`,
+    `active-read:${POLICY_GOVERNANCE_SCOPE.CONSULTANT_ADMISSION}`,
+    `insert:${POLICY_GOVERNANCE_SCOPE.CONSULTANT_ADMISSION}`,
+    `unlock:${POLICY_GOVERNANCE_SCOPE.CONSULTANT_ADMISSION}`,
+    `lock:${POLICY_GOVERNANCE_SCOPE.CONSULTANT_ADMISSION}`,
+    `active-read:${POLICY_GOVERNANCE_SCOPE.CONSULTANT_ADMISSION}`,
+    `unlock:${POLICY_GOVERNANCE_SCOPE.CONSULTANT_ADMISSION}`,
+  ]);
   assert.equal(harness.activations.length, 1);
 });
 
