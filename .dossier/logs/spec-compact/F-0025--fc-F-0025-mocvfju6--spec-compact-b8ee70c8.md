@@ -27,16 +27,37 @@ backlog_lifecycle_current: specified
 backlog_lifecycle_reconciled: true
 backlog_actualization_artifacts: []
 backlog_actualization_verdict: current_state_satisfies_target
-review_artifacts: []
-verification_artifacts: []
+review_artifacts:
+  - .dossier/reviews/F-0025/spec-compact-review-pass.json
+verification_artifacts:
+  - .dossier/verification/F-0025/spec-compact-verify.json
 required_audit_classes:
   - spec-conformance-reviewer
-executed_audit_classes: []
-required_external_review_pending: true
-review_events: []
-reviewer_skills: []
+executed_audit_classes:
+  - spec-conformance-reviewer
+required_external_review_pending: false
+review_events:
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0025/spec-compact-review-pass.json
+    audit_class: spec-conformance-reviewer
+    event_commit: 1e7101a72684226931617fd0ce7f4a37d13ea6e0
+    implementation_scope: null
+    invalidated: false
+    must_fix_count: 0
+    recorded_at: 2026-04-24T12:49:23.928Z
+    review_mode: external
+    reviewer: external-spec-review-agent
+    reviewer_agent_id: null
+    reviewer_skill: spec-conformance-reviewer
+    reviewer_thread_id: 019dbf88-3aa4-72d1-bb9a-4beec16c4c19
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
+reviewer_skills:
+  - spec-conformance-reviewer
 reviewer_agent_ids: []
-review_trace_commits: []
+review_trace_commits:
+  - 1e7101a72684226931617fd0ce7f4a37d13ea6e0
 degraded_review_present: false
 invalidated_review_present: false
 stale_review_present: false
@@ -49,8 +70,19 @@ session_id: 019dbf3f-4287-7722-9adb-c3ec2482111e
 trace_runtime: codex
 trace_locator_kind: session_id
 final_delivery_commit: 80117500ef9a1d121d0547f8db515291ac4f3ca1
-final_closure_commit: null
-step_artifact: null
+final_closure_commit: 1e7101a72684226931617fd0ce7f4a37d13ea6e0
+step_artifact: .dossier/steps/F-0025/spec-compact.json
+stage_entry_commit: null
+implementation_review_scope: null
+required_security_review: false
+security_trigger_reasons: []
+step_close_ts: 2026-04-24T12:49:50.456Z
+process_complete_ts: 2026-04-24T12:49:50.456Z
+intake_process_complete_ts: null
+local_gates_green_ts: null
+first_review_agent_started_ts: 2026-04-24T12:49:23.928Z
+final_pass_ts: 2026-04-24T12:49:23.928Z
+verification_trace_commit: 1e7101a72684226931617fd0ce7f4a37d13ea6e0
 ---
 
 ## Scope
