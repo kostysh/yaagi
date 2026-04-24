@@ -3,15 +3,15 @@
   "source_id": "ef27eeb6-7dfa-408b-a240-1712dd407575",
   "source_label": "docs/ssot/features/F-0016-development-governor-and-change-management.md",
   "previous_hash": "ce0edb1c9d74b130f3663c2a034577547e27864cd2d20a619342eebcac928c2b",
-  "current_hash": "3e2d08d46d51c5ff87521b2e3ab8c8efba025bdc6aeb0c77d7eb4977490ea1cc",
+  "current_hash": "4e62306ab33a937f80f23d8d633f5a1ffc7ed9f7998d38f7f0502f4e7d840300",
   "status": "closed",
   "linked_item_keys": [
     "CF-016"
   ],
   "linked_item_count": 1,
   "opened_at": "2026-04-21T14:54:31.041Z",
-  "closed_at": "2026-04-21T14:57:36.254Z",
-  "resolved_at": "2026-04-21T14:57:36.254Z",
+  "closed_at": "2026-04-24T15:39:28.016Z",
+  "resolved_at": "2026-04-24T15:39:28.016Z",
   "outcome": "no_backlog_change",
   "resolution_kind": "ack",
   "resolution_ref": "ack-source-review"
