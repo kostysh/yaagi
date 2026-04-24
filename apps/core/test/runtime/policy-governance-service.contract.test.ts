@@ -313,6 +313,35 @@ void test('AC-F0025-03 / AC-F0025-09 refuses policy activation without owner evi
   assert.equal(harness.activations[0]?.decision, POLICY_ACTIVATION_DECISION.REFUSE);
 });
 
+void test('AC-F0025-09 / AC-F0025-12 refuses policy activation without freshness timestamp', async () => {
+  const harness = createPolicyGovernanceMemoryStore();
+  const service = createPolicyGovernanceService({
+    store: harness.store,
+    now: () => '2026-04-24T12:00:00.000Z',
+    createId: () => `activation-id:${harness.activations.length + 1}`,
+  });
+  await harness.store.recordPolicyProfile(CONSERVATIVE_BASELINE_POLICY_PROFILE);
+
+  const result = await service.activatePolicyProfile({
+    requestId: 'policy-activation:missing-observed-at',
+    profileId: CONSERVATIVE_BASELINE_POLICY_PROFILE.profileId,
+    profileVersion: CONSERVATIVE_BASELINE_POLICY_PROFILE.profileVersion,
+    scope: POLICY_GOVERNANCE_SCOPE.HUMAN_GATE,
+    actorRef: 'operator:1',
+    evidence: {
+      callerAdmissionRef: 'operator-auth:allow:1',
+      governorDecisionRef: 'governor:allow:1',
+      perimeterDecisionRef: 'perimeter:allow:1',
+    },
+    requestedAt: '2026-04-24T12:00:00.000Z',
+  });
+
+  assert.equal(result.accepted, false);
+  assert.equal(result.refusal.reason, POLICY_REFUSAL_REASON.STALE_EVIDENCE);
+  assert.equal(result.auditPersisted, true);
+  assert.equal(harness.activations[0]?.decision, POLICY_ACTIVATION_DECISION.REFUSE);
+});
+
 void test('AC-F0025-09 / AC-F0025-10 activates policy profiles from read-only owner evidence refs', async () => {
   const harness = createPolicyGovernanceMemoryStore();
   const service = createPolicyGovernanceService({

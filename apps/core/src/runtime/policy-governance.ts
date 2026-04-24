@@ -221,7 +221,10 @@ const evaluateEvidence = (
   if (requirements.reportingEvidence && (evidence.reportingEvidenceRefs ?? []).length === 0) {
     return POLICY_REFUSAL_REASON.REPORTING_EVIDENCE_MISSING;
   }
-  if (requirements.maxEvidenceAgeMs && evidence.observedAt) {
+  if (requirements.maxEvidenceAgeMs) {
+    if (!evidence.observedAt) {
+      return POLICY_REFUSAL_REASON.STALE_EVIDENCE;
+    }
     const ageMs = Date.parse(now) - Date.parse(evidence.observedAt);
     if (!Number.isFinite(ageMs) || ageMs < 0 || ageMs > requirements.maxEvidenceAgeMs) {
       return POLICY_REFUSAL_REASON.STALE_EVIDENCE;

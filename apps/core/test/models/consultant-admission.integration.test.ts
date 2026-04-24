@@ -327,6 +327,17 @@ void test('AC-F0025-13 blocks every unsupported consultant path before invocatio
     reason: POLICY_REFUSAL_REASON.STALE_EVIDENCE,
   });
   await expectConsultantRefusal({
+    name: 'missing-owner-evidence-timestamp',
+    setup: (store) => activateProfile(store, externalConsultantProfile),
+    admissionPatch: {
+      evidence: {
+        ...baseAdmissionInput('unused').evidence,
+        observedAt: null,
+      },
+    },
+    reason: POLICY_REFUSAL_REASON.STALE_EVIDENCE,
+  });
+  await expectConsultantRefusal({
     name: 'audit-unavailable',
     setup: (store) => activateProfile(store, externalConsultantProfile),
     admissionPatch: {},
