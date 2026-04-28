@@ -132,8 +132,10 @@ export async function createSpecialistPolicyTestHarness(
 ): Promise<SpecialistPolicyTestHarness> {
   const dbHarness = createSpecialistPolicyDbHarness();
   const store = createSpecialistPolicyStore(dbHarness.db);
-  await store.registerSpecialistOrgan(baseOrgan(input.organ));
-  await store.recordRolloutPolicy(basePolicy(input.policy));
+  const organRow = baseOrgan(input.organ);
+  const policyRow = basePolicy(input.policy);
+  await store.registerSpecialistOrgan(organRow);
+  await store.recordRolloutPolicy(policyRow);
 
   const promotionPackages = new Map<string, WorkshopPromotionPackage>([
     [promotionPackageRef, basePromotionPackage()],
@@ -156,6 +158,15 @@ export async function createSpecialistPolicyTestHarness(
         evidenceRef: 'release:evidence:1',
         ready: true,
         observedAt: SPECIALIST_TEST_NOW,
+        deploymentIdentity: 'deployment-cell:local',
+        modelServingReadinessRef: 'serving:vllm-fast:ready:1',
+        governorEvidenceRef: 'governor:allow:1',
+        lifecycleRollbackTargetRef: organRow.rollbackTargetProfileId ?? fallbackTargetProfileId,
+        specialistId: organRow.specialistId,
+        modelProfileId: organRow.modelProfileId,
+        serviceId: organRow.serviceId,
+        policyId: policyRow.policyId,
+        rolloutStage: policyRow.allowedStage,
       },
     ],
   ]);
@@ -222,7 +233,6 @@ export async function createSpecialistPolicyTestHarness(
         taskSignature,
         selectedModelProfileId: modelProfileId,
         requestedAt: SPECIALIST_TEST_NOW,
-        currentTrafficCount: 0,
         evidenceRefs: {
           governorDecisionRef: 'governor:allow:1',
           servingReadinessRef: 'serving:vllm-fast:ready:1',

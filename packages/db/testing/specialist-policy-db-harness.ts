@@ -95,7 +95,11 @@ export function createSpecialistPolicyDbHarness(options: SpecialistPolicyHarness
       return { rows: [] };
     }
 
-    if (sql.startsWith('select pg_advisory_lock') || sql.startsWith('select pg_advisory_unlock')) {
+    if (
+      sql.startsWith('select pg_advisory_lock') ||
+      sql.startsWith('select pg_advisory_xact_lock') ||
+      sql.startsWith('select pg_advisory_unlock')
+    ) {
       return { rows: [] };
     }
 
@@ -118,6 +122,9 @@ export function createSpecialistPolicyDbHarness(options: SpecialistPolicyHarness
         updatedAt: String(params[14]),
       };
       const existing = state.organsById[row.specialistId];
+      if (existing?.stage === 'retired') {
+        return { rows: [] };
+      }
       state.organsById[row.specialistId] = existing ? { ...existing, ...row } : row;
       return { rows: [state.organsById[row.specialistId] as TRow] };
     }
@@ -256,9 +263,6 @@ export function createSpecialistPolicyDbHarness(options: SpecialistPolicyHarness
 
     if (sql.includes('insert into polyphony_runtime.specialist_admission_decisions')) {
       const requestId = String(params[1]);
-      if (state.admissionRequestIndex[requestId]) {
-        return { rows: [] };
-      }
       const row: SpecialistAdmissionDecisionRow = {
         decisionId: String(params[0]),
         requestId,
@@ -277,6 +281,19 @@ export function createSpecialistPolicyDbHarness(options: SpecialistPolicyHarness
       state.admissionsById[row.decisionId] = row;
       state.admissionRequestIndex[row.requestId] = row.decisionId;
       return { rows: [row as TRow] };
+    }
+
+    if (
+      sql.includes('select count(*)::int as "count"') &&
+      sql.includes('from polyphony_runtime.specialist_admission_decisions')
+    ) {
+      const count = Object.values(state.admissionsById).filter(
+        (row) =>
+          row.specialistId === String(params[0]) &&
+          row.stage === params[1] &&
+          row.decision === params[2],
+      ).length;
+      return { rows: [{ count } as TRow] };
     }
 
     if (

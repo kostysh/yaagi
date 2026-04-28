@@ -51,18 +51,14 @@ void test('AC-F0027-06 / AC-F0027-17 refuses missing release evidence for live r
   assert.equal(result.refusal.reason, SPECIALIST_REFUSAL_REASON.RELEASE_EVIDENCE_MISSING);
 });
 
-void test('AC-F0027-10 / AC-F0027-17 refuses live specialist without rollback target', async () => {
-  const harness = await createSpecialistPolicyTestHarness({
-    organ: {
-      stage: 'candidate',
-      rollbackTargetProfileId: null,
-    },
-  });
-
-  const result = await harness.service.admitSpecialist(
-    harness.admissionInput({ requestId: 'admission-missing-rollback' }),
+void test('AC-F0027-10 / AC-F0027-17 rejects live specialist registration without rollback target', async () => {
+  await assert.rejects(
+    () =>
+      createSpecialistPolicyTestHarness({
+        organ: {
+          rollbackTargetProfileId: null,
+        },
+      }),
+    /rollbackTargetProfileId/,
   );
-
-  assert.equal(result.accepted, false);
-  assert.equal(result.refusal.reason, SPECIALIST_REFUSAL_REASON.ROLLBACK_TARGET_MISSING);
 });

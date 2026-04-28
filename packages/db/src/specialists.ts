@@ -10,6 +10,7 @@ import {
   assertValidSpecialistOrgan,
   assertValidSpecialistRetirementDecision,
   assertValidSpecialistRolloutPolicy,
+  isSpecialistLiveStage,
   isSpecialistTerminalStage,
   type SpecialistAdmissionDecision,
   type SpecialistAdmissionDecisionRow,
@@ -273,7 +274,7 @@ export type SpecialistRequestRecordResult<TRow> =
     }
   | {
       accepted: false;
-      reason: 'conflicting_request_id' | 'terminal_stage_conflict';
+      reason: 'conflicting_request_id' | 'terminal_stage_conflict' | 'release_evidence_missing';
       row: TRow;
     };
 
@@ -369,20 +370,43 @@ const acquireSpecialistStageLock = async (
   db: SpecialistPolicyDbExecutor,
   specialistId: string,
 ): Promise<void> => {
-  await db.query(`select pg_advisory_lock(hashtext($1), hashtext($2))`, [
+  await db.query(`select pg_advisory_xact_lock(hashtext($1), hashtext($2))`, [
     specialistStageLockNamespace,
     specialistId,
   ]);
 };
 
-const releaseSpecialistStageLock = async (
+const liveRolloutStages = new Set<string>([
+  SPECIALIST_ROLLOUT_STAGE.LIMITED_ACTIVE,
+  SPECIALIST_ROLLOUT_STAGE.ACTIVE,
+  SPECIALIST_ROLLOUT_STAGE.STABLE,
+]);
+
+const hasReleaseEvidenceRef = (evidenceRefs: readonly string[]): boolean =>
+  evidenceRefs.some((ref) => ref.startsWith('release:') || ref.includes(':release:'));
+
+const trafficLimitFromPayload = (payload: Record<string, unknown>): number | null =>
+  typeof payload['trafficLimit'] === 'number' && Number.isInteger(payload['trafficLimit'])
+    ? payload['trafficLimit']
+    : null;
+
+const countAllowedAdmissions = async (
   db: SpecialistPolicyDbExecutor,
-  specialistId: string,
-): Promise<void> => {
-  await db.query(`select pg_advisory_unlock(hashtext($1), hashtext($2))`, [
-    specialistStageLockNamespace,
-    specialistId,
-  ]);
+  input: {
+    specialistId: string;
+    stage: SpecialistRolloutStage;
+  },
+): Promise<number> => {
+  const result = await db.query<QueryResultRow>(
+    `select count(*)::int as "count"
+     from ${specialistAdmissionDecisionsTable}
+     where specialist_id = $1
+       and stage = $2
+       and decision = $3`,
+    [input.specialistId, input.stage, SPECIALIST_ADMISSION_DECISION.ALLOW],
+  );
+
+  return typeof result.rows[0]?.['count'] === 'number' ? result.rows[0]['count'] : 0;
 };
 
 const transaction = async <T>(
@@ -476,6 +500,7 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
           status_reason = excluded.status_reason,
           current_policy_id = excluded.current_policy_id,
           updated_at = excluded.updated_at
+        where ${specialistOrgansTable}.stage <> '${SPECIALIST_ROLLOUT_STAGE.RETIRED}'
         returning ${specialistOrganColumns}`,
         [
           input.specialistId,
@@ -497,6 +522,12 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
       );
 
       const row = result.rows[0];
+      if (!row) {
+        const existing = await getSpecialistOrgan(input.specialistId);
+        if (existing) {
+          return existing;
+        }
+      }
       if (!row) {
         throw new Error(`failed to register specialist organ ${input.specialistId}`);
       }
@@ -584,29 +615,41 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
     ): Promise<SpecialistRequestRecordResult<SpecialistRolloutEventRow>> {
       return await transaction(db, async () => {
         await acquireSpecialistStageLock(db, input.specialistId);
-        try {
-          const existing = await loadRolloutEventByRequestId(db, input.requestId);
-          if (existing) {
-            return compareRequestHash(existing, input.normalizedRequestHash);
-          }
+        const existing = await loadRolloutEventByRequestId(db, input.requestId);
+        if (existing) {
+          return compareRequestHash(existing, input.normalizedRequestHash);
+        }
 
-          const organ = await getSpecialistOrgan(input.specialistId);
-          if (
-            organ &&
-            isSpecialistTerminalStage(organ.stage) &&
-            input.toStage !== SPECIALIST_ROLLOUT_STAGE.RETIRED
-          ) {
-            const terminalEvent: SpecialistRolloutEventRow = {
-              ...input,
-              decision: SPECIALIST_ROLLOUT_EVENT_DECISION.REFUSED,
-              reasonCode: SPECIALIST_REFUSAL_REASON.TERMINAL_STAGE_CONFLICT,
-              fromStage: organ.stage,
-            };
-            return { accepted: false, reason: 'terminal_stage_conflict', row: terminalEvent };
-          }
+        const organ = await getSpecialistOrgan(input.specialistId);
+        if (
+          organ &&
+          isSpecialistTerminalStage(organ.stage) &&
+          input.toStage !== SPECIALIST_ROLLOUT_STAGE.RETIRED
+        ) {
+          const terminalEvent: SpecialistRolloutEventRow = {
+            ...input,
+            decision: SPECIALIST_ROLLOUT_EVENT_DECISION.REFUSED,
+            reasonCode: SPECIALIST_REFUSAL_REASON.TERMINAL_STAGE_CONFLICT,
+            fromStage: organ.stage,
+          };
+          return { accepted: false, reason: 'terminal_stage_conflict', row: terminalEvent };
+        }
+        if (
+          input.decision === SPECIALIST_ROLLOUT_EVENT_DECISION.RECORDED &&
+          liveRolloutStages.has(input.toStage) &&
+          !hasReleaseEvidenceRef(input.evidenceRefsJson)
+        ) {
+          const refusedEvent: SpecialistRolloutEventRow = {
+            ...input,
+            decision: SPECIALIST_ROLLOUT_EVENT_DECISION.REFUSED,
+            reasonCode: SPECIALIST_REFUSAL_REASON.RELEASE_EVIDENCE_MISSING,
+            fromStage: organ?.stage ?? input.fromStage,
+          };
+          return { accepted: false, reason: 'release_evidence_missing', row: refusedEvent };
+        }
 
-          const result = await db.query<QueryResultRow>(
-            `insert into ${specialistRolloutEventsTable} (
+        const result = await db.query<QueryResultRow>(
+          `insert into ${specialistRolloutEventsTable} (
               event_id,
               request_id,
               normalized_request_hash,
@@ -623,48 +666,39 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
               $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12
             )
             returning ${specialistRolloutEventColumns}`,
-            [
-              input.eventId,
-              input.requestId,
-              input.normalizedRequestHash,
-              input.policyId,
-              input.specialistId,
-              organ?.stage ?? input.fromStage,
-              input.toStage,
-              input.decision,
-              input.reasonCode,
-              input.actorRef,
-              JSON.stringify(input.evidenceRefsJson),
-              input.createdAt,
-            ],
-          );
-          const row = result.rows[0];
-          if (!row) {
-            throw new Error(`failed to record specialist rollout event ${input.eventId}`);
-          }
-          const event = normalizeSpecialistRolloutEventRow(row);
-          if (event.decision === SPECIALIST_ROLLOUT_EVENT_DECISION.RECORDED) {
-            await db.query(
-              `update ${specialistOrgansTable}
+          [
+            input.eventId,
+            input.requestId,
+            input.normalizedRequestHash,
+            input.policyId,
+            input.specialistId,
+            organ?.stage ?? input.fromStage,
+            input.toStage,
+            input.decision,
+            input.reasonCode,
+            input.actorRef,
+            JSON.stringify(input.evidenceRefsJson),
+            input.createdAt,
+          ],
+        );
+        const row = result.rows[0];
+        if (!row) {
+          throw new Error(`failed to record specialist rollout event ${input.eventId}`);
+        }
+        const event = normalizeSpecialistRolloutEventRow(row);
+        if (event.decision === SPECIALIST_ROLLOUT_EVENT_DECISION.RECORDED) {
+          await db.query(
+            `update ${specialistOrgansTable}
                set stage = $1,
                    status_reason = $2,
                    current_policy_id = $3,
                    updated_at = $4
                where specialist_id = $5`,
-              [
-                event.toStage,
-                event.reasonCode,
-                event.policyId,
-                event.createdAt,
-                event.specialistId,
-              ],
-            );
-          }
-
-          return { accepted: true, deduplicated: false, row: event };
-        } finally {
-          await releaseSpecialistStageLock(db, input.specialistId);
+            [event.toStage, event.reasonCode, event.policyId, event.createdAt, event.specialistId],
+          );
         }
+
+        return { accepted: true, deduplicated: false, row: event };
       });
     },
 
@@ -684,8 +718,57 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
       input,
     ): Promise<SpecialistRequestRecordResult<SpecialistAdmissionDecisionRow>> {
       assertValidSpecialistAdmissionDecision(input);
-      const result = await db.query<QueryResultRow>(
-        `insert into ${specialistAdmissionDecisionsTable} (
+      return await transaction(db, async () => {
+        await acquireSpecialistStageLock(db, input.specialistId);
+
+        const existing = await loadAdmissionDecisionByRequestId(db, input.requestId);
+        if (existing) {
+          return compareRequestHash(existing, input.normalizedRequestHash);
+        }
+
+        let recordInput = input;
+        let rejectedReason: 'terminal_stage_conflict' | null = null;
+        if (input.decision === SPECIALIST_ADMISSION_DECISION.ALLOW) {
+          const organ = await getSpecialistOrgan(input.specialistId);
+          const trafficLimit = trafficLimitFromPayload(input.payloadJson);
+          if (!organ || organ.stage !== input.stage || !isSpecialistLiveStage(organ.stage)) {
+            rejectedReason = 'terminal_stage_conflict';
+            recordInput = {
+              ...input,
+              decision: SPECIALIST_ADMISSION_DECISION.REFUSAL,
+              reasonCode:
+                organ?.stage === SPECIALIST_ROLLOUT_STAGE.RETIRED
+                  ? SPECIALIST_REFUSAL_REASON.RETIRED
+                  : SPECIALIST_REFUSAL_REASON.TERMINAL_STAGE_CONFLICT,
+              payloadJson: {
+                ...input.payloadJson,
+                stageGuardRefused: true,
+                observedStage: organ?.stage ?? null,
+              },
+            };
+          } else if (
+            input.stage === SPECIALIST_ROLLOUT_STAGE.LIMITED_ACTIVE &&
+            trafficLimit !== null &&
+            (await countAllowedAdmissions(db, {
+              specialistId: input.specialistId,
+              stage: input.stage,
+            })) >= trafficLimit
+          ) {
+            rejectedReason = 'terminal_stage_conflict';
+            recordInput = {
+              ...input,
+              decision: SPECIALIST_ADMISSION_DECISION.REFUSAL,
+              reasonCode: SPECIALIST_REFUSAL_REASON.TRAFFIC_LIMIT_EXCEEDED,
+              payloadJson: {
+                ...input.payloadJson,
+                trafficLimitGuardRefused: true,
+              },
+            };
+          }
+        }
+
+        const result = await db.query<QueryResultRow>(
+          `insert into ${specialistAdmissionDecisionsTable} (
           decision_id,
           request_id,
           normalized_request_hash,
@@ -702,37 +785,34 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
         ) values (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12::jsonb, $13
         )
-        on conflict (request_id) do nothing
         returning ${specialistAdmissionDecisionColumns}`,
-        [
-          input.decisionId,
-          input.requestId,
-          input.normalizedRequestHash,
-          input.specialistId,
-          input.taskSignature,
-          input.selectedModelProfileId,
-          input.stage,
-          input.decision,
-          input.reasonCode,
-          input.fallbackTargetProfileId,
-          JSON.stringify(input.evidenceRefsJson),
-          JSON.stringify(input.payloadJson),
-          input.createdAt,
-        ],
-      );
-      const inserted = result.rows[0]
-        ? normalizeSpecialistAdmissionDecisionRow(result.rows[0])
-        : null;
-      if (inserted) {
-        return { accepted: true, deduplicated: false, row: inserted };
-      }
+          [
+            recordInput.decisionId,
+            recordInput.requestId,
+            recordInput.normalizedRequestHash,
+            recordInput.specialistId,
+            recordInput.taskSignature,
+            recordInput.selectedModelProfileId,
+            recordInput.stage,
+            recordInput.decision,
+            recordInput.reasonCode,
+            recordInput.fallbackTargetProfileId,
+            JSON.stringify(recordInput.evidenceRefsJson),
+            JSON.stringify(recordInput.payloadJson),
+            recordInput.createdAt,
+          ],
+        );
+        const inserted = result.rows[0]
+          ? normalizeSpecialistAdmissionDecisionRow(result.rows[0])
+          : null;
+        if (!inserted) {
+          throw new Error(`failed to record specialist admission decision ${input.requestId}`);
+        }
 
-      const existing = await loadAdmissionDecisionByRequestId(db, input.requestId);
-      if (!existing) {
-        throw new Error(`failed to load specialist admission decision ${input.requestId}`);
-      }
-
-      return compareRequestHash(existing, input.normalizedRequestHash);
+        return rejectedReason
+          ? { accepted: false, reason: rejectedReason, row: inserted }
+          : { accepted: true, deduplicated: false, row: inserted };
+      });
     },
 
     getAdmissionDecisionByRequestId(requestId) {
@@ -757,31 +837,30 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
       assertValidSpecialistRetirementDecision(input);
       return await transaction(db, async () => {
         await acquireSpecialistStageLock(db, input.specialistId);
-        try {
-          const existing = await loadRetirementDecisionByRequestId(db, input.requestId);
-          if (existing) {
-            return compareRequestHash(existing, input.normalizedRequestHash);
-          }
+        const existing = await loadRetirementDecisionByRequestId(db, input.requestId);
+        if (existing) {
+          return compareRequestHash(existing, input.normalizedRequestHash);
+        }
 
-          const organ = await getSpecialistOrgan(input.specialistId);
-          if (organ?.stage === SPECIALIST_ROLLOUT_STAGE.RETIRED) {
-            const latestResult = await db.query<QueryResultRow>(
-              `select ${specialistRetirementDecisionColumns}
+        const organ = await getSpecialistOrgan(input.specialistId);
+        if (organ?.stage === SPECIALIST_ROLLOUT_STAGE.RETIRED) {
+          const latestResult = await db.query<QueryResultRow>(
+            `select ${specialistRetirementDecisionColumns}
                from ${specialistRetirementDecisionsTable}
                where specialist_id = $1
                order by created_at asc, retirement_id asc`,
-              [input.specialistId],
-            );
-            const latest = latestResult.rows.at(-1)
-              ? normalizeSpecialistRetirementDecisionRow(latestResult.rows.at(-1) as QueryResultRow)
-              : null;
-            if (latest) {
-              return { accepted: false, reason: 'terminal_stage_conflict', row: latest };
-            }
+            [input.specialistId],
+          );
+          const latest = latestResult.rows.at(-1)
+            ? normalizeSpecialistRetirementDecisionRow(latestResult.rows.at(-1) as QueryResultRow)
+            : null;
+          if (latest) {
+            return { accepted: false, reason: 'terminal_stage_conflict', row: latest };
           }
+        }
 
-          const result = await db.query<QueryResultRow>(
-            `insert into ${specialistRetirementDecisionsTable} (
+        const result = await db.query<QueryResultRow>(
+          `insert into ${specialistRetirementDecisionsTable} (
               retirement_id,
               request_id,
               normalized_request_hash,
@@ -797,45 +876,42 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
               $1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11
             )
             returning ${specialistRetirementDecisionColumns}`,
-            [
-              input.retirementId,
-              input.requestId,
-              input.normalizedRequestHash,
-              input.specialistId,
-              input.triggerKind,
-              organ?.stage ?? input.previousStage,
-              input.replacementSpecialistId,
-              input.fallbackTargetProfileId,
-              JSON.stringify(input.evidenceRefsJson),
-              input.reason,
-              input.createdAt,
-            ],
-          );
-          const row = result.rows[0];
-          if (!row) {
-            throw new Error(`failed to record specialist retirement ${input.retirementId}`);
-          }
-          const retirement = normalizeSpecialistRetirementDecisionRow(row);
-          await db.query(
-            `update ${specialistOrgansTable}
+          [
+            input.retirementId,
+            input.requestId,
+            input.normalizedRequestHash,
+            input.specialistId,
+            input.triggerKind,
+            organ?.stage ?? input.previousStage,
+            input.replacementSpecialistId,
+            input.fallbackTargetProfileId,
+            JSON.stringify(input.evidenceRefsJson),
+            input.reason,
+            input.createdAt,
+          ],
+        );
+        const row = result.rows[0];
+        if (!row) {
+          throw new Error(`failed to record specialist retirement ${input.retirementId}`);
+        }
+        const retirement = normalizeSpecialistRetirementDecisionRow(row);
+        await db.query(
+          `update ${specialistOrgansTable}
              set stage = $1,
                  status_reason = $2,
                  fallback_target_profile_id = coalesce($3, fallback_target_profile_id),
                  updated_at = $4
              where specialist_id = $5`,
-            [
-              SPECIALIST_ROLLOUT_STAGE.RETIRED,
-              retirement.triggerKind,
-              retirement.fallbackTargetProfileId,
-              retirement.createdAt,
-              retirement.specialistId,
-            ],
-          );
+          [
+            SPECIALIST_ROLLOUT_STAGE.RETIRED,
+            retirement.triggerKind,
+            retirement.fallbackTargetProfileId,
+            retirement.createdAt,
+            retirement.specialistId,
+          ],
+        );
 
-          return { accepted: true, deduplicated: false, row: retirement };
-        } finally {
-          await releaseSpecialistStageLock(db, input.specialistId);
-        }
+        return { accepted: true, deduplicated: false, row: retirement };
       });
     },
 

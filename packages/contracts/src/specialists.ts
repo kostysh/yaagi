@@ -76,6 +76,7 @@ export const SPECIALIST_REFUSAL_REASON = Object.freeze({
   UNSUPPORTED_STAGE: 'unsupported_stage',
   STALE_EVIDENCE: 'stale_evidence',
   FALLBACK_UNAVAILABLE: 'fallback_unavailable',
+  SCOPE_MISMATCH: 'scope_mismatch',
   CONFLICTING_REQUEST: 'conflicting_request',
   TERMINAL_STAGE_CONFLICT: 'terminal_stage_conflict',
   FOREIGN_OWNER_WRITE_REJECTED: 'foreign_owner_write_rejected',

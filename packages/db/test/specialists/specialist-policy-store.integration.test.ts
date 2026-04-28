@@ -75,7 +75,11 @@ void test('AC-F0027-01 / AC-F0027-03 persists specialist policy truth without fo
     decision: SPECIALIST_ROLLOUT_EVENT_DECISION.RECORDED,
     reasonCode: 'stage_recorded',
     actorRef: 'operator:1',
-    evidenceRefsJson: ['workshop-promotion:candidate-specialist-1', 'governor:allow:1'],
+    evidenceRefsJson: [
+      'workshop-promotion:candidate-specialist-1',
+      'governor:allow:1',
+      'release:evidence:1',
+    ],
     createdAt: '2026-04-28T10:01:00.000Z',
   });
 
@@ -153,7 +157,7 @@ void test('AC-F0027-11 records append-only retirement and blocks terminal stage 
     decision: SPECIALIST_ROLLOUT_EVENT_DECISION.RECORDED,
     reasonCode: 'stage_recorded',
     actorRef: 'operator:1',
-    evidenceRefsJson: ['governor:allow:2'],
+    evidenceRefsJson: ['governor:allow:2', 'release:evidence:2'],
     createdAt: '2026-04-28T10:03:00.000Z',
   });
 
@@ -170,5 +174,70 @@ void test('AC-F0027-11 records append-only retirement and blocks terminal stage 
   assert.equal(
     (await store.listRetirementDecisions({ specialistId: 'specialist.summary@v1' })).length,
     1,
+  );
+});
+
+void test('AC-F0027-06 refuses live rollout events without release evidence', async () => {
+  const harness = createSpecialistPolicyDbHarness();
+  const store = createSpecialistPolicyStore(harness.db);
+  const organ = await store.registerSpecialistOrgan(baseOrgan());
+  await store.recordRolloutPolicy(basePolicy());
+
+  const rolloutResult = await store.recordRolloutEvent({
+    eventId: 'rollout-event-missing-release',
+    requestId: 'rollout-request-missing-release',
+    normalizedRequestHash: 'rollout-missing-release-hash',
+    policyId: 'policy-specialist-1',
+    specialistId: organ.specialistId,
+    fromStage: organ.stage,
+    toStage: SPECIALIST_ROLLOUT_STAGE.LIMITED_ACTIVE,
+    decision: SPECIALIST_ROLLOUT_EVENT_DECISION.RECORDED,
+    reasonCode: 'stage_recorded',
+    actorRef: 'operator:1',
+    evidenceRefsJson: ['workshop-promotion:candidate-specialist-1', 'governor:allow:1'],
+    createdAt: '2026-04-28T10:01:00.000Z',
+  });
+
+  assert.equal(rolloutResult.accepted, false);
+  if (!rolloutResult.accepted) {
+    assert.equal(rolloutResult.reason, 'release_evidence_missing');
+    assert.equal(rolloutResult.row.reasonCode, SPECIALIST_REFUSAL_REASON.RELEASE_EVIDENCE_MISSING);
+  }
+  assert.equal(
+    harness.state.organsById['specialist.summary@v1']?.stage,
+    SPECIALIST_ROLLOUT_STAGE.CANDIDATE,
+  );
+});
+
+void test('AC-F0027-11 keeps retired organs terminal across register replay', async () => {
+  const harness = createSpecialistPolicyDbHarness();
+  const store = createSpecialistPolicyStore(harness.db);
+  await store.registerSpecialistOrgan(baseOrgan({ stage: SPECIALIST_ROLLOUT_STAGE.ACTIVE }));
+  await store.recordRetirementDecision({
+    retirementId: 'retirement-terminal-register-1',
+    requestId: 'retirement-terminal-register-request-1',
+    normalizedRequestHash: 'retirement-terminal-register-hash',
+    specialistId: 'specialist.summary@v1',
+    triggerKind: SPECIALIST_RETIREMENT_TRIGGER_KIND.DEGRADED,
+    previousStage: SPECIALIST_ROLLOUT_STAGE.ACTIVE,
+    replacementSpecialistId: null,
+    fallbackTargetProfileId: 'deliberation.fast@baseline',
+    evidenceRefsJson: ['health:degraded:1'],
+    reason: 'health degraded beyond policy',
+    createdAt: '2026-04-28T10:02:00.000Z',
+  });
+
+  const replay = await store.registerSpecialistOrgan(
+    baseOrgan({
+      stage: SPECIALIST_ROLLOUT_STAGE.ACTIVE,
+      statusReason: 'attempted overwrite',
+      updatedAt: '2026-04-28T10:03:00.000Z',
+    }),
+  );
+
+  assert.equal(replay.stage, SPECIALIST_ROLLOUT_STAGE.RETIRED);
+  assert.equal(
+    harness.state.organsById['specialist.summary@v1']?.stage,
+    SPECIALIST_ROLLOUT_STAGE.RETIRED,
   );
 });
