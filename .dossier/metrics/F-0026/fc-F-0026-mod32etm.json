@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-04-24T17:22:39.777Z",
+  "generated_at": "2026-04-28T10:22:45.391Z",
   "feature_id": "F-0026",
   "feature_cycle_id": "fc-F-0026-mod32etm",
   "identity": {
@@ -9,7 +9,7 @@
     "backlog_item_key": "CF-025"
   },
   "lifecycle": {
-    "feature_cycle_time_ms": null,
+    "feature_cycle_time_ms": 26449732,
     "intake": {
       "cycle_ids": [
         "intake-74e4dcb8"
@@ -135,29 +135,57 @@
         }
       },
       "implementation": {
-        "cycle_ids": [],
-        "log_paths": [],
-        "session_ids": [],
-        "start_ts": null,
-        "local_gates_green_ts": null,
-        "process_complete_ts": null,
-        "step_close_ts": null,
-        "step_artifacts": [],
-        "first_review_agent_started_ts": null,
-        "final_pass_ts": null,
+        "cycle_ids": [
+          "implementation-71691571"
+        ],
+        "log_paths": [
+          ".dossier/logs/implementation/F-0026--fc-F-0026-mod32etm--implementation-71691571.md"
+        ],
+        "session_ids": [
+          "b90b4c6b-f2e1-4d28-a4dd-eac5c3fd502c"
+        ],
+        "start_ts": "2026-04-24T17:26:07.299Z",
+        "local_gates_green_ts": "2026-04-24T23:06:15.499Z",
+        "process_complete_ts": "2026-04-24T23:07:27.566Z",
+        "step_close_ts": "2026-04-24T23:07:27.566Z",
+        "step_artifacts": [
+          ".dossier/steps/F-0026/implementation.json"
+        ],
+        "first_review_agent_started_ts": "2026-04-24T23:06:39.696Z",
+        "final_pass_ts": "2026-04-24T23:07:16.427Z",
         "review_policy": {
-          "required_audit_classes": [],
-          "executed_audit_classes": [],
-          "required_external_review_pending": null,
-          "implementation_review_scope": null,
-          "required_security_review": null,
-          "degraded_review_present": null,
-          "invalidated_review_present": null,
-          "stale_review_present": null,
-          "reviewer_skills": [],
-          "reviewer_agent_ids": [],
-          "review_trace_commits": [],
-          "security_trigger_reasons": []
+          "required_audit_classes": [
+            "spec-conformance-reviewer",
+            "code-reviewer",
+            "security-reviewer"
+          ],
+          "executed_audit_classes": [
+            "spec-conformance-reviewer",
+            "code-reviewer",
+            "security-reviewer"
+          ],
+          "required_external_review_pending": false,
+          "implementation_review_scope": "code-bearing",
+          "required_security_review": true,
+          "degraded_review_present": false,
+          "invalidated_review_present": false,
+          "stale_review_present": false,
+          "reviewer_skills": [
+            "code-reviewer",
+            "security-reviewer",
+            "spec-conformance-reviewer"
+          ],
+          "reviewer_agent_ids": [
+            "019dc1b6-44a8-70e2-8489-40786f404c65",
+            "019dc1b6-6ad2-7752-ba64-7dfc8739e571",
+            "019dc1b6-94c7-7bc1-9a80-789615756a33"
+          ],
+          "review_trace_commits": [
+            "a3f5ce9bad4da4383346f6de9b50756e23703119"
+          ],
+          "security_trigger_reasons": [
+            "implementation changes protected release-control Operator API, RBAC route class, host executor boundary, release/rollback persistence and deployment automation"
+          ]
         }
       },
       "change-proposal": {
@@ -193,13 +221,13 @@
       "feature-intake": 1352925,
       "spec-compact": 1210188,
       "plan-slice": 1035900,
-      "implementation": null,
+      "implementation": 20480267,
       "change-proposal": null
     },
-    "review_loop_time_ms": 1643254,
-    "rerounds_per_feature": 0,
-    "first_pass_close": null,
-    "closure_latency_ms": null,
+    "review_loop_time_ms": 22478214,
+    "rerounds_per_feature": 8,
+    "first_pass_close": false,
+    "closure_latency_ms": 72067,
     "verification_failures_total": 0,
     "backlog_actualization_failures_total": 0,
     "operator_interventions_total": 0
@@ -217,6 +245,19 @@
       "stage_log_path": ".dossier/logs/feature-intake/F-0026--fc-F-0026-mod32etm.md",
       "start_ts": "2026-04-24T15:46:37.834Z",
       "end_ts": "2026-04-24T16:09:10.759Z"
+    },
+    {
+      "version": 1,
+      "feature_cycle_id": "fc-F-0026-mod32etm",
+      "feature_id": "F-0026",
+      "backlog_item_key": "CF-025",
+      "stage": "implementation",
+      "session_id": "b90b4c6b-f2e1-4d28-a4dd-eac5c3fd502c",
+      "trace_runtime": "codex",
+      "trace_locator_kind": "session_id",
+      "stage_log_path": ".dossier/logs/implementation/F-0026--fc-F-0026-mod32etm--implementation-71691571.md",
+      "start_ts": "2026-04-24T17:26:07.299Z",
+      "end_ts": "2026-04-24T23:07:27.566Z"
     },
     {
       "version": 1,
