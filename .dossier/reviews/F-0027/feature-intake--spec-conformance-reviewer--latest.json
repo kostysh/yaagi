@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "created_at": "2026-04-28T09:19:23.122Z",
+  "audit_class": "spec-conformance-reviewer",
+  "artifact_role": "latest_copy",
+  "review_mode": "external",
+  "reviewer": "external-agent-tesla",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": "019dd35d-fca0-7ab1-9c04-d6b929955657",
+  "reviewer_thread_id": "019dd35d-fca0-7ab1-9c04-d6b929955657",
+  "review_attempt_id": "feature-intake--spec-conformance-reviewer--r01",
+  "review_round_id": "r01",
+  "review_round_number": 1,
+  "latest_copy_path": ".dossier/reviews/F-0027/feature-intake--spec-conformance-reviewer--latest.json",
+  "step": "feature-intake",
+  "dossier": "docs/ssot/features/F-0027-specialist-organs-rollout-retirement-policy.md",
+  "feature_id": "F-0027",
+  "event_commit": "de3563c78e08db58dfd44f4013de55196433326c",
+  "implementation_scope": null,
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [
+      "Stage log narrative sections are sparse and say none for inputs/handoff/index-refresh even though structured artifacts contain the evidence; improve human-readable auditability in a future runtime/logging pass."
+    ],
+    "evidence": [
+      "docs/ssot/features/F-0027-specialist-organs-rollout-retirement-policy.md records F-0027, CF-019, source traceability and dependencies.",
+      ".dossier/backlog/state.json records CF-019 as defined with dependencies CF-010, CF-011, CF-016, CF-023, CF-025.",
+      "docs/ssot/index.md includes F-0027 with proposed/deferred state and mapped depends_on F-0014, F-0015, F-0016, F-0020, F-0026.",
+      ".dossier/stages/F-0027/feature-intake.json is ready_for_close with required spec-conformance review pending before this artifact.",
+      ".dossier/verification/F-0027/feature-intake-verify.json status is pass."
+    ]
+  },
+  "notes": "Independent read-only review returned PASS with no must-fix findings.",
+  "immutable_artifact_path": ".dossier/reviews/F-0027/feature-intake-review-pass.json"
+}
