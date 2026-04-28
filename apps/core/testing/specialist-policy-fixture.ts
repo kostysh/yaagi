@@ -161,7 +161,11 @@ export async function createSpecialistPolicyTestHarness(
         deploymentIdentity: 'deployment-cell:local',
         modelServingReadinessRef: 'serving:vllm-fast:ready:1',
         governorEvidenceRef: 'governor:allow:1',
-        lifecycleRollbackTargetRef: organRow.rollbackTargetProfileId ?? fallbackTargetProfileId,
+        lifecycleRollbackTargetRef: 'graceful_shutdown:shutdown-1',
+        fallbackTargetProfileId:
+          policyRow.fallbackTargetProfileId ??
+          organRow.fallbackTargetProfileId ??
+          fallbackTargetProfileId,
         artifactUri: 'file:///tmp/models/summary-specialist/artifact.json',
         artifactDescriptorPath: '/models/summary-specialist/descriptor.json',
         runtimeArtifactRoot: '/models/summary-specialist',

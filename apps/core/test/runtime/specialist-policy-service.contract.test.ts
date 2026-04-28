@@ -167,6 +167,23 @@ void test('AC-F0027-06 refuses release evidence from another runtime artifact pa
   assert.equal(result.refusal.reason, SPECIALIST_REFUSAL_REASON.RELEASE_NOT_READY);
 });
 
+void test('AC-F0027-06 / AC-F0027-10 refuses release evidence bound to another fallback target', async () => {
+  const harness = await createSpecialistPolicyTestHarness();
+  const release = harness.evidence.releaseEvidence.get('release:evidence:1');
+  assert.ok(release);
+  harness.evidence.releaseEvidence.set('release:evidence:1', {
+    ...release,
+    fallbackTargetProfileId: 'reflection.other@baseline',
+  });
+
+  const result = await harness.service.admitSpecialist(
+    harness.admissionInput({ requestId: 'admission-release-fallback-mismatch' }),
+  );
+
+  assert.equal(result.accepted, false);
+  assert.equal(result.refusal.reason, SPECIALIST_REFUSAL_REASON.RELEASE_NOT_READY);
+});
+
 void test('AC-F0027-02 fails closed before invocation on conflicting admission replay', async () => {
   const harness = await createSpecialistPolicyTestHarness();
   let invocationCount = 0;

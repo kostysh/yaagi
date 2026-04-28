@@ -546,6 +546,36 @@ const readPrefixedRef = (refs: readonly string[], prefix: string): string | null
   return ref ? ref.slice(prefix.length) : null;
 };
 
+const MODEL_PROFILE_HEALTH_REF_PREFIX = 'model_profile_health:';
+const MODEL_HEALTH_REPORT_REF_PREFIX = 'report:model_health:';
+const MODEL_PROFILE_REF_PREFIX = 'model-profile:';
+const FALLBACK_TARGET_REF_PREFIX = 'fallback-target:';
+
+const readModelProfileIdFromReadinessRef = (ref: string): string | null =>
+  ref.startsWith(MODEL_PROFILE_HEALTH_REF_PREFIX)
+    ? ref.slice(MODEL_PROFILE_HEALTH_REF_PREFIX.length)
+    : ref.startsWith(MODEL_HEALTH_REPORT_REF_PREFIX)
+      ? ref.slice(MODEL_HEALTH_REPORT_REF_PREFIX.length)
+      : null;
+
+const readinessRefMatchesServing = (input: {
+  readinessRef: string | undefined;
+  state: ServingDependencyState;
+  modelProfileId: string;
+}): boolean => {
+  if (!input.readinessRef) {
+    return true;
+  }
+
+  return (
+    input.readinessRef === `serving:${input.state.serviceId}:${input.state.readiness}` ||
+    (input.state.lastCheckedAt &&
+      input.readinessRef === `serving:${input.state.serviceId}:${input.state.lastCheckedAt}`) ||
+    input.readinessRef === `${MODEL_PROFILE_HEALTH_REF_PREFIX}${input.modelProfileId}` ||
+    input.readinessRef === `${MODEL_HEALTH_REPORT_REF_PREFIX}${input.modelProfileId}`
+  );
+};
+
 const createDbBackedSpecialistPolicyStore = (config: CoreRuntimeConfig): SpecialistPolicyStore => {
   const withStore = async <T>(
     run: (store: ReturnType<typeof createSpecialistPolicyStore>) => Promise<T>,
@@ -656,15 +686,12 @@ const createDbBackedSpecialistPolicyEvidencePorts = (input: {
       };
     }),
 
-  getServingDependencyState: async ({ serviceId, artifactUri, readinessRef }) => {
+  getServingDependencyState: async ({ serviceId, modelProfileId, artifactUri, readinessRef }) => {
     const serving = (await input.listServingDependencyStates()).find(
       (state) =>
         state.serviceId === serviceId &&
         state.artifactUri === artifactUri &&
-        (!readinessRef ||
-          readinessRef === `serving:${state.serviceId}:${state.readiness}` ||
-          (state.lastCheckedAt &&
-            readinessRef === `serving:${state.serviceId}:${state.lastCheckedAt}`)),
+        readinessRefMatchesServing({ readinessRef, state, modelProfileId }),
     );
     return serving ?? null;
   },
@@ -673,17 +700,21 @@ const createDbBackedSpecialistPolicyEvidencePorts = (input: {
     await withRuntimeClient(input.config.postgresUrl, async (client) => {
       const result = await client.query<QueryResultRow>(
         `select
-           evidence_bundle_id as "evidenceRef",
-           deployment_identity as "deploymentIdentity",
-           smoke_on_deploy_result_json->>'status' as "smokeStatus",
-           model_serving_readiness_ref as "modelServingReadinessRef",
-           governor_evidence_ref as "governorEvidenceRef",
-           lifecycle_rollback_target_ref as "lifecycleRollbackTargetRef",
-           diagnostic_report_refs_json as "diagnosticReportRefs",
-           file_artifact_refs_json as "fileArtifactRefs",
-           to_char(materialized_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "materializedAt"
-         from polyphony_runtime.release_evidence
-         where evidence_bundle_id = $1
+           e.evidence_bundle_id as "evidenceRef",
+           e.release_request_id as "releaseRequestId",
+           e.deployment_identity as "deploymentIdentity",
+           e.smoke_on_deploy_result_json->>'status' as "smokeStatus",
+           e.model_serving_readiness_ref as "modelServingReadinessRef",
+           e.governor_evidence_ref as "governorEvidenceRef",
+           e.lifecycle_rollback_target_ref as "lifecycleRollbackTargetRef",
+           e.diagnostic_report_refs_json as "diagnosticReportRefs",
+           e.file_artifact_refs_json as "fileArtifactRefs",
+           r.rollback_target_ref as "releaseRollbackTargetRef",
+           r.evidence_refs_json as "releaseRequestEvidenceRefs",
+           to_char(e.materialized_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "materializedAt"
+         from polyphony_runtime.release_evidence e
+         join polyphony_runtime.release_requests r on r.request_id = e.release_request_id
+         where e.evidence_bundle_id = $1
          limit 1`,
         [evidenceRef],
       );
@@ -693,6 +724,7 @@ const createDbBackedSpecialistPolicyEvidencePorts = (input: {
       }
 
       const artifactRefs = [
+        ...stringArrayValue(row['releaseRequestEvidenceRefs']),
         ...stringArrayValue(row['fileArtifactRefs']),
         ...stringArrayValue(row['diagnosticReportRefs']),
       ];
@@ -703,14 +735,55 @@ const createDbBackedSpecialistPolicyEvidencePorts = (input: {
       const modelServingReadinessRef = stringValue(row['modelServingReadinessRef']);
       const governorEvidenceRef = stringValue(row['governorEvidenceRef']);
       const lifecycleRollbackTargetRef = stringValue(row['lifecycleRollbackTargetRef']);
-      const artifactUri = readPrefixedRef(artifactRefs, 'artifact-uri:');
-      const artifactDescriptorPath = readPrefixedRef(artifactRefs, 'artifact-descriptor-path:');
-      const runtimeArtifactRoot = readPrefixedRef(artifactRefs, 'runtime-artifact-root:');
+      const releaseRollbackTargetRef = stringValue(row['releaseRollbackTargetRef']);
       const specialistId = readPrefixedRef(artifactRefs, 'specialist:');
-      const modelProfileId = readPrefixedRef(artifactRefs, 'model-profile:');
-      const serviceId = readPrefixedRef(artifactRefs, 'service:');
+      const readinessModelProfileId = modelServingReadinessRef
+        ? readModelProfileIdFromReadinessRef(modelServingReadinessRef)
+        : null;
+      const modelProfileId =
+        readPrefixedRef(artifactRefs, MODEL_PROFILE_REF_PREFIX) ?? readinessModelProfileId;
+      const profileResult = modelProfileId
+        ? await client.query<QueryResultRow>(
+            `select
+               model_profile_id as "modelProfileId",
+               service_id as "serviceId",
+               artifact_uri as "artifactUri",
+               health_json as "healthJson"
+             from polyphony_runtime.model_registry
+             where model_profile_id = $1
+             limit 1`,
+            [modelProfileId],
+          )
+        : { rows: [] };
+      const profileRow = profileResult.rows[0];
+      const profileHealthJson = isRecord(profileRow?.['healthJson'])
+        ? profileRow['healthJson']
+        : {};
+      const serviceId =
+        readPrefixedRef(artifactRefs, 'service:') ?? stringValue(profileRow?.['serviceId']);
+      const artifactUri =
+        readPrefixedRef(artifactRefs, 'artifact-uri:') ?? stringValue(profileRow?.['artifactUri']);
+      const serving =
+        serviceId && artifactUri
+          ? (await input.listServingDependencyStates()).find(
+              (state) => state.serviceId === serviceId && state.artifactUri === artifactUri,
+            )
+          : null;
+      const artifactDescriptorPath =
+        readPrefixedRef(artifactRefs, 'artifact-descriptor-path:') ??
+        serving?.artifactDescriptorPath ??
+        stringValue(profileHealthJson['artifactDescriptorPath']);
+      const runtimeArtifactRoot =
+        readPrefixedRef(artifactRefs, 'runtime-artifact-root:') ??
+        serving?.runtimeArtifactRoot ??
+        stringValue(profileHealthJson['runtimeArtifactRoot']);
       const policyId = readPrefixedRef(artifactRefs, 'specialist-policy:');
       const rolloutStage = readPrefixedRef(artifactRefs, 'rollout-stage:');
+      const fallbackTargetProfileId =
+        readPrefixedRef(artifactRefs, FALLBACK_TARGET_REF_PREFIX) ??
+        (releaseRollbackTargetRef
+          ? readPrefixedRef([releaseRollbackTargetRef], MODEL_PROFILE_REF_PREFIX)
+          : null);
       if (
         !releaseEvidenceRef ||
         !smokeStatus ||
@@ -719,6 +792,7 @@ const createDbBackedSpecialistPolicyEvidencePorts = (input: {
         !modelServingReadinessRef ||
         !governorEvidenceRef ||
         !lifecycleRollbackTargetRef ||
+        !fallbackTargetProfileId ||
         !artifactUri ||
         !artifactDescriptorPath ||
         !runtimeArtifactRoot ||
@@ -740,6 +814,7 @@ const createDbBackedSpecialistPolicyEvidencePorts = (input: {
         modelServingReadinessRef,
         governorEvidenceRef,
         lifecycleRollbackTargetRef,
+        fallbackTargetProfileId,
         artifactUri,
         artifactDescriptorPath,
         runtimeArtifactRoot,

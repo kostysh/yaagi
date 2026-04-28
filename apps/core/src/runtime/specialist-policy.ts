@@ -38,6 +38,7 @@ export type SpecialistReleaseEvidence = {
   modelServingReadinessRef: string;
   governorEvidenceRef: string;
   lifecycleRollbackTargetRef: string;
+  fallbackTargetProfileId: string;
   artifactUri: string;
   artifactDescriptorPath: string;
   runtimeArtifactRoot: string;
@@ -536,6 +537,19 @@ export function createSpecialistPolicyService(
         decisionAt,
       });
     }
+    if (!fallbackTargetProfileId) {
+      return await refuse({
+        admission: input,
+        policy,
+        stage: organ.stage,
+        selectedModelProfileId,
+        fallbackTargetProfileId,
+        reason: SPECIALIST_REFUSAL_REASON.ROLLBACK_TARGET_MISSING,
+        detail: `specialist ${organ.specialistId} has no fallback target`,
+        evidenceRefs: baseEvidenceRefs,
+        decisionAt,
+      });
+    }
 
     const promotionPackage = await options.evidence.getWorkshopPromotionPackage({
       candidateId: organ.workshopCandidateId,
@@ -715,7 +729,7 @@ export function createSpecialistPolicyService(
       if (
         release.modelServingReadinessRef !== input.evidenceRefs.servingReadinessRef ||
         release.governorEvidenceRef !== governorDecisionRef ||
-        release.lifecycleRollbackTargetRef !== organ.rollbackTargetProfileId ||
+        release.fallbackTargetProfileId !== fallbackTargetProfileId ||
         release.deploymentIdentity !== deploymentIdentity ||
         release.artifactUri !== promotionPackage.artifactUri ||
         release.artifactDescriptorPath !== serving.artifactDescriptorPath ||

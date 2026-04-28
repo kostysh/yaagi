@@ -20,6 +20,8 @@ export const PHASE0_BASELINE_PROFILE_ID = Object.freeze({
   REFLECTION: 'reflection.fast@baseline',
 } as const);
 
+const phase0BaselineProfileIds = new Set<string>(Object.values(PHASE0_BASELINE_PROFILE_ID));
+
 export type BaselineTickMode = 'reactive' | 'deliberative' | 'contemplative';
 
 export type ModelHealthSummary = {
@@ -327,7 +329,9 @@ export function createPhase0ModelRouter(options: Phase0ModelRouterOptions): Phas
       ],
     });
 
-    return profiles.sort(baselineProfileSorter);
+    return profiles
+      .filter((profile) => phase0BaselineProfileIds.has(profile.modelProfileId))
+      .sort(baselineProfileSorter);
   };
 
   const resolveHealthIfNeeded = async (

@@ -127,3 +127,39 @@ void test('AC-F0014-04 keeps baseline diagnostics and selection isolated from ri
   assert.equal(selection.accepted, true);
   assert.equal(selection.accepted ? selection.role : null, 'reflex');
 });
+
+void test('AC-F0027-02 / AC-F0027-12 excludes specialist decision profiles from baseline routing', async () => {
+  const harness = createSubjectStateDbHarness();
+  const store = createRuntimeModelProfileStore(harness.db);
+  const router = createPhase0ModelRouter({
+    fastModelBaseUrl: 'http://vllm-fast:8000/v1',
+    store,
+  });
+
+  await router.ensureBaselineProfiles();
+  await store.ensureModelProfiles([
+    {
+      modelProfileId: 'summary.specialist@v1',
+      role: 'deliberation',
+      serviceId: 'vllm-fast',
+      endpoint: 'http://vllm-fast:8000/v1',
+      artifactUri: 'file:///tmp/models/summary-specialist/artifact.json',
+      baseModel: 'model-fast',
+      capabilities: ['summarization'],
+      healthJson: { owner: 'F-0027' },
+      status: 'active',
+    },
+  ]);
+
+  const selection = await router.selectProfile({
+    tickMode: 'deliberative',
+    taskKind: 'summarize.incident',
+    latencyBudget: 'normal',
+    riskLevel: 'low',
+    contextSize: 256,
+    requiredCapabilities: ['summarization'],
+  });
+
+  assert.equal(selection.accepted, false);
+  assert.equal(selection.accepted ? null : selection.reason, 'profile_unavailable');
+});
