@@ -6,7 +6,7 @@ import {
   createPlatformTestRuntime,
 } from '../../testing/platform-test-fixture.ts';
 
-// Coverage refs: AC-F0024-08 AC-F0024-09 AC-F0024-17
+// Coverage refs: AC-F0013-06 AC-F0024-08 AC-F0024-09 AC-F0024-17
 
 const expectedUnavailableResponse = {
   available: false,
@@ -15,7 +15,7 @@ const expectedUnavailableResponse = {
   reason: 'downstream_owner_unavailable',
 } as const;
 
-void test('AC-F0024-08 admits governor operators before forwarding freeze-development to the owner gate', async () => {
+void test('AC-F0013-06 / AC-F0024-08 admits governor operators before forwarding freeze-development to the owner gate', async () => {
   let callCount = 0;
   const forwardedEvidenceRefs: string[][] = [];
   const { runtime, cleanup } = await createPlatformTestRuntime({
@@ -159,7 +159,7 @@ void test('AC-F0024-08 rejects oversized freeze payloads before owner calls', as
   }
 });
 
-void test('AC-F0024-08 fails closed on freeze-development when the governor seam is absent', async () => {
+void test('AC-F0013-06 / AC-F0024-08 fails closed on freeze-development when the governor seam is absent', async () => {
   const { runtime, cleanup } = await createPlatformTestRuntime({
     dependencies: {
       createRuntimeLifecycle: () => ({

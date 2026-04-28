@@ -87,7 +87,7 @@ void test('AC-F0018-03 / AC-F0018-04 fail closed on proposal intake when perimet
   });
 });
 
-void test('AC-F0018-07 keeps operator proposal ingress distinct from internal trusted-ingress seams', async () => {
+void test('AC-F0016-05 / AC-F0018-07 keeps operator proposal ingress distinct from internal trusted-ingress seams', async () => {
   const seenIngressOwners: string[] = [];
   const governor = createDbBackedDevelopmentGovernorService(
     {

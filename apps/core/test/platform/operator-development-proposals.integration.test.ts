@@ -6,7 +6,7 @@ import {
   createPlatformTestRuntime,
 } from '../../testing/platform-test-fixture.ts';
 
-// Coverage refs: AC-F0024-08 AC-F0024-09 AC-F0024-17
+// Coverage refs: AC-F0013-06 AC-F0016-05 AC-F0024-08 AC-F0024-09 AC-F0024-17
 
 const expectedUnavailableResponse = {
   available: false,
@@ -15,7 +15,7 @@ const expectedUnavailableResponse = {
   reason: 'downstream_owner_unavailable',
 } as const;
 
-void test('AC-F0024-08 admits governor operators before forwarding development proposals to the owner gate', async () => {
+void test('AC-F0013-06 / AC-F0016-05 / AC-F0024-08 admits governor operators before forwarding development proposals to the owner gate', async () => {
   let callCount = 0;
   const forwardedEvidenceRefs: string[][] = [];
   const { runtime, cleanup } = await createPlatformTestRuntime({
@@ -73,6 +73,54 @@ void test('AC-F0024-08 admits governor operators before forwarding development p
     assert.equal(forwardedEvidenceRefs[0]?.[0], 'operator:evidence:1');
     assert.match(forwardedEvidenceRefs[0]?.[1] ?? '', /^operator-auth-evidence:/);
     assert.equal((forwardedEvidenceRefs[0]?.[1] ?? '').length <= 200, true);
+  } finally {
+    await cleanup();
+  }
+});
+
+void test('AC-F0016-05 / AC-F0024-04 denies non-governor operators before proposal owner invocation', async () => {
+  let callCount = 0;
+  const { runtime, cleanup } = await createPlatformTestRuntime({
+    dependencies: {
+      createRuntimeLifecycle: () => ({
+        start: () => Promise.resolve(),
+        stop: () => Promise.resolve(),
+        submitDevelopmentProposal: () => {
+          callCount += 1;
+          return Promise.resolve({
+            accepted: true,
+            requestId: 'should-not-run',
+            proposalId: 'should-not-run',
+            state: 'submitted',
+            deduplicated: false,
+            createdAt: '2026-04-15T12:30:00.000Z',
+          });
+        },
+      }),
+    },
+  });
+
+  try {
+    const response = await runtime.fetch(
+      new Request('http://yaagi/control/development-proposals', {
+        method: 'POST',
+        headers: createOperatorAuthHeaders('operator', {
+          'content-type': 'application/json',
+        }),
+        body: JSON.stringify({
+          requestId: 'operator-proposal-forbidden',
+          proposalKind: 'code_change',
+          problemSignature: 'non-governor operator must not submit proposals',
+          summary: 'Only governor operators may submit external development proposals.',
+          evidenceRefs: ['operator:evidence:forbidden'],
+          rollbackPlanRef: 'rollback:forbidden:1',
+          targetRef: 'workspace:body',
+        }),
+      }),
+    );
+
+    assert.equal(response.status, 403);
+    assert.equal(callCount, 0);
   } finally {
     await cleanup();
   }
@@ -166,7 +214,7 @@ void test('AC-F0024-08 rejects oversized proposal payloads before owner calls', 
   }
 });
 
-void test('AC-F0024-08 fails closed on development-proposals when the governor seam is not registered', async () => {
+void test('AC-F0013-06 / AC-F0024-08 fails closed on development-proposals when the governor seam is not registered', async () => {
   const { runtime, cleanup } = await createPlatformTestRuntime({
     dependencies: {
       createRuntimeLifecycle: () => ({
