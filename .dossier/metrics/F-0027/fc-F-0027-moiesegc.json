@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-04-28T10:40:50.627Z",
+  "generated_at": "2026-04-28T14:00:46.883Z",
   "feature_id": "F-0027",
   "feature_cycle_id": "fc-F-0027-moiesegc",
   "identity": {
@@ -9,7 +9,7 @@
     "backlog_item_key": "CF-019"
   },
   "lifecycle": {
-    "feature_cycle_time_ms": null,
+    "feature_cycle_time_ms": 17214309,
     "intake": {
       "cycle_ids": [
         "intake-db51e83d"
@@ -137,29 +137,57 @@
         }
       },
       "implementation": {
-        "cycle_ids": [],
-        "log_paths": [],
-        "session_ids": [],
-        "start_ts": null,
-        "local_gates_green_ts": null,
-        "process_complete_ts": null,
-        "step_close_ts": null,
-        "step_artifacts": [],
-        "first_review_agent_started_ts": null,
-        "final_pass_ts": null,
+        "cycle_ids": [
+          "implementation-16991364"
+        ],
+        "log_paths": [
+          ".dossier/logs/implementation/F-0027--fc-F-0027-moiesegc--implementation-16991364.md"
+        ],
+        "session_ids": [
+          "ce9c2d32-4895-434d-b355-9a23d42174e2"
+        ],
+        "start_ts": "2026-04-28T11:04:21.575Z",
+        "local_gates_green_ts": "2026-04-28T13:44:12.307Z",
+        "process_complete_ts": "2026-04-28T14:00:31.377Z",
+        "step_close_ts": "2026-04-28T14:00:31.377Z",
+        "step_artifacts": [
+          ".dossier/steps/F-0027/implementation.json"
+        ],
+        "first_review_agent_started_ts": "2026-04-28T13:52:32.278Z",
+        "final_pass_ts": "2026-04-28T13:59:10.747Z",
         "review_policy": {
-          "required_audit_classes": [],
-          "executed_audit_classes": [],
-          "required_external_review_pending": null,
-          "implementation_review_scope": null,
-          "required_security_review": null,
-          "degraded_review_present": null,
-          "invalidated_review_present": null,
-          "stale_review_present": null,
-          "reviewer_skills": [],
-          "reviewer_agent_ids": [],
-          "review_trace_commits": [],
-          "security_trigger_reasons": []
+          "required_audit_classes": [
+            "spec-conformance-reviewer",
+            "code-reviewer",
+            "security-reviewer"
+          ],
+          "executed_audit_classes": [
+            "spec-conformance-reviewer",
+            "code-reviewer",
+            "security-reviewer"
+          ],
+          "required_external_review_pending": false,
+          "implementation_review_scope": "code-bearing",
+          "required_security_review": true,
+          "degraded_review_present": false,
+          "invalidated_review_present": false,
+          "stale_review_present": false,
+          "reviewer_skills": [
+            "code-reviewer",
+            "security-reviewer",
+            "spec-conformance-reviewer"
+          ],
+          "reviewer_agent_ids": [
+            "019dd455-df82-7ce2-8f3d-365c84114d39",
+            "019dd455-e1f3-7062-beb4-6e12a11d2070",
+            "019dd455-e4f9-7620-bc4b-180000c801a5"
+          ],
+          "review_trace_commits": [
+            "f1e87bafa76fc561a437e3bc46fedf3ab2b7b6ff"
+          ],
+          "security_trigger_reasons": [
+            "runtime specialist admission and retirement gate live model use from caller-controlled policy/evidence refs and protected rollback/release evidence"
+          ]
         }
       },
       "change-proposal": {
@@ -195,13 +223,13 @@
       "feature-intake": 365562,
       "spec-compact": 640200,
       "plan-slice": 690680,
-      "implementation": null,
+      "implementation": 10569802,
       "change-proposal": null
     },
-    "review_loop_time_ms": 1479648,
-    "rerounds_per_feature": 0,
-    "first_pass_close": null,
-    "closure_latency_ms": null,
+    "review_loop_time_ms": 13414145,
+    "rerounds_per_feature": 6,
+    "first_pass_close": false,
+    "closure_latency_ms": 979070,
     "verification_failures_total": 0,
     "backlog_actualization_failures_total": 0,
     "operator_interventions_total": 0
@@ -219,6 +247,19 @@
       "stage_log_path": ".dossier/logs/feature-intake/F-0027--fc-F-0027-moiesegc.md",
       "start_ts": "2026-04-28T09:13:37.068Z",
       "end_ts": "2026-04-28T09:19:42.630Z"
+    },
+    {
+      "version": 1,
+      "feature_cycle_id": "fc-F-0027-moiesegc",
+      "feature_id": "F-0027",
+      "backlog_item_key": "CF-019",
+      "stage": "implementation",
+      "session_id": "ce9c2d32-4895-434d-b355-9a23d42174e2",
+      "trace_runtime": "codex",
+      "trace_locator_kind": "session_id",
+      "stage_log_path": ".dossier/logs/implementation/F-0027--fc-F-0027-moiesegc--implementation-16991364.md",
+      "start_ts": "2026-04-28T11:04:21.575Z",
+      "end_ts": "2026-04-28T14:00:31.377Z"
     },
     {
       "version": 1,

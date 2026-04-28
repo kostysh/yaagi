@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "created_at": "2026-04-28T13:52:41.322Z",
+  "audit_class": "code-reviewer",
+  "artifact_role": "immutable_attempt",
+  "review_mode": "external",
+  "reviewer": "Godel",
+  "reviewer_skill": "code-reviewer",
+  "reviewer_agent_id": "019dd455-e1f3-7062-beb4-6e12a11d2070",
+  "reviewer_thread_id": "019dd354-e429-7961-a9f5-a93d47eaaf96",
+  "review_attempt_id": "implementation--code-reviewer--r01",
+  "review_round_id": "r01",
+  "review_round_number": 1,
+  "latest_copy_path": ".dossier/reviews/F-0027/implementation--code-reviewer--latest.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0027-specialist-organs-rollout-retirement-policy.md",
+  "feature_id": "F-0027",
+  "event_commit": "f1e87bafa76fc561a437e3bc46fedf3ab2b7b6ff",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "final_delivery_commit=f1e87bafa76fc561a437e3bc46fedf3ab2b7b6ff",
+      "reviewer ran full F-0027 specialist suite and git diff --check"
+    ]
+  },
+  "notes": "PASS on final delivery commit f1e87bafa76fc561a437e3bc46fedf3ab2b7b6ff: deployment identity default removed, explicit release identity binding verified, previous production wiring, release evidence, rollout durability and request locking blockers rechecked."
+}

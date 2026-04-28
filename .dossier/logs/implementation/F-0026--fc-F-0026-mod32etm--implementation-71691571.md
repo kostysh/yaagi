@@ -339,8 +339,8 @@ step_artifact: .dossier/steps/F-0026/implementation.json
 post_close_backlog_hygiene_required: true
 post_close_backlog_hygiene_status: clean
 post_close_backlog_hygiene_artifact: .dossier/verification/F-0026/implementation-post-close-backlog-hygiene.json
-post_close_backlog_hygiene_checked_at: 2026-04-28T10:42:45.381Z
-post_close_backlog_hygiene_refresh_at: 2026-04-28T10:42:45.046Z
+post_close_backlog_hygiene_checked_at: 2026-04-28T14:01:13.570Z
+post_close_backlog_hygiene_refresh_at: 2026-04-28T14:01:13.235Z
 post_close_open_source_review_count: 0
 post_close_source_review_blocked_item_count: 0
 post_close_lifecycle_reconciliation_drift_count: 0

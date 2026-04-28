@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "created_at": "2026-04-28T14:00:31.348Z",
+  "feature_id": "F-0027",
+  "dossier": "docs/ssot/features/F-0027-specialist-organs-rollout-retirement-policy.md",
+  "step": "implementation",
+  "dossier_status": "done",
+  "event_commit": "f1e87bafa76fc561a437e3bc46fedf3ab2b7b6ff",
+  "review_trace_commit": "f1e87bafa76fc561a437e3bc46fedf3ab2b7b6ff",
+  "review_trace_commits": [
+    "f1e87bafa76fc561a437e3bc46fedf3ab2b7b6ff"
+  ],
+  "verification_trace_commit": "f1e87bafa76fc561a437e3bc46fedf3ab2b7b6ff",
+  "verification_artifact": ".dossier/verification/F-0027/implementation-f1e87bafa76f.json",
+  "review_artifacts": [
+    ".dossier/reviews/F-0027/implementation--spec-conformance-reviewer--r03--pass--f1e87bafa76f.json",
+    ".dossier/reviews/F-0027/implementation--code-reviewer--r03--pass--f1e87bafa76f.json",
+    ".dossier/reviews/F-0027/implementation--security-reviewer--r03--pass--f1e87bafa76f.json"
+  ],
+  "review_freshness": "pass",
+  "required_audit_classes": [
+    "spec-conformance-reviewer",
+    "code-reviewer",
+    "security-reviewer"
+  ],
+  "executed_audit_classes": [
+    "spec-conformance-reviewer",
+    "code-reviewer",
+    "security-reviewer"
+  ],
+  "required_external_review_pending": false,
+  "implementation_review_scope": "code-bearing",
+  "required_security_review": true,
+  "degraded_review_present": false,
+  "invalidated_review_present": false,
+  "stale_review_present": false,
+  "reviewer_skills": [
+    "spec-conformance-reviewer",
+    "code-reviewer",
+    "security-reviewer"
+  ],
+  "reviewer_agent_ids": [
+    "019dd455-df82-7ce2-8f3d-365c84114d39",
+    "019dd455-e1f3-7062-beb4-6e12a11d2070",
+    "019dd455-e4f9-7620-bc4b-180000c801a5"
+  ],
+  "security_trigger_reasons": [
+    "runtime specialist admission and retirement gate live model use from caller-controlled policy/evidence refs and protected rollback/release evidence"
+  ],
+  "process_complete": true,
+  "blockers": []
+}
