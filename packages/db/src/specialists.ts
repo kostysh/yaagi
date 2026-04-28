@@ -390,6 +390,9 @@ const trafficLimitFromPayload = (payload: Record<string, unknown>): number | nul
     ? payload['trafficLimit']
     : null;
 
+const stringFromPayload = (payload: Record<string, unknown>, key: string): string | null =>
+  typeof payload[key] === 'string' ? payload[key] : null;
+
 const countAllowedAdmissions = async (
   db: SpecialistPolicyDbExecutor,
   input: {
@@ -467,8 +470,10 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
 
     async registerSpecialistOrgan(input): Promise<SpecialistOrganRow> {
       assertValidSpecialistOrgan(input);
-      const result = await db.query<QueryResultRow>(
-        `insert into ${specialistOrgansTable} (
+      return await transaction(db, async () => {
+        await acquireSpecialistStageLock(db, input.specialistId);
+        const result = await db.query<QueryResultRow>(
+          `insert into ${specialistOrgansTable} (
           specialist_id,
           task_signature,
           capability,
@@ -502,37 +507,38 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
           updated_at = excluded.updated_at
         where ${specialistOrgansTable}.stage <> '${SPECIALIST_ROLLOUT_STAGE.RETIRED}'
         returning ${specialistOrganColumns}`,
-        [
-          input.specialistId,
-          input.taskSignature,
-          input.capability,
-          input.workshopCandidateId,
-          input.promotionPackageRef,
-          input.modelProfileId,
-          input.serviceId,
-          input.predecessorProfileId,
-          input.rollbackTargetProfileId,
-          input.fallbackTargetProfileId,
-          input.stage,
-          input.statusReason,
-          input.currentPolicyId,
-          input.createdAt,
-          input.updatedAt,
-        ],
-      );
+          [
+            input.specialistId,
+            input.taskSignature,
+            input.capability,
+            input.workshopCandidateId,
+            input.promotionPackageRef,
+            input.modelProfileId,
+            input.serviceId,
+            input.predecessorProfileId,
+            input.rollbackTargetProfileId,
+            input.fallbackTargetProfileId,
+            input.stage,
+            input.statusReason,
+            input.currentPolicyId,
+            input.createdAt,
+            input.updatedAt,
+          ],
+        );
 
-      const row = result.rows[0];
-      if (!row) {
-        const existing = await getSpecialistOrgan(input.specialistId);
-        if (existing) {
-          return existing;
+        const row = result.rows[0];
+        if (!row) {
+          const existing = await getSpecialistOrgan(input.specialistId);
+          if (existing) {
+            return existing;
+          }
         }
-      }
-      if (!row) {
-        throw new Error(`failed to register specialist organ ${input.specialistId}`);
-      }
+        if (!row) {
+          throw new Error(`failed to register specialist organ ${input.specialistId}`);
+        }
 
-      return normalizeSpecialistOrganRow(row);
+        return normalizeSpecialistOrganRow(row);
+      });
     },
 
     getSpecialistOrgan,
@@ -541,8 +547,10 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
       input,
     ): Promise<SpecialistRequestRecordResult<SpecialistRolloutPolicyRow>> {
       assertValidSpecialistRolloutPolicy(input);
-      const result = await db.query<QueryResultRow>(
-        `insert into ${specialistRolloutPoliciesTable} (
+      return await transaction(db, async () => {
+        await acquireSpecialistStageLock(db, input.specialistId);
+        const result = await db.query<QueryResultRow>(
+          `insert into ${specialistRolloutPoliciesTable} (
           policy_id,
           request_id,
           normalized_request_hash,
@@ -560,41 +568,44 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
         )
         on conflict (request_id) do nothing
         returning ${specialistRolloutPolicyColumns}`,
-        [
-          input.policyId,
-          input.requestId,
-          input.normalizedRequestHash,
-          input.specialistId,
-          input.governedScope,
-          input.allowedStage,
-          input.trafficLimit,
-          JSON.stringify(input.requiredEvidenceClassesJson),
-          input.healthMaxAgeMs,
-          input.fallbackTargetProfileId,
-          JSON.stringify(input.evidenceRefsJson),
-          input.createdAt,
-        ],
-      );
+          [
+            input.policyId,
+            input.requestId,
+            input.normalizedRequestHash,
+            input.specialistId,
+            input.governedScope,
+            input.allowedStage,
+            input.trafficLimit,
+            JSON.stringify(input.requiredEvidenceClassesJson),
+            input.healthMaxAgeMs,
+            input.fallbackTargetProfileId,
+            JSON.stringify(input.evidenceRefsJson),
+            input.createdAt,
+          ],
+        );
 
-      const inserted = result.rows[0] ? normalizeSpecialistRolloutPolicyRow(result.rows[0]) : null;
-      if (inserted) {
-        await db.query(
-          `update ${specialistOrgansTable}
+        const inserted = result.rows[0]
+          ? normalizeSpecialistRolloutPolicyRow(result.rows[0])
+          : null;
+        if (inserted) {
+          await db.query(
+            `update ${specialistOrgansTable}
            set current_policy_id = $1,
                fallback_target_profile_id = coalesce($2, fallback_target_profile_id),
                updated_at = $3
            where specialist_id = $4`,
-          [input.policyId, input.fallbackTargetProfileId, input.createdAt, input.specialistId],
-        );
-        return { accepted: true, deduplicated: false, row: inserted };
-      }
+            [input.policyId, input.fallbackTargetProfileId, input.createdAt, input.specialistId],
+          );
+          return { accepted: true, deduplicated: false, row: inserted };
+        }
 
-      const existing = await loadRolloutPolicyByRequestId(db, input.requestId);
-      if (!existing) {
-        throw new Error(`failed to load specialist rollout policy ${input.requestId}`);
-      }
+        const existing = await loadRolloutPolicyByRequestId(db, input.requestId);
+        if (!existing) {
+          throw new Error(`failed to load specialist rollout policy ${input.requestId}`);
+        }
 
-      return compareRequestHash(existing, input.normalizedRequestHash);
+        return compareRequestHash(existing, input.normalizedRequestHash);
+      });
     },
 
     getRolloutPolicy,
@@ -730,8 +741,35 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
         let rejectedReason: 'terminal_stage_conflict' | null = null;
         if (input.decision === SPECIALIST_ADMISSION_DECISION.ALLOW) {
           const organ = await getSpecialistOrgan(input.specialistId);
+          const expectedPolicyId = stringFromPayload(input.payloadJson, 'policyId');
+          const expectedServiceId = stringFromPayload(input.payloadJson, 'serviceId');
+          const expectedGovernedScope = stringFromPayload(input.payloadJson, 'governedScope');
+          const expectedRollbackTargetProfileId = stringFromPayload(
+            input.payloadJson,
+            'rollbackTargetProfileId',
+          );
           const trafficLimit = trafficLimitFromPayload(input.payloadJson);
-          if (!organ || organ.stage !== input.stage || !isSpecialistLiveStage(organ.stage)) {
+          const currentPolicy = organ?.currentPolicyId
+            ? await getRolloutPolicy(organ.currentPolicyId)
+            : null;
+          if (
+            !organ ||
+            !currentPolicy ||
+            organ.stage !== input.stage ||
+            !isSpecialistLiveStage(organ.stage) ||
+            organ.taskSignature !== input.taskSignature ||
+            organ.modelProfileId !== input.selectedModelProfileId ||
+            (expectedServiceId !== null && organ.serviceId !== expectedServiceId) ||
+            (expectedRollbackTargetProfileId !== null &&
+              organ.rollbackTargetProfileId !== expectedRollbackTargetProfileId) ||
+            (expectedPolicyId !== null && organ.currentPolicyId !== expectedPolicyId) ||
+            currentPolicy.specialistId !== input.specialistId ||
+            currentPolicy.governedScope !== input.taskSignature ||
+            currentPolicy.allowedStage !== input.stage ||
+            (expectedGovernedScope !== null &&
+              currentPolicy.governedScope !== expectedGovernedScope) ||
+            currentPolicy.trafficLimit !== trafficLimit
+          ) {
             rejectedReason = 'terminal_stage_conflict';
             recordInput = {
               ...input,
@@ -744,6 +782,7 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
                 ...input.payloadJson,
                 stageGuardRefused: true,
                 observedStage: organ?.stage ?? null,
+                observedPolicyId: organ?.currentPolicyId ?? null,
               },
             };
           } else if (

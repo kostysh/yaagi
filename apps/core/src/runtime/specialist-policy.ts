@@ -38,6 +38,9 @@ export type SpecialistReleaseEvidence = {
   modelServingReadinessRef: string;
   governorEvidenceRef: string;
   lifecycleRollbackTargetRef: string;
+  artifactUri: string;
+  artifactDescriptorPath: string;
+  runtimeArtifactRoot: string;
   specialistId: string;
   modelProfileId: string;
   serviceId: string;
@@ -170,6 +173,7 @@ type SpecialistPolicyServiceOptions = {
   evidence: SpecialistPolicyEvidencePorts;
   now?: SpecialistClock;
   createId?: () => string;
+  deploymentIdentity?: string;
 };
 
 const stableJson = (value: unknown): string => {
@@ -286,6 +290,7 @@ export function createSpecialistPolicyService(
   options: SpecialistPolicyServiceOptions,
 ): SpecialistPolicyService {
   const now = options.now ?? (() => new Date().toISOString());
+  const deploymentIdentity = options.deploymentIdentity ?? 'deployment-cell:local';
   let nextId = 1;
   const createId =
     options.createId ??
@@ -711,6 +716,10 @@ export function createSpecialistPolicyService(
         release.modelServingReadinessRef !== input.evidenceRefs.servingReadinessRef ||
         release.governorEvidenceRef !== governorDecisionRef ||
         release.lifecycleRollbackTargetRef !== organ.rollbackTargetProfileId ||
+        release.deploymentIdentity !== deploymentIdentity ||
+        release.artifactUri !== promotionPackage.artifactUri ||
+        release.artifactDescriptorPath !== serving.artifactDescriptorPath ||
+        release.runtimeArtifactRoot !== serving.runtimeArtifactRoot ||
         release.specialistId !== organ.specialistId ||
         release.modelProfileId !== organ.modelProfileId ||
         release.serviceId !== organ.serviceId ||
@@ -862,6 +871,8 @@ export function createSpecialistPolicyService(
         ...(input.payloadJson ?? {}),
         rolloutStage: organ.stage,
         trafficLimit: policy.trafficLimit,
+        serviceId: organ.serviceId,
+        governedScope: policy.governedScope,
         rollbackTargetProfileId: organ.rollbackTargetProfileId,
       },
       decisionAt,

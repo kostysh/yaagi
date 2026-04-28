@@ -241,3 +241,53 @@ void test('AC-F0027-11 keeps retired organs terminal across register replay', as
     SPECIALIST_ROLLOUT_STAGE.RETIRED,
   );
 });
+
+void test('AC-F0027-02 final allow recheck refuses stale policy identity before persisting allow', async () => {
+  const harness = createSpecialistPolicyDbHarness();
+  const store = createSpecialistPolicyStore(harness.db);
+  await store.registerSpecialistOrgan(
+    baseOrgan({
+      stage: SPECIALIST_ROLLOUT_STAGE.LIMITED_ACTIVE,
+      currentPolicyId: 'policy-specialist-1',
+    }),
+  );
+  await store.recordRolloutPolicy(basePolicy());
+  await store.recordRolloutPolicy(
+    basePolicy({
+      policyId: 'policy-specialist-2',
+      requestId: 'policy-request-2',
+      normalizedRequestHash: 'policy-hash-2',
+      allowedStage: SPECIALIST_ROLLOUT_STAGE.LIMITED_ACTIVE,
+      trafficLimit: 2,
+    }),
+  );
+
+  const result = await store.recordAdmissionDecision({
+    decisionId: 'admission-stale-policy-1',
+    requestId: 'admission-stale-policy-request-1',
+    normalizedRequestHash: 'admission-stale-policy-hash',
+    specialistId: 'specialist.summary@v1',
+    taskSignature: 'summarize.incident',
+    selectedModelProfileId: 'summary.specialist@v1',
+    stage: SPECIALIST_ROLLOUT_STAGE.LIMITED_ACTIVE,
+    decision: 'allow',
+    reasonCode: 'admitted',
+    fallbackTargetProfileId: 'deliberation.fast@baseline',
+    evidenceRefsJson: ['release:evidence:1'],
+    payloadJson: {
+      policyId: 'policy-specialist-1',
+      serviceId: 'vllm-fast',
+      governedScope: 'summarize.incident',
+      trafficLimit: 2,
+      rollbackTargetProfileId: 'deliberation.fast@baseline',
+    },
+    createdAt: '2026-04-28T10:04:00.000Z',
+  });
+
+  assert.equal(result.accepted, false);
+  if (!result.accepted) {
+    assert.equal(result.reason, 'terminal_stage_conflict');
+    assert.equal(result.row.decision, 'refusal');
+    assert.equal(result.row.reasonCode, SPECIALIST_REFUSAL_REASON.TERMINAL_STAGE_CONFLICT);
+  }
+});

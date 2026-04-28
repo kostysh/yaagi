@@ -150,6 +150,23 @@ void test('AC-F0027-06 refuses unrelated release evidence for live admission', a
   assert.equal(result.refusal.reason, SPECIALIST_REFUSAL_REASON.RELEASE_NOT_READY);
 });
 
+void test('AC-F0027-06 refuses release evidence from another runtime artifact path', async () => {
+  const harness = await createSpecialistPolicyTestHarness();
+  const release = harness.evidence.releaseEvidence.get('release:evidence:1');
+  assert.ok(release);
+  harness.evidence.releaseEvidence.set('release:evidence:1', {
+    ...release,
+    runtimeArtifactRoot: '/models/other-runtime-root',
+  });
+
+  const result = await harness.service.admitSpecialist(
+    harness.admissionInput({ requestId: 'admission-release-runtime-mismatch' }),
+  );
+
+  assert.equal(result.accepted, false);
+  assert.equal(result.refusal.reason, SPECIALIST_REFUSAL_REASON.RELEASE_NOT_READY);
+});
+
 void test('AC-F0027-02 fails closed before invocation on conflicting admission replay', async () => {
   const harness = await createSpecialistPolicyTestHarness();
   let invocationCount = 0;
