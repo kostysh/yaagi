@@ -159,6 +159,7 @@ export async function createSpecialistPolicyTestHarness(
         ready: true,
         observedAt: SPECIALIST_TEST_NOW,
         deploymentIdentity: 'deployment-cell:local',
+        deploymentIdentityRef: 'deployment-cell:local',
         modelServingReadinessRef: 'serving:vllm-fast:ready:1',
         governorEvidenceRef: 'governor:allow:1',
         lifecycleRollbackTargetRef: 'graceful_shutdown:shutdown-1',

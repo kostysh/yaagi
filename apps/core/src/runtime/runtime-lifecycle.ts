@@ -550,6 +550,7 @@ const MODEL_PROFILE_HEALTH_REF_PREFIX = 'model_profile_health:';
 const MODEL_HEALTH_REPORT_REF_PREFIX = 'report:model_health:';
 const MODEL_PROFILE_REF_PREFIX = 'model-profile:';
 const FALLBACK_TARGET_REF_PREFIX = 'fallback-target:';
+const DEPLOYMENT_IDENTITY_REF_PREFIX = 'deployment-identity:';
 
 const readModelProfileIdFromReadinessRef = (ref: string): string | null =>
   ref.startsWith(MODEL_PROFILE_HEALTH_REF_PREFIX)
@@ -732,6 +733,7 @@ const createDbBackedSpecialistPolicyEvidencePorts = (input: {
       const smokeStatus = stringValue(row['smokeStatus']);
       const observedAt = stringValue(row['materializedAt']);
       const deploymentIdentity = stringValue(row['deploymentIdentity']);
+      const deploymentIdentityRef = readPrefixedRef(artifactRefs, DEPLOYMENT_IDENTITY_REF_PREFIX);
       const modelServingReadinessRef = stringValue(row['modelServingReadinessRef']);
       const governorEvidenceRef = stringValue(row['governorEvidenceRef']);
       const lifecycleRollbackTargetRef = stringValue(row['lifecycleRollbackTargetRef']);
@@ -789,6 +791,8 @@ const createDbBackedSpecialistPolicyEvidencePorts = (input: {
         !smokeStatus ||
         !observedAt ||
         !deploymentIdentity ||
+        !deploymentIdentityRef ||
+        deploymentIdentityRef !== deploymentIdentity ||
         !modelServingReadinessRef ||
         !governorEvidenceRef ||
         !lifecycleRollbackTargetRef ||
@@ -811,6 +815,7 @@ const createDbBackedSpecialistPolicyEvidencePorts = (input: {
         ready: smokeStatus === 'passed',
         observedAt,
         deploymentIdentity,
+        deploymentIdentityRef,
         modelServingReadinessRef,
         governorEvidenceRef,
         lifecycleRollbackTargetRef,

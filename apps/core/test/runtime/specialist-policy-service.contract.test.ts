@@ -167,6 +167,41 @@ void test('AC-F0027-06 refuses release evidence from another runtime artifact pa
   assert.equal(result.refusal.reason, SPECIALIST_REFUSAL_REASON.RELEASE_NOT_READY);
 });
 
+void test('AC-F0027-06 accepts release evidence bound to a per-request deployment identity', async () => {
+  const harness = await createSpecialistPolicyTestHarness();
+  const release = harness.evidence.releaseEvidence.get('release:evidence:1');
+  assert.ok(release);
+  harness.evidence.releaseEvidence.set('release:evidence:1', {
+    ...release,
+    deploymentIdentity: 'local:0f1e2d3c4b5a6978',
+    deploymentIdentityRef: 'local:0f1e2d3c4b5a6978',
+  });
+
+  const result = await harness.service.admitSpecialist(
+    harness.admissionInput({ requestId: 'admission-release-per-request-deployment' }),
+  );
+
+  assert.equal(result.accepted, true);
+});
+
+void test('AC-F0027-06 refuses release evidence with mismatched deployment identity binding', async () => {
+  const harness = await createSpecialistPolicyTestHarness();
+  const release = harness.evidence.releaseEvidence.get('release:evidence:1');
+  assert.ok(release);
+  harness.evidence.releaseEvidence.set('release:evidence:1', {
+    ...release,
+    deploymentIdentity: 'local:0f1e2d3c4b5a6978',
+    deploymentIdentityRef: 'local:another-release',
+  });
+
+  const result = await harness.service.admitSpecialist(
+    harness.admissionInput({ requestId: 'admission-release-deployment-mismatch' }),
+  );
+
+  assert.equal(result.accepted, false);
+  assert.equal(result.refusal.reason, SPECIALIST_REFUSAL_REASON.RELEASE_NOT_READY);
+});
+
 void test('AC-F0027-06 / AC-F0027-10 refuses release evidence bound to another fallback target', async () => {
   const harness = await createSpecialistPolicyTestHarness();
   const release = harness.evidence.releaseEvidence.get('release:evidence:1');

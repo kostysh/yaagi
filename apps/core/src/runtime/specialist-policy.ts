@@ -35,6 +35,7 @@ export type SpecialistReleaseEvidence = {
   ready: boolean;
   observedAt: string;
   deploymentIdentity: string;
+  deploymentIdentityRef: string;
   modelServingReadinessRef: string;
   governorEvidenceRef: string;
   lifecycleRollbackTargetRef: string;
@@ -174,7 +175,6 @@ type SpecialistPolicyServiceOptions = {
   evidence: SpecialistPolicyEvidencePorts;
   now?: SpecialistClock;
   createId?: () => string;
-  deploymentIdentity?: string;
 };
 
 const stableJson = (value: unknown): string => {
@@ -291,7 +291,6 @@ export function createSpecialistPolicyService(
   options: SpecialistPolicyServiceOptions,
 ): SpecialistPolicyService {
   const now = options.now ?? (() => new Date().toISOString());
-  const deploymentIdentity = options.deploymentIdentity ?? 'deployment-cell:local';
   let nextId = 1;
   const createId =
     options.createId ??
@@ -730,7 +729,7 @@ export function createSpecialistPolicyService(
         release.modelServingReadinessRef !== input.evidenceRefs.servingReadinessRef ||
         release.governorEvidenceRef !== governorDecisionRef ||
         release.fallbackTargetProfileId !== fallbackTargetProfileId ||
-        release.deploymentIdentity !== deploymentIdentity ||
+        release.deploymentIdentityRef !== release.deploymentIdentity ||
         release.artifactUri !== promotionPackage.artifactUri ||
         release.artifactDescriptorPath !== serving.artifactDescriptorPath ||
         release.runtimeArtifactRoot !== serving.runtimeArtifactRoot ||
@@ -868,6 +867,7 @@ export function createSpecialistPolicyService(
         serving.lastCheckedAt ? `serving:${serving.serviceId}:${serving.lastCheckedAt}` : '',
         release?.evidenceRef ?? '',
         release?.deploymentIdentity ?? '',
+        release?.deploymentIdentityRef ?? '',
         health.healthRef,
         organ.rollbackTargetProfileId,
       ],
