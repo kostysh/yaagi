@@ -1,0 +1,219 @@
+{
+  "version": 1,
+  "generated_at": "2026-04-28T10:16:29.017Z",
+  "feature_id": "F-0027",
+  "feature_cycle_id": "fc-F-0027-moiesegc",
+  "identity": {
+    "feature_id": "F-0027",
+    "feature_cycle_id": "fc-F-0027-moiesegc",
+    "backlog_item_key": "CF-019"
+  },
+  "lifecycle": {
+    "feature_cycle_time_ms": null,
+    "intake": {
+      "cycle_ids": [
+        "intake-db51e83d"
+      ],
+      "log_paths": [
+        ".dossier/logs/feature-intake/F-0027--fc-F-0027-moiesegc.md"
+      ],
+      "session_ids": [
+        "1c458e8f-50ab-488c-8d33-777437ef80fc"
+      ],
+      "start_ts": "2026-04-28T09:13:37.068Z",
+      "intake_process_complete_ts": "2026-04-28T09:19:42.630Z",
+      "review_policy": {
+        "required_audit_classes": [
+          "spec-conformance-reviewer"
+        ],
+        "executed_audit_classes": [
+          "spec-conformance-reviewer"
+        ],
+        "required_external_review_pending": false,
+        "implementation_review_scope": null,
+        "required_security_review": false,
+        "degraded_review_present": false,
+        "invalidated_review_present": false,
+        "stale_review_present": false,
+        "reviewer_skills": [
+          "spec-conformance-reviewer"
+        ],
+        "reviewer_agent_ids": [
+          "019dd35d-fca0-7ab1-9c04-d6b929955657"
+        ],
+        "review_trace_commits": [
+          "de3563c78e08db58dfd44f4013de55196433326c"
+        ],
+        "security_trigger_reasons": []
+      }
+    },
+    "stages": {
+      "spec-compact": {
+        "cycle_ids": [
+          "spec-compact-6d9989ff"
+        ],
+        "log_paths": [
+          ".dossier/logs/spec-compact/F-0027--fc-F-0027-moiesegc--spec-compact-6d9989ff.md"
+        ],
+        "session_ids": [
+          "019dd354-e429-7961-a9f5-a93d47eaaf96"
+        ],
+        "start_ts": "2026-04-28T10:05:37.112Z",
+        "local_gates_green_ts": null,
+        "process_complete_ts": "2026-04-28T10:16:17.312Z",
+        "step_close_ts": "2026-04-28T10:16:17.312Z",
+        "step_artifacts": [
+          ".dossier/steps/F-0027/spec-compact.json"
+        ],
+        "first_review_agent_started_ts": "2026-04-28T10:15:36.602Z",
+        "final_pass_ts": "2026-04-28T10:15:36.602Z",
+        "review_policy": {
+          "required_audit_classes": [
+            "spec-conformance-reviewer"
+          ],
+          "executed_audit_classes": [
+            "spec-conformance-reviewer"
+          ],
+          "required_external_review_pending": false,
+          "implementation_review_scope": null,
+          "required_security_review": false,
+          "degraded_review_present": false,
+          "invalidated_review_present": false,
+          "stale_review_present": false,
+          "reviewer_skills": [
+            "spec-conformance-reviewer"
+          ],
+          "reviewer_agent_ids": [
+            "019dd394-a93c-7383-a581-826e50525b56"
+          ],
+          "review_trace_commits": [
+            "288184de05c40b416856b0b1ef6b01e1236de5c1"
+          ],
+          "security_trigger_reasons": []
+        }
+      },
+      "plan-slice": {
+        "cycle_ids": [],
+        "log_paths": [],
+        "session_ids": [],
+        "start_ts": null,
+        "local_gates_green_ts": null,
+        "process_complete_ts": null,
+        "step_close_ts": null,
+        "step_artifacts": [],
+        "first_review_agent_started_ts": null,
+        "final_pass_ts": null,
+        "review_policy": {
+          "required_audit_classes": [],
+          "executed_audit_classes": [],
+          "required_external_review_pending": null,
+          "implementation_review_scope": null,
+          "required_security_review": null,
+          "degraded_review_present": null,
+          "invalidated_review_present": null,
+          "stale_review_present": null,
+          "reviewer_skills": [],
+          "reviewer_agent_ids": [],
+          "review_trace_commits": [],
+          "security_trigger_reasons": []
+        }
+      },
+      "implementation": {
+        "cycle_ids": [],
+        "log_paths": [],
+        "session_ids": [],
+        "start_ts": null,
+        "local_gates_green_ts": null,
+        "process_complete_ts": null,
+        "step_close_ts": null,
+        "step_artifacts": [],
+        "first_review_agent_started_ts": null,
+        "final_pass_ts": null,
+        "review_policy": {
+          "required_audit_classes": [],
+          "executed_audit_classes": [],
+          "required_external_review_pending": null,
+          "implementation_review_scope": null,
+          "required_security_review": null,
+          "degraded_review_present": null,
+          "invalidated_review_present": null,
+          "stale_review_present": null,
+          "reviewer_skills": [],
+          "reviewer_agent_ids": [],
+          "review_trace_commits": [],
+          "security_trigger_reasons": []
+        }
+      },
+      "change-proposal": {
+        "cycle_ids": [],
+        "log_paths": [],
+        "session_ids": [],
+        "start_ts": null,
+        "local_gates_green_ts": null,
+        "process_complete_ts": null,
+        "step_close_ts": null,
+        "step_artifacts": [],
+        "first_review_agent_started_ts": null,
+        "final_pass_ts": null,
+        "review_policy": {
+          "required_audit_classes": [],
+          "executed_audit_classes": [],
+          "required_external_review_pending": null,
+          "implementation_review_scope": null,
+          "required_security_review": null,
+          "degraded_review_present": null,
+          "invalidated_review_present": null,
+          "stale_review_present": null,
+          "reviewer_skills": [],
+          "reviewer_agent_ids": [],
+          "review_trace_commits": [],
+          "security_trigger_reasons": []
+        }
+      }
+    }
+  },
+  "metrics": {
+    "phase_cycle_time_ms": {
+      "feature-intake": 365562,
+      "spec-compact": 640200,
+      "plan-slice": null,
+      "implementation": null,
+      "change-proposal": null
+    },
+    "review_loop_time_ms": 0,
+    "rerounds_per_feature": 0,
+    "first_pass_close": null,
+    "closure_latency_ms": null,
+    "verification_failures_total": 0,
+    "backlog_actualization_failures_total": 0,
+    "operator_interventions_total": 0
+  },
+  "session_index_records": [
+    {
+      "version": 1,
+      "feature_cycle_id": "fc-F-0027-moiesegc",
+      "feature_id": "F-0027",
+      "backlog_item_key": "CF-019",
+      "stage": "feature-intake",
+      "session_id": "1c458e8f-50ab-488c-8d33-777437ef80fc",
+      "trace_runtime": "codex",
+      "trace_locator_kind": "session_id",
+      "stage_log_path": ".dossier/logs/feature-intake/F-0027--fc-F-0027-moiesegc.md",
+      "start_ts": "2026-04-28T09:13:37.068Z",
+      "end_ts": "2026-04-28T09:19:42.630Z"
+    },
+    {
+      "version": 1,
+      "feature_cycle_id": "fc-F-0027-moiesegc",
+      "feature_id": "F-0027",
+      "backlog_item_key": "CF-019",
+      "stage": "spec-compact",
+      "session_id": "019dd354-e429-7961-a9f5-a93d47eaaf96",
+      "trace_runtime": "codex",
+      "trace_locator_kind": "session_id",
+      "stage_log_path": ".dossier/logs/spec-compact/F-0027--fc-F-0027-moiesegc--spec-compact-6d9989ff.md",
+      "start_ts": "2026-04-28T10:05:37.112Z",
+      "end_ts": "2026-04-28T10:16:17.312Z"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "created_at": "2026-04-28T10:15:36.592Z",
+  "audit_class": "spec-conformance-reviewer",
+  "artifact_role": "latest_copy",
+  "review_mode": "external",
+  "reviewer": "external-spec-review-agent",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": "019dd394-a93c-7383-a581-826e50525b56",
+  "reviewer_thread_id": "019dd394-a93c-7383-a581-826e50525b56",
+  "review_attempt_id": "spec-compact--spec-conformance-reviewer--r01",
+  "review_round_id": "r01",
+  "review_round_number": 1,
+  "latest_copy_path": ".dossier/reviews/F-0027/spec-compact-spec-conformance-review.json",
+  "step": "spec-compact",
+  "dossier": "docs/ssot/features/F-0027-specialist-organs-rollout-retirement-policy.md",
+  "feature_id": "F-0027",
+  "event_commit": "288184de05c40b416856b0b1ef6b01e1236de5c1",
+  "implementation_scope": null,
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": []
+  },
+  "notes": "PASS: F-0027 spec-compact aligns CF-019 scope, preserves neighboring owner boundaries, records Plan mode assessment, reconciles lifecycle to specified, and has fresh verification at 288184de05c40b416856b0b1ef6b01e1236de5c1.",
+  "immutable_artifact_path": ".dossier/reviews/F-0027/spec-compact--spec-conformance-reviewer--r01--pass--288184de05c4.json"
+}

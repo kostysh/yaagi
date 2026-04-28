@@ -23,19 +23,46 @@ backlog_followup_resolved: true
 backlog_lifecycle_target: specified
 backlog_lifecycle_current: specified
 backlog_lifecycle_reconciled: true
-backlog_actualization_artifacts: []
-backlog_actualization_verdict: current_state_satisfies_target
-review_artifacts: []
+backlog_actualization_artifacts:
+  - .dossier/backlog/patches/a144ff6136e4--2026-04-28-056-f0027-spec-compact-actualization.patch.json
+backlog_actualization_verdict: actualized_by_backlog_artifact
+review_artifacts:
+  - .dossier/reviews/F-0027/spec-compact--spec-conformance-reviewer--r01--pass--288184de05c4.json
 verification_artifacts:
   - .dossier/verification/F-0027/spec-compact-bc802a20ae5e.json
+  - .dossier/verification/F-0027/spec-compact-288184de05c4.json
 required_audit_classes:
   - spec-conformance-reviewer
-executed_audit_classes: []
-required_external_review_pending: true
-review_events: []
-reviewer_skills: []
-reviewer_agent_ids: []
-review_trace_commits: []
+executed_audit_classes:
+  - spec-conformance-reviewer
+required_external_review_pending: false
+review_events:
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0027/spec-compact--spec-conformance-reviewer--r01--pass--288184de05c4.json
+    audit_class: spec-conformance-reviewer
+    event_commit: 288184de05c40b416856b0b1ef6b01e1236de5c1
+    implementation_scope: null
+    invalidated: false
+    latest_copy_path: .dossier/reviews/F-0027/spec-compact--spec-conformance-reviewer--latest.json
+    must_fix_count: 0
+    recorded_at: 2026-04-28T10:15:36.602Z
+    review_mode: external
+    review_attempt_id: spec-compact--spec-conformance-reviewer--r01
+    review_round_id: r01
+    review_round_number: 1
+    reviewer: external-spec-review-agent
+    reviewer_agent_id: 019dd394-a93c-7383-a581-826e50525b56
+    reviewer_skill: spec-conformance-reviewer
+    reviewer_thread_id: 019dd394-a93c-7383-a581-826e50525b56
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
+reviewer_skills:
+  - spec-conformance-reviewer
+reviewer_agent_ids:
+  - 019dd394-a93c-7383-a581-826e50525b56
+review_trace_commits:
+  - 288184de05c40b416856b0b1ef6b01e1236de5c1
 degraded_review_present: false
 invalidated_review_present: false
 stale_review_present: false
@@ -48,19 +75,19 @@ session_id: 019dd354-e429-7961-a9f5-a93d47eaaf96
 trace_runtime: codex
 trace_locator_kind: session_id
 final_delivery_commit: bc802a20ae5eeb9c65f5d02763e3d8b0de7d88bf
-final_closure_commit: null
-step_artifact: null
+final_closure_commit: 288184de05c40b416856b0b1ef6b01e1236de5c1
+step_artifact: .dossier/steps/F-0027/spec-compact.json
 stage_entry_commit: null
 implementation_review_scope: null
-required_security_review: null
+required_security_review: false
 security_trigger_reasons: []
-step_close_ts: null
-process_complete_ts: null
+step_close_ts: 2026-04-28T10:16:17.312Z
+process_complete_ts: 2026-04-28T10:16:17.312Z
 intake_process_complete_ts: null
 local_gates_green_ts: null
-first_review_agent_started_ts: null
-final_pass_ts: null
-verification_trace_commit: bc802a20ae5eeb9c65f5d02763e3d8b0de7d88bf
+first_review_agent_started_ts: 2026-04-28T10:15:36.602Z
+final_pass_ts: 2026-04-28T10:15:36.602Z
+verification_trace_commit: 288184de05c40b416856b0b1ef6b01e1236de5c1
 ---
 
 ## Scope
@@ -127,5 +154,7 @@ none
 
 ## Close-out
 
-- Stage is ready for dossier verification and independent `spec-conformance-reviewer` review.
-- Truthful closure still requires `dossier-verify`, PASS external review artifact and `dossier-step-close`.
+- `dossier-verify` passed with `.dossier/verification/F-0027/spec-compact-288184de05c4.json`.
+- Independent `spec-conformance-reviewer` audit PASS was recorded in `.dossier/reviews/F-0027/spec-compact--spec-conformance-reviewer--r01--pass--288184de05c4.json`.
+- `dossier-step-close` wrote `.dossier/steps/F-0027/spec-compact.json` with `process_complete=yes`.
+- Next workflow stage is `plan-slice`.
