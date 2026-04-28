@@ -67,6 +67,21 @@ export {
   type PolicyGovernanceService,
 } from './policy-governance.ts';
 export {
+  createSpecialistPolicyService,
+  type RetireSpecialistInput,
+  type RetireSpecialistResult,
+  type SpecialistAdmissionEvidenceRefs,
+  type SpecialistAdmissionInput,
+  type SpecialistAdmissionResult,
+  type SpecialistExecutionResult,
+  type SpecialistFallbackReadiness,
+  type SpecialistGovernorEvidence,
+  type SpecialistHealthEvidence,
+  type SpecialistPolicyEvidencePorts,
+  type SpecialistPolicyService,
+  type SpecialistReleaseEvidence,
+} from './specialist-policy.ts';
+export {
   createDbBackedLifecycleConsolidationService,
   type LifecycleConsolidationService,
 } from './lifecycle-consolidation.ts';

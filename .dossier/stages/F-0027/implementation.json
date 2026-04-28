@@ -1,0 +1,184 @@
+{
+  "version": 1,
+  "stage": "implementation",
+  "feature_id": "F-0027",
+  "feature_cycle_id": "fc-F-0027-moiesegc",
+  "cycle_id": "implementation-16991364",
+  "log_path": ".dossier/logs/implementation/F-0027--fc-F-0027-moiesegc--implementation-16991364.md",
+  "backlog_item_key": "CF-019",
+  "primary_feature_id": "F-0027",
+  "primary_backlog_item_key": "CF-019",
+  "phase_scope": "implementation для CF-019 specialist organ rollout and retirement policy",
+  "backlog_lifecycle_target": "implemented",
+  "backlog_lifecycle_current": "implemented",
+  "backlog_lifecycle_reconciled": true,
+  "backlog_actualization_artifacts": [],
+  "backlog_actualization_verdict": "current_state_satisfies_target",
+  "post_close_backlog_hygiene_required": false,
+  "post_close_backlog_hygiene_status": "not_required",
+  "post_close_backlog_hygiene_artifact": null,
+  "post_close_backlog_hygiene_checked_at": null,
+  "post_close_backlog_hygiene_refresh_at": null,
+  "post_close_open_source_review_count": null,
+  "post_close_source_review_blocked_item_count": null,
+  "post_close_lifecycle_reconciliation_drift_count": null,
+  "post_close_unresolved_attention_present": null,
+  "post_close_backlog_hygiene_blockers": [],
+  "pre_review_risk_families": [
+    "policy-admission-governance"
+  ],
+  "pre_review_checklists": [
+    {
+      "risk_family": "policy-admission-governance",
+      "id": "explicit-allow-deny",
+      "status": "pass",
+      "summary": "Admission service returns explicit allow or structured refusal for every specialist request.",
+      "evidence": "apps/core/src/runtime/specialist-policy.ts",
+      "test_refs": [
+        "apps/core/test/runtime/specialist-policy-service.contract.test.ts",
+        "apps/core/test/models/specialist-admission.integration.test.ts"
+      ]
+    },
+    {
+      "risk_family": "policy-admission-governance",
+      "id": "deny-or-failed-admission-no-invocation",
+      "status": "pass",
+      "summary": "Specialist execution helper persists admission before invocation and does not call the callback on denial.",
+      "evidence": "apps/core/src/runtime/specialist-policy.ts",
+      "test_refs": [
+        "apps/core/test/models/specialist-admission.integration.test.ts",
+        "apps/core/test/models/specialist-no-remap.contract.test.ts"
+      ]
+    },
+    {
+      "risk_family": "policy-admission-governance",
+      "id": "conflicting-request-replay-fail-closed",
+      "status": "pass",
+      "summary": "Store replays equivalent request ids and rejects conflicting request hash reuse.",
+      "evidence": "packages/db/src/specialists.ts",
+      "test_refs": [
+        "packages/db/test/specialists/specialist-policy-store.integration.test.ts"
+      ]
+    },
+    {
+      "risk_family": "policy-admission-governance",
+      "id": "ambiguous-stale-unsupported-evidence",
+      "status": "pass",
+      "summary": "Missing, stale, denied, unhealthy or unsupported upstream evidence fails closed with a recorded refusal reason.",
+      "evidence": "apps/core/src/runtime/specialist-policy.ts",
+      "test_refs": [
+        "apps/core/test/models/specialist-missing-evidence.contract.test.ts",
+        "apps/core/test/models/specialist-upstream-evidence.integration.test.ts"
+      ]
+    },
+    {
+      "risk_family": "policy-admission-governance",
+      "id": "freshness-timestamp-required",
+      "status": "pass",
+      "summary": "Governor, serving, release, health and fallback evidence are checked against decision-time freshness windows.",
+      "evidence": "apps/core/src/runtime/specialist-policy.ts",
+      "test_refs": [
+        "apps/core/test/runtime/specialist-policy-service.contract.test.ts",
+        "apps/core/test/models/specialist-upstream-evidence.integration.test.ts"
+      ]
+    },
+    {
+      "risk_family": "policy-admission-governance",
+      "id": "active-scope-concurrency-model",
+      "status": "pass",
+      "summary": "Policy store serializes specialist rollout and retirement mutations through specialist-scoped advisory locks.",
+      "evidence": "packages/db/src/specialists.ts",
+      "test_refs": [
+        "packages/db/test/specialists/specialist-policy-store.integration.test.ts"
+      ]
+    },
+    {
+      "risk_family": "policy-admission-governance",
+      "id": "append-only-decision-audit-facts",
+      "status": "pass",
+      "summary": "Rollout, admission and retirement decisions are append-only rows preserving evidence refs, fallback refs and lineage.",
+      "evidence": "infra/migrations/027_specialist_policy.sql",
+      "test_refs": [
+        "packages/db/test/specialists/specialist-policy-store.integration.test.ts",
+        "apps/core/test/models/specialist-lineage.contract.test.ts"
+      ]
+    },
+    {
+      "risk_family": "policy-admission-governance",
+      "id": "regression-test-paths",
+      "status": "pass",
+      "summary": "Regression tests cover contracts, store, admission, retirement, upstream evidence, no-remap and owner/deployment/registry boundaries.",
+      "evidence": "docs/ssot/features/F-0027-specialist-organs-rollout-retirement-policy.md",
+      "test_refs": [
+        "packages/contracts/test/specialists.contract.test.ts",
+        "apps/core/test/models/specialist-owner-boundary.contract.test.ts",
+        "apps/core/test/models/specialist-deployment-boundary.contract.test.ts"
+      ]
+    }
+  ],
+  "pre_review_checklist_status": "complete",
+  "pre_review_checklist_blockers": [],
+  "backlog_followup_required": false,
+  "backlog_followup_kind": null,
+  "backlog_followup_resolved": false,
+  "stage_state": "ready_for_close",
+  "start_ts": "2026-04-28T11:04:21.575Z",
+  "entered_ts": "2026-04-28T11:04:21.575Z",
+  "ready_for_close_ts": "2026-04-28T11:34:05.827Z",
+  "transition_events": [
+    {
+      "kind": "entered",
+      "at": "2026-04-28T11:04:21.575Z"
+    },
+    {
+      "kind": "resumed",
+      "at": "2026-04-28T11:33:45.291Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-28T11:34:05.827Z"
+    }
+  ],
+  "required_audit_classes": [
+    "spec-conformance-reviewer",
+    "code-reviewer",
+    "security-reviewer"
+  ],
+  "executed_audit_classes": [],
+  "required_external_review_pending": true,
+  "review_artifacts": [],
+  "verification_artifacts": [],
+  "review_events": [],
+  "reviewer_skills": [],
+  "reviewer_agent_ids": [],
+  "review_trace_commits": [],
+  "degraded_review_present": false,
+  "invalidated_review_present": false,
+  "stale_review_present": false,
+  "skills_used": [
+    "unified-dossier-engineer",
+    "implementation-discipline",
+    "typescript-engineer",
+    "typescript-test-engineer",
+    "node-engineer"
+  ],
+  "skill_issues": [],
+  "skill_followups": [],
+  "process_misses": [],
+  "session_id": "ce9c2d32-4895-434d-b355-9a23d42174e2",
+  "trace_runtime": "codex",
+  "trace_locator_kind": "session_id",
+  "stage_entry_commit": "97a2358b907059adc89472147fbe3005c42b7fe7",
+  "final_delivery_commit": "97a2358b907059adc89472147fbe3005c42b7fe7",
+  "final_closure_commit": null,
+  "implementation_review_scope": "code-bearing",
+  "required_security_review": true,
+  "security_trigger_reasons": [],
+  "step_close_ts": null,
+  "step_artifact": null,
+  "process_complete_ts": null,
+  "intake_process_complete_ts": null,
+  "local_gates_green_ts": "2026-04-28T11:34:05.827Z",
+  "first_review_agent_started_ts": null,
+  "final_pass_ts": null
+}

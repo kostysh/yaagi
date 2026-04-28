@@ -203,6 +203,19 @@ export {
   type StartDeployAttemptResult,
 } from './release-automation.ts';
 export {
+  createSpecialistPolicyStore,
+  SPECIALIST_POLICY_DEFAULT_ADMISSION_DECISION,
+  SPECIALIST_POLICY_WRITE_SURFACES,
+  type RecordSpecialistAdmissionDecisionInput,
+  type RecordSpecialistRetirementDecisionInput,
+  type RecordSpecialistRolloutEventInput,
+  type RecordSpecialistRolloutPolicyInput,
+  type RegisterSpecialistOrganInput,
+  type SpecialistPolicyDbExecutor,
+  type SpecialistPolicyStore,
+  type SpecialistRequestRecordResult,
+} from './specialists.ts';
+export {
   BASELINE_MODEL_PROFILE_ROLE,
   createRuntimeModelProfileStore,
   MODEL_PROFILE_ROLE,

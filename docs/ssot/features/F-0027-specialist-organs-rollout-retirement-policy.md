@@ -1,8 +1,8 @@
 ---
 id: F-0027
 title: Специализированные органы и политика вывода из эксплуатации
-status: planned
-coverage_gate: deferred
+status: done
+coverage_gate: strict
 backlog_item_key: CF-019
 owners: ["@codex"]
 area: models
@@ -233,6 +233,7 @@ These surfaces are specialist policy truth only. Workshop lifecycle truth, riche
 - Boundary tests proving no direct writes to `F-0015`, `F-0016`, `F-0020`, `F-0026` source surfaces and no shadow registry.
 - Smoke coverage when implementation materially changes runtime admission, release activation or deployment behavior.
 - Dossier verification during `plan-slice`: `dossier-engineer dossier-verify --step plan-slice --dossier docs/ssot/features/F-0027-specialist-organs-rollout-retirement-policy.md`.
+- Dossier verification during `implementation`: `dossier-engineer dossier-verify --step implementation --dossier docs/ssot/features/F-0027-specialist-organs-rollout-retirement-policy.md`.
 
 ### 5.6 Representation upgrades (triggered only when needed)
 
@@ -354,29 +355,31 @@ This plan declares the protected side-effect preset because specialist admission
 - **T-F0027-11** (`SL-F0027-05`): Add owner-boundary tests proving no direct writes to `F-0015`, `F-0016`, `F-0020`, `F-0026` source surfaces and no shadow registry.
 - **T-F0027-12** (`SL-F0027-05`): Update docs/config/coverage map and run root quality gates plus `pnpm test` and applicable `pnpm smoke:cell` before implementation closure.
 
+Implementation status: all tasks above were delivered during the `implementation` step.
+
 ## 8. Test plan & Coverage map
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0027-01 | `packages/contracts/test/specialists.contract.test.ts`; `packages/db/test/specialists/specialist-policy-store.integration.test.ts`; `apps/core/test/models/specialist-owner-boundary.contract.test.ts` | planned |
-| AC-F0027-02 | `apps/core/test/runtime/specialist-policy-service.contract.test.ts`; `apps/core/test/models/specialist-admission.integration.test.ts` | planned |
-| AC-F0027-03 | `packages/db/test/specialists/specialist-policy-store.integration.test.ts`; `apps/core/test/models/specialist-retirement.integration.test.ts` | planned |
-| AC-F0027-04 | `apps/core/test/models/specialist-upstream-evidence.integration.test.ts`; `apps/core/test/models/specialist-missing-evidence.contract.test.ts` | planned |
-| AC-F0027-05 | `apps/core/test/models/specialist-upstream-evidence.integration.test.ts`; `apps/core/test/runtime/specialist-policy-service.contract.test.ts` | planned |
-| AC-F0027-06 | `apps/core/test/models/specialist-upstream-evidence.integration.test.ts`; `apps/core/test/models/specialist-missing-evidence.contract.test.ts` | planned |
-| AC-F0027-07 | `apps/core/test/models/specialist-admission.integration.test.ts`; `apps/core/test/runtime/tick-specialist-admission.integration.test.ts` | planned |
-| AC-F0027-08 | `apps/core/test/models/specialist-admission.integration.test.ts`; `apps/core/test/runtime/tick-specialist-admission.integration.test.ts` | planned |
-| AC-F0027-09 | `apps/core/test/runtime/specialist-policy-service.contract.test.ts`; `apps/core/test/models/specialist-missing-evidence.contract.test.ts` | planned |
-| AC-F0027-10 | `packages/contracts/test/specialists.contract.test.ts`; `apps/core/test/models/specialist-admission.integration.test.ts`; `apps/core/test/models/specialist-retirement.integration.test.ts` | planned |
-| AC-F0027-11 | `packages/db/test/specialists/specialist-policy-store.integration.test.ts`; `apps/core/test/models/specialist-retirement.integration.test.ts` | planned |
-| AC-F0027-12 | `apps/core/test/models/specialist-no-remap.contract.test.ts`; `apps/core/test/models/specialist-admission.integration.test.ts` | planned |
-| AC-F0027-13 | `apps/core/test/models/specialist-registry-boundary.contract.test.ts`; `apps/core/test/models/specialist-owner-boundary.contract.test.ts` | planned |
-| AC-F0027-14 | `apps/core/test/models/specialist-owner-boundary.contract.test.ts`; `apps/core/test/models/specialist-upstream-evidence.integration.test.ts` | planned |
-| AC-F0027-15 | `apps/core/test/models/specialist-owner-boundary.contract.test.ts`; `apps/core/test/models/specialist-upstream-evidence.integration.test.ts` | planned |
-| AC-F0027-16 | `apps/core/test/models/specialist-owner-boundary.contract.test.ts`; `apps/core/test/models/specialist-upstream-evidence.integration.test.ts` | planned |
-| AC-F0027-17 | `apps/core/test/models/specialist-missing-evidence.contract.test.ts`; `apps/core/test/runtime/specialist-policy-service.contract.test.ts` | planned |
-| AC-F0027-18 | `apps/core/test/models/specialist-deployment-boundary.contract.test.ts`; applicable `pnpm smoke:cell` implementation evidence | planned |
-| AC-F0027-19 | `apps/core/test/models/specialist-registry-boundary.contract.test.ts`; `apps/core/test/models/specialist-owner-boundary.contract.test.ts` | planned |
+| AC-F0027-01 | `packages/contracts/test/specialists.contract.test.ts`; `packages/db/test/specialists/specialist-policy-store.integration.test.ts`; `apps/core/test/models/specialist-owner-boundary.contract.test.ts` | covered |
+| AC-F0027-02 | `apps/core/test/runtime/specialist-policy-service.contract.test.ts`; `apps/core/test/models/specialist-admission.integration.test.ts` | covered |
+| AC-F0027-03 | `packages/db/test/specialists/specialist-policy-store.integration.test.ts`; `apps/core/test/models/specialist-retirement.integration.test.ts` | covered |
+| AC-F0027-04 | `apps/core/test/models/specialist-upstream-evidence.integration.test.ts`; `apps/core/test/models/specialist-missing-evidence.contract.test.ts` | covered |
+| AC-F0027-05 | `apps/core/test/models/specialist-upstream-evidence.integration.test.ts`; `apps/core/test/runtime/specialist-policy-service.contract.test.ts` | covered |
+| AC-F0027-06 | `apps/core/test/models/specialist-upstream-evidence.integration.test.ts`; `apps/core/test/models/specialist-missing-evidence.contract.test.ts` | covered |
+| AC-F0027-07 | `apps/core/test/models/specialist-admission.integration.test.ts`; `apps/core/test/runtime/tick-specialist-admission.integration.test.ts` | covered |
+| AC-F0027-08 | `apps/core/test/models/specialist-admission.integration.test.ts`; `apps/core/test/runtime/tick-specialist-admission.integration.test.ts` | covered |
+| AC-F0027-09 | `apps/core/test/runtime/specialist-policy-service.contract.test.ts`; `apps/core/test/models/specialist-missing-evidence.contract.test.ts` | covered |
+| AC-F0027-10 | `packages/contracts/test/specialists.contract.test.ts`; `apps/core/test/models/specialist-admission.integration.test.ts`; `apps/core/test/models/specialist-retirement.integration.test.ts` | covered |
+| AC-F0027-11 | `packages/db/test/specialists/specialist-policy-store.integration.test.ts`; `apps/core/test/models/specialist-retirement.integration.test.ts` | covered |
+| AC-F0027-12 | `apps/core/test/models/specialist-no-remap.contract.test.ts`; `apps/core/test/models/specialist-admission.integration.test.ts` | covered |
+| AC-F0027-13 | `apps/core/test/models/specialist-registry-boundary.contract.test.ts`; `apps/core/test/models/specialist-owner-boundary.contract.test.ts` | covered |
+| AC-F0027-14 | `apps/core/test/models/specialist-owner-boundary.contract.test.ts`; `apps/core/test/models/specialist-upstream-evidence.integration.test.ts` | covered |
+| AC-F0027-15 | `apps/core/test/models/specialist-owner-boundary.contract.test.ts`; `apps/core/test/models/specialist-upstream-evidence.integration.test.ts` | covered |
+| AC-F0027-16 | `apps/core/test/models/specialist-owner-boundary.contract.test.ts`; `apps/core/test/models/specialist-upstream-evidence.integration.test.ts` | covered |
+| AC-F0027-17 | `apps/core/test/models/specialist-missing-evidence.contract.test.ts`; `apps/core/test/runtime/specialist-policy-service.contract.test.ts` | covered |
+| AC-F0027-18 | `apps/core/test/models/specialist-deployment-boundary.contract.test.ts`; applicable `pnpm smoke:cell` implementation evidence | covered |
+| AC-F0027-19 | `apps/core/test/models/specialist-registry-boundary.contract.test.ts`; `apps/core/test/models/specialist-owner-boundary.contract.test.ts` | covered |
 
 ## 9. Decision log (ADR blocks)
 
@@ -417,8 +420,8 @@ This plan declares the protected side-effect preset because specialist admission
 ## 10. Progress & links
 
 - Backlog item key: CF-019
-- Status progression: `proposed -> shaped -> planned -> in_progress -> done`
-- Current stage: `plan-slice closure`
+- Status progression: `proposed -> shaped -> planned -> implemented -> done`
+- Current stage: `implementation closure`
 - Issue:
 - PRs:
 
@@ -427,3 +430,4 @@ This plan declares the protected side-effect preset because specialist admission
 - 2026-04-28: Initial dossier created from backlog item `CF-019` at backlog delivery state `defined`.
 - 2026-04-28: `spec-compact` shaped specialist rollout/retirement as a policy overlay over workshop, governor, real-serving and release evidence; backlog actualization to `specified` is required before truthful step closure.
 - 2026-04-28: [plan-slice] [dependency realignment] Planned implementation slices across specialist contracts/store, upstream evidence gates, router admission integration, retirement/lineage and owner-boundary/smoke closure, with backlog lifecycle target `planned`.
+- 2026-04-28: [implementation] Delivered specialist policy contracts, PostgreSQL policy store/migration, admission and retirement runtime service, router admission hook, fail-closed upstream evidence gates, append-only lineage/replay behavior and owner/deployment/registry boundary tests without adding a second serving stack or hidden registry.

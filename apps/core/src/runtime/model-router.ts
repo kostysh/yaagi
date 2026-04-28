@@ -8,6 +8,11 @@ import {
   type RuntimeModelProfileSeedInput,
   type RuntimeModelProfileStore,
 } from '@yaagi/db';
+import type {
+  SpecialistAdmissionInput,
+  SpecialistAdmissionResult,
+  SpecialistPolicyService,
+} from './specialist-policy.ts';
 
 export const PHASE0_BASELINE_PROFILE_ID = Object.freeze({
   REFLEX: 'reflex.fast@baseline',
@@ -84,9 +89,37 @@ export type BaselineRoutingSelection =
       detail: string;
     };
 
+export type SpecialistRoutingAdmissionSelection =
+  | {
+      accepted: true;
+      specialistId: string;
+      modelProfileId: string;
+      admissionDecisionId: string;
+      stage: NonNullable<
+        Extract<SpecialistAdmissionResult, { accepted: true }>['decision']['stage']
+      >;
+      selectionReason: {
+        taskSignature: string;
+        policyId: string;
+        admissionDecisionId: string;
+      };
+    }
+  | {
+      accepted: false;
+      reason: 'specialist_policy_unavailable' | 'specialist_admission_refused';
+      detail: string;
+      specialistId: string;
+      remapped: false;
+      fallbackTargetProfileId: string | null;
+      admissionDecisionId: string | null;
+    };
+
 export type Phase0ModelRouter = {
   ensureBaselineProfiles(): Promise<BaselineModelProfileDiagnostic[]>;
   selectProfile(input: BaselineRoutingInput): Promise<BaselineRoutingSelection>;
+  admitSpecialistSelection(
+    input: SpecialistAdmissionInput,
+  ): Promise<SpecialistRoutingAdmissionSelection>;
   getBaselineDiagnostics(
     input?: Pick<BaselineRoutingInput, 'organHealth'>,
   ): Promise<BaselineModelProfileDiagnostic[]>;
@@ -99,6 +132,7 @@ type Phase0ModelRouterOptions = {
   resolveBaselineHealth?: () => Promise<
     Partial<Record<BaselineModelProfileRole, ModelHealthSummary>>
   >;
+  specialistPolicy?: Pick<SpecialistPolicyService, 'admitSpecialist'>;
 };
 
 const BASELINE_ROLE_BY_TICK_MODE: Record<BaselineTickMode, BaselineModelProfileRole> = {
@@ -411,6 +445,48 @@ export function createPhase0ModelRouter(options: Phase0ModelRouterOptions): Phas
           requiredCapabilities,
           lastEvalScore: input.lastEvalScore ?? null,
           health: selected.healthSummary,
+        },
+      };
+    },
+
+    async admitSpecialistSelection(
+      input: SpecialistAdmissionInput,
+    ): Promise<SpecialistRoutingAdmissionSelection> {
+      if (!options.specialistPolicy) {
+        return {
+          accepted: false,
+          reason: 'specialist_policy_unavailable',
+          detail: 'specialist policy service is not configured',
+          specialistId: input.specialistId,
+          remapped: false,
+          fallbackTargetProfileId: null,
+          admissionDecisionId: null,
+        };
+      }
+
+      const admission = await options.specialistPolicy.admitSpecialist(input);
+      if (!admission.accepted) {
+        return {
+          accepted: false,
+          reason: 'specialist_admission_refused',
+          detail: admission.refusal.detail,
+          specialistId: input.specialistId,
+          remapped: false,
+          fallbackTargetProfileId: admission.refusal.fallbackTargetProfileId,
+          admissionDecisionId: admission.decision.decisionId,
+        };
+      }
+
+      return {
+        accepted: true,
+        specialistId: input.specialistId,
+        modelProfileId: admission.decision.selectedModelProfileId ?? input.specialistId,
+        admissionDecisionId: admission.decision.decisionId,
+        stage: admission.decision.stage ?? admission.policy.allowedStage,
+        selectionReason: {
+          taskSignature: input.taskSignature,
+          policyId: admission.policy.policyId,
+          admissionDecisionId: admission.decision.decisionId,
         },
       };
     },
