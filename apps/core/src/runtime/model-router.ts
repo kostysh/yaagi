@@ -106,7 +106,10 @@ export type SpecialistRoutingAdmissionSelection =
     }
   | {
       accepted: false;
-      reason: 'specialist_policy_unavailable' | 'specialist_admission_refused';
+      reason:
+        | 'specialist_policy_unavailable'
+        | 'specialist_admission_refused'
+        | 'specialist_admission_replayed';
       detail: string;
       specialistId: string;
       remapped: false;
@@ -473,6 +476,17 @@ export function createPhase0ModelRouter(options: Phase0ModelRouterOptions): Phas
           specialistId: input.specialistId,
           remapped: false,
           fallbackTargetProfileId: admission.refusal.fallbackTargetProfileId,
+          admissionDecisionId: admission.decision.decisionId,
+        };
+      }
+      if (admission.deduplicated) {
+        return {
+          accepted: false,
+          reason: 'specialist_admission_replayed',
+          detail: `specialist admission ${admission.decision.decisionId} is a replay and cannot authorize a new selection`,
+          specialistId: input.specialistId,
+          remapped: false,
+          fallbackTargetProfileId: admission.decision.fallbackTargetProfileId,
           admissionDecisionId: admission.decision.decisionId,
         };
       }

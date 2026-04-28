@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
-import type { Client } from 'pg';
+import type { Client, QueryResultRow } from 'pg';
 import { DEPENDENCY } from '@yaagi/contracts/boot';
 import type { ExecutiveVerdict } from '@yaagi/contracts/actions';
 import {
@@ -28,24 +28,35 @@ import {
   createOperatorAuthStore,
   createRuntimeActionLogStore,
   createPerceptionStore,
+  createSpecialistPolicyStore,
   createRuntimeDbClient,
   createRuntimeModelProfileStore,
   type LifecycleActiveWorkRef,
+  MODEL_PROFILE_STATUS,
+  type ModelProfileRole,
   createTickRuntimeStore,
+  createWorkshopStore,
   ensureRuntimeAgentStateRow,
   getRuntimeAgentStateRow,
   type RuntimeEpisodePageInput,
   type RuntimeMode,
   type RuntimeEpisodeRow,
+  type RuntimeModelProfileRow,
   type RuntimeTimelineEventPageInput,
   type RuntimeTimelineEventRow,
   type RecordOperatorAuthAuditEventInput,
   type RecordOperatorAuthAuditEventResult,
+  SPECIALIST_POLICY_WRITE_SURFACES,
   type SubjectStateDelta,
   type SubjectStateSnapshot,
   type SubjectStateSnapshotInput,
+  type SpecialistPolicyStore,
 } from '@yaagi/db';
 import type { SystemEvent } from '@yaagi/contracts/boot';
+import {
+  SPECIALIST_ROLLOUT_STAGE,
+  type SpecialistRolloutStage,
+} from '@yaagi/contracts/specialists';
 import {
   TICK_STATUS,
   type TickRequest,
@@ -64,6 +75,7 @@ import {
   buildNarrativeMemeticCycle,
   DECISION_CONTEXT_LIMITS,
   type DecisionAgentInvoker,
+  type DecisionHarnessSelectedProfile,
 } from '../cognition/index.ts';
 import { createPerceptionController, type StimulusIngestResult } from '../perception/index.ts';
 import type { CoreRuntimeConfig } from '../platform/core-config.ts';
@@ -80,6 +92,7 @@ import {
   type BaselineModelProfileDiagnostic,
   type BaselineRoutingSelection,
   type ModelHealthSummary,
+  type SpecialistRoutingAdmissionSelection,
 } from './model-router.ts';
 import {
   createTickRuntime,
@@ -117,6 +130,12 @@ import {
 } from '../workshop/index.ts';
 import type { WorkshopPromotionPackage } from '@yaagi/contracts/workshop';
 import { createRuntimeSkillsService, type SkillRuntimeDiagnostics } from './skills-runtime.ts';
+import {
+  createSpecialistPolicyService,
+  type SpecialistAdmissionEvidenceRefs,
+  type SpecialistAdmissionInput,
+  type SpecialistPolicyEvidencePorts,
+} from './specialist-policy.ts';
 
 type RuntimeLifecycle = {
   start(): Promise<void>;
@@ -483,6 +502,13 @@ const createDbBackedModelProfileStore = (config: CoreRuntimeConfig) => ({
       return await store.listModelProfiles(input);
     }),
 
+  getModelProfile: (modelProfileId: string) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createRuntimeModelProfileStore(client);
+      const profiles = await store.listModelProfiles();
+      return profiles.find((profile) => profile.modelProfileId === modelProfileId) ?? null;
+    }),
+
   persistTickModelSelection: (
     input: Parameters<
       ReturnType<typeof createRuntimeModelProfileStore>['persistTickModelSelection']
@@ -503,6 +529,273 @@ const createDbBackedModelProfileStore = (config: CoreRuntimeConfig) => ({
       await store.setCurrentModelProfile(modelProfileId);
     }),
 });
+
+type DbBackedModelProfileStore = ReturnType<typeof createDbBackedModelProfileStore>;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const stringValue = (value: unknown): string | null =>
+  typeof value === 'string' && value.trim().length > 0 ? value : null;
+
+const stringArrayValue = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
+
+const readPrefixedRef = (refs: readonly string[], prefix: string): string | null => {
+  const ref = refs.find((entry) => entry.startsWith(prefix));
+  return ref ? ref.slice(prefix.length) : null;
+};
+
+const createDbBackedSpecialistPolicyStore = (config: CoreRuntimeConfig): SpecialistPolicyStore => {
+  const withStore = async <T>(
+    run: (store: ReturnType<typeof createSpecialistPolicyStore>) => Promise<T>,
+  ): Promise<T> =>
+    await withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createSpecialistPolicyStore(client);
+      return await run(store);
+    });
+
+  return {
+    assertOwnedWriteSurface(surface) {
+      if (!(SPECIALIST_POLICY_WRITE_SURFACES as readonly string[]).includes(surface)) {
+        throw new Error(`specialist policy does not own write surface ${surface}`);
+      }
+    },
+    registerSpecialistOrgan: (input) => withStore((store) => store.registerSpecialistOrgan(input)),
+    getSpecialistOrgan: (specialistId) =>
+      withStore((store) => store.getSpecialistOrgan(specialistId)),
+    recordRolloutPolicy: (input) => withStore((store) => store.recordRolloutPolicy(input)),
+    getRolloutPolicy: (policyId) => withStore((store) => store.getRolloutPolicy(policyId)),
+    getCurrentRolloutPolicyForSpecialist: (specialistId) =>
+      withStore((store) => store.getCurrentRolloutPolicyForSpecialist(specialistId)),
+    recordRolloutEvent: (input) => withStore((store) => store.recordRolloutEvent(input)),
+    listRolloutEvents: (input) => withStore((store) => store.listRolloutEvents(input)),
+    recordAdmissionDecision: (input) => withStore((store) => store.recordAdmissionDecision(input)),
+    getAdmissionDecisionByRequestId: (requestId) =>
+      withStore((store) => store.getAdmissionDecisionByRequestId(requestId)),
+    listAdmissionDecisions: (input) => withStore((store) => store.listAdmissionDecisions(input)),
+    recordRetirementDecision: (input) =>
+      withStore((store) => store.recordRetirementDecision(input)),
+    listRetirementDecisions: (input) => withStore((store) => store.listRetirementDecisions(input)),
+  };
+};
+
+const createDbBackedSpecialistPolicyEvidencePorts = (input: {
+  config: CoreRuntimeConfig;
+  modelProfileStore: DbBackedModelProfileStore;
+  listServingDependencyStates: () => Promise<ServingDependencyState[]>;
+}): SpecialistPolicyEvidencePorts => ({
+  getWorkshopPromotionPackage: async ({ candidateId, promotionPackageRef }) =>
+    await withRuntimeClient(input.config.postgresUrl, async (client) => {
+      const referencedCandidateId = readPrefixedRef([promotionPackageRef], 'workshop-promotion:');
+      if (referencedCandidateId && referencedCandidateId !== candidateId) {
+        return null;
+      }
+
+      const workshopStore = createWorkshopStore(client);
+      const candidate = await workshopStore.getCandidate(candidateId);
+      if (!candidate) {
+        return null;
+      }
+      if (candidate.stage === 'candidate') {
+        return null;
+      }
+
+      const serving = (await input.listServingDependencyStates()).find(
+        (state) => state.artifactUri === candidate.artifactUri,
+      );
+      if (!serving || serving.readiness !== 'ready') {
+        return null;
+      }
+
+      return {
+        candidateId: candidate.candidateId,
+        candidateStage: candidate.stage,
+        candidateKind: candidate.candidateKind,
+        targetProfileId: candidate.targetProfileId,
+        predecessorProfileId: candidate.predecessorProfileId,
+        rollbackTarget: candidate.rollbackTarget,
+        requiredEvalSuite: candidate.requiredEvalSuite,
+        lastKnownGoodEvalReportUri: candidate.lastKnownGoodEvalReportUri,
+        artifactUri: candidate.artifactUri,
+        dependencyRef: {
+          serviceId: serving.serviceId,
+          artifactUri: candidate.artifactUri,
+          artifactDescriptorPath: serving.artifactDescriptorPath,
+          runtimeArtifactRoot: serving.runtimeArtifactRoot,
+          readiness: 'ready',
+        },
+      };
+    }),
+
+  getGovernorDecision: async (decisionRef) =>
+    await withRuntimeClient(input.config.postgresUrl, async (client) => {
+      const result = await client.query<QueryResultRow>(
+        `select
+           d.decision_id as "decisionRef",
+           d.decision_kind as "decisionKind",
+           p.problem_signature as "problemSignature",
+           p.target_ref as "targetRef",
+           to_char(d.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "observedAt"
+         from polyphony_runtime.development_proposal_decisions d
+         join polyphony_runtime.development_proposals p on p.proposal_id = d.proposal_id
+         where d.decision_id = $1
+         limit 1`,
+        [decisionRef],
+      );
+      const row = result.rows[0];
+      if (!row) {
+        return null;
+      }
+
+      return {
+        decisionRef: String(row['decisionRef']),
+        approved: row['decisionKind'] === 'approved',
+        scope: stringValue(row['problemSignature']) ?? stringValue(row['targetRef']) ?? '',
+        observedAt: String(row['observedAt']),
+      };
+    }),
+
+  getServingDependencyState: async ({ serviceId, artifactUri, readinessRef }) => {
+    const serving = (await input.listServingDependencyStates()).find(
+      (state) =>
+        state.serviceId === serviceId &&
+        state.artifactUri === artifactUri &&
+        (!readinessRef ||
+          readinessRef === `serving:${state.serviceId}:${state.readiness}` ||
+          (state.lastCheckedAt &&
+            readinessRef === `serving:${state.serviceId}:${state.lastCheckedAt}`)),
+    );
+    return serving ?? null;
+  },
+
+  getReleaseEvidence: async (evidenceRef) =>
+    await withRuntimeClient(input.config.postgresUrl, async (client) => {
+      const result = await client.query<QueryResultRow>(
+        `select
+           evidence_bundle_id as "evidenceRef",
+           deployment_identity as "deploymentIdentity",
+           smoke_on_deploy_result_json->>'status' as "smokeStatus",
+           model_serving_readiness_ref as "modelServingReadinessRef",
+           governor_evidence_ref as "governorEvidenceRef",
+           lifecycle_rollback_target_ref as "lifecycleRollbackTargetRef",
+           diagnostic_report_refs_json as "diagnosticReportRefs",
+           file_artifact_refs_json as "fileArtifactRefs",
+           to_char(materialized_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "materializedAt"
+         from polyphony_runtime.release_evidence
+         where evidence_bundle_id = $1
+         limit 1`,
+        [evidenceRef],
+      );
+      const row = result.rows[0];
+      if (!row) {
+        return null;
+      }
+
+      const artifactRefs = [
+        ...stringArrayValue(row['fileArtifactRefs']),
+        ...stringArrayValue(row['diagnosticReportRefs']),
+      ];
+      const releaseEvidenceRef = stringValue(row['evidenceRef']);
+      const smokeStatus = stringValue(row['smokeStatus']);
+      const observedAt = stringValue(row['materializedAt']);
+      const deploymentIdentity = stringValue(row['deploymentIdentity']);
+      const modelServingReadinessRef = stringValue(row['modelServingReadinessRef']);
+      const governorEvidenceRef = stringValue(row['governorEvidenceRef']);
+      const lifecycleRollbackTargetRef = stringValue(row['lifecycleRollbackTargetRef']);
+      const artifactUri = readPrefixedRef(artifactRefs, 'artifact-uri:');
+      const artifactDescriptorPath = readPrefixedRef(artifactRefs, 'artifact-descriptor-path:');
+      const runtimeArtifactRoot = readPrefixedRef(artifactRefs, 'runtime-artifact-root:');
+      const specialistId = readPrefixedRef(artifactRefs, 'specialist:');
+      const modelProfileId = readPrefixedRef(artifactRefs, 'model-profile:');
+      const serviceId = readPrefixedRef(artifactRefs, 'service:');
+      const policyId = readPrefixedRef(artifactRefs, 'specialist-policy:');
+      const rolloutStage = readPrefixedRef(artifactRefs, 'rollout-stage:');
+      if (
+        !releaseEvidenceRef ||
+        !smokeStatus ||
+        !observedAt ||
+        !deploymentIdentity ||
+        !modelServingReadinessRef ||
+        !governorEvidenceRef ||
+        !lifecycleRollbackTargetRef ||
+        !artifactUri ||
+        !artifactDescriptorPath ||
+        !runtimeArtifactRoot ||
+        !specialistId ||
+        !modelProfileId ||
+        !serviceId ||
+        !policyId ||
+        !rolloutStage ||
+        !Object.values(SPECIALIST_ROLLOUT_STAGE).includes(rolloutStage as SpecialistRolloutStage)
+      ) {
+        return null;
+      }
+
+      return {
+        evidenceRef: releaseEvidenceRef,
+        ready: smokeStatus === 'passed',
+        observedAt,
+        deploymentIdentity,
+        modelServingReadinessRef,
+        governorEvidenceRef,
+        lifecycleRollbackTargetRef,
+        artifactUri,
+        artifactDescriptorPath,
+        runtimeArtifactRoot,
+        specialistId,
+        modelProfileId,
+        serviceId,
+        policyId,
+        rolloutStage: rolloutStage as SpecialistRolloutStage,
+      };
+    }),
+
+  getHealthEvidence: async ({ modelProfileId, healthRef }) =>
+    await withRuntimeClient(input.config.postgresUrl, async (client) => {
+      const store = createExpandedModelEcologyStore(client);
+      const [health] = await store.listProfileHealth({ modelProfileIds: [modelProfileId] });
+      if (!health) {
+        return null;
+      }
+
+      const resolvedRef = `model-health:${health.modelProfileId}:${health.checkedAt}`;
+      if (healthRef && healthRef !== resolvedRef) {
+        return null;
+      }
+
+      return {
+        healthRef: resolvedRef,
+        healthy: health.healthy === true && health.availability === 'available',
+        observedAt: health.checkedAt,
+        detail: `availability=${health.availability}; quarantine=${health.quarantineState}`,
+      };
+    }),
+
+  getFallbackReadiness: async ({ fallbackTargetProfileId }) => {
+    const profile = await input.modelProfileStore.getModelProfile(fallbackTargetProfileId);
+    if (!profile) {
+      return null;
+    }
+
+    return {
+      fallbackTargetProfileId,
+      available: profile.status === MODEL_PROFILE_STATUS.ACTIVE,
+      evidenceRef: `model-profile:${fallbackTargetProfileId}:${profile.updatedAt}`,
+      observedAt: profile.updatedAt,
+    };
+  },
+});
+
+const createDbBackedSpecialistPolicyService = (input: {
+  config: CoreRuntimeConfig;
+  modelProfileStore: DbBackedModelProfileStore;
+  listServingDependencyStates: () => Promise<ServingDependencyState[]>;
+}) =>
+  createSpecialistPolicyService({
+    store: createDbBackedSpecialistPolicyStore(input.config),
+    evidence: createDbBackedSpecialistPolicyEvidencePorts(input),
+  });
 
 const createDbBackedExpandedModelEcologyStore = (config: CoreRuntimeConfig) => ({
   upsertProfileHealth: (
@@ -635,11 +928,93 @@ const buildRoutingInputFromTick = (
   };
 };
 
+type SpecialistAdmissionIntent =
+  | {
+      kind: 'none';
+    }
+  | {
+      kind: 'invalid';
+      detail: string;
+    }
+  | {
+      kind: 'present';
+      input: SpecialistAdmissionInput;
+    };
+
+const readSpecialistEvidenceRefs = (value: unknown): SpecialistAdmissionEvidenceRefs => {
+  if (!isRecord(value)) {
+    return {};
+  }
+
+  return {
+    ...(stringValue(value['governorDecisionRef'])
+      ? { governorDecisionRef: stringValue(value['governorDecisionRef']) as string }
+      : {}),
+    ...(stringValue(value['servingReadinessRef'])
+      ? { servingReadinessRef: stringValue(value['servingReadinessRef']) as string }
+      : {}),
+    ...(stringValue(value['releaseEvidenceRef'])
+      ? { releaseEvidenceRef: stringValue(value['releaseEvidenceRef']) as string }
+      : {}),
+    ...(stringValue(value['healthRef'])
+      ? { healthRef: stringValue(value['healthRef']) as string }
+      : {}),
+    ...(stringValue(value['fallbackReadinessRef'])
+      ? { fallbackReadinessRef: stringValue(value['fallbackReadinessRef']) as string }
+      : {}),
+  };
+};
+
+const buildSpecialistAdmissionIntentFromTick = (
+  context: StartedTick,
+  routingInput: ReturnType<typeof buildRoutingInputFromTick>,
+): SpecialistAdmissionIntent => {
+  const rawIntent = context.payload['specialistAdmission'];
+  if (rawIntent === undefined || rawIntent === null) {
+    return { kind: 'none' };
+  }
+
+  if (!isRecord(rawIntent)) {
+    return { kind: 'invalid', detail: 'specialistAdmission payload must be an object' };
+  }
+
+  const specialistId = stringValue(rawIntent['specialistId']);
+  if (!specialistId) {
+    return { kind: 'invalid', detail: 'specialistAdmission.specialistId is required' };
+  }
+
+  const payloadJson = isRecord(rawIntent['payloadJson']) ? rawIntent['payloadJson'] : {};
+
+  return {
+    kind: 'present',
+    input: {
+      requestId: stringValue(rawIntent['requestId']) ?? `specialist-admission:${context.requestId}`,
+      specialistId,
+      taskSignature: stringValue(rawIntent['taskSignature']) ?? routingInput.taskKind,
+      selectedModelProfileId: stringValue(rawIntent['selectedModelProfileId']),
+      requestedAt: context.requestedAt,
+      evidenceRefs: readSpecialistEvidenceRefs(rawIntent['evidenceRefs']),
+      payloadJson: {
+        ...payloadJson,
+        tickId: context.tickId,
+        tickRequestId: context.requestId,
+      },
+    },
+  };
+};
+
+const isDecisionRole = (role: ModelProfileRole): role is DecisionHarnessSelectedProfile['role'] =>
+  role === 'reflex' || role === 'deliberation' || role === 'reflection';
+
 export const createPhase0TickExecution =
   (dependencies: {
     selectProfile: (
       input: ReturnType<typeof buildRoutingInputFromTick>,
     ) => Promise<BaselineRoutingSelection>;
+    admitSpecialistSelection?: (
+      input: SpecialistAdmissionInput,
+    ) => Promise<SpecialistRoutingAdmissionSelection>;
+    resolveModelProfileById?: (modelProfileId: string) => Promise<RuntimeModelProfileRow | null>;
     persistTickModelSelection: (input: {
       tickId: string;
       modelProfileId: string;
@@ -674,13 +1049,7 @@ export const createPhase0TickExecution =
     runDecision: (input: {
       tickId: string;
       decisionMode: DecisionMode;
-      selectedProfile: {
-        modelProfileId: string;
-        role: 'reflex' | 'deliberation' | 'reflection';
-        endpoint: string;
-        adapterOf: string | null;
-        eligibility?: 'eligible' | 'profile_unavailable' | 'profile_unhealthy';
-      };
+      selectedProfile: DecisionHarnessSelectedProfile;
       subjectStateSnapshot: SubjectStateSnapshot;
       recentEpisodes: RuntimeEpisodeRow[];
       perceptionBatch?: PerceptionBatch;
@@ -699,7 +1068,7 @@ export const createPhase0TickExecution =
     }) => Promise<ExecutiveVerdict>;
     resolveSelectedProfileEligibility?: (input: {
       modelProfileId: string;
-      role: 'reflex' | 'deliberation' | 'reflection';
+      role: DecisionHarnessSelectedProfile['role'];
       requiredCapabilities: string[];
     }) => Promise<'eligible' | 'profile_unavailable' | 'profile_unhealthy'>;
   }) =>
@@ -784,11 +1153,193 @@ export const createPhase0TickExecution =
         },
       };
     }
+    let selectedProfile: DecisionHarnessSelectedProfile = {
+      modelProfileId: selection.modelProfileId,
+      role: selection.role,
+      endpoint: selection.endpoint,
+      adapterOf: selection.adapterOf,
+    };
+    let selectionReasonJson: Record<string, unknown> = selection.selectionReason;
+    const specialistAdmissionIntent = buildSpecialistAdmissionIntentFromTick(context, routingInput);
+    if (specialistAdmissionIntent.kind === 'invalid') {
+      return {
+        status: TICK_STATUS.FAILED,
+        summary: `${context.kind} tick failed before specialist admission`,
+        failureDetail: specialistAdmissionIntent.detail,
+        continuityFlags: {
+          selectedModelProfileId: selection.modelProfileId,
+          specialistAdmissionRejected: {
+            reason: 'invalid_specialist_admission_payload',
+            detail: specialistAdmissionIntent.detail,
+          },
+        },
+        result: {
+          kind: context.kind,
+          trigger: context.trigger,
+          requestId: context.requestId,
+          selectedModelProfileId: selection.modelProfileId,
+          selectedRole: selection.role,
+          modelEndpoint: selection.endpoint,
+          selectionReason: selection.selectionReason,
+          specialistAdmissionRejected: {
+            reason: 'invalid_specialist_admission_payload',
+            detail: specialistAdmissionIntent.detail,
+          },
+        },
+      };
+    }
+    if (specialistAdmissionIntent.kind === 'present') {
+      if (!dependencies.admitSpecialistSelection) {
+        return {
+          status: TICK_STATUS.FAILED,
+          summary: `${context.kind} tick failed before specialist admission`,
+          failureDetail: 'specialist policy service is not configured',
+          continuityFlags: {
+            selectedModelProfileId: selection.modelProfileId,
+            specialistAdmissionRejected: {
+              reason: 'specialist_policy_unavailable',
+              detail: 'specialist policy service is not configured',
+            },
+          },
+          result: {
+            kind: context.kind,
+            trigger: context.trigger,
+            requestId: context.requestId,
+            selectedModelProfileId: selection.modelProfileId,
+            selectedRole: selection.role,
+            modelEndpoint: selection.endpoint,
+            selectionReason: selection.selectionReason,
+            specialistAdmissionRejected: {
+              reason: 'specialist_policy_unavailable',
+              detail: 'specialist policy service is not configured',
+            },
+          },
+        };
+      }
+
+      const specialistAdmission = await dependencies.admitSpecialistSelection(
+        specialistAdmissionIntent.input,
+      );
+      if (!specialistAdmission.accepted) {
+        return {
+          status: TICK_STATUS.FAILED,
+          summary: `${context.kind} tick refused by specialist admission policy`,
+          failureDetail: specialistAdmission.detail,
+          continuityFlags: {
+            selectedModelProfileId: selection.modelProfileId,
+            specialistAdmissionRejected: {
+              reason: specialistAdmission.reason,
+              detail: specialistAdmission.detail,
+              specialistId: specialistAdmission.specialistId,
+              admissionDecisionId: specialistAdmission.admissionDecisionId,
+              fallbackTargetProfileId: specialistAdmission.fallbackTargetProfileId,
+            },
+          },
+          result: {
+            kind: context.kind,
+            trigger: context.trigger,
+            requestId: context.requestId,
+            selectedModelProfileId: selection.modelProfileId,
+            selectedRole: selection.role,
+            modelEndpoint: selection.endpoint,
+            selectionReason: selection.selectionReason,
+            specialistAdmissionRejected: {
+              reason: specialistAdmission.reason,
+              detail: specialistAdmission.detail,
+              specialistId: specialistAdmission.specialistId,
+              admissionDecisionId: specialistAdmission.admissionDecisionId,
+              fallbackTargetProfileId: specialistAdmission.fallbackTargetProfileId,
+            },
+          },
+        };
+      }
+
+      const specialistProfile = dependencies.resolveModelProfileById
+        ? await dependencies.resolveModelProfileById(specialistAdmission.modelProfileId)
+        : null;
+      if (!specialistProfile || specialistProfile.status !== MODEL_PROFILE_STATUS.ACTIVE) {
+        return {
+          status: TICK_STATUS.FAILED,
+          summary: `${context.kind} tick failed before specialist execution`,
+          failureDetail: `admitted specialist profile ${specialistAdmission.modelProfileId} is unavailable`,
+          continuityFlags: {
+            selectedModelProfileId: selection.modelProfileId,
+            specialistAdmissionRejected: {
+              reason: 'specialist_profile_unavailable',
+              detail: `admitted specialist profile ${specialistAdmission.modelProfileId} is unavailable`,
+              specialistId: specialistAdmission.specialistId,
+              admissionDecisionId: specialistAdmission.admissionDecisionId,
+            },
+          },
+          result: {
+            kind: context.kind,
+            trigger: context.trigger,
+            requestId: context.requestId,
+            selectedModelProfileId: selection.modelProfileId,
+            selectedRole: selection.role,
+            modelEndpoint: selection.endpoint,
+            selectionReason: selection.selectionReason,
+            specialistAdmissionRejected: {
+              reason: 'specialist_profile_unavailable',
+              detail: `admitted specialist profile ${specialistAdmission.modelProfileId} is unavailable`,
+              specialistId: specialistAdmission.specialistId,
+              admissionDecisionId: specialistAdmission.admissionDecisionId,
+            },
+          },
+        };
+      }
+      if (!isDecisionRole(specialistProfile.role)) {
+        return {
+          status: TICK_STATUS.FAILED,
+          summary: `${context.kind} tick failed before specialist execution`,
+          failureDetail: `admitted specialist profile ${specialistAdmission.modelProfileId} has unsupported decision role ${specialistProfile.role}`,
+          continuityFlags: {
+            selectedModelProfileId: selection.modelProfileId,
+            specialistAdmissionRejected: {
+              reason: 'specialist_profile_unsupported_role',
+              detail: `admitted specialist profile ${specialistAdmission.modelProfileId} has unsupported decision role ${specialistProfile.role}`,
+              specialistId: specialistAdmission.specialistId,
+              admissionDecisionId: specialistAdmission.admissionDecisionId,
+            },
+          },
+          result: {
+            kind: context.kind,
+            trigger: context.trigger,
+            requestId: context.requestId,
+            selectedModelProfileId: selection.modelProfileId,
+            selectedRole: selection.role,
+            modelEndpoint: selection.endpoint,
+            selectionReason: selection.selectionReason,
+            specialistAdmissionRejected: {
+              reason: 'specialist_profile_unsupported_role',
+              detail: `admitted specialist profile ${specialistAdmission.modelProfileId} has unsupported decision role ${specialistProfile.role}`,
+              specialistId: specialistAdmission.specialistId,
+              admissionDecisionId: specialistAdmission.admissionDecisionId,
+            },
+          },
+        };
+      }
+
+      selectedProfile = {
+        modelProfileId: specialistProfile.modelProfileId,
+        role: specialistProfile.role,
+        endpoint: specialistProfile.endpoint,
+        adapterOf: specialistProfile.adapterOf,
+      };
+      selectionReasonJson = {
+        ...selection.selectionReason,
+        specialistAdmission: {
+          ...specialistAdmission.selectionReason,
+          specialistId: specialistAdmission.specialistId,
+          stage: specialistAdmission.stage,
+        },
+      };
+    }
 
     await dependencies.persistTickModelSelection({
       tickId: context.tickId,
-      modelProfileId: selection.modelProfileId,
-      selectionReasonJson: selection.selectionReason,
+      modelProfileId: selectedProfile.modelProfileId,
+      selectionReasonJson,
     });
 
     const perceptionBatch =
@@ -810,8 +1361,8 @@ export const createPhase0TickExecution =
       : buildNarrativeMemeticFallback();
     const selectedProfileEligibility = dependencies.resolveSelectedProfileEligibility
       ? await dependencies.resolveSelectedProfileEligibility({
-          modelProfileId: selection.modelProfileId,
-          role: selection.role,
+          modelProfileId: selectedProfile.modelProfileId,
+          role: selectedProfile.role,
           requiredCapabilities: routingInput.requiredCapabilities ?? [],
         })
       : 'eligible';
@@ -819,10 +1370,7 @@ export const createPhase0TickExecution =
       tickId: context.tickId,
       decisionMode,
       selectedProfile: {
-        modelProfileId: selection.modelProfileId,
-        role: selection.role,
-        endpoint: selection.endpoint,
-        adapterOf: selection.adapterOf,
+        ...selectedProfile,
         eligibility: selectedProfileEligibility,
       },
       subjectStateSnapshot,
@@ -857,7 +1405,7 @@ export const createPhase0TickExecution =
         summary: `${context.kind} tick refused before structured decision handoff`,
         failureDetail: `decision harness rejected: ${decision.reason}`,
         continuityFlags: {
-          selectedModelProfileId: selection.modelProfileId,
+          selectedModelProfileId: selectedProfile.modelProfileId,
           decisionRejected: {
             reason: decision.reason,
             detail: decision.detail,
@@ -868,10 +1416,10 @@ export const createPhase0TickExecution =
           trigger: context.trigger,
           requestId: context.requestId,
           payload: context.payload,
-          selectedModelProfileId: selection.modelProfileId,
-          selectedRole: selection.role,
-          modelEndpoint: selection.endpoint,
-          selectionReason: selection.selectionReason,
+          selectedModelProfileId: selectedProfile.modelProfileId,
+          selectedRole: selectedProfile.role,
+          modelEndpoint: selectedProfile.endpoint,
+          selectionReason: selectionReasonJson,
           perceptionBatch,
           narrativeMemetic: narrativeMemetic.outputs,
           decisionTrace,
@@ -884,10 +1432,10 @@ export const createPhase0TickExecution =
       trigger: context.trigger,
       requestId: context.requestId,
       payload: context.payload,
-      selectedModelProfileId: selection.modelProfileId,
-      selectedRole: selection.role,
-      modelEndpoint: selection.endpoint,
-      selectionReason: selection.selectionReason,
+      selectedModelProfileId: selectedProfile.modelProfileId,
+      selectedRole: selectedProfile.role,
+      modelEndpoint: selectedProfile.endpoint,
+      selectionReason: selectionReasonJson,
       perceptionBatch,
       narrativeMemetic: narrativeMemetic.outputs,
       decision: decision.decision,
@@ -914,7 +1462,7 @@ export const createPhase0TickExecution =
     const executiveVerdict = await dependencies.handleDecisionAction({
       tickId: context.tickId,
       decisionMode,
-      selectedModelProfileId: selection.modelProfileId,
+      selectedModelProfileId: selectedProfile.modelProfileId,
       action: decision.decision.action,
     });
 
@@ -925,7 +1473,7 @@ export const createPhase0TickExecution =
         failureDetail: `executive boundary rejected: ${executiveVerdict.refusalReason}`,
         actionId: executiveVerdict.actionId,
         continuityFlags: {
-          selectedModelProfileId: selection.modelProfileId,
+          selectedModelProfileId: selectedProfile.modelProfileId,
           ...(narrativeMemetic.outputs.winningCoalition
             ? { selectedCoalitionId: narrativeMemetic.outputs.winningCoalition.coalitionId }
             : {}),
@@ -946,7 +1494,7 @@ export const createPhase0TickExecution =
       actionId: executiveVerdict.actionId,
       result: buildResultPayload(executiveVerdict),
       continuityFlags: {
-        selectedModelProfileId: selection.modelProfileId,
+        selectedModelProfileId: selectedProfile.modelProfileId,
         ...(narrativeMemetic.outputs.winningCoalition
           ? { selectedCoalitionId: narrativeMemetic.outputs.winningCoalition.coalitionId }
           : {}),
@@ -1349,11 +1897,17 @@ export function createPhase0RuntimeLifecycle(
   const modelProfileStore = createDbBackedModelProfileStore(config);
   const expandedModelEcologyStore = createDbBackedExpandedModelEcologyStore(config);
   const actionLogStore = createDbBackedActionLogStore(config);
+  const specialistPolicy = createDbBackedSpecialistPolicyService({
+    config,
+    modelProfileStore,
+    listServingDependencyStates,
+  });
   const modelRouter = createPhase0ModelRouter({
     fastModelBaseUrl: config.fastModelBaseUrl,
     baselineProfiles: createVllmFastBaselineProfiles(config),
     store: modelProfileStore,
     resolveBaselineHealth,
+    specialistPolicy,
   });
   const expandedModelEcology = createExpandedModelEcologyService({
     deepModelBaseUrl: config.deepModelBaseUrl,
@@ -1399,6 +1953,9 @@ export function createPhase0RuntimeLifecycle(
     }),
     executeTick: createPhase0TickExecution({
       selectProfile: (input) => modelRouter.selectProfile(input),
+      admitSpecialistSelection: (input) => modelRouter.admitSpecialistSelection(input),
+      resolveModelProfileById: (modelProfileId) =>
+        modelProfileStore.getModelProfile(modelProfileId),
       persistTickModelSelection: async (input) => {
         await modelProfileStore.persistTickModelSelection(input);
       },

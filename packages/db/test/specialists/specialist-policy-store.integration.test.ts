@@ -171,6 +171,10 @@ void test('AC-F0027-11 records append-only retirement and blocks terminal stage 
     assert.equal(laterRollout.reason, 'terminal_stage_conflict');
     assert.equal(laterRollout.row.reasonCode, SPECIALIST_REFUSAL_REASON.TERMINAL_STAGE_CONFLICT);
   }
+  const rolloutEvents = await store.listRolloutEvents({ specialistId: 'specialist.summary@v1' });
+  assert.equal(rolloutEvents.length, 1);
+  assert.equal(rolloutEvents[0]?.decision, SPECIALIST_ROLLOUT_EVENT_DECISION.REFUSED);
+  assert.equal(rolloutEvents[0]?.reasonCode, SPECIALIST_REFUSAL_REASON.TERMINAL_STAGE_CONFLICT);
   assert.equal(
     (await store.listRetirementDecisions({ specialistId: 'specialist.summary@v1' })).length,
     1,
@@ -203,6 +207,26 @@ void test('AC-F0027-06 refuses live rollout events without release evidence', as
     assert.equal(rolloutResult.reason, 'release_evidence_missing');
     assert.equal(rolloutResult.row.reasonCode, SPECIALIST_REFUSAL_REASON.RELEASE_EVIDENCE_MISSING);
   }
+  const replay = await store.recordRolloutEvent({
+    eventId: 'rollout-event-missing-release',
+    requestId: 'rollout-request-missing-release',
+    normalizedRequestHash: 'rollout-missing-release-hash',
+    policyId: 'policy-specialist-1',
+    specialistId: organ.specialistId,
+    fromStage: organ.stage,
+    toStage: SPECIALIST_ROLLOUT_STAGE.LIMITED_ACTIVE,
+    decision: SPECIALIST_ROLLOUT_EVENT_DECISION.RECORDED,
+    reasonCode: 'stage_recorded',
+    actorRef: 'operator:1',
+    evidenceRefsJson: ['workshop-promotion:candidate-specialist-1', 'governor:allow:1'],
+    createdAt: '2026-04-28T10:01:00.000Z',
+  });
+  const rolloutEvents = await store.listRolloutEvents({ specialistId: organ.specialistId });
+  assert.equal(replay.accepted, true);
+  assert.equal(replay.accepted ? replay.deduplicated : null, true);
+  assert.equal(rolloutEvents.length, 1);
+  assert.equal(rolloutEvents[0]?.decision, SPECIALIST_ROLLOUT_EVENT_DECISION.REFUSED);
+  assert.equal(rolloutEvents[0]?.reasonCode, SPECIALIST_REFUSAL_REASON.RELEASE_EVIDENCE_MISSING);
   assert.equal(
     harness.state.organsById['specialist.summary@v1']?.stage,
     SPECIALIST_ROLLOUT_STAGE.CANDIDATE,

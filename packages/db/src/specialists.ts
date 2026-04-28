@@ -35,6 +35,7 @@ const specialistRolloutEventsTable = `${RUNTIME_SCHEMA}.specialist_rollout_event
 const specialistAdmissionDecisionsTable = `${RUNTIME_SCHEMA}.specialist_admission_decisions`;
 const specialistRetirementDecisionsTable = `${RUNTIME_SCHEMA}.specialist_retirement_decisions`;
 const specialistStageLockNamespace = 'yaagi.specialist_policy.stage';
+const specialistRequestLockNamespace = 'yaagi.specialist_policy.request';
 
 const asUtcIso = (column: string, alias: string): string =>
   `to_char(${column} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "${alias}"`;
@@ -376,6 +377,16 @@ const acquireSpecialistStageLock = async (
   ]);
 };
 
+const acquireSpecialistRequestLock = async (
+  db: SpecialistPolicyDbExecutor,
+  requestId: string,
+): Promise<void> => {
+  await db.query(`select pg_advisory_xact_lock(hashtext($1), hashtext($2))`, [
+    specialistRequestLockNamespace,
+    requestId,
+  ]);
+};
+
 const liveRolloutStages = new Set<string>([
   SPECIALIST_ROLLOUT_STAGE.LIMITED_ACTIVE,
   SPECIALIST_ROLLOUT_STAGE.ACTIVE,
@@ -548,6 +559,7 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
     ): Promise<SpecialistRequestRecordResult<SpecialistRolloutPolicyRow>> {
       assertValidSpecialistRolloutPolicy(input);
       return await transaction(db, async () => {
+        await acquireSpecialistRequestLock(db, input.requestId);
         await acquireSpecialistStageLock(db, input.specialistId);
         const result = await db.query<QueryResultRow>(
           `insert into ${specialistRolloutPoliciesTable} (
@@ -625,6 +637,7 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
       input,
     ): Promise<SpecialistRequestRecordResult<SpecialistRolloutEventRow>> {
       return await transaction(db, async () => {
+        await acquireSpecialistRequestLock(db, input.requestId);
         await acquireSpecialistStageLock(db, input.specialistId);
         const existing = await loadRolloutEventByRequestId(db, input.requestId);
         if (existing) {
@@ -632,31 +645,33 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
         }
 
         const organ = await getSpecialistOrgan(input.specialistId);
+        let recordInput = {
+          ...input,
+          fromStage: organ?.stage ?? input.fromStage,
+        };
+        let rejectedReason: 'terminal_stage_conflict' | 'release_evidence_missing' | null = null;
         if (
           organ &&
           isSpecialistTerminalStage(organ.stage) &&
           input.toStage !== SPECIALIST_ROLLOUT_STAGE.RETIRED
         ) {
-          const terminalEvent: SpecialistRolloutEventRow = {
-            ...input,
+          rejectedReason = 'terminal_stage_conflict';
+          recordInput = {
+            ...recordInput,
             decision: SPECIALIST_ROLLOUT_EVENT_DECISION.REFUSED,
             reasonCode: SPECIALIST_REFUSAL_REASON.TERMINAL_STAGE_CONFLICT,
-            fromStage: organ.stage,
           };
-          return { accepted: false, reason: 'terminal_stage_conflict', row: terminalEvent };
-        }
-        if (
+        } else if (
           input.decision === SPECIALIST_ROLLOUT_EVENT_DECISION.RECORDED &&
           liveRolloutStages.has(input.toStage) &&
           !hasReleaseEvidenceRef(input.evidenceRefsJson)
         ) {
-          const refusedEvent: SpecialistRolloutEventRow = {
-            ...input,
+          rejectedReason = 'release_evidence_missing';
+          recordInput = {
+            ...recordInput,
             decision: SPECIALIST_ROLLOUT_EVENT_DECISION.REFUSED,
             reasonCode: SPECIALIST_REFUSAL_REASON.RELEASE_EVIDENCE_MISSING,
-            fromStage: organ?.stage ?? input.fromStage,
           };
-          return { accepted: false, reason: 'release_evidence_missing', row: refusedEvent };
         }
 
         const result = await db.query<QueryResultRow>(
@@ -678,18 +693,18 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
             )
             returning ${specialistRolloutEventColumns}`,
           [
-            input.eventId,
-            input.requestId,
-            input.normalizedRequestHash,
-            input.policyId,
-            input.specialistId,
-            organ?.stage ?? input.fromStage,
-            input.toStage,
-            input.decision,
-            input.reasonCode,
-            input.actorRef,
-            JSON.stringify(input.evidenceRefsJson),
-            input.createdAt,
+            recordInput.eventId,
+            recordInput.requestId,
+            recordInput.normalizedRequestHash,
+            recordInput.policyId,
+            recordInput.specialistId,
+            recordInput.fromStage,
+            recordInput.toStage,
+            recordInput.decision,
+            recordInput.reasonCode,
+            recordInput.actorRef,
+            JSON.stringify(recordInput.evidenceRefsJson),
+            recordInput.createdAt,
           ],
         );
         const row = result.rows[0];
@@ -709,7 +724,9 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
           );
         }
 
-        return { accepted: true, deduplicated: false, row: event };
+        return rejectedReason
+          ? { accepted: false, reason: rejectedReason, row: event }
+          : { accepted: true, deduplicated: false, row: event };
       });
     },
 
@@ -730,6 +747,7 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
     ): Promise<SpecialistRequestRecordResult<SpecialistAdmissionDecisionRow>> {
       assertValidSpecialistAdmissionDecision(input);
       return await transaction(db, async () => {
+        await acquireSpecialistRequestLock(db, input.requestId);
         await acquireSpecialistStageLock(db, input.specialistId);
 
         const existing = await loadAdmissionDecisionByRequestId(db, input.requestId);
@@ -875,6 +893,7 @@ export function createSpecialistPolicyStore(db: SpecialistPolicyDbExecutor): Spe
     ): Promise<SpecialistRequestRecordResult<SpecialistRetirementDecisionRow>> {
       assertValidSpecialistRetirementDecision(input);
       return await transaction(db, async () => {
+        await acquireSpecialistRequestLock(db, input.requestId);
         await acquireSpecialistStageLock(db, input.specialistId);
         const existing = await loadRetirementDecisionByRequestId(db, input.requestId);
         if (existing) {
