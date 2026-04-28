@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-28T10:22:11.419Z",
+  "updated_at": "2026-04-28T10:25:18.862Z",
   "sources": [
     {
       "source_id": "afb03520-49fc-4db1-b604-6962cd14b459",
@@ -12,7 +12,7 @@
       "note": "Boot dependency contract",
       "hash": "b6799b3b5f76ced3a418b2935cf80c2484992367e6da6e8dbe75f63b8328b898",
       "registered_at": "2026-04-09T23:44:44.726Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "b51cfc9b-50b8-48fc-8ce2-56adf5d520c5",
@@ -23,7 +23,7 @@
       "note": "Canonical runtime and toolchain",
       "hash": "a11e602967a612ba8f26d07e12031899a641098cb389c5b8f3e707ac7d7a7f3b",
       "registered_at": "2026-04-09T23:44:44.788Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "da69c792-33fd-4f9c-8786-236c3d8e1478",
@@ -34,7 +34,7 @@
       "note": "Phase-0 deployment cell",
       "hash": "4a14c0c945df41b60c77477505b0bcb2132d9290328a9b749bf62c9fff7bb629",
       "registered_at": "2026-04-09T23:44:44.848Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "90842437-1283-44f7-832a-1a0fb8fe8b1a",
@@ -45,7 +45,7 @@
       "note": "Phase-0 runtime boundary",
       "hash": "f8d60f5d3016f3136b1a19ac197cd297c43c153b684e9263b5dbb72afa64bb90",
       "registered_at": "2026-04-09T23:44:44.910Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "9ee3dd1d-afaa-4459-983e-52d0dbfd5ecb",
@@ -56,7 +56,7 @@
       "note": "Quality gate sequence",
       "hash": "224958a9a1a8426677a6a2c8fa4eb3ad6568dc158828e90b32369a60ad6d7fcd",
       "registered_at": "2026-04-09T23:44:44.975Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "a81e772a-16a8-48fd-9854-dea832ad39cb",
@@ -67,7 +67,7 @@
       "note": "No technical debt rule",
       "hash": "0721ee15d336b5c91d060d8bcea8a25cd415f5c17a72dbd15c192de25c5b24e0",
       "registered_at": "2026-04-09T23:44:45.037Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "85e668f4-c213-4aba-a7e8-55606cadb94b",
@@ -78,7 +78,7 @@
       "note": "Perception intake contract",
       "hash": "eb3a24690cf820aeb701ecc2890cc4fa19520b2559c986808bc31789e9c151d2",
       "registered_at": "2026-04-09T23:44:45.100Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "caf9cab9-54ab-474c-9aee-7c391939a440",
@@ -89,7 +89,7 @@
       "note": "Plan mode decision gate",
       "hash": "ddbcf90b0f4f398e78ab62355d4e523ce351c02edd408a4511f0bdba6c2f8206",
       "registered_at": "2026-04-09T23:44:45.162Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "0d916afc-3490-4b21-b640-c4a714157a89",
@@ -100,7 +100,7 @@
       "note": "Subject-state evidence refs",
       "hash": "5525fecbbeaca9aaf3ac2d792642e6677e7df9c9ac0f5b228cd817f4621833ae",
       "registered_at": "2026-04-09T23:44:45.224Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "d7ca68c0-022b-48d2-8384-578f9d3c7a7c",
@@ -111,7 +111,7 @@
       "note": "AI SDK runtime substrate",
       "hash": "d9d6b72a28fd84af3e9b03b09abb2548a745a73d9b363c253549d8b66caf74b8",
       "registered_at": "2026-04-09T23:44:45.290Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "d53951b9-90dd-4afc-b7e0-df4dfd03a867",
@@ -122,7 +122,7 @@
       "note": "Cross-cutting local structured-output compatibility rule for Gemma/vLLM",
       "hash": "9e771da4f6d20a94c3b27ae7334a9a72c98cdb4862668dc16cbfb76756842160",
       "registered_at": "2026-04-17T11:29:16.542Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "99b920fb-a72a-4372-94bd-28dce36af456",
@@ -133,7 +133,7 @@
       "note": "Canonical ADR for post-F-0020 smoke-harness optimization follow-up",
       "hash": "f821e7ac8810e13d19fc2e30981936865dc1e403cda012a8431f47f73b4727e0",
       "registered_at": "2026-04-17T17:01:30.060Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
@@ -144,7 +144,7 @@
       "note": "Canonical system architecture",
       "hash": "fc5f7652ad6e0e6235f6c270638803da93073261337eb8d96a411861caa51cca",
       "registered_at": "2026-04-09T23:44:44.538Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "97107644-d070-4cb0-bfe3-aa581331229c",
@@ -155,7 +155,7 @@
       "note": "Legacy candidate backlog used for migration and legacy CF traceability",
       "hash": "c6b2c077de7ce1a6a2efa2442a456b1f8b6e16fc78a707aa7693f86b3ee90c5f",
       "registered_at": "2026-04-09T23:44:45.352Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "9d061028-1d37-4f85-9919-f6321ed1f995",
@@ -166,7 +166,7 @@
       "note": "Legacy planning note for real vLLM serving backlog seam",
       "hash": "c21e92b7344fd3a9cb82b88d94d87a4bafbfd3cb206b7aae7b83bdc613768f14",
       "registered_at": "2026-04-09T23:44:45.473Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "4ffa2197-8f9f-4d98-a615-36b03c2cc660",
@@ -177,7 +177,7 @@
       "note": "Legacy roadmap matrix used to normalize non-intaken delivery states",
       "hash": "71258bf9f373e9a921c6ee5859d072652f53b90840c06970c3373ff90c63a3a7",
       "registered_at": "2026-04-09T23:44:45.414Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
@@ -188,7 +188,7 @@
       "note": "Canonical Russian Polyphony concept",
       "hash": "c8030fe4d6e54c594c0b72c0cb628b1d9daf4aa81abef21742a84b205718a71a",
       "registered_at": "2026-04-09T23:44:44.599Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "ef27eeb6-7dfa-408b-a240-1712dd407575",
@@ -199,7 +199,7 @@
       "note": "Canonical Feature Dossier for CF-016 implementation closure",
       "hash": "4e62306ab33a937f80f23d8d633f5a1ffc7ed9f7998d38f7f0502f4e7d840300",
       "registered_at": "2026-04-10T12:43:55.900Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "30e1204b-b08d-4f15-8fa2-99d2ac2dffd0",
@@ -210,7 +210,7 @@
       "note": "Canonical Feature Dossier for CF-012 implementation closure",
       "hash": "0439e7e0678b65a7240cc3eaaf2bd953ad97e8bfd142e023ebbba0bdefda60c6",
       "registered_at": "2026-04-13T13:25:41.394Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "101e300d-dc80-4a8b-a11d-0a3f1849f368",
@@ -221,7 +221,7 @@
       "note": "Canonical Feature Dossier for CF-014 implementation closure",
       "hash": "10fa953d1b390245f3e7eae2f853388df4a29138282059534725e24628fa5fa6",
       "registered_at": "2026-04-14T23:51:56.806Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "97f90f65-393f-455c-b7ea-9ec09da09343",
@@ -232,7 +232,7 @@
       "note": "Canonical Feature Dossier for CF-018 implementation closure",
       "hash": "0de46d6c60ae52c3e31f13203113891777d06160b2c0230908e5014fc61b4585",
       "registered_at": "2026-04-15T17:19:58.072Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     },
     {
       "source_id": "5b9f63ff-21ce-440c-a3a3-7416945dde4f",
@@ -243,7 +243,7 @@
       "note": "Repo runtime and toolchain contract",
       "hash": "45a2b1eb4e47d3149fd51fd7c1c9b4ea506b0d1e5484fd1f6c0cf6bf61a8c15b",
       "registered_at": "2026-04-09T23:44:44.665Z",
-      "last_checked_at": "2026-04-28T10:22:11.419Z"
+      "last_checked_at": "2026-04-28T10:25:18.862Z"
     }
   ]
 }

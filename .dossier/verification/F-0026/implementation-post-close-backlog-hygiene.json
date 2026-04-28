@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "created_at": "2026-04-28T10:22:11.719Z",
+  "created_at": "2026-04-28T10:25:19.198Z",
   "feature_id": "F-0026",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0026-deploy-release-automation-rollback-orchestration.md",
   "implementation_step_artifact": ".dossier/steps/F-0026/implementation.json",
   "implementation_process_complete_ts": "2026-04-24T23:07:27.566Z",
-  "refresh_ran_at": "2026-04-28T10:22:11.425Z",
-  "backlog_last_refresh_at": "2026-04-28T10:22:11.425Z",
+  "refresh_ran_at": "2026-04-28T10:25:18.868Z",
+  "backlog_last_refresh_at": "2026-04-28T10:25:18.868Z",
   "refresh_summary": {
     "changed_sources": [],
     "source_reviews_created": 0,
@@ -16,7 +16,7 @@
   },
   "status_summary": {
     "total_items": 28,
-    "last_refresh_at": "2026-04-28T10:22:11.425Z",
+    "last_refresh_at": "2026-04-28T10:25:18.868Z",
     "defined_count": 1,
     "intaken_count": 0,
     "specified_count": 1,
