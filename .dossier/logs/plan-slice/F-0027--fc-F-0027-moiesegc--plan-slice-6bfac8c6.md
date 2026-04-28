@@ -23,19 +23,46 @@ backlog_followup_resolved: true
 backlog_lifecycle_target: planned
 backlog_lifecycle_current: planned
 backlog_lifecycle_reconciled: true
-backlog_actualization_artifacts: []
-backlog_actualization_verdict: current_state_satisfies_target
-review_artifacts: []
+backlog_actualization_artifacts:
+  - .dossier/backlog/patches/e4edf260a68f--f0027-plan-slice-actualization.patch.json
+backlog_actualization_verdict: actualized_by_backlog_artifact
+review_artifacts:
+  - .dossier/reviews/F-0027/plan-slice--spec-conformance-reviewer--r01--pass--666019cc25b1.json
 verification_artifacts:
   - .dossier/verification/F-0027/plan-slice-6f5faf4769dd.json
+  - .dossier/verification/F-0027/plan-slice-666019cc25b1.json
 required_audit_classes:
   - spec-conformance-reviewer
-executed_audit_classes: []
-required_external_review_pending: true
-review_events: []
-reviewer_skills: []
-reviewer_agent_ids: []
-review_trace_commits: []
+executed_audit_classes:
+  - spec-conformance-reviewer
+required_external_review_pending: false
+review_events:
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0027/plan-slice--spec-conformance-reviewer--r01--pass--666019cc25b1.json
+    audit_class: spec-conformance-reviewer
+    event_commit: 666019cc25b1c82f6b7f212deaab704d2e282c70
+    implementation_scope: null
+    invalidated: false
+    latest_copy_path: .dossier/reviews/F-0027/plan-slice--spec-conformance-reviewer--latest.json
+    must_fix_count: 0
+    recorded_at: 2026-04-28T10:40:16.250Z
+    review_mode: external
+    review_attempt_id: plan-slice--spec-conformance-reviewer--r01
+    review_round_id: r01
+    review_round_number: 1
+    reviewer: external-plan-slice-review-agent
+    reviewer_agent_id: 019dd3a9-d044-76d1-9950-185dc346210b
+    reviewer_skill: spec-conformance-reviewer
+    reviewer_thread_id: 019dd3a9-d044-76d1-9950-185dc346210b
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
+reviewer_skills:
+  - spec-conformance-reviewer
+reviewer_agent_ids:
+  - 019dd3a9-d044-76d1-9950-185dc346210b
+review_trace_commits:
+  - 666019cc25b1c82f6b7f212deaab704d2e282c70
 degraded_review_present: false
 invalidated_review_present: false
 stale_review_present: false
@@ -48,19 +75,19 @@ session_id: 6b5d6205-96df-4f26-9b26-17be5702bd65
 trace_runtime: codex
 trace_locator_kind: session_id
 final_delivery_commit: 6f5faf4769dd328b2f11c6952fa1d7669cf4f099
-final_closure_commit: null
-step_artifact: null
+final_closure_commit: 666019cc25b1c82f6b7f212deaab704d2e282c70
+step_artifact: .dossier/steps/F-0027/plan-slice.json
 stage_entry_commit: null
 implementation_review_scope: null
-required_security_review: null
+required_security_review: false
 security_trigger_reasons: []
-step_close_ts: null
-process_complete_ts: null
+step_close_ts: 2026-04-28T10:40:46.593Z
+process_complete_ts: 2026-04-28T10:40:46.593Z
 intake_process_complete_ts: null
 local_gates_green_ts: null
-first_review_agent_started_ts: null
-final_pass_ts: null
-verification_trace_commit: 6f5faf4769dd328b2f11c6952fa1d7669cf4f099
+first_review_agent_started_ts: 2026-04-28T10:40:16.250Z
+final_pass_ts: 2026-04-28T10:40:16.250Z
+verification_trace_commit: 666019cc25b1c82f6b7f212deaab704d2e282c70
 ---
 
 ## Scope
@@ -108,7 +135,7 @@ verification_trace_commit: 6f5faf4769dd328b2f11c6952fa1d7669cf4f099
 
 ## Review events
 
-none
+- Independent `spec-conformance-reviewer` audit recorded PASS in `.dossier/reviews/F-0027/plan-slice--spec-conformance-reviewer--r01--pass--666019cc25b1.json`.
 
 ## Backlog follow-up
 
@@ -127,5 +154,7 @@ none
 
 ## Close-out
 
-- Stage is ready for dossier verification and independent `spec-conformance-reviewer` review.
-- Truthful closure still requires `dossier-verify`, PASS external review artifact and `dossier-step-close`.
+- `dossier-verify` passed with `.dossier/verification/F-0027/plan-slice-666019cc25b1.json`.
+- Independent `spec-conformance-reviewer` audit PASS was recorded in `.dossier/reviews/F-0027/plan-slice--spec-conformance-reviewer--r01--pass--666019cc25b1.json`.
+- `dossier-step-close` wrote `.dossier/steps/F-0027/plan-slice.json` with `process_complete=yes`.
+- Next workflow stage is `implementation`.

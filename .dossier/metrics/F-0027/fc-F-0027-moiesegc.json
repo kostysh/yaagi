@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-04-28T10:16:29.017Z",
+  "generated_at": "2026-04-28T10:40:50.627Z",
   "feature_id": "F-0027",
   "feature_cycle_id": "fc-F-0027-moiesegc",
   "identity": {
@@ -93,28 +93,46 @@
         }
       },
       "plan-slice": {
-        "cycle_ids": [],
-        "log_paths": [],
-        "session_ids": [],
-        "start_ts": null,
+        "cycle_ids": [
+          "plan-slice-6bfac8c6"
+        ],
+        "log_paths": [
+          ".dossier/logs/plan-slice/F-0027--fc-F-0027-moiesegc--plan-slice-6bfac8c6.md"
+        ],
+        "session_ids": [
+          "6b5d6205-96df-4f26-9b26-17be5702bd65"
+        ],
+        "start_ts": "2026-04-28T10:29:15.913Z",
         "local_gates_green_ts": null,
-        "process_complete_ts": null,
-        "step_close_ts": null,
-        "step_artifacts": [],
-        "first_review_agent_started_ts": null,
-        "final_pass_ts": null,
+        "process_complete_ts": "2026-04-28T10:40:46.593Z",
+        "step_close_ts": "2026-04-28T10:40:46.593Z",
+        "step_artifacts": [
+          ".dossier/steps/F-0027/plan-slice.json"
+        ],
+        "first_review_agent_started_ts": "2026-04-28T10:40:16.250Z",
+        "final_pass_ts": "2026-04-28T10:40:16.250Z",
         "review_policy": {
-          "required_audit_classes": [],
-          "executed_audit_classes": [],
-          "required_external_review_pending": null,
+          "required_audit_classes": [
+            "spec-conformance-reviewer"
+          ],
+          "executed_audit_classes": [
+            "spec-conformance-reviewer"
+          ],
+          "required_external_review_pending": false,
           "implementation_review_scope": null,
-          "required_security_review": null,
-          "degraded_review_present": null,
-          "invalidated_review_present": null,
-          "stale_review_present": null,
-          "reviewer_skills": [],
-          "reviewer_agent_ids": [],
-          "review_trace_commits": [],
+          "required_security_review": false,
+          "degraded_review_present": false,
+          "invalidated_review_present": false,
+          "stale_review_present": false,
+          "reviewer_skills": [
+            "spec-conformance-reviewer"
+          ],
+          "reviewer_agent_ids": [
+            "019dd3a9-d044-76d1-9950-185dc346210b"
+          ],
+          "review_trace_commits": [
+            "666019cc25b1c82f6b7f212deaab704d2e282c70"
+          ],
           "security_trigger_reasons": []
         }
       },
@@ -176,11 +194,11 @@
     "phase_cycle_time_ms": {
       "feature-intake": 365562,
       "spec-compact": 640200,
-      "plan-slice": null,
+      "plan-slice": 690680,
       "implementation": null,
       "change-proposal": null
     },
-    "review_loop_time_ms": 0,
+    "review_loop_time_ms": 1479648,
     "rerounds_per_feature": 0,
     "first_pass_close": null,
     "closure_latency_ms": null,
@@ -201,6 +219,19 @@
       "stage_log_path": ".dossier/logs/feature-intake/F-0027--fc-F-0027-moiesegc.md",
       "start_ts": "2026-04-28T09:13:37.068Z",
       "end_ts": "2026-04-28T09:19:42.630Z"
+    },
+    {
+      "version": 1,
+      "feature_cycle_id": "fc-F-0027-moiesegc",
+      "feature_id": "F-0027",
+      "backlog_item_key": "CF-019",
+      "stage": "plan-slice",
+      "session_id": "6b5d6205-96df-4f26-9b26-17be5702bd65",
+      "trace_runtime": "codex",
+      "trace_locator_kind": "session_id",
+      "stage_log_path": ".dossier/logs/plan-slice/F-0027--fc-F-0027-moiesegc--plan-slice-6bfac8c6.md",
+      "start_ts": "2026-04-28T10:29:15.913Z",
+      "end_ts": "2026-04-28T10:40:46.593Z"
     },
     {
       "version": 1,
