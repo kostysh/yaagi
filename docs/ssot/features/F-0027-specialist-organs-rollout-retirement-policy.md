@@ -1,7 +1,7 @@
 ---
 id: F-0027
 title: Специализированные органы и политика вывода из эксплуатации
-status: shaped
+status: planned
 coverage_gate: deferred
 backlog_item_key: CF-019
 owners: ["@codex"]
@@ -116,7 +116,10 @@ links:
 
 ### Open questions (optional)
 
-- None after `spec-compact`.
+- None after `plan-slice`.
+- Resolved by `plan-slice`: first implementation uses one `specialist-policy` owner surface across contracts, DB store and core runtime service.
+- Resolved by `plan-slice`: repo-level ADR is still not required before implementation; one is required only if implementation changes router selection/admission invariants outside the feature-local policy gate, introduces a new deployment/model-serving stack or changes cross-feature write ownership.
+- Resolved by `plan-slice`: protected side-effect preset applies to live specialist admission and retirement planning because implementation gates runtime use, consumes release/rollback evidence and accepts caller-controlled policy commands, even though `F-0027` does not execute deploy or rollback itself.
 
 ## 3. Requirements & Acceptance Criteria (SSoT)
 
@@ -229,13 +232,13 @@ These surfaces are specialist policy truth only. Workshop lifecycle truth, riche
 - Router/fallback tests proving no silent remap and structured refusal when no declared fallback is eligible.
 - Boundary tests proving no direct writes to `F-0015`, `F-0016`, `F-0020`, `F-0026` source surfaces and no shadow registry.
 - Smoke coverage when implementation materially changes runtime admission, release activation or deployment behavior.
-- Dossier verification during this step: `dossier-engineer dossier-verify --step spec-compact --dossier docs/ssot/features/F-0027-specialist-organs-rollout-retirement-policy.md`.
+- Dossier verification during `plan-slice`: `dossier-engineer dossier-verify --step plan-slice --dossier docs/ssot/features/F-0027-specialist-organs-rollout-retirement-policy.md`.
 
 ### 5.6 Representation upgrades (triggered only when needed)
 
 - Feature-local ADR blocks in this dossier are enough for the policy overlay boundary.
 - Repo-level ADR is triggered if implementation changes router selection/admission invariants, creates a second model lifecycle state machine, promotes a new boot-critical service, introduces a new public route family, changes release/deployment contracts or grants `F-0027` direct write authority over neighbouring owner surfaces.
-- Backlog actualization is expected for `CF-019` from `defined` to `specified` when this `spec-compact` closes.
+- Backlog actualization is expected for `CF-019` from `specified` to `planned` when this `plan-slice` closes.
 
 ### 5.7 Definition of Done
 
@@ -257,41 +260,123 @@ These surfaces are specialist policy truth only. Workshop lifecycle truth, riche
 
 ## 6. Slicing plan (2–6 increments)
 
-- Deferred to `plan-slice`.
-- Required planning output:
-  - one execution target for the first specialist policy seam;
-  - 2-6 increments with primary files, tests, covered AC IDs, owner and unblock conditions;
-  - explicit sequencing for contracts/store before runtime/router admission;
-  - protected side-effect preset if implementation touches release, rollback, external executor, host/container boundary or caller-controlled input;
-  - root quality gate and smoke obligations for runtime/deployment-affecting changes.
+### Implementation boundary for plan-slice
+
+- **Execution target:** deliver one production-ready `specialist-policy` seam that persists specialist rollout/admission/retirement policy facts, evaluates specialist admission after router selection, refuses missing or stale upstream evidence, and records append-only retirement decisions without adding a second model registry, serving stack, workshop lifecycle or release executor.
+- The first implementation lives inside the existing `apps/core` runtime and PostgreSQL state kernel. It may add new contracts, DB tables/store, a runtime service and tests, but it must not create a second deployment stack or a specialist-only serving runtime.
+- The implementation agent must land contracts and store before runtime/router admission wiring. Runtime admission may consume read-only evidence from `F-0014`, `F-0015`, `F-0016`, `F-0020` and `F-0026`; writes to those owner surfaces remain forbidden.
+- Operator-facing routes are not required for the first implementation. If the implementer adds them, they must stay inside the existing protected Operator API namespace, use `F-0024` caller admission/RBAC and delegate to the same `specialist-policy` service.
+- Exact file names may change only if the semantic owner boundary, coverage map and single policy-service call path remain intact.
+
+### Protected side-effect preset
+
+This plan declares the protected side-effect preset because specialist admission changes live runtime eligibility, retirement can stop future live use, and policy commands contain caller-controlled scope/evidence refs.
+
+- **Reservation before side effect:** rollout/admission/retirement records must be persisted before any live specialist execution is considered admitted. `F-0027` must never execute release, deploy or rollback actions directly.
+- **Idempotent replay behavior:** rollout, admission and retirement commands use stable request ids or deterministic decision keys; equivalent replay returns the existing decision and conflicting replay is rejected before writing a new terminal fact.
+- **Terminal CAS / no terminal overwrite:** terminal retirement and refusal facts are append-only. A retired specialist cannot be silently overwritten back to `active` or `stable`; any future reactivation requires a new governed rollout decision with fresh evidence.
+- **Strict caller input:** task signatures, stages, traffic limits, evidence refs, fallback refs and specialist ids must be schema-validated and bounded. No raw SQL, filesystem path, environment variable or deployment command may be caller-controlled through this feature.
+- **Live-vs-stale running behavior:** admission checks current health/readiness/governor/release evidence at decision time. In-flight work records the decision snapshot; new admissions after retirement or stale evidence must refuse or use an explicitly declared fallback.
+
+### SL-F0027-01: Specialist contracts and policy store
+
+- **Result:** shared specialist policy contracts, PostgreSQL migration/store and append-only data surfaces for specialist organs, rollout policies, rollout events, admission decisions and retirement decisions.
+- **Primary files:** `packages/contracts/src/specialists.ts`, `packages/contracts/package.json`, `packages/db/src/specialists.ts`, `packages/db/src/index.ts`, `infra/migrations/027_specialist_policy.sql`.
+- **Tests:** `packages/contracts/test/specialists.contract.test.ts`, `packages/db/test/specialists/specialist-policy-store.integration.test.ts`.
+- **Coverage map:** section 8 rows list the planned AC-to-test references for this slice.
+- Depends on: delivered `F-0014` model registry identity vocabulary, delivered `F-0015` specialist candidate/promotion-package vocabulary and delivered PostgreSQL migration substrate; owner `@codex`; unblock condition: contracts/store tests prove append-only policy truth, request replay semantics and terminal retirement constraints before runtime admission wiring starts.
+- **Unblock condition:** contract and DB tests prove the policy store can persist/query rollout, admission and retirement facts without writing workshop, governor, release or model-serving owner tables.
+
+### SL-F0027-02: Policy service and upstream evidence gates
+
+- **Result:** core `specialist-policy` service that evaluates workshop promotion evidence, governor approval evidence, serving readiness, health state, release evidence and fallback/rollback target before returning allow/refuse decisions.
+- **Primary files:** `apps/core/src/runtime/specialist-policy.ts`, `apps/core/src/runtime/index.ts`, `apps/core/src/platform/core-runtime.ts`, `apps/core/src/runtime/model-ecology.ts`, `apps/core/src/workshop/service.ts`, `apps/core/src/runtime/development-governor.ts`, `apps/core/src/platform/release-automation.ts`.
+- **Tests:** `apps/core/test/runtime/specialist-policy-service.contract.test.ts`, `apps/core/test/models/specialist-upstream-evidence.integration.test.ts`, `apps/core/test/models/specialist-missing-evidence.contract.test.ts`.
+- **Coverage map:** section 8 rows list the planned AC-to-test references for this slice.
+- Depends on: `SL-F0027-01`, delivered `F-0015` promotion package refs, delivered `F-0016` proposal/decision refs, delivered `F-0020` serving dependency state and delivered `F-0026` release evidence refs; owner `@codex`; unblock condition: read-only evidence adapters can classify required evidence as present/current or missing/stale without foreign writes.
+- **Unblock condition:** service tests prove all required upstream evidence gates fail closed and record structured refusal reasons before router integration starts.
+
+### SL-F0027-03: Router admission integration and no-remap behavior
+
+- **Result:** specialist admission hook after model-router selection, preserving `selection != admission`, enforcing `shadow`/`limited-active` semantics and preventing silent fallback/remap.
+- **Primary files:** `apps/core/src/runtime/model-router.ts`, `apps/core/src/runtime/tick-runtime.ts`, `apps/core/src/cognition/decision-harness.ts`, `apps/core/src/runtime/specialist-policy.ts`, `apps/core/testing/tick-runtime-harness.ts`.
+- **Tests:** `apps/core/test/models/specialist-admission.integration.test.ts`, `apps/core/test/models/specialist-no-remap.contract.test.ts`, `apps/core/test/runtime/tick-specialist-admission.integration.test.ts`.
+- **Coverage map:** section 8 rows list the planned AC-to-test references for this slice.
+- Depends on: `SL-F0027-01`, `SL-F0027-02` and delivered baseline router invariants from `F-0008`; owner `@codex`; unblock condition: the router can propose a specialist while the policy service remains the only authority that admits or refuses execution.
+- **Unblock condition:** runtime tests prove `shadow` specialists have zero live decision authority, `limited-active` traffic/task limits are enforced and no hidden fallback occurs when admission refuses.
+
+### SL-F0027-04: Retirement, concurrency and lineage
+
+- **Result:** retirement decision path that refuses new admissions, preserves lineage/evidence, handles replay/conflict/concurrency and keeps retired specialists queryable but ineligible.
+- **Primary files:** `packages/contracts/src/specialists.ts`, `packages/db/src/specialists.ts`, `apps/core/src/runtime/specialist-policy.ts`, `apps/core/src/runtime/model-router.ts`.
+- **Tests:** `apps/core/test/models/specialist-retirement.integration.test.ts`, `apps/core/test/models/specialist-lineage.contract.test.ts`, `packages/db/test/specialists/specialist-policy-store.integration.test.ts`.
+- **Coverage map:** section 8 rows list the planned AC-to-test references for this slice.
+- Depends on: `SL-F0027-01` through `SL-F0027-03`; owner `@codex`; unblock condition: retirement can be recorded without deleting policy, candidate, registry, release or governor evidence.
+- **Unblock condition:** tests prove retired specialists are ineligible for new admissions, replay is idempotent, conflicting concurrent transition fails closed and lineage remains queryable.
+
+### SL-F0027-05: Owner-boundary hardening, docs and final verification
+
+- **Result:** owner-boundary tests, deployment-stack boundary tests, documentation/config updates when needed, final AC coverage, root quality gates and container smoke proof for runtime-affecting changes.
+- **Primary files:** `apps/core/src/runtime/specialist-policy.ts`, `apps/core/src/runtime/model-router.ts`, `apps/core/src/platform/operator-api.ts` if routes are added, `README.md`, `.env.example`, `docs/ssot/features/F-0027-specialist-organs-rollout-retirement-policy.md`.
+- **Tests:** `apps/core/test/models/specialist-owner-boundary.contract.test.ts`, `apps/core/test/models/specialist-deployment-boundary.contract.test.ts`, `apps/core/test/models/specialist-registry-boundary.contract.test.ts`.
+- **Coverage map:** section 8 rows list the planned AC-to-test references for this slice.
+- Depends on: `SL-F0027-01` through `SL-F0027-04`; owner `@codex`; unblock condition: all source/test/runtime changes are visible and owner-boundary audit tests can assert no shadow registry, second deployment stack or foreign source writes.
+- **Unblock condition:** root `pnpm format`, `pnpm typecheck`, `pnpm lint`, `pnpm test` and applicable `pnpm smoke:cell` pass, or a truthful blocker is recorded before implementation closure.
+
+### Plan-slice commitments
+
+- **PL-F0027-01:** `SL-F0027-01` lands first so policy facts, append-only semantics, idempotency and terminal retirement constraints are explicit before runtime behavior changes.
+- **PL-F0027-02:** `SL-F0027-02` lands before router admission so missing/stale upstream evidence fails closed in one service instead of being distributed across router branches.
+- **PL-F0027-03:** `SL-F0027-03` may not blur selection/admission. The model router may nominate a specialist, but policy service admission is the only live-use gate.
+- **PL-F0027-04:** `SL-F0027-04` records retirement as append-only policy truth and never deletes or rewrites workshop, registry, governor, serving or release evidence.
+- **PL-F0027-05:** `SL-F0027-05` is last because owner-boundary proof, docs and smoke are only truthful after contracts, store, service, admission and retirement behavior exist.
+
+### Planned implementation order
+
+1. Add specialist policy contracts, package export, migration and DB store.
+2. Add the specialist policy service and read-only upstream evidence gates.
+3. Wire policy admission after router selection and prove no-remap behavior.
+4. Add retirement, replay/conflict/concurrency handling and lineage queries.
+5. Add owner-boundary/deployment-boundary hardening, docs, final coverage refs, root quality gates and smoke proof.
 
 ## 7. Task list (implementation units)
 
-- Deferred to `plan-slice`.
+- **T-F0027-01** (`SL-F0027-01`): Add `@yaagi/contracts/specialists` stage, policy, admission and retirement schemas.
+- **T-F0027-02** (`SL-F0027-01`): Add PostgreSQL migration/store for specialist organs, rollout policies, rollout events, admission decisions and retirement decisions.
+- **T-F0027-03** (`SL-F0027-01`): Add request replay/conflict handling and append-only terminal retirement constraints in the store.
+- **T-F0027-04** (`SL-F0027-02`): Add specialist policy service evidence adapters for workshop promotion package, governor approval, serving readiness, release evidence and health.
+- **T-F0027-05** (`SL-F0027-02`): Add structured refusal records for missing, stale, denied, unhealthy or rollback-target-missing evidence.
+- **T-F0027-06** (`SL-F0027-03`): Wire specialist admission after router selection without making selection itself an execution grant.
+- **T-F0027-07** (`SL-F0027-03`): Enforce `shadow` zero-authority and `limited-active` traffic/task limits.
+- **T-F0027-08** (`SL-F0027-03`): Add explicit fallback/refusal behavior and tests proving no silent remap.
+- **T-F0027-09** (`SL-F0027-04`): Add retirement command/decision path that refuses future admission while preserving prior evidence and lineage.
+- **T-F0027-10** (`SL-F0027-04`): Add concurrent rollout/retirement and conflicting replay tests.
+- **T-F0027-11** (`SL-F0027-05`): Add owner-boundary tests proving no direct writes to `F-0015`, `F-0016`, `F-0020`, `F-0026` source surfaces and no shadow registry.
+- **T-F0027-12** (`SL-F0027-05`): Update docs/config/coverage map and run root quality gates plus `pnpm test` and applicable `pnpm smoke:cell` before implementation closure.
 
 ## 8. Test plan & Coverage map
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0027-01 | Deferred to `plan-slice`; rollout owner-boundary tests must map this AC. | planned |
-| AC-F0027-02 | Deferred to `plan-slice`; admission owner-boundary tests must map this AC. | planned |
-| AC-F0027-03 | Deferred to `plan-slice`; retirement owner-boundary tests must map this AC. | planned |
-| AC-F0027-04 | Deferred to `plan-slice`; governor-approval negative tests must map this AC. | planned |
-| AC-F0027-05 | Deferred to `plan-slice`; serving-readiness negative tests must map this AC. | planned |
-| AC-F0027-06 | Deferred to `plan-slice`; release-evidence negative tests must map this AC. | planned |
-| AC-F0027-07 | Deferred to `plan-slice`; shadow-stage tests must map this AC. | planned |
-| AC-F0027-08 | Deferred to `plan-slice`; limited-active boundary tests must map this AC. | planned |
-| AC-F0027-09 | Deferred to `plan-slice`; health-evidence tests must map this AC. | planned |
-| AC-F0027-10 | Deferred to `plan-slice`; rollback-target tests must map this AC. | planned |
-| AC-F0027-11 | Deferred to `plan-slice`; retired-specialist tests must map this AC. | planned |
-| AC-F0027-12 | Deferred to `plan-slice`; silent-remap tests must map this AC. | planned |
-| AC-F0027-13 | Deferred to `plan-slice`; shadow-registry tests must map this AC. | planned |
-| AC-F0027-14 | Deferred to `plan-slice`; `F-0015` boundary tests must map this AC. | planned |
-| AC-F0027-15 | Deferred to `plan-slice`; `F-0016` boundary tests must map this AC. | planned |
-| AC-F0027-16 | Deferred to `plan-slice`; `F-0026` boundary tests must map this AC. | planned |
-| AC-F0027-17 | Deferred to `plan-slice`; upstream-evidence refusal tests must map this AC. | planned |
-| AC-F0027-18 | Deferred to `plan-slice`; deployment-stack boundary tests must map this AC. | planned |
-| AC-F0027-19 | Deferred to `plan-slice`; specialist-registry boundary tests must map this AC. | planned |
+| AC-F0027-01 | `packages/contracts/test/specialists.contract.test.ts`; `packages/db/test/specialists/specialist-policy-store.integration.test.ts`; `apps/core/test/models/specialist-owner-boundary.contract.test.ts` | planned |
+| AC-F0027-02 | `apps/core/test/runtime/specialist-policy-service.contract.test.ts`; `apps/core/test/models/specialist-admission.integration.test.ts` | planned |
+| AC-F0027-03 | `packages/db/test/specialists/specialist-policy-store.integration.test.ts`; `apps/core/test/models/specialist-retirement.integration.test.ts` | planned |
+| AC-F0027-04 | `apps/core/test/models/specialist-upstream-evidence.integration.test.ts`; `apps/core/test/models/specialist-missing-evidence.contract.test.ts` | planned |
+| AC-F0027-05 | `apps/core/test/models/specialist-upstream-evidence.integration.test.ts`; `apps/core/test/runtime/specialist-policy-service.contract.test.ts` | planned |
+| AC-F0027-06 | `apps/core/test/models/specialist-upstream-evidence.integration.test.ts`; `apps/core/test/models/specialist-missing-evidence.contract.test.ts` | planned |
+| AC-F0027-07 | `apps/core/test/models/specialist-admission.integration.test.ts`; `apps/core/test/runtime/tick-specialist-admission.integration.test.ts` | planned |
+| AC-F0027-08 | `apps/core/test/models/specialist-admission.integration.test.ts`; `apps/core/test/runtime/tick-specialist-admission.integration.test.ts` | planned |
+| AC-F0027-09 | `apps/core/test/runtime/specialist-policy-service.contract.test.ts`; `apps/core/test/models/specialist-missing-evidence.contract.test.ts` | planned |
+| AC-F0027-10 | `packages/contracts/test/specialists.contract.test.ts`; `apps/core/test/models/specialist-admission.integration.test.ts`; `apps/core/test/models/specialist-retirement.integration.test.ts` | planned |
+| AC-F0027-11 | `packages/db/test/specialists/specialist-policy-store.integration.test.ts`; `apps/core/test/models/specialist-retirement.integration.test.ts` | planned |
+| AC-F0027-12 | `apps/core/test/models/specialist-no-remap.contract.test.ts`; `apps/core/test/models/specialist-admission.integration.test.ts` | planned |
+| AC-F0027-13 | `apps/core/test/models/specialist-registry-boundary.contract.test.ts`; `apps/core/test/models/specialist-owner-boundary.contract.test.ts` | planned |
+| AC-F0027-14 | `apps/core/test/models/specialist-owner-boundary.contract.test.ts`; `apps/core/test/models/specialist-upstream-evidence.integration.test.ts` | planned |
+| AC-F0027-15 | `apps/core/test/models/specialist-owner-boundary.contract.test.ts`; `apps/core/test/models/specialist-upstream-evidence.integration.test.ts` | planned |
+| AC-F0027-16 | `apps/core/test/models/specialist-owner-boundary.contract.test.ts`; `apps/core/test/models/specialist-upstream-evidence.integration.test.ts` | planned |
+| AC-F0027-17 | `apps/core/test/models/specialist-missing-evidence.contract.test.ts`; `apps/core/test/runtime/specialist-policy-service.contract.test.ts` | planned |
+| AC-F0027-18 | `apps/core/test/models/specialist-deployment-boundary.contract.test.ts`; applicable `pnpm smoke:cell` implementation evidence | planned |
+| AC-F0027-19 | `apps/core/test/models/specialist-registry-boundary.contract.test.ts`; `apps/core/test/models/specialist-owner-boundary.contract.test.ts` | planned |
 
 ## 9. Decision log (ADR blocks)
 
@@ -311,10 +396,29 @@ These surfaces are specialist policy truth only. Workshop lifecycle truth, riche
 - Decision: A router-selected specialist is only a candidate for execution. `F-0027` admission must verify stage, evidence, health, rollout limit and fallback before live use.
 - Consequence: Missing, stale, retired or policy-forbidden specialist paths fail closed with structured refusal or declared fallback; silent remap remains forbidden.
 
+### 2026-04-28: Plan-slice Plan mode assessment
+
+- Decision: Plan mode was not required before this `plan-slice`.
+- Rationale: `spec-compact` already fixed the owner boundary, dependencies and non-goals. The remaining decision is implementation sequencing over one accepted `specialist-policy` surface, with no open operator choice, no repo-level ADR trigger and no competing deployment or serving topology.
+- ADR impact: feature-local planning decision; normal dossier verification, backlog actualization and independent review remain required.
+
+### 2026-04-28: Specialist policy owner module
+
+- Decision: first implementation plans one `specialist-policy` owner module across contracts, DB store and core runtime service.
+- Rationale: one owner module keeps rollout/admission/retirement facts testable and prevents specialist policy from splitting between router branches, workshop lifecycle rows and release evidence.
+- ADR impact: feature-local decision; repo-level ADR remains required only if implementation changes shared router invariants outside the feature-local admission gate or changes cross-feature write ownership.
+
+### 2026-04-28: Protected side-effect preset
+
+- Decision: protected side-effect preset applies to implementation planning for live specialist admission and retirement.
+- Rationale: even without executing deploy/rollback, `F-0027` gates live model use, consumes release/rollback evidence and accepts caller-controlled policy/evidence refs.
+- ADR impact: feature-local implementation discipline; no repo-level ADR unless implementation introduces a new executor, serving stack or release/deployment authority.
+
 ## 10. Progress & links
 
 - Backlog item key: CF-019
 - Status progression: `proposed -> shaped -> planned -> in_progress -> done`
+- Current stage: `plan-slice closure`
 - Issue:
 - PRs:
 
@@ -322,3 +426,4 @@ These surfaces are specialist policy truth only. Workshop lifecycle truth, riche
 
 - 2026-04-28: Initial dossier created from backlog item `CF-019` at backlog delivery state `defined`.
 - 2026-04-28: `spec-compact` shaped specialist rollout/retirement as a policy overlay over workshop, governor, real-serving and release evidence; backlog actualization to `specified` is required before truthful step closure.
+- 2026-04-28: [plan-slice] [dependency realignment] Planned implementation slices across specialist contracts/store, upstream evidence gates, router admission integration, retirement/lineage and owner-boundary/smoke closure, with backlog lifecycle target `planned`.
