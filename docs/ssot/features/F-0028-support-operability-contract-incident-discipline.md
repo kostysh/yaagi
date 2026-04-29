@@ -1,7 +1,7 @@
 ---
 id: F-0028
 title: Support / operability contract и incident discipline
-status: shaped
+status: planned
 coverage_gate: deferred
 backlog_item_key: CF-026
 owners: ["@codex"]
@@ -289,35 +289,83 @@ type SupportEvidenceBundle = {
 - **SD-F0028-03:** Recovery actions are never implicit support authority. They are either owner-routed through an existing seam or human-only with explicit residual-risk evidence.
 - **SD-F0028-04:** No repo-level ADR is required at spec time; future implementation must escalate to change-proposal/ADR if it creates a support control plane or changes shared runtime/deployment ownership.
 
+### Plan-slice decisions
+
+- **PL-F0028-01:** Plan mode was assessed before `plan-slice` and is not required. The spec already fixes the read-mostly-first support seam, canonical upstream owners, support evidence as refs, owner-routed/human-only actions and the no-control-plane boundary.
+- **PL-F0028-02:** The first implementation target is one complete support/operability seam, not a docs-only placeholder: taxonomy, runbook contract, first runbooks, support evidence bundle contract/storage or artifact persistence, canonical surface consumption, action boundary handling and negative evidence gates.
+- **PL-F0028-03:** Implementation order is contract first, evidence substrate second, canonical surface consumption third, action boundary fourth, and operational docs/closure evidence last. Runtime/API activation is allowed only after the contract and negative evidence gates exist.
+- **PL-F0028-04:** A repo-level ADR is still not required for the planned path. Change-proposal or ADR becomes required before implementation continues if the work introduces a support control plane, shared executor authority, deployment ownership change or cross-feature write authority.
+- **PL-F0028-05:** Support APIs, if implemented, remain inside the existing `F-0013` Hono operator boundary and behind `F-0024` caller admission. `F-0028` must not introduce a second gateway, scheduler or privileged support runtime.
+- **PL-F0028-06:** Policy/admission risk is applicable for implementation planning. Declared families are `admission`, `replay`, `evidence` and `runtime-gating`; `release-policy` is excluded because `F-0028` consumes and routes release evidence/actions through `F-0026` but does not own release policy.
+
+### Execution target
+
+Implementation must deliver a complete `F-0028` support/operability seam:
+
+- incident taxonomy, severity vocabulary and runbook schema;
+- runbooks for all first-phase incident classes;
+- support evidence bundle contract plus support-owned storage or artifact persistence;
+- redaction, blocked/degraded closure and critical-incident closure semantics;
+- read-only consumption of canonical `F-0013`, `F-0023`, `F-0024` and `F-0026` surfaces;
+- owner-routed/human-only recovery action classification and fail-closed action routing;
+- downstream usage audit and negative evidence proving no raw foreign reads/writes or hidden operator shortcuts.
+
+Completion is recognized only when acceptance criteria are covered by tests, runbooks, usage-audit evidence and dossier closure artifacts. If implementation changes runtime/startup/deployment behavior, public operator routes or protected side-effect paths, closure must include the root gates and `pnpm smoke:cell`.
+
+### Implementation boundaries
+
+- Do not create a second gateway, support control plane, scheduler, sidecar or shell-wrapper runtime.
+- Do not make direct database reads, raw shell access, hidden credentials or unauthenticated operator calls part of normal support operation.
+- Do not mutate release, reporting, auth, governor, lifecycle, model-serving, runtime or perimeter source truth.
+- Do not execute rollback/release actions outside `F-0026`.
+- Do not mark owner-routed actions successful unless the target owner seam admits the action and returns durable evidence.
+
+### Dependency visibility
+
+- **Depends on `F-0013`:** operator route namespace and bounded route contract. Unblock condition: support routes, if implemented, are added inside the existing Hono operator API boundary instead of a new gateway.
+- **Depends on `F-0023`:** report families and report-run evidence. Unblock condition: support closure reads report refs/read models only and records stale/unavailable report evidence as degraded or blocked.
+- **Depends on `F-0024`:** caller admission, RBAC and trusted ingress evidence. Unblock condition: every support write or protected action path proves caller admission before mutation.
+- **Depends on `F-0026`:** release/deploy/rollback facts and rollback orchestration. Unblock condition: support runbooks consume release evidence read-only and route release/rollback actions through the release owner.
+
 ### SL-F0028-01: Support taxonomy and runbook contract
 
-- **Result:** incident class/severity taxonomy, runbook schema and owner/consumer matrix.
+- **Result:** incident class/severity taxonomy, runbook schema, owner/consumer matrix and first runbook skeletons.
+- Depends on: `F-0013`, `F-0023`, `F-0024`, `F-0026` as named upstream owners in the runbook owner/consumer matrix; unblocks when every runbook names which owner seam supplies detection, triage, action or evidence.
+- **Primary files:** `packages/contracts/src/support.ts`, `packages/contracts/src/index.ts`, `docs/support/runbooks/_template.md`, `docs/support/runbooks/*.md`.
 - **Covers:** AC-F0028-01, AC-F0028-03, AC-F0028-04, AC-F0028-10.
-- **Verification:** contract/lint tests for taxonomy and runbook required sections.
+- **Verification:** `packages/contracts/test/support.contract.test.ts`, runbook required-section lint/contract coverage for every first-phase incident class.
 
 ### SL-F0028-02: Support evidence bundle substrate
 
-- **Result:** support evidence bundle contract and optional support-owned storage/artifact format with source refs, action refs, closure status and secret redaction.
-- **Covers:** AC-F0028-08, AC-F0028-09, AC-F0028-11, AC-F0028-12.
-- **Verification:** contract/store tests for evidence shape, redaction and blocked/critical closure semantics.
+- **Result:** support evidence bundle contract, support-owned persistence rows or artifact format, source/action refs, closure states and secret redaction.
+- Depends on: `F-0023`, `F-0024`, `F-0026` ref vocabularies; unblocks when support persistence can store refs/freshness without copying foreign source truth.
+- **Primary files:** `packages/db/src/support.ts`, `infra/migrations/028_support_incidents.sql`, `apps/core/src/support/support-evidence.ts`.
+- **Covers:** AC-F0028-02, AC-F0028-08, AC-F0028-09, AC-F0028-11, AC-F0028-12, AC-F0028-13.
+- **Verification:** `packages/db/test/support-store.integration.test.ts`, `apps/core/test/support/support-evidence.contract.test.ts`, redaction and blocked/critical closure negative tests.
 
 ### SL-F0028-03: Canonical surface consumption
 
 - **Result:** support procedures and usage audit over `F-0013`, `F-0023`, `F-0024` and `F-0026` without raw foreign reads.
+- Depends on: delivered read contracts from `F-0013`, `F-0023`, `F-0024` and `F-0026`; unblocks when integration tests prove support consumes canonical refs read-only.
+- **Primary files:** `apps/core/src/support/support-evidence.ts`, `apps/core/src/support/support-canonical-refs.ts`, support docs and usage-audit evidence.
 - **Covers:** AC-F0028-05, AC-F0028-06, AC-F0028-07, AC-F0028-14.
-- **Verification:** integration/boundary tests proving report/release/auth/operator refs are consumed read-only.
+- **Verification:** `apps/core/test/support/support-canonical-refs.integration.test.ts`, `apps/core/test/support/support-usage-audit.contract.test.ts`, read-only report/release/auth/operator ref assertions.
 
 ### SL-F0028-04: Escalation and recovery boundaries
 
 - **Result:** owner-routed/human-only action handling, critical incident closure rules and forbidden-shortcut coverage.
-- **Covers:** AC-F0028-10, AC-F0028-11, AC-F0028-12, AC-F0028-13.
-- **Verification:** negative tests for direct writes, unauthorized actions, unavailable owner seams and critical unresolved closure.
+- Depends on: `F-0013` and `F-0024` for admitted operator action requests, `F-0026` for release/rollback requests, and `F-0016` where governor actions are available; unblocks when unavailable or refusing owner seams keep support actions non-executable.
+- **Primary files:** `apps/core/src/platform/operator-api.ts`, `packages/contracts/src/operator-api.ts`, `apps/core/src/support/support-actions.ts`, `docs/support/runbooks/*.md`.
+- **Covers:** AC-F0028-05, AC-F0028-10, AC-F0028-11, AC-F0028-12, AC-F0028-13.
+- **Verification:** `apps/core/test/platform/operator-support.integration.test.ts`, `apps/core/test/support/support-action-boundary.contract.test.ts`, negative tests for unauthorized actions, direct writes, unavailable owner seams and unresolved critical closure.
 
 ### SL-F0028-05: Operational docs, coverage and closure evidence
 
 - **Result:** final runbook set, support usage audit, coverage map updates, docs/config notes and required runtime/smoke gates if support APIs or protected side effects are introduced.
+- Depends on: completion evidence from `SL-F0028-01` through `SL-F0028-04`; unblocks when all AC coverage, policy/admission negative rows and triggered root/smoke gates are present.
+- **Primary files:** `README.md`, `docs/architecture/system.md`, `docs/support/runbooks/*.md`, `docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md`.
 - **Covers:** AC-F0028-01 through AC-F0028-15.
-- **Verification:** dossier verification, lint/coverage/debt audits, root gates and `pnpm smoke:cell` when triggered.
+- **Verification:** dossier verification, debt/coverage audits, `pnpm format`, `pnpm typecheck`, `pnpm lint`, focused tests, and `pnpm smoke:cell` when runtime/startup/deployment or protected side-effect behavior changes.
 
 ## 7. Task list (implementation units)
 
@@ -335,21 +383,21 @@ type SupportEvidenceBundle = {
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0028-01 | `docs/support/runbooks/**` or support contract tests | planned |
-| AC-F0028-02 | support boundary tests proving no second gateway/control plane | planned |
-| AC-F0028-03 | runbook taxonomy contract/lint test | planned |
-| AC-F0028-04 | runbook required-section lint test | planned |
-| AC-F0028-05 | operator provenance / caller-admission support integration test | planned |
-| AC-F0028-06 | report-run read-only support closure integration test | planned |
-| AC-F0028-07 | release/rollback evidence read-only support closure integration test | planned |
-| AC-F0028-08 | support evidence bundle contract/store test | planned |
-| AC-F0028-09 | support evidence redaction test | planned |
-| AC-F0028-10 | owner-routed vs human-only action classification test | planned |
-| AC-F0028-11 | critical incident closure negative test | planned |
-| AC-F0028-12 | stale/missing evidence degraded closure test | planned |
-| AC-F0028-13 | foreign source write boundary test | planned |
-| AC-F0028-14 | downstream usage audit over `F-0013`, `F-0023`, `F-0024`, `F-0026` | planned |
-| AC-F0028-15 | root quality gates and `pnpm smoke:cell` when runtime/deployment behavior changes | planned |
+| AC-F0028-01 | `packages/contracts/test/support.contract.test.ts`; `docs/support/runbooks/**` | planned |
+| AC-F0028-02 | `apps/core/test/support/support-action-boundary.contract.test.ts` | planned |
+| AC-F0028-03 | `packages/contracts/test/support.contract.test.ts` | planned |
+| AC-F0028-04 | runbook required-section lint/contract test | planned |
+| AC-F0028-05 | `apps/core/test/platform/operator-support.integration.test.ts` | planned |
+| AC-F0028-06 | `apps/core/test/support/support-canonical-refs.integration.test.ts` | planned |
+| AC-F0028-07 | `apps/core/test/support/support-canonical-refs.integration.test.ts` | planned |
+| AC-F0028-08 | `apps/core/test/support/support-evidence.contract.test.ts`; `packages/db/test/support-store.integration.test.ts` | planned |
+| AC-F0028-09 | `apps/core/test/support/support-evidence.contract.test.ts` redaction cases | planned |
+| AC-F0028-10 | `apps/core/test/support/support-action-boundary.contract.test.ts` | planned |
+| AC-F0028-11 | `apps/core/test/support/support-evidence.contract.test.ts` critical closure negative cases | planned |
+| AC-F0028-12 | `apps/core/test/support/support-canonical-refs.integration.test.ts` stale/missing evidence cases | planned |
+| AC-F0028-13 | `apps/core/test/support/support-action-boundary.contract.test.ts`; `packages/db/test/support-store.integration.test.ts` | planned |
+| AC-F0028-14 | `apps/core/test/support/support-usage-audit.contract.test.ts` | planned |
+| AC-F0028-15 | `pnpm format`; `pnpm typecheck`; `pnpm lint`; `pnpm smoke:cell` when triggered | planned |
 
 ## 9. Decision log (ADR blocks)
 
@@ -373,6 +421,21 @@ type SupportEvidenceBundle = {
 - Alternatives: Let support tooling run direct shell/SQL recovery commands as a convenience.
 - Consequences: implementation must prove forbidden shortcuts are not the normal operational path.
 
+### 2026-04-29: Plan-slice policy/admission classification
+
+- Decision: policy/admission risk profile is `applicable` for implementation planning.
+- Declared risk families: `admission`, `replay`, `evidence`, `runtime-gating`.
+- Rationale: planned support evidence writes and optional support operator routes require caller admission; incident/evidence operations must be idempotent under retry; incident closure depends on durable evidence/freshness; owner-routed recovery actions must fail closed when owner seams deny or are unavailable.
+- Excluded family: `release-policy`, because `F-0028` does not control rollout, deployment gates, rollback policy or operator release approvals. Release and rollback actions stay routed through `F-0026`.
+
+| AC | Risk | Negative test | Production path | Evidence |
+|---|---|---|---|---|
+| AC-F0028-05 | admission | Unauthenticated or unauthorized support evidence write is denied before handler mutation. | `F-0013` support route guarded by `F-0024` caller admission. | `apps/core/test/platform/operator-support.integration.test.ts` |
+| AC-F0028-08 | replay | Duplicate incident open or evidence attach with the same request/ref is idempotent and conflicting replay is rejected. | Support incident/evidence write path. | `apps/core/test/support/support-evidence.contract.test.ts` |
+| AC-F0028-11 | evidence | Critical incident close without terminal owner evidence or human-only residual-risk disposition remains blocked. | Support incident close path. | `apps/core/test/support/support-evidence.contract.test.ts` |
+| AC-F0028-10 | runtime-gating | Owner-routed recovery action is unavailable when the target owner seam refuses or lacks capability. | Support action routing to `F-0013`, `F-0026` and `F-0016` owner seams. | `apps/core/test/support/support-action-boundary.contract.test.ts` |
+| AC-F0028-12 | evidence | Stale or missing report/release/auth evidence blocks or degrades support closure. | Support closure evidence validation. | `apps/core/test/support/support-canonical-refs.integration.test.ts` |
+
 ## 10. Progress & links
 
 - Backlog item key: CF-026
@@ -383,4 +446,5 @@ type SupportEvidenceBundle = {
 ## 11. Change log
 
 - 2026-04-29: Initial dossier created from backlog item `CF-026` at backlog delivery state `defined`.
-- 2026-04-29: [spec-compact] Shaped `CF-026` into a support/operability contract with first incident taxonomy, support evidence bundle semantics, runbook boundaries, owner-routed/human-only recovery action classification and explicit read-only consumption of operator/reporting/auth/release surfaces.
+- 2026-04-29: [spec-compact] [scope realignment] Shaped `CF-026` into a support/operability contract with first incident taxonomy, support evidence bundle semantics, runbook boundaries, owner-routed/human-only recovery action classification and explicit read-only consumption of operator/reporting/auth/release surfaces.
+- 2026-04-29: [plan-slice] [dependency realignment] Planned implementation order, execution target, slice ownership, dependency visibility, verification map and applicable policy/admission negative matrix for `admission`, `replay`, `evidence` and `runtime-gating`.

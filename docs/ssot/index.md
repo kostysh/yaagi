@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-29T10:36:33.740Z_
+_Last sync: 2026-04-29T10:46:43.680Z_
 
 ## Features
 
@@ -37,7 +37,7 @@ _Last sync: 2026-04-29T10:36:33.740Z_
 | F-0025 | Policy profiles, consultant admission и phase-6 governance closure | done | strict | governance | F-0005, F-0008, F-0016, F-0018, F-0023, F-0024 | governance,policy,runtime,perception,models | `features/F-0025-policy-profiles-consultant-admission-phase-6-governance-closure.md` |
 | F-0026 | Deploy/release automation и rollback orchestration | done | strict | platform | F-0002, F-0007, F-0020, F-0023, F-0016, F-0019 | platform,deployment,release,rollback,operations | `features/F-0026-deploy-release-automation-rollback-orchestration.md` |
 | F-0027 | Специализированные органы и политика вывода из эксплуатации | done | strict | models | F-0014, F-0015, F-0016, F-0020, F-0026 | models,runtime,workshop,governance,release | `features/F-0027-specialist-organs-rollout-retirement-policy.md` |
-| F-0028 | Support / operability contract и incident discipline | shaped | deferred | operations | F-0013, F-0023, F-0024, F-0026 | operations,support,incident-response,observability,release | `features/F-0028-support-operability-contract-incident-discipline.md` |
+| F-0028 | Support / operability contract и incident discipline | planned | deferred | operations | F-0013, F-0023, F-0024, F-0026 | operations,support,incident-response,observability,release | `features/F-0028-support-operability-contract-incident-discipline.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -272,5 +272,5 @@ graph TD
 - **WARN** F-0024 — Potential compound ACs detected: AC-F0024-01, AC-F0024-02, AC-F0024-03, AC-F0024-04, AC-F0024-05, AC-F0024-06, AC-F0024-07, AC-F0024-08, AC-F0024-09, AC-F0024-10, AC-F0024-11, AC-F0024-12, AC-F0024-13, AC-F0024-14, AC-F0024-15, AC-F0024-16, AC-F0024-17, AC-F0024-18, AC-F0024-01, AC-F0024-04, AC-F0024-03, AC-F0024-09, AC-F0024-03, AC-F0024-04, AC-F0024-08, AC-F0024-09, AC-F0024-11, AC-F0024-15, AC-F0024-16. Prefer one obligation per AC.
 - **WARN** F-0025 — Potential compound ACs detected: AC-F0025-01, AC-F0025-02, AC-F0025-03, AC-F0025-05, AC-F0025-07, AC-F0025-08, AC-F0025-09, AC-F0025-10, AC-F0025-11, AC-F0025-12, AC-F0025-13, AC-F0025-14, AC-F0025-01, AC-F0025-01, AC-F0025-02, AC-F0025-03, AC-F0025-09, AC-F0025-04, AC-F0025-11, AC-F0025-09, AC-F0025-12. Prefer one obligation per AC.
 - **WARN** F-0026 — Potential compound ACs detected: AC-F0026-07, AC-F0026-01, AC-F0026-01, AC-F0026-01, AC-F0026-04, AC-F0026-07, AC-F0026-05, AC-F0026-09, AC-F0026-09, AC-F0026-07, AC-F0026-08, AC-F0026-12, AC-F0026-01. Prefer one obligation per AC.
-- **WARN** F-0028 — Potential compound ACs detected: AC-F0028-01, AC-F0028-02, AC-F0028-03, AC-F0028-04, AC-F0028-05, AC-F0028-06, AC-F0028-07, AC-F0028-08, AC-F0028-09, AC-F0028-10, AC-F0028-11, AC-F0028-12, AC-F0028-13, AC-F0028-14, AC-F0028-15, AC-F0028-01, AC-F0028-08, AC-F0028-02, AC-F0028-06, AC-F0028-05, AC-F0028-10, AC-F0028-11, AC-F0028-01, AC-F0028-01, AC-F0028-15. Prefer one obligation per AC.
+- **WARN** F-0028 — Potential compound ACs detected: AC-F0028-01, AC-F0028-02, AC-F0028-03, AC-F0028-04, AC-F0028-05, AC-F0028-06, AC-F0028-07, AC-F0028-08, AC-F0028-09, AC-F0028-10, AC-F0028-11, AC-F0028-12, AC-F0028-13, AC-F0028-14, AC-F0028-15, AC-F0028-01, AC-F0028-08, AC-F0028-02, AC-F0028-06, AC-F0028-05, AC-F0028-10, AC-F0028-11, AC-F0028-01, AC-F0028-05, AC-F0028-08, AC-F0028-11, AC-F0028-10, AC-F0028-12. Prefer one obligation per AC.
 <!-- END GENERATED RED_FLAGS -->
