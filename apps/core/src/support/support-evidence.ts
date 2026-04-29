@@ -544,7 +544,10 @@ export const createSupportEvidenceService = (input: {
             })
           : null;
         const requestedClosureStatus =
-          parsed.closureStatus === undefined ? existing.closureStatus : parsed.closureStatus;
+          parsed.closureStatus === undefined ||
+          isSupportTerminalClosureStatus(existing.closureStatus)
+            ? existing.closureStatus
+            : parsed.closureStatus;
         const closureStatus = hasActionRouting ? existing.closureStatus : requestedClosureStatus;
         const residualRisk =
           parsed.residualRisk === undefined || hasActionRouting

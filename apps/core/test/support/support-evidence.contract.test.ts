@@ -543,6 +543,74 @@ void test('AC-F0028-02 marks unavailable canonical readers as closure blockers b
   assert.equal(readerCalls, 1);
 });
 
+void test('AC-F0028-12 evaluates canonical evidence for explicit reopen updates on terminal incidents', async () => {
+  const { store, incidents } = createMemoryStore();
+  const validatedRefs: string[] = [];
+  const service = createSupportEvidenceService({
+    store,
+    now: () => now,
+    readers: {
+      validateOperatorAuthEvidence: (ref) => {
+        validatedRefs.push(ref);
+        if (ref === 'operator-auth-evidence:late-reopen') {
+          return Promise.reject(new Error('auth reader unavailable'));
+        }
+        return Promise.resolve(true);
+      },
+    },
+  });
+
+  const opened = await service.openIncident({
+    requestId: 'support-request-terminal-reopen-reader-open',
+    incidentClass: SUPPORT_INCIDENT_CLASS.OPERATOR_ACCESS,
+    severity: SUPPORT_SEVERITY.WARNING,
+    sourceRefs: ['operator-route:/state'],
+  });
+  assert.equal(opened.accepted, true);
+  if (!opened.accepted) return;
+
+  const closed = await service.updateIncident({
+    supportIncidentId: opened.incident.supportIncidentId,
+    requestId: 'support-request-terminal-reopen-reader-close',
+    closureStatus: SUPPORT_CLOSURE_STATUS.RESOLVED,
+    addOperatorEvidenceRefs: ['operator-auth-evidence:fresh-terminal'],
+    addEscalationRefs: ['escalation:auth-owner'],
+    addClosureCriteria: ['operator auth evidence is verified'],
+    addActionRefs: [
+      {
+        mode: SUPPORT_ACTION_MODE.HUMAN_ONLY,
+        owner: 'human',
+        ref: 'support-action:terminal-human-disposition',
+        requestedAction: 'document operator auth closure evidence',
+      },
+    ],
+  });
+  assert.equal(closed.accepted, true);
+  if (!closed.accepted) return;
+  assert.equal(closed.incident.closureStatus, SUPPORT_CLOSURE_STATUS.RESOLVED);
+
+  const explicitReopen = await service.updateIncident({
+    supportIncidentId: opened.incident.supportIncidentId,
+    requestId: 'support-request-terminal-reopen-reader-blocked',
+    closureStatus: SUPPORT_CLOSURE_STATUS.OPEN,
+    addOperatorEvidenceRefs: ['operator-auth-evidence:late-reopen'],
+    addEscalationRefs: ['escalation:auth-owner-reopen'],
+    addClosureCriteria: ['late operator auth evidence must be fresh'],
+  });
+
+  assert.equal(explicitReopen.accepted, false);
+  if (explicitReopen.accepted) return;
+  assert.equal(explicitReopen.reason, 'closure_blocked');
+  assert.deepEqual(explicitReopen.closureReasons, [
+    'canonical_evidence_unavailable:operator-auth-evidence:late-reopen',
+  ]);
+  assert.equal(validatedRefs.includes('operator-auth-evidence:late-reopen'), true);
+  assert.equal(
+    incidents[opened.incident.supportIncidentId]?.closureStatus,
+    SUPPORT_CLOSURE_STATUS.RESOLVED,
+  );
+});
+
 void test('AC-F0028-11 blocks critical terminal closure until owner evidence or human disposition exists', async () => {
   const { store } = createMemoryStore();
   const service = createSupportEvidenceService({

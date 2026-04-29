@@ -1,6 +1,8 @@
 import type { Client, QueryResultRow } from 'pg';
 import {
+  SUPPORT_CANONICAL_EVIDENCE_FRESHNESS,
   SUPPORT_OWNED_WRITE_SURFACE,
+  SUPPORT_OWNER_REF,
   evaluateSupportClosureReadiness,
   isSupportTerminalClosureStatus,
   supportEvidenceBundleSchema,
@@ -288,6 +290,42 @@ const uniqueNotes = (
   Array.from(new Map(values.map((note) => [note.noteId, note])).values()).sort((left, right) =>
     left.noteId.localeCompare(right.noteId),
   );
+
+const canonicalEvidenceKey = (input: { owner: string; ref: string }): string =>
+  `${input.owner}\u0000${input.ref}`;
+
+const canonicalEvidenceRefsForBundle = (
+  bundle: Pick<SupportEvidenceBundle, 'reportRunRefs' | 'releaseRefs' | 'operatorEvidenceRefs'>,
+): Array<Pick<SupportCanonicalEvidenceState, 'owner' | 'ref'>> => [
+  ...bundle.reportRunRefs.map((ref) => ({ owner: SUPPORT_OWNER_REF.REPORTING, ref })),
+  ...bundle.releaseRefs.map((ref) => ({ owner: SUPPORT_OWNER_REF.RELEASE_AUTOMATION, ref })),
+  ...bundle.operatorEvidenceRefs.map((ref) => ({ owner: SUPPORT_OWNER_REF.OPERATOR_AUTH, ref })),
+];
+
+const canonicalEvidenceStatesForPreservedTerminalUpdate = (input: {
+  current: SupportIncidentRow;
+  merged: SupportEvidenceBundle;
+  canonicalEvidenceStates: readonly SupportCanonicalEvidenceState[] | undefined;
+  observedAt: string;
+}): readonly SupportCanonicalEvidenceState[] | undefined => {
+  const states = [...(input.canonicalEvidenceStates ?? [])];
+  const currentRefs = new Set(
+    canonicalEvidenceRefsForBundle(input.current).map(canonicalEvidenceKey),
+  );
+  const stateRefs = new Set(states.map(canonicalEvidenceKey));
+  const missingStates = canonicalEvidenceRefsForBundle(input.merged)
+    .filter((ref) => !currentRefs.has(canonicalEvidenceKey(ref)))
+    .filter((ref) => !stateRefs.has(canonicalEvidenceKey(ref)))
+    .map(
+      (ref): SupportCanonicalEvidenceState => ({
+        ...ref,
+        freshness: SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING,
+        observedAt: input.observedAt,
+      }),
+    );
+
+  return states.length > 0 || missingStates.length > 0 ? [...states, ...missingStates] : undefined;
+};
 
 const mergeIncidentBundle = (
   current: SupportIncidentRow,
@@ -869,9 +907,24 @@ export const createSupportStore = (db: SupportDbExecutor): SupportStore => {
         }
 
         const mergedBundle = mergeIncidentBundle(existing, bundle, scalarFieldUpdates);
+        const terminalClosureWasPreservedFromReopen =
+          scalarFieldUpdates?.closureStatus === true &&
+          isSupportTerminalClosureStatus(existing.closureStatus) &&
+          !isSupportTerminalClosureStatus(bundle.closureStatus) &&
+          mergedBundle.closureStatus === existing.closureStatus;
+        const readinessCanonicalEvidenceStates = terminalClosureWasPreservedFromReopen
+          ? canonicalEvidenceStatesForPreservedTerminalUpdate({
+              current: existing,
+              merged: mergedBundle,
+              canonicalEvidenceStates,
+              observedAt: bundle.updatedAt,
+            })
+          : canonicalEvidenceStates;
         const readiness = evaluateSupportClosureReadiness({
           bundle: mergedBundle,
-          ...(canonicalEvidenceStates ? { canonicalEvidenceStates } : {}),
+          ...(readinessCanonicalEvidenceStates
+            ? { canonicalEvidenceStates: readinessCanonicalEvidenceStates }
+            : {}),
         });
         if (readiness.status === 'blocked') {
           await completeUpdateRequest({
