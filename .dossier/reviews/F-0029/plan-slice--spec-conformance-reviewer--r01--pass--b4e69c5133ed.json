@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T17:27:11.684Z",
+  "audit_class": "spec-conformance-reviewer",
+  "artifact_role": "immutable_attempt",
+  "review_mode": "external",
+  "reviewer": "codex-external-reviewer",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": null,
+  "reviewer_thread_id": "019dda46-8dbb-7641-b19c-65dbf07e4d11",
+  "review_attempt_id": "plan-slice--spec-conformance-reviewer--r01",
+  "review_round_id": "r01",
+  "review_round_number": 1,
+  "latest_copy_path": ".dossier/reviews/F-0029/plan-slice--spec-conformance-reviewer--latest.json",
+  "step": "plan-slice",
+  "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+  "feature_id": "F-0029",
+  "event_commit": "b4e69c5133ed1126b84eb4f784ae00d2e9b9e278",
+  "implementation_scope": null,
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": []
+  },
+  "notes": "External spec-conformance review PASS for F-0029 plan-slice after material commit b4e69c5133ed."
+}
