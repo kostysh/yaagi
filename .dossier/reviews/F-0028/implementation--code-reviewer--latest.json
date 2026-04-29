@@ -1,21 +1,21 @@
 {
   "version": 1,
-  "created_at": "2026-04-29T12:52:18.163Z",
+  "created_at": "2026-04-29T13:03:50.462Z",
   "audit_class": "code-reviewer",
   "artifact_role": "latest_copy",
   "review_mode": "external",
-  "reviewer": "r04-code-reviewer",
+  "reviewer": "r05-code-reviewer",
   "reviewer_skill": "code-reviewer",
   "reviewer_agent_id": null,
-  "reviewer_thread_id": "019dd947-f90e-7233-8bee-7ea3edf1801e",
-  "review_attempt_id": "implementation--code-reviewer--r04",
-  "review_round_id": "r04",
-  "review_round_number": 4,
+  "reviewer_thread_id": "019dd954-00f1-7631-94e3-9a26d51adb78",
+  "review_attempt_id": "implementation--code-reviewer--r05",
+  "review_round_id": "r05",
+  "review_round_number": 5,
   "latest_copy_path": ".dossier/reviews/F-0028/implementation--code-reviewer--latest.json",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
   "feature_id": "F-0028",
-  "event_commit": "e8c7c2d9075516fb0113a0b6410a7ed1ab2bf7b4",
+  "event_commit": "7b1acee828512fcc25d66cb2d77df87adaf316a1",
   "implementation_scope": "code-bearing",
   "security_trigger_reason": null,
   "invalidated": false,
@@ -24,13 +24,13 @@
   "verdict": "FAIL",
   "findings": {
     "must_fix": [
-      "apps/core/src/platform/operator-api.ts:763 and apps/core/src/platform/operator-api.ts:806 must map service-thrown post-claim support failures to the same downstream failure contract as request_failed, or the service must return an accepted:false request_failed result instead of throwing after rejectIncidentUpdate. Add route-level coverage proving first-attempt owner seam/canonical reader failures return 503, not 400, for POST/PATCH support incident paths."
+      "Make POST /support/incidents durable replay semantics cover post-open action-routing failures: either persist the original request as failed when the post-claim action routing phase throws, or have deduplicated open-incident replay inspect the associated action-routing claim and return request_failed/503 until a bounded recovery path applies it. Add a regression that first POST with actionRefs and a throwing owner seam returns 503, and replay of the same POST also maps the durable request_failed state to 503 rather than 202."
     ],
     "should_fix": [],
     "evidence": [
-      "Reviewed changed code files: apps/core/src/support/support-evidence.ts, apps/core/src/platform/operator-api.ts, apps/core/src/runtime/runtime-lifecycle.ts, packages/db/src/support.ts, packages/db/src/operator-auth.ts, packages/db/src/index.ts, and changed support/operator-auth tests. Ran node --experimental-strip-types --test apps/core/test/support/support-evidence.contract.test.ts apps/core/test/support/support-usage-audit.contract.test.ts apps/core/test/platform/operator-support.integration.test.ts packages/db/test/operator-auth-store.integration.test.ts packages/db/test/support-store.integration.test.ts: pass. Additional route probe with injected updateSupportIncident rejection returned HTTP 400 body {accepted:false,error:\"support owner down\"}, confirming operator-api.ts catch bypasses supportFailureStatus(request_failed)."
+      "apps/core/src/support/support-evidence.ts:414 returns any deduplicated openIncident result before action-routing state is considered; apps/core/src/support/support-evidence.ts:424 creates the internal action-routing claim; apps/core/src/support/support-evidence.ts:456 rejects that internal claim with post_claim_action_routing_failed and rethrows; packages/db/src/support.ts:686 replays the original request_id as accepted/deduplicated; apps/core/src/platform/operator-api.ts:771 maps accepted POST results to 202 and only request_failed results to 503."
     ]
   },
-  "notes": "Independent r04 code review of e8c7c2d90755 found one blocking API status mapping defect. The replay/idempotency store path now records post-claim failures as rejected request_failed and DB/service tests cover owner seam and canonical reader replay behavior, and runtime auth evidence wiring now goes through createOperatorAuthStore().hasAllowedAuthEvidence(). However, the support HTTP POST/PATCH routes still catch thrown post-claim owner/canonical failures and return 400 before callers can observe the new request_failed status mapping; only a later replay maps request_failed to 503. This misclassifies downstream/runtime failures as client validation errors on the first attempt and makes the new API mapping incomplete.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--code-reviewer--r04--fail--e8c7c2d90755.json"
+  "notes": "Blocking: POST /support/incidents with actionRefs still has an inconsistent post-claim failure replay path. The service persists the incident under the caller requestId, then creates an internal requestId:action-routing claim for owner action routing. If an owner seam throws after that internal claim is inserted, the code rejects only the internal claim and rethrows, so the first HTTP attempt returns 503. A retry of the original POST then hits the deduplicated open-incident row and returns accepted/202 without checking the rejected action-routing claim, leaving the action in requested state and hiding the prior request_failed outcome. Reviewed final target 7b1acee82851 source paths: operator support Hono routes, support evidence service, support DB store, support contracts, runtime wiring, and support integration/contract tests.",
+  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--code-reviewer--r05--fail--7b1acee82851.json"
 }

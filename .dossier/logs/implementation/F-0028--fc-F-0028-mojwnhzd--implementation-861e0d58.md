@@ -11,7 +11,7 @@ phase_scope: implementation для F-0028 support/operability contract и incide
 stage_state: ready_for_close
 start_ts: 2026-04-29T10:55:00.903Z
 entered_ts: 2026-04-29T10:55:00.903Z
-ready_for_close_ts: 2026-04-29T12:59:36.347Z
+ready_for_close_ts: 2026-04-29T13:11:57.434Z
 transition_events:
   - kind: entered
     at: 2026-04-29T10:55:00.903Z
@@ -41,6 +41,12 @@ transition_events:
     at: 2026-04-29T12:53:07.160Z
   - kind: ready_for_close
     at: 2026-04-29T12:59:36.347Z
+  - kind: ready_for_close
+    at: 2026-04-29T13:00:16.555Z
+  - kind: blocked
+    at: 2026-04-29T13:04:23.839Z
+  - kind: ready_for_close
+    at: 2026-04-29T13:11:57.434Z
 backlog_followup_required: false
 backlog_followup_kind: null
 backlog_followup_resolved: false
@@ -49,19 +55,44 @@ backlog_lifecycle_current: implemented
 backlog_lifecycle_reconciled: true
 backlog_actualization_artifacts: []
 backlog_actualization_verdict: current_state_satisfies_target
-review_artifacts: []
+review_artifacts:
+  - .dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r05--pass--7b1acee82851.json
 verification_artifacts:
-  - .dossier/verification/F-0028/implementation-e8c7c2d90755.json
+  - .dossier/verification/F-0028/implementation-7b1acee82851.json
 required_audit_classes:
   - spec-conformance-reviewer
   - code-reviewer
   - security-reviewer
-executed_audit_classes: []
+executed_audit_classes:
+  - spec-conformance-reviewer
 required_external_review_pending: true
-review_events: []
-reviewer_skills: []
+review_events:
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r05--pass--7b1acee82851.json
+    audit_class: spec-conformance-reviewer
+    evidence_count: 1
+    event_commit: 7b1acee828512fcc25d66cb2d77df87adaf316a1
+    implementation_scope: code-bearing
+    invalidated: false
+    latest_copy_path: .dossier/reviews/F-0028/implementation--spec-conformance-reviewer--latest.json
+    must_fix_count: 0
+    recorded_at: 2026-04-29T13:04:53.231Z
+    review_mode: external
+    review_attempt_id: implementation--spec-conformance-reviewer--r05
+    review_round_id: r05
+    review_round_number: 5
+    reviewer: r05-spec-conformance-reviewer
+    reviewer_agent_id: null
+    reviewer_skill: spec-conformance-reviewer
+    reviewer_thread_id: 019dd953-c139-7f73-8660-4118e390c373
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
+reviewer_skills:
+  - spec-conformance-reviewer
 reviewer_agent_ids: []
-review_trace_commits: []
+review_trace_commits:
+  - 7b1acee828512fcc25d66cb2d77df87adaf316a1
 degraded_review_present: false
 invalidated_review_present: false
 stale_review_present: false
@@ -116,10 +147,17 @@ process_misses:
     summary: round4 code audit blocker fixed by returning 503 for first support
       runtime service failures after payload validation and adding operator
       support route regression coverage
+  - id: implementation-audit-fail-round5
+    category: review
+    severity: high
+    resolved: true
+    summary: round5 code audit blocker fixed by checking the internal action-routing
+      request state on support open replay and covering successful plus failed
+      open action replay
 session_id: 350b48a7-b180-4582-ae1d-ccb8e70b9a6b
 trace_runtime: codex
 trace_locator_kind: session_id
-final_delivery_commit: e8c7c2d9075516fb0113a0b6410a7ed1ab2bf7b4
+final_delivery_commit: 7b1acee828512fcc25d66cb2d77df87adaf316a1
 final_closure_commit: null
 implementation_review_scope: code-bearing
 stage_entry_commit: 616e09befd1f1a86b904a4ce7a149f7c99c8aebf
@@ -169,7 +207,7 @@ pre_review_checklists:
       - apps/core/test/support/support-usage-audit.contract.test.ts
 pre_review_checklist_status: complete
 pre_review_checklist_blockers: []
-local_gates_green_ts: 2026-04-29T12:59:36.347Z
+local_gates_green_ts: 2026-04-29T13:11:57.434Z
 step_artifact: null
 closure_bundle_id: null
 closure_bundle_round: null
@@ -201,7 +239,7 @@ process_complete_ts: null
 intake_process_complete_ts: null
 first_review_agent_started_ts: null
 final_pass_ts: null
-verification_trace_commit: e8c7c2d9075516fb0113a0b6410a7ed1ab2bf7b4
+verification_trace_commit: 7b1acee828512fcc25d66cb2d77df87adaf316a1
 ---
 
 ## Scope
@@ -258,6 +296,7 @@ verification_trace_commit: e8c7c2d9075516fb0113a0b6410a7ed1ab2bf7b4
 - implementation-audit-fail-round2 [high/review, resolved] round2 audit blockers fixed with pre-side-effect update claim, target-bound replay identity, patch-safe scalar merge, F-0024 auth evidence validation, release failed-state freshness and full support free-text redaction
 - implementation-audit-fail-round3 [high/review, resolved] round3 code audit blockers fixed with rejected post-claim failure replay handling, owner seam and canonical reader regression coverage, and F-0024 auth evidence validation through OperatorAuthStore seam
 - implementation-audit-fail-round4 [high/review, resolved] round4 code audit blocker fixed by returning 503 for first support runtime service failures after payload validation and adding operator support route regression coverage
+- implementation-audit-fail-round5 [high/review, resolved] round5 code audit blocker fixed by checking the internal action-routing request state on support open replay and covering successful plus failed open action replay
 
 ## Transition events
 
@@ -275,6 +314,9 @@ verification_trace_commit: e8c7c2d9075516fb0113a0b6410a7ed1ab2bf7b4
 - 2026-04-29T12:46:58.988Z: ready_for_close
 - 2026-04-29T12:53:07.160Z: blocked
 - 2026-04-29T12:59:36.347Z: ready_for_close
+- 2026-04-29T13:00:16.555Z: ready_for_close
+- 2026-04-29T13:04:23.839Z: blocked
+- 2026-04-29T13:11:57.434Z: ready_for_close
 
 ## Close-out
 

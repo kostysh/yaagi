@@ -411,7 +411,7 @@ export const createSupportEvidenceService = (input: {
         canonicalEvidenceStates,
       });
 
-      if (!opened.accepted || opened.deduplicated || actionRefs.length === 0) {
+      if (!opened.accepted || actionRefs.length === 0) {
         return opened;
       }
 
@@ -428,7 +428,7 @@ export const createSupportEvidenceService = (input: {
         createdAt: observedAt,
       });
       if (!claim.accepted || claim.deduplicated) {
-        return opened;
+        return claim;
       }
 
       try {

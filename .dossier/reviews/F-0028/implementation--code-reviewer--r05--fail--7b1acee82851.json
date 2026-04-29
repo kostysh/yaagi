@@ -2,7 +2,7 @@
   "version": 1,
   "created_at": "2026-04-29T13:03:50.462Z",
   "audit_class": "code-reviewer",
-  "artifact_role": "latest_copy",
+  "artifact_role": "immutable_attempt",
   "review_mode": "external",
   "reviewer": "r05-code-reviewer",
   "reviewer_skill": "code-reviewer",
@@ -11,7 +11,7 @@
   "review_attempt_id": "implementation--code-reviewer--r05",
   "review_round_id": "r05",
   "review_round_number": 5,
-  "latest_copy_path": ".dossier/reviews/F-0028/implementation-code-review.json",
+  "latest_copy_path": ".dossier/reviews/F-0028/implementation--code-reviewer--latest.json",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
   "feature_id": "F-0028",
@@ -31,6 +31,5 @@
       "apps/core/src/support/support-evidence.ts:414 returns any deduplicated openIncident result before action-routing state is considered; apps/core/src/support/support-evidence.ts:424 creates the internal action-routing claim; apps/core/src/support/support-evidence.ts:456 rejects that internal claim with post_claim_action_routing_failed and rethrows; packages/db/src/support.ts:686 replays the original request_id as accepted/deduplicated; apps/core/src/platform/operator-api.ts:771 maps accepted POST results to 202 and only request_failed results to 503."
     ]
   },
-  "notes": "Blocking: POST /support/incidents with actionRefs still has an inconsistent post-claim failure replay path. The service persists the incident under the caller requestId, then creates an internal requestId:action-routing claim for owner action routing. If an owner seam throws after that internal claim is inserted, the code rejects only the internal claim and rethrows, so the first HTTP attempt returns 503. A retry of the original POST then hits the deduplicated open-incident row and returns accepted/202 without checking the rejected action-routing claim, leaving the action in requested state and hiding the prior request_failed outcome. Reviewed final target 7b1acee82851 source paths: operator support Hono routes, support evidence service, support DB store, support contracts, runtime wiring, and support integration/contract tests.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--code-reviewer--r05--fail--7b1acee82851.json"
+  "notes": "Blocking: POST /support/incidents with actionRefs still has an inconsistent post-claim failure replay path. The service persists the incident under the caller requestId, then creates an internal requestId:action-routing claim for owner action routing. If an owner seam throws after that internal claim is inserted, the code rejects only the internal claim and rethrows, so the first HTTP attempt returns 503. A retry of the original POST then hits the deduplicated open-incident row and returns accepted/202 without checking the rejected action-routing claim, leaving the action in requested state and hiding the prior request_failed outcome. Reviewed final target 7b1acee82851 source paths: operator support Hono routes, support evidence service, support DB store, support contracts, runtime wiring, and support integration/contract tests."
 }

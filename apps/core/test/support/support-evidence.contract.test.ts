@@ -54,6 +54,29 @@ const createMemoryStore = (): {
       } = input;
       void canonicalEvidenceStates;
       void requestedWriteSurfaces;
+      const existing = Object.values(incidents).find(
+        (incident) => incident.requestId === requestId,
+      );
+      if (existing) {
+        if (existing.normalizedRequestHash !== normalizedRequestHash) {
+          return Promise.resolve({
+            accepted: false,
+            reason: 'conflicting_request_id',
+            existingIncident: existing,
+          });
+        }
+
+        return Promise.resolve({
+          accepted: true,
+          deduplicated: true,
+          incident: existing,
+          closureReadiness: {
+            status: existing.closureReadinessStatus,
+            reasons: existing.closureReadinessReasons,
+          },
+        });
+      }
+
       const row: SupportIncidentRow = {
         ...bundle,
         requestId,
@@ -312,6 +335,83 @@ void test('AC-F0028-02 AC-F0028-10 does not reroute owner actions on update repl
 
   assert.equal(first.accepted, true);
   assert.equal(replay.accepted, true);
+  assert.equal(ownerSeamCalls, 1);
+});
+
+void test('AC-F0028-02 AC-F0028-10 does not reroute owner actions on open replay', async () => {
+  const { store } = createMemoryStore();
+  let ownerSeamCalls = 0;
+  const service = createSupportEvidenceService({
+    store,
+    now: () => now,
+    ownerSeams: {
+      'F-0023': () => {
+        ownerSeamCalls += 1;
+        return Promise.resolve({ accepted: true, evidenceRef: 'report-run:open-owner-evidence' });
+      },
+    },
+  });
+
+  const open = {
+    requestId: 'support-request-open-action-replay',
+    incidentClass: SUPPORT_INCIDENT_CLASS.REPORTING_FRESHNESS,
+    severity: SUPPORT_SEVERITY.WARNING,
+    sourceRefs: ['report-run:source'],
+    actionRefs: [
+      {
+        mode: SUPPORT_ACTION_MODE.OWNER_ROUTED,
+        owner: 'F-0023',
+        ref: 'support-action:open-report-owner',
+        requestedAction: 'inspect reporting owner evidence',
+      },
+    ],
+  };
+
+  const first = await service.openIncident(open);
+  const replay = await service.openIncident(open);
+
+  assert.equal(first.accepted, true);
+  assert.equal(replay.accepted, true);
+  assert.equal(ownerSeamCalls, 1);
+});
+
+void test('AC-F0028-02 rejects open replay after action routing fails following internal claim', async () => {
+  const { store } = createMemoryStore();
+  let ownerSeamCalls = 0;
+  const service = createSupportEvidenceService({
+    store,
+    now: () => now,
+    ownerSeams: {
+      'F-0023': () => {
+        ownerSeamCalls += 1;
+        throw new Error('report owner down');
+      },
+    },
+  });
+
+  const open = {
+    requestId: 'support-request-open-action-failure',
+    incidentClass: SUPPORT_INCIDENT_CLASS.REPORTING_FRESHNESS,
+    severity: SUPPORT_SEVERITY.WARNING,
+    sourceRefs: ['report-run:source'],
+    actionRefs: [
+      {
+        mode: SUPPORT_ACTION_MODE.OWNER_ROUTED,
+        owner: 'F-0023',
+        ref: 'support-action:open-report-owner-failure',
+        requestedAction: 'inspect reporting owner evidence',
+      },
+    ],
+  };
+
+  await assert.rejects(() => service.openIncident(open), /report owner down/);
+  const replay = await service.openIncident(open);
+
+  assert.equal(replay.accepted, false);
+  if (!replay.accepted) {
+    assert.equal(replay.reason, 'request_failed');
+    assert.deepEqual(replay.closureReasons, ['post_claim_action_routing_failed']);
+  }
   assert.equal(ownerSeamCalls, 1);
 });
 

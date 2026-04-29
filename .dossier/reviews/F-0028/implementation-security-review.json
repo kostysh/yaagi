@@ -1,23 +1,23 @@
 {
   "version": 1,
-  "created_at": "2026-04-29T12:51:21.289Z",
+  "created_at": "2026-04-29T13:04:17.991Z",
   "audit_class": "security-reviewer",
   "artifact_role": "latest_copy",
   "review_mode": "external",
-  "reviewer": "r04-security-reviewer",
+  "reviewer": "r05-security-reviewer",
   "reviewer_skill": "security-reviewer",
   "reviewer_agent_id": null,
-  "reviewer_thread_id": "019dd948-27e7-7432-a72d-687416344b91",
-  "review_attempt_id": "implementation--security-reviewer--r04",
-  "review_round_id": "r04",
-  "review_round_number": 4,
+  "reviewer_thread_id": "019dd954-337d-7413-9c47-bb8511a9ee5f",
+  "review_attempt_id": "implementation--security-reviewer--r05",
+  "review_round_id": "r05",
+  "review_round_number": 5,
   "latest_copy_path": ".dossier/reviews/F-0028/implementation-security-review.json",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
   "feature_id": "F-0028",
-  "event_commit": "e8c7c2d9075516fb0113a0b6410a7ed1ab2bf7b4",
+  "event_commit": "7b1acee828512fcc25d66cb2d77df87adaf316a1",
   "implementation_scope": "code-bearing",
-  "security_trigger_reason": "implementation touches support RBAC, evidence trust boundary, owner-routed actions, replay/idempotency, and canonical auth/release evidence validation",
+  "security_trigger_reason": "Fresh source commit 7b1acee82851 changed protected support incident route error classification after r04; audit freshness required for implementation security scope.",
   "invalidated": false,
   "rerun_reason": null,
   "allowed_by_policy": true,
@@ -26,12 +26,9 @@
     "must_fix": [],
     "should_fix": [],
     "evidence": [
-      "apps/core/src/platform/operator-api.ts:679 and :702-815 require F-0024 operator admission on support routes; POST/PATCH bodies are capped by readBoundedJson before admission and writes require SUPPORT_OPERATION RBAC.",
-      "apps/core/src/support/support-evidence.ts:199-230 and :361-543 redact support refs/actions/notes/residual-risk before normalized request hash and persistence, append server-side admission evidence, and validate canonical refs before store update.",
-      "packages/db/src/support.ts:261-270, :414-464, :735-768, and :770-943 constrain writes to support-owned surfaces, preserve idempotent replay, and turn post-claim failures into rejected request_failed replays rather than permanent request_in_progress.",
-      "apps/core/src/support/support-actions.ts:37-85 routes owner_routed actions only through owner seams and records human_only actions as documented; apps/core/src/support/support-canonical-refs.ts:192-279 validates report/release/auth evidence through bounded readers, with runtime wiring through createOperatorAuthStore.hasAllowedAuthEvidence at apps/core/src/runtime/runtime-lifecycle.ts:1894-1901."
+      "apps/core/src/platform/operator-api.ts:679 protects support runbooks with F-0024 admission; apps/core/src/platform/operator-api.ts:702 protects incident listing with admission and limit 1..100; apps/core/src/platform/operator-api.ts:734 and :777 parse bounded JSON then require support-operation admission before writes; apps/core/src/platform/operator-api.ts:771 and :815 map durable request_failed to 503, and :773/:817 now return 503 for first-attempt service throws. packages/contracts/src/operator-auth.ts:201 classifies POST/PATCH support incidents as SUPPORT_OPERATION and :265 grants that class only to support_operator among ordinary roles. packages/contracts/src/support.ts:275 and :299 bound request shapes and reject caller-supplied action status/evidence; :403 redacts bearer/basic/operator tokens and secret-like key/value material. apps/core/src/support/support-evidence.ts:199 and :213 redact request content before bundle persistence/hash; :401/:442/:533 resolve canonical evidence via owner readers; :424/:479 claim update request ids before side effects; :456/:551 mark post-claim failures request_failed. apps/core/src/support/support-actions.ts:43 documents human_only without execution; :55 only invokes server-wired owner seams for owner_routed actions and requires returned evidence. packages/db/src/support.ts:261 rejects non-support write surfaces; :620 and :887 use parameterized SQL; :676 and :837 enforce replay conflict/idempotency; :870 blocks unsafe terminal closure. infra/migrations/028_support_incidents.sql:29 stores support-owned incident rows with bounded enums and :101 tracks update request replay state. apps/core/test/platform/operator-support.integration.test.ts:45 covers RBAC and provenance forwarding, :158 covers first service failure 503; apps/core/test/support/support-evidence.contract.test.ts:274/:318/:365/:405/:469 cover replay, post-claim failure, critical closure, and forged action evidence; apps/core/test/support/support-canonical-refs.integration.test.ts:22/:74/:201 cover canonical reporting/release/auth evidence freshness."
     ]
   },
-  "notes": "PASS: security audit of e8c7c2d90755 found no high-confidence exploitable issue in support route RBAC/admission, client-supplied evidence validation, owner action routing, idempotent replay, post-claim failure rejection, redaction before persistence/hash for support evidence fields, incident listing admission, or bounded F-0024/F-0026 validation.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--security-reviewer--r04--pass--e8c7c2d90755.json"
+  "notes": "Security review PASS for target commit 7b1acee82851. Reviewed support route RBAC/admission, evidence trust boundary, owner-action side effects, idempotency/replay behavior, post-claim failures, first-attempt service error classification, redaction before persistence/hash, incident listing exposure, and F-0024/F-0026 bounded validation. No high-confidence exploitable findings found. Narrow verification run passed: node --experimental-strip-types --experimental-test-module-mocks --test packages/contracts/test/operator-auth.contract.test.ts packages/contracts/test/operator-api.contract.test.ts apps/core/test/platform/operator-support.integration.test.ts apps/core/test/support/support-evidence.contract.test.ts apps/core/test/support/support-canonical-refs.integration.test.ts.",
+  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--security-reviewer--r05--pass--7b1acee82851.json"
 }
