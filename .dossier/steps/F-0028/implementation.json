@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T14:52:58.390Z",
+  "feature_id": "F-0028",
+  "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
+  "step": "implementation",
+  "dossier_status": "done",
+  "event_commit": "78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9",
+  "review_trace_commit": "78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9",
+  "review_trace_commits": [
+    "78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9"
+  ],
+  "verification_trace_commit": "78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9",
+  "verification_artifact": ".dossier/verification/F-0028/implementation-78652ba50b17.json",
+  "review_artifacts": [
+    ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r10--pass--78652ba50b17.json",
+    ".dossier/reviews/F-0028/implementation--code-reviewer--r08--pass--78652ba50b17.json",
+    ".dossier/reviews/F-0028/implementation--security-reviewer--r07--pass--78652ba50b17.json"
+  ],
+  "selected_closure_bundle": {
+    "closure_bundle_id": "implementation--bundle-040296720f57--r10--78652ba50b17",
+    "closure_bundle_round": 10,
+    "closure_bundle_rounds_by_audit_class": {
+      "spec-conformance-reviewer": 10,
+      "code-reviewer": 8,
+      "security-reviewer": 7
+    },
+    "selected_review_artifacts": [
+      ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r10--pass--78652ba50b17.json",
+      ".dossier/reviews/F-0028/implementation--code-reviewer--r08--pass--78652ba50b17.json",
+      ".dossier/reviews/F-0028/implementation--security-reviewer--r07--pass--78652ba50b17.json"
+    ],
+    "selected_review_artifacts_by_audit_class": {
+      "spec-conformance-reviewer": ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r10--pass--78652ba50b17.json",
+      "code-reviewer": ".dossier/reviews/F-0028/implementation--code-reviewer--r08--pass--78652ba50b17.json",
+      "security-reviewer": ".dossier/reviews/F-0028/implementation--security-reviewer--r07--pass--78652ba50b17.json"
+    },
+    "selected_verification_artifact": ".dossier/verification/F-0028/implementation-78652ba50b17.json",
+    "selected_step_artifact": ".dossier/steps/F-0028/implementation.json",
+    "audit_class_order": [
+      "spec-conformance-reviewer",
+      "code-reviewer",
+      "security-reviewer"
+    ],
+    "selected_closure_ts": "2026-04-29T14:52:58.390Z",
+    "event_commit": "78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9"
+  },
+  "closure_bundle_id": "implementation--bundle-040296720f57--r10--78652ba50b17",
+  "closure_bundle_round": 10,
+  "closure_bundle_rounds_by_audit_class": {
+    "spec-conformance-reviewer": 10,
+    "code-reviewer": 8,
+    "security-reviewer": 7
+  },
+  "selected_review_artifacts": [
+    ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r10--pass--78652ba50b17.json",
+    ".dossier/reviews/F-0028/implementation--code-reviewer--r08--pass--78652ba50b17.json",
+    ".dossier/reviews/F-0028/implementation--security-reviewer--r07--pass--78652ba50b17.json"
+  ],
+  "selected_verification_artifact": ".dossier/verification/F-0028/implementation-78652ba50b17.json",
+  "selected_step_artifact": ".dossier/steps/F-0028/implementation.json",
+  "selected_closure_ts": "2026-04-29T14:52:58.390Z",
+  "rpa_source_identity": {
+    "schema_version": 1,
+    "feature_id": "F-0028",
+    "backlog_item_key": "CF-026",
+    "feature_cycle_id": "fc-F-0028-mojwnhzd",
+    "cycle_id": "implementation-861e0d58",
+    "stage": "implementation",
+    "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
+    "stage_log": ".dossier/logs/implementation/F-0028--fc-F-0028-mojwnhzd--implementation-861e0d58.md",
+    "stage_state_path": ".dossier/stages/F-0028/implementation.json",
+    "step_artifact": ".dossier/steps/F-0028/implementation.json",
+    "event_commit": "78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9",
+    "session_id": "350b48a7-b180-4582-ae1d-ccb8e70b9a6b",
+    "trace_runtime": "codex"
+  },
+  "rpa_source_quality": {
+    "schema_version": 1,
+    "review_history_quality": "complete",
+    "selected_bundle_quality": "complete",
+    "missing_fail_artifact_count": 0,
+    "trace_only_fail_count": 0,
+    "same_thread_rejected_count": 0,
+    "invalid_launch_mode_process_miss_count": 0,
+    "unrecoverable_historical_fail_present": false,
+    "limitations": []
+  },
+  "non_pass_review_events": [],
+  "review_freshness": "pass",
+  "required_audit_classes": [
+    "spec-conformance-reviewer",
+    "code-reviewer",
+    "security-reviewer"
+  ],
+  "executed_audit_classes": [
+    "spec-conformance-reviewer",
+    "code-reviewer",
+    "security-reviewer"
+  ],
+  "required_external_review_pending": false,
+  "implementation_review_scope": "code-bearing",
+  "required_security_review": true,
+  "degraded_review_present": false,
+  "invalidated_review_present": false,
+  "stale_review_present": false,
+  "reviewer_skills": [
+    "spec-conformance-reviewer",
+    "code-reviewer",
+    "security-reviewer"
+  ],
+  "reviewer_agent_ids": [
+    "019dd9b3-9b6b-7f91-a34a-72b31cca1c49",
+    "019dd9b3-9c17-75c3-a4c5-5371642b038b",
+    "019dd9b3-ed90-7903-9cc9-ffdba82d1641"
+  ],
+  "security_trigger_reasons": [
+    "code-bearing implementation changes protected support operator routes, support incident storage/replay, owner-routed support actions, and auth/canonical evidence validation"
+  ],
+  "process_complete": true,
+  "blockers": []
+}

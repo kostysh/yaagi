@@ -2,7 +2,7 @@
   "version": 1,
   "created_at": "2026-04-29T14:48:12.430Z",
   "audit_class": "spec-conformance-reviewer",
-  "artifact_role": "latest_copy",
+  "artifact_role": "immutable_attempt",
   "review_mode": "external",
   "reviewer": "spec-conformance-reviewer-r10",
   "reviewer_skill": "spec-conformance-reviewer",
@@ -27,6 +27,5 @@
     "should_fix": [],
     "evidence": []
   },
-  "notes": "PASS: r10 spec-conformance audit at commit 78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9 found the r09 AC-F0028-12 blocker fixed. Explicit reopen updates against terminal support incidents now preserve terminal closure before service canonical-reader resolution, and the DB store evaluates newly attached canonical report/release/auth refs against the preserved terminal bundle, marking missing freshness state as blocked and stale state as degraded. Verification artifact .dossier/verification/F-0028/implementation-78652ba50b17.json records passing dossier checks, root gates, focused support tests, pnpm test and pnpm smoke:cell.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r10--pass--78652ba50b17.json"
+  "notes": "PASS: r10 spec-conformance audit at commit 78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9 found the r09 AC-F0028-12 blocker fixed. Explicit reopen updates against terminal support incidents now preserve terminal closure before service canonical-reader resolution, and the DB store evaluates newly attached canonical report/release/auth refs against the preserved terminal bundle, marking missing freshness state as blocked and stale state as degraded. Verification artifact .dossier/verification/F-0028/implementation-78652ba50b17.json records passing dossier checks, root gates, focused support tests, pnpm test and pnpm smoke:cell."
 }

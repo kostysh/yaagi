@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T14:28:07.391Z",
+  "audit_class": "spec-conformance-reviewer",
+  "artifact_role": "immutable_attempt",
+  "review_mode": "external",
+  "reviewer": "spec-conformance-reviewer-r09",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": "019dd9a0-c278-7b33-b5de-3d97b27187c5",
+  "reviewer_thread_id": "019dd9a0-c278-7b33-b5de-3d97b27187c5",
+  "review_attempt_id": "implementation--spec-conformance-reviewer--r09",
+  "review_round_id": "r09",
+  "review_round_number": 9,
+  "latest_copy_path": ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--latest.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
+  "feature_id": "F-0028",
+  "event_commit": "91ea8d94ffcd291b1dab0b028fe9fcd8acc2cb4d",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "FAIL",
+  "findings": {
+    "must_fix": [
+      "Recompute/evaluate canonical evidence after terminal-closure preservation, or otherwise ensure explicit reopen updates that preserve a terminal incident still evaluate newly attached report/release/auth refs against the terminal closure state."
+    ],
+    "should_fix": [],
+    "evidence": [
+      "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md:136 requires missing/stale/unavailable canonical evidence to block or degrade support closure; apps/core/src/support/support-evidence.ts:546-585 resolves canonical evidence from the pre-store bundle whose closureStatus can be the requested open state; packages/db/src/support.ts:297-331 preserves terminal closure status/closedAt; packages/db/src/support.ts:871-875 then evaluates readiness using the stale/empty canonicalEvidenceStates."
+    ]
+  },
+  "notes": "FAIL: terminal closure status is immutable, but explicit reopen updates that add canonical evidence resolve freshness before terminal preservation, allowing missing/stale/unavailable canonical refs to persist under a terminal closure without degraded/blocked readiness; AC-F0028-12 remains unsatisfied."
+}

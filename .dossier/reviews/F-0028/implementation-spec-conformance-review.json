@@ -1,21 +1,21 @@
 {
   "version": 1,
-  "created_at": "2026-04-29T14:04:33.973Z",
+  "created_at": "2026-04-29T14:48:12.430Z",
   "audit_class": "spec-conformance-reviewer",
   "artifact_role": "latest_copy",
   "review_mode": "external",
-  "reviewer": "spec-conformance-reviewer-r08",
+  "reviewer": "spec-conformance-reviewer-r10",
   "reviewer_skill": "spec-conformance-reviewer",
-  "reviewer_agent_id": "019dd98b-721e-7693-9edd-317876c2d8cd",
-  "reviewer_thread_id": "019dd98b-721e-7693-9edd-317876c2d8cd",
-  "review_attempt_id": "implementation--spec-conformance-reviewer--r08",
-  "review_round_id": "r08",
-  "review_round_number": 8,
+  "reviewer_agent_id": "019dd9b3-9b6b-7f91-a34a-72b31cca1c49",
+  "reviewer_thread_id": "019dd9b3-9b6b-7f91-a34a-72b31cca1c49",
+  "review_attempt_id": "implementation--spec-conformance-reviewer--r10",
+  "review_round_id": "r10",
+  "review_round_number": 10,
   "latest_copy_path": ".dossier/reviews/F-0028/implementation-spec-conformance-review.json",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
   "feature_id": "F-0028",
-  "event_commit": "4cff15bbe24c9941c19b6c744ee34e21a812694c",
+  "event_commit": "78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9",
   "implementation_scope": "code-bearing",
   "security_trigger_reason": null,
   "invalidated": false,
@@ -27,6 +27,6 @@
     "should_fix": [],
     "evidence": []
   },
-  "notes": "PASS: r08 spec-conformance audit at trace commit 4cff15bbe24c9941c19b6c744ee34e21a812694c. The remediated managed verification artifact now includes AC-F0028-15 root gates, focused support tests, full pnpm test, and pnpm smoke:cell. F-0028 implementation remains within the existing F-0013/F-0024 operator boundary, writes only support-owned evidence rows, consumes F-0023/F-0024/F-0026 refs through read/owner seams, preserves replay/idempotency and closure gating, and has no active backlog/source-review blockers.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r08--pass--4cff15bbe24c.json"
+  "notes": "PASS: r10 spec-conformance audit at commit 78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9 found the r09 AC-F0028-12 blocker fixed. Explicit reopen updates against terminal support incidents now preserve terminal closure before service canonical-reader resolution, and the DB store evaluates newly attached canonical report/release/auth refs against the preserved terminal bundle, marking missing freshness state as blocked and stale state as degraded. Verification artifact .dossier/verification/F-0028/implementation-78652ba50b17.json records passing dossier checks, root gates, focused support tests, pnpm test and pnpm smoke:cell.",
+  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r10--pass--78652ba50b17.json"
 }

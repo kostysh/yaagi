@@ -2,7 +2,7 @@
   "version": 1,
   "created_at": "2026-04-29T14:50:13.149Z",
   "audit_class": "code-reviewer",
-  "artifact_role": "latest_copy",
+  "artifact_role": "immutable_attempt",
   "review_mode": "external",
   "reviewer": "code-reviewer-r10",
   "reviewer_skill": "code-reviewer",
@@ -11,7 +11,7 @@
   "review_attempt_id": "implementation--code-reviewer--r08",
   "review_round_id": "r08",
   "review_round_number": 8,
-  "latest_copy_path": ".dossier/reviews/F-0028/implementation-code-review.json",
+  "latest_copy_path": ".dossier/reviews/F-0028/implementation--code-reviewer--latest.json",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
   "feature_id": "F-0028",
@@ -27,6 +27,5 @@
     "should_fix": [],
     "evidence": []
   },
-  "notes": "PASS: reviewed F-0028 HEAD 78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9 implementation changes for support incident storage/replay, owner-routed actions, auth/canonical evidence validation, terminal closure immutability, and the r09 support-evidence/store fix. No blocking code-review findings found; verification evidence .dossier/verification/F-0028/implementation-78652ba50b17.json reports passing dossier checks, root quality gates, targeted support tests, pnpm test, and pnpm smoke:cell.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--code-reviewer--r08--pass--78652ba50b17.json"
+  "notes": "PASS: reviewed F-0028 HEAD 78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9 implementation changes for support incident storage/replay, owner-routed actions, auth/canonical evidence validation, terminal closure immutability, and the r09 support-evidence/store fix. No blocking code-review findings found; verification evidence .dossier/verification/F-0028/implementation-78652ba50b17.json reports passing dossier checks, root quality gates, targeted support tests, pnpm test, and pnpm smoke:cell."
 }

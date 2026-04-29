@@ -350,8 +350,8 @@ step_artifact: .dossier/steps/F-0026/implementation.json
 post_close_backlog_hygiene_required: true
 post_close_backlog_hygiene_status: clean
 post_close_backlog_hygiene_artifact: .dossier/verification/F-0026/implementation-post-close-backlog-hygiene.json
-post_close_backlog_hygiene_checked_at: 2026-04-29T10:51:18.384Z
-post_close_backlog_hygiene_refresh_at: 2026-04-29T10:51:18.104Z
+post_close_backlog_hygiene_checked_at: 2026-04-29T14:54:11.290Z
+post_close_backlog_hygiene_refresh_at: 2026-04-29T14:54:11.054Z
 post_close_open_source_review_count: 0
 post_close_source_review_blocked_item_count: 0
 post_close_lifecycle_reconciliation_drift_count: 0
@@ -373,21 +373,22 @@ selected_closure_ts: null
 rpa_source_identity: null
 rpa_source_quality: null
 non_pass_review_events: []
-post_close_backlog_hygiene_global_refresh_artifact: .dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T10-51-17-838Z.json
+post_close_backlog_hygiene_global_refresh_artifact: .dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T14-54-10-828Z.json
 post_close_affected_feature_ids:
   - F-0026
   - F-0027
+  - F-0028
 post_close_pre_status_summary:
   total_items: 28
-  last_refresh_at: 2026-04-29T10:40:54.537Z
+  last_refresh_at: 2026-04-29T14:53:10.566Z
   defined_count: 0
   intaken_count: 0
   specified_count: 0
-  planned_count: 1
-  implemented_count: 27
+  planned_count: 0
+  implemented_count: 28
   gaps_count: 0
   needs_attention_count: 0
-  ready_for_next_step_count: 1
+  ready_for_next_step_count: 0
   open_todo_count: 0
   artifact_integrity:
     applied_canonical_paths_exist: true
@@ -397,24 +398,25 @@ post_close_pre_status_summary:
   lifecycle_reconciliation_drift_count: 0
   lifecycle_reconciliation_drifts: []
   post_close_hygiene_missing_count: 0
-  post_close_hygiene_stale_count: 2
-  post_close_hygiene_blocked_count: 0
+  post_close_hygiene_stale_count: 0
+  post_close_hygiene_blocked_count: 3
   post_close_hygiene_missing_feature_ids: []
-  post_close_hygiene_stale_feature_ids:
+  post_close_hygiene_stale_feature_ids: []
+  post_close_hygiene_blocked_feature_ids:
     - F-0026
     - F-0027
-  post_close_hygiene_blocked_feature_ids: []
+    - F-0028
 post_close_post_status_summary:
   total_items: 28
-  last_refresh_at: 2026-04-29T10:51:18.104Z
+  last_refresh_at: 2026-04-29T14:54:11.054Z
   defined_count: 0
   intaken_count: 0
   specified_count: 0
-  planned_count: 1
-  implemented_count: 27
+  planned_count: 0
+  implemented_count: 28
   gaps_count: 0
   needs_attention_count: 0
-  ready_for_next_step_count: 1
+  ready_for_next_step_count: 0
   open_todo_count: 0
   artifact_integrity:
     applied_canonical_paths_exist: true
@@ -424,12 +426,13 @@ post_close_post_status_summary:
   lifecycle_reconciliation_drift_count: 0
   lifecycle_reconciliation_drifts: []
   post_close_hygiene_missing_count: 0
-  post_close_hygiene_stale_count: 2
+  post_close_hygiene_stale_count: 3
   post_close_hygiene_blocked_count: 0
   post_close_hygiene_missing_feature_ids: []
   post_close_hygiene_stale_feature_ids:
     - F-0026
     - F-0027
+    - F-0028
   post_close_hygiene_blocked_feature_ids: []
 post_close_hygiene_schema_version: 2
 ---

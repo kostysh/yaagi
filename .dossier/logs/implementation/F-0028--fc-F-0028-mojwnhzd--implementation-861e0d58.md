@@ -11,7 +11,7 @@ phase_scope: implementation для F-0028 support/operability contract и incide
 stage_state: ready_for_close
 start_ts: 2026-04-29T10:55:00.903Z
 entered_ts: 2026-04-29T10:55:00.903Z
-ready_for_close_ts: 2026-04-29T14:18:00.267Z
+ready_for_close_ts: 2026-04-29T14:39:01.612Z
 transition_events:
   - kind: entered
     at: 2026-04-29T10:55:00.903Z
@@ -61,6 +61,12 @@ transition_events:
     at: 2026-04-29T14:09:25.913Z
   - kind: ready_for_close
     at: 2026-04-29T14:18:00.267Z
+  - kind: ready_for_close
+    at: 2026-04-29T14:18:44.144Z
+  - kind: blocked
+    at: 2026-04-29T14:29:18.883Z
+  - kind: ready_for_close
+    at: 2026-04-29T14:39:01.612Z
 backlog_followup_required: false
 backlog_followup_kind: null
 backlog_followup_resolved: false
@@ -69,18 +75,97 @@ backlog_lifecycle_current: implemented
 backlog_lifecycle_reconciled: true
 backlog_actualization_artifacts: []
 backlog_actualization_verdict: current_state_satisfies_target
-review_artifacts: []
-verification_artifacts: []
+review_artifacts:
+  - .dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r10--pass--78652ba50b17.json
+  - .dossier/reviews/F-0028/implementation--code-reviewer--r08--pass--78652ba50b17.json
+  - .dossier/reviews/F-0028/implementation--security-reviewer--r07--pass--78652ba50b17.json
+verification_artifacts:
+  - .dossier/verification/F-0028/implementation-78652ba50b17.json
 required_audit_classes:
   - spec-conformance-reviewer
   - code-reviewer
   - security-reviewer
-executed_audit_classes: []
-required_external_review_pending: true
-review_events: []
-reviewer_skills: []
-reviewer_agent_ids: []
-review_trace_commits: []
+executed_audit_classes:
+  - spec-conformance-reviewer
+  - code-reviewer
+  - security-reviewer
+required_external_review_pending: false
+review_events:
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r10--pass--78652ba50b17.json
+    audit_class: spec-conformance-reviewer
+    evidence_count: 0
+    event_commit: 78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9
+    implementation_scope: code-bearing
+    invalidated: false
+    latest_copy_path: .dossier/reviews/F-0028/implementation--spec-conformance-reviewer--latest.json
+    must_fix_count: 0
+    recorded_at: 2026-04-29T14:48:12.451Z
+    review_mode: external
+    review_attempt_id: implementation--spec-conformance-reviewer--r10
+    review_round_id: r10
+    review_round_number: 10
+    reviewer: spec-conformance-reviewer-r10
+    reviewer_agent_id: 019dd9b3-9b6b-7f91-a34a-72b31cca1c49
+    reviewer_skill: spec-conformance-reviewer
+    reviewer_thread_id: 019dd9b3-9b6b-7f91-a34a-72b31cca1c49
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0028/implementation--code-reviewer--r08--pass--78652ba50b17.json
+    audit_class: code-reviewer
+    evidence_count: 0
+    event_commit: 78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9
+    implementation_scope: code-bearing
+    invalidated: false
+    latest_copy_path: .dossier/reviews/F-0028/implementation--code-reviewer--latest.json
+    must_fix_count: 0
+    recorded_at: 2026-04-29T14:50:13.174Z
+    review_mode: external
+    review_attempt_id: implementation--code-reviewer--r08
+    review_round_id: r08
+    review_round_number: 8
+    reviewer: code-reviewer-r10
+    reviewer_agent_id: 019dd9b3-9c17-75c3-a4c5-5371642b038b
+    reviewer_skill: code-reviewer
+    reviewer_thread_id: 019dd9b3-9c17-75c3-a4c5-5371642b038b
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0028/implementation--security-reviewer--r07--pass--78652ba50b17.json
+    audit_class: security-reviewer
+    evidence_count: 6
+    event_commit: 78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9
+    implementation_scope: code-bearing
+    invalidated: false
+    latest_copy_path: .dossier/reviews/F-0028/implementation--security-reviewer--latest.json
+    must_fix_count: 0
+    recorded_at: 2026-04-29T14:52:00.965Z
+    review_mode: external
+    review_attempt_id: implementation--security-reviewer--r07
+    review_round_id: r07
+    review_round_number: 7
+    reviewer: security-reviewer-r10
+    reviewer_agent_id: 019dd9b3-ed90-7903-9cc9-ffdba82d1641
+    reviewer_skill: security-reviewer
+    reviewer_thread_id: 019dd9b3-ed90-7903-9cc9-ffdba82d1641
+    security_trigger_reason: code-bearing implementation changes protected support
+      operator routes, support incident storage/replay, owner-routed support
+      actions, and auth/canonical evidence validation
+    stale: false
+    verdict: PASS
+reviewer_skills:
+  - spec-conformance-reviewer
+  - code-reviewer
+  - security-reviewer
+reviewer_agent_ids:
+  - 019dd9b3-9b6b-7f91-a34a-72b31cca1c49
+  - 019dd9b3-9c17-75c3-a4c5-5371642b038b
+  - 019dd9b3-ed90-7903-9cc9-ffdba82d1641
+review_trace_commits:
+  - 78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9
 degraded_review_present: false
 invalidated_review_present: false
 stale_review_present: false
@@ -165,15 +250,26 @@ process_misses:
     summary: round8 code audit blocker fixed by preserving terminal support closure
       status and closedAt across later explicit reopen updates, with regression
       coverage in support-store integration tests
+  - id: implementation-audit-fail-round9-spec-terminal-reopen-canonical-evidence
+    category: review
+    severity: high
+    resolved: true
+    summary: "Блокер r09 исправлен: terminal explicit reopen теперь сохраняет
+      фактический terminal status до service evidence resolution, а db store
+      помечает новые canonical refs без freshness-state как missing перед
+      readiness evaluation"
 session_id: 350b48a7-b180-4582-ae1d-ccb8e70b9a6b
 trace_runtime: codex
 trace_locator_kind: session_id
-final_delivery_commit: 4cff15bbe24c9941c19b6c744ee34e21a812694c
-final_closure_commit: null
+final_delivery_commit: 78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9
+final_closure_commit: 78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9
 implementation_review_scope: code-bearing
 stage_entry_commit: 616e09befd1f1a86b904a4ce7a149f7c99c8aebf
 required_security_review: true
-security_trigger_reasons: []
+security_trigger_reasons:
+  - code-bearing implementation changes protected support operator routes,
+    support incident storage/replay, owner-routed support actions, and
+    auth/canonical evidence validation
 pre_review_risk_families:
   - admission
   - replay
@@ -218,33 +314,124 @@ pre_review_checklists:
       - apps/core/test/support/support-usage-audit.contract.test.ts
 pre_review_checklist_status: complete
 pre_review_checklist_blockers: []
-local_gates_green_ts: 2026-04-29T14:18:00.267Z
-step_artifact: null
-closure_bundle_id: null
-closure_bundle_round: null
-closure_bundle_rounds_by_audit_class: {}
-selected_review_artifacts: []
-selected_verification_artifact: null
-selected_step_artifact: null
-selected_closure_ts: null
-rpa_source_identity: null
-rpa_source_quality: null
+local_gates_green_ts: 2026-04-29T14:39:01.612Z
+step_artifact: .dossier/steps/F-0028/implementation.json
+closure_bundle_id: implementation--bundle-040296720f57--r10--78652ba50b17
+closure_bundle_round: 10
+closure_bundle_rounds_by_audit_class:
+  spec-conformance-reviewer: 10
+  code-reviewer: 8
+  security-reviewer: 7
+selected_review_artifacts:
+  - .dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r10--pass--78652ba50b17.json
+  - .dossier/reviews/F-0028/implementation--code-reviewer--r08--pass--78652ba50b17.json
+  - .dossier/reviews/F-0028/implementation--security-reviewer--r07--pass--78652ba50b17.json
+selected_verification_artifact: .dossier/verification/F-0028/implementation-78652ba50b17.json
+selected_step_artifact: .dossier/steps/F-0028/implementation.json
+selected_closure_ts: 2026-04-29T14:52:58.390Z
+rpa_source_identity:
+  schema_version: 1
+  feature_id: F-0028
+  backlog_item_key: CF-026
+  feature_cycle_id: fc-F-0028-mojwnhzd
+  cycle_id: implementation-861e0d58
+  stage: implementation
+  dossier: docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md
+  stage_log: .dossier/logs/implementation/F-0028--fc-F-0028-mojwnhzd--implementation-861e0d58.md
+  stage_state_path: .dossier/stages/F-0028/implementation.json
+  step_artifact: .dossier/steps/F-0028/implementation.json
+  event_commit: 78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9
+  session_id: 350b48a7-b180-4582-ae1d-ccb8e70b9a6b
+  trace_runtime: codex
+rpa_source_quality:
+  schema_version: 1
+  review_history_quality: complete
+  selected_bundle_quality: complete
+  missing_fail_artifact_count: 0
+  trace_only_fail_count: 0
+  same_thread_rejected_count: 0
+  invalid_launch_mode_process_miss_count: 0
+  unrecoverable_historical_fail_present: false
+  limitations: []
 non_pass_review_events: []
-post_close_backlog_hygiene_required: false
-post_close_backlog_hygiene_status: not_required
-post_close_backlog_hygiene_artifact: null
-post_close_backlog_hygiene_global_refresh_artifact: null
-post_close_affected_feature_ids: []
-post_close_pre_status_summary: null
-post_close_post_status_summary: null
-post_close_hygiene_schema_version: null
-post_close_backlog_hygiene_checked_at: null
-post_close_backlog_hygiene_refresh_at: null
-post_close_open_source_review_count: null
-post_close_source_review_blocked_item_count: null
-post_close_lifecycle_reconciliation_drift_count: null
-post_close_unresolved_attention_present: null
+post_close_backlog_hygiene_required: true
+post_close_backlog_hygiene_status: clean
+post_close_backlog_hygiene_artifact: .dossier/verification/F-0028/implementation-post-close-backlog-hygiene.json
+post_close_backlog_hygiene_global_refresh_artifact: .dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T14-54-10-828Z.json
+post_close_affected_feature_ids:
+  - F-0026
+  - F-0027
+  - F-0028
+post_close_pre_status_summary:
+  total_items: 28
+  last_refresh_at: 2026-04-29T14:53:10.566Z
+  defined_count: 0
+  intaken_count: 0
+  specified_count: 0
+  planned_count: 0
+  implemented_count: 28
+  gaps_count: 0
+  needs_attention_count: 0
+  ready_for_next_step_count: 0
+  open_todo_count: 0
+  artifact_integrity:
+    applied_canonical_paths_exist: true
+    missing_canonical_paths: []
+  open_source_review_count: 0
+  source_review_blocked_item_count: 0
+  lifecycle_reconciliation_drift_count: 0
+  lifecycle_reconciliation_drifts: []
+  post_close_hygiene_missing_count: 0
+  post_close_hygiene_stale_count: 0
+  post_close_hygiene_blocked_count: 3
+  post_close_hygiene_missing_feature_ids: []
+  post_close_hygiene_stale_feature_ids: []
+  post_close_hygiene_blocked_feature_ids:
+    - F-0026
+    - F-0027
+    - F-0028
+post_close_post_status_summary:
+  total_items: 28
+  last_refresh_at: 2026-04-29T14:54:11.054Z
+  defined_count: 0
+  intaken_count: 0
+  specified_count: 0
+  planned_count: 0
+  implemented_count: 28
+  gaps_count: 0
+  needs_attention_count: 0
+  ready_for_next_step_count: 0
+  open_todo_count: 0
+  artifact_integrity:
+    applied_canonical_paths_exist: true
+    missing_canonical_paths: []
+  open_source_review_count: 0
+  source_review_blocked_item_count: 0
+  lifecycle_reconciliation_drift_count: 0
+  lifecycle_reconciliation_drifts: []
+  post_close_hygiene_missing_count: 0
+  post_close_hygiene_stale_count: 3
+  post_close_hygiene_blocked_count: 0
+  post_close_hygiene_missing_feature_ids: []
+  post_close_hygiene_stale_feature_ids:
+    - F-0026
+    - F-0027
+    - F-0028
+  post_close_hygiene_blocked_feature_ids: []
+post_close_hygiene_schema_version: 2
+post_close_backlog_hygiene_checked_at: 2026-04-29T14:54:11.290Z
+post_close_backlog_hygiene_refresh_at: 2026-04-29T14:54:11.054Z
+post_close_open_source_review_count: 0
+post_close_source_review_blocked_item_count: 0
+post_close_lifecycle_reconciliation_drift_count: 0
+post_close_unresolved_attention_present: false
 post_close_backlog_hygiene_blockers: []
+step_close_ts: 2026-04-29T14:52:58.422Z
+process_complete_ts: 2026-04-29T14:52:58.422Z
+intake_process_complete_ts: null
+first_review_agent_started_ts: 2026-04-29T14:48:12.451Z
+final_pass_ts: 2026-04-29T14:52:00.965Z
+verification_trace_commit: 78652ba50b177668c0b2dbbbd21c9ed74ad6e8a9
 ---
 
 ## Scope
@@ -305,6 +492,7 @@ post_close_backlog_hygiene_blockers: []
 - implementation-audit-fail-round6 [high/review, resolved] round6 code audit blockers fixed by making support open replay idempotency-first, mapping canonical reader failures to unavailable states, and persisting requested action records before owner action routing
 - implementation-audit-fail-round7 [high/review, resolved] round7 spec audit blocker fixed by replacing the managed implementation verification artifact for trace commit 4cff15bbe24c with fresh root quality gates, focused support tests, full pnpm test and pnpm smoke:cell evidence
 - implementation-audit-fail-round8-code-terminal-reopen [high/review, resolved] round8 code audit blocker fixed by preserving terminal support closure status and closedAt across later explicit reopen updates, with regression coverage in support-store integration tests
+- implementation-audit-fail-round9-spec-terminal-reopen-canonical-evidence [high/review, resolved] Блокер r09 исправлен: terminal explicit reopen теперь сохраняет фактический terminal status до service evidence resolution, а db store помечает новые canonical refs без freshness-state как missing перед readiness evaluation
 
 ## Transition events
 
@@ -332,6 +520,9 @@ post_close_backlog_hygiene_blockers: []
 - 2026-04-29T13:49:14.421Z: ready_for_close
 - 2026-04-29T14:09:25.913Z: blocked
 - 2026-04-29T14:18:00.267Z: ready_for_close
+- 2026-04-29T14:18:44.144Z: ready_for_close
+- 2026-04-29T14:29:18.883Z: blocked
+- 2026-04-29T14:39:01.612Z: ready_for_close
 
 ## Close-out
 

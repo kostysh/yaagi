@@ -2,7 +2,7 @@
   "version": 1,
   "created_at": "2026-04-29T14:52:00.943Z",
   "audit_class": "security-reviewer",
-  "artifact_role": "latest_copy",
+  "artifact_role": "immutable_attempt",
   "review_mode": "external",
   "reviewer": "security-reviewer-r10",
   "reviewer_skill": "security-reviewer",
@@ -34,6 +34,5 @@
       ".dossier/verification/F-0028/implementation-78652ba50b17.json is the current verification artifact and records passing implementation verification including support-specific tests and container smoke evidence."
     ]
   },
-  "notes": "Security audit r10 at 78652ba50b17: no confirmed exploitable findings. Reviewed protected support route admission and RBAC, bounded pre-auth support body handling, support incident persistence and replay, owner-routed action evidence handling, canonical reporting/release/auth evidence validation, terminal closure preservation, and incident data exposure.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--security-reviewer--r07--pass--78652ba50b17.json"
+  "notes": "Security audit r10 at 78652ba50b17: no confirmed exploitable findings. Reviewed protected support route admission and RBAC, bounded pre-auth support body handling, support incident persistence and replay, owner-routed action evidence handling, canonical reporting/release/auth evidence validation, terminal closure preservation, and incident data exposure."
 }

@@ -3,7 +3,7 @@
   "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
   "source_label": "docs/architecture/system.md",
   "previous_hash": "47051db68d549ce58b11c8200e78ca3b1fc85235345ba228883e006aa8fde545",
-  "current_hash": "fc5f7652ad6e0e6235f6c270638803da93073261337eb8d96a411861caa51cca",
+  "current_hash": "c93f3de3d0ef0179b3d1484701fb7bd4a67573a2ff82e9356d3b8a20ac23d375",
   "status": "closed",
   "linked_item_keys": [
     "CF-001",
@@ -37,8 +37,8 @@
   ],
   "linked_item_count": 28,
   "opened_at": "2026-04-24T15:38:08.985Z",
-  "closed_at": "2026-04-24T15:39:27.995Z",
-  "resolved_at": "2026-04-24T15:39:27.995Z",
+  "closed_at": "2026-04-29T14:54:05.073Z",
+  "resolved_at": "2026-04-29T14:54:05.073Z",
   "outcome": "no_backlog_change",
   "resolution_kind": "ack",
   "resolution_ref": "ack-source-review"
