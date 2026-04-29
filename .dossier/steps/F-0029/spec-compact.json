@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T16:49:40.379Z",
+  "feature_id": "F-0029",
+  "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+  "step": "spec-compact",
+  "dossier_status": "shaped",
+  "event_commit": "c8c156700334eb08f70ab6652d0e57867c23fabf",
+  "review_trace_commit": "c8c156700334eb08f70ab6652d0e57867c23fabf",
+  "review_trace_commits": [
+    "c8c156700334eb08f70ab6652d0e57867c23fabf"
+  ],
+  "verification_trace_commit": "c8c156700334eb08f70ab6652d0e57867c23fabf",
+  "verification_artifact": ".dossier/verification/F-0029/spec-compact-c8c156700334.json",
+  "review_artifacts": [
+    ".dossier/reviews/F-0029/spec-compact--spec-conformance-reviewer--r03--pass--c8c156700334.json"
+  ],
+  "selected_closure_bundle": {
+    "closure_bundle_id": "spec-compact--bundle-d2f781236a1e--r03--c8c156700334",
+    "closure_bundle_round": 3,
+    "closure_bundle_rounds_by_audit_class": {
+      "spec-conformance-reviewer": 3
+    },
+    "selected_review_artifacts": [
+      ".dossier/reviews/F-0029/spec-compact--spec-conformance-reviewer--r03--pass--c8c156700334.json"
+    ],
+    "selected_review_artifacts_by_audit_class": {
+      "spec-conformance-reviewer": ".dossier/reviews/F-0029/spec-compact--spec-conformance-reviewer--r03--pass--c8c156700334.json"
+    },
+    "selected_verification_artifact": ".dossier/verification/F-0029/spec-compact-c8c156700334.json",
+    "selected_step_artifact": ".dossier/steps/F-0029/spec-compact.json",
+    "audit_class_order": [
+      "spec-conformance-reviewer"
+    ],
+    "selected_closure_ts": "2026-04-29T16:49:40.379Z",
+    "event_commit": "c8c156700334eb08f70ab6652d0e57867c23fabf"
+  },
+  "closure_bundle_id": "spec-compact--bundle-d2f781236a1e--r03--c8c156700334",
+  "closure_bundle_round": 3,
+  "closure_bundle_rounds_by_audit_class": {
+    "spec-conformance-reviewer": 3
+  },
+  "selected_review_artifacts": [
+    ".dossier/reviews/F-0029/spec-compact--spec-conformance-reviewer--r03--pass--c8c156700334.json"
+  ],
+  "selected_verification_artifact": ".dossier/verification/F-0029/spec-compact-c8c156700334.json",
+  "selected_step_artifact": ".dossier/steps/F-0029/spec-compact.json",
+  "selected_closure_ts": "2026-04-29T16:49:40.379Z",
+  "rpa_source_identity": {
+    "schema_version": 1,
+    "feature_id": "F-0029",
+    "backlog_item_key": "CF-029",
+    "feature_cycle_id": "fc-F-0029-mok6q1ug",
+    "cycle_id": "spec-compact-8bef7c89",
+    "stage": "spec-compact",
+    "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+    "stage_log": ".dossier/logs/spec-compact/F-0029--fc-F-0029-mok6q1ug--spec-compact-8bef7c89.md",
+    "stage_state_path": ".dossier/stages/F-0029/spec-compact.json",
+    "step_artifact": ".dossier/steps/F-0029/spec-compact.json",
+    "event_commit": "c8c156700334eb08f70ab6652d0e57867c23fabf",
+    "session_id": "ed155f06-ce9e-4679-9691-3a40061d3c89",
+    "trace_runtime": "codex"
+  },
+  "rpa_source_quality": {
+    "schema_version": 1,
+    "review_history_quality": "complete",
+    "selected_bundle_quality": "complete",
+    "missing_fail_artifact_count": 0,
+    "trace_only_fail_count": 0,
+    "same_thread_rejected_count": 0,
+    "invalid_launch_mode_process_miss_count": 0,
+    "unrecoverable_historical_fail_present": false,
+    "limitations": []
+  },
+  "non_pass_review_events": [],
+  "review_freshness": "pass",
+  "required_audit_classes": [
+    "spec-conformance-reviewer"
+  ],
+  "executed_audit_classes": [
+    "spec-conformance-reviewer"
+  ],
+  "required_external_review_pending": false,
+  "implementation_review_scope": null,
+  "required_security_review": false,
+  "degraded_review_present": false,
+  "invalidated_review_present": false,
+  "stale_review_present": false,
+  "reviewer_skills": [
+    "spec-conformance-reviewer"
+  ],
+  "reviewer_agent_ids": [
+    "019dda1f-b65e-70f2-a3e2-3abb15516748"
+  ],
+  "security_trigger_reasons": [],
+  "process_complete": true,
+  "blockers": [],
+  "next_step": "plan-slice"
+}

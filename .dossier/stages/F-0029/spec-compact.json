@@ -1,0 +1,225 @@
+{
+  "version": 1,
+  "stage": "spec-compact",
+  "feature_id": "F-0029",
+  "feature_cycle_id": "fc-F-0029-mok6q1ug",
+  "cycle_id": "spec-compact-8bef7c89",
+  "log_path": ".dossier/logs/spec-compact/F-0029--fc-F-0029-mok6q1ug--spec-compact-8bef7c89.md",
+  "backlog_item_key": "CF-029",
+  "primary_feature_id": "F-0029",
+  "primary_backlog_item_key": "CF-029",
+  "phase_scope": "spec-compact",
+  "closure_bundle_id": "spec-compact--bundle-d2f781236a1e--r03--c8c156700334",
+  "closure_bundle_round": 3,
+  "closure_bundle_rounds_by_audit_class": {
+    "spec-conformance-reviewer": 3
+  },
+  "selected_review_artifacts": [
+    ".dossier/reviews/F-0029/spec-compact--spec-conformance-reviewer--r03--pass--c8c156700334.json"
+  ],
+  "selected_verification_artifact": ".dossier/verification/F-0029/spec-compact-c8c156700334.json",
+  "selected_step_artifact": ".dossier/steps/F-0029/spec-compact.json",
+  "selected_closure_ts": "2026-04-29T16:49:40.379Z",
+  "rpa_source_identity": {
+    "schema_version": 1,
+    "feature_id": "F-0029",
+    "backlog_item_key": "CF-029",
+    "feature_cycle_id": "fc-F-0029-mok6q1ug",
+    "cycle_id": "spec-compact-8bef7c89",
+    "stage": "spec-compact",
+    "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+    "stage_log": ".dossier/logs/spec-compact/F-0029--fc-F-0029-mok6q1ug--spec-compact-8bef7c89.md",
+    "stage_state_path": ".dossier/stages/F-0029/spec-compact.json",
+    "step_artifact": ".dossier/steps/F-0029/spec-compact.json",
+    "event_commit": "c8c156700334eb08f70ab6652d0e57867c23fabf",
+    "session_id": "ed155f06-ce9e-4679-9691-3a40061d3c89",
+    "trace_runtime": "codex"
+  },
+  "rpa_source_quality": {
+    "schema_version": 1,
+    "review_history_quality": "complete",
+    "selected_bundle_quality": "complete",
+    "missing_fail_artifact_count": 0,
+    "trace_only_fail_count": 0,
+    "same_thread_rejected_count": 0,
+    "invalid_launch_mode_process_miss_count": 0,
+    "unrecoverable_historical_fail_present": false,
+    "limitations": []
+  },
+  "non_pass_review_events": [],
+  "policy_admission_risk_profile": null,
+  "policy_admission_risk_rationale": null,
+  "policy_admission_risk_families": [],
+  "policy_admission_negative_matrix": [],
+  "policy_admission_matrix_status": "missing",
+  "policy_admission_matrix_blockers": [],
+  "backlog_lifecycle_target": "specified",
+  "backlog_lifecycle_current": "specified",
+  "backlog_lifecycle_reconciled": true,
+  "backlog_actualization_artifacts": [
+    ".dossier/backlog/patches/0ed2c174fe29--2026-04-29-065-f0029-spec-compact-actualization.patch.json"
+  ],
+  "backlog_actualization_verdict": "actualized_by_backlog_artifact",
+  "post_close_backlog_hygiene_required": false,
+  "post_close_backlog_hygiene_status": "not_required",
+  "post_close_backlog_hygiene_artifact": null,
+  "post_close_backlog_hygiene_global_refresh_artifact": null,
+  "post_close_affected_feature_ids": [],
+  "post_close_pre_status_summary": null,
+  "post_close_post_status_summary": null,
+  "post_close_hygiene_schema_version": null,
+  "post_close_backlog_hygiene_checked_at": null,
+  "post_close_backlog_hygiene_refresh_at": null,
+  "post_close_open_source_review_count": null,
+  "post_close_source_review_blocked_item_count": null,
+  "post_close_lifecycle_reconciliation_drift_count": null,
+  "post_close_unresolved_attention_present": null,
+  "post_close_backlog_hygiene_blockers": [],
+  "pre_review_risk_families": [],
+  "pre_review_checklists": [],
+  "pre_review_checklist_status": "not_required",
+  "pre_review_checklist_blockers": [],
+  "backlog_followup_required": false,
+  "backlog_followup_kind": null,
+  "backlog_followup_resolved": false,
+  "stage_state": "ready_for_close",
+  "start_ts": "2026-04-29T16:36:07.505Z",
+  "entered_ts": "2026-04-29T16:36:07.505Z",
+  "ready_for_close_ts": "2026-04-29T16:40:28.352Z",
+  "transition_events": [
+    {
+      "kind": "entered",
+      "at": "2026-04-29T16:36:07.505Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-29T16:39:52.327Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-29T16:40:28.352Z"
+    }
+  ],
+  "required_audit_classes": [
+    "spec-conformance-reviewer"
+  ],
+  "executed_audit_classes": [
+    "spec-conformance-reviewer"
+  ],
+  "required_external_review_pending": false,
+  "review_artifacts": [
+    ".dossier/reviews/F-0029/spec-compact--spec-conformance-reviewer--r01--pass--84e38f33fe7a.json",
+    ".dossier/reviews/F-0029/spec-compact--spec-conformance-reviewer--r02--pass--84e38f33fe7a.json",
+    ".dossier/reviews/F-0029/spec-compact--spec-conformance-reviewer--r03--pass--c8c156700334.json"
+  ],
+  "verification_artifacts": [
+    ".dossier/verification/F-0029/spec-compact-e43b06d5be00.json",
+    ".dossier/verification/F-0029/spec-compact-84e38f33fe7a.json",
+    ".dossier/verification/F-0029/spec-compact-c8c156700334.json"
+  ],
+  "review_events": [
+    {
+      "allowed_by_policy": true,
+      "artifact_path": ".dossier/reviews/F-0029/spec-compact--spec-conformance-reviewer--r01--pass--84e38f33fe7a.json",
+      "audit_class": "spec-conformance-reviewer",
+      "evidence_count": 3,
+      "event_commit": "84e38f33fe7a8b3a9c743238da09e0a30711e9b1",
+      "implementation_scope": null,
+      "invalidated": false,
+      "latest_copy_path": ".dossier/reviews/F-0029/spec-compact--spec-conformance-reviewer--latest.json",
+      "must_fix_count": 0,
+      "recorded_at": "2026-04-29T16:46:48.320Z",
+      "review_mode": "external",
+      "review_attempt_id": "spec-compact--spec-conformance-reviewer--r01",
+      "review_round_id": "r01",
+      "review_round_number": 1,
+      "reviewer": "agent-019dda1f-b65e-70f2-a3e2-3abb15516748",
+      "reviewer_agent_id": "019dda1f-b65e-70f2-a3e2-3abb15516748",
+      "reviewer_skill": "spec-conformance-reviewer",
+      "reviewer_thread_id": "019dd8e7-0a47-7093-af99-12cfa514ab67",
+      "security_trigger_reason": null,
+      "stale": false,
+      "verdict": "PASS"
+    },
+    {
+      "allowed_by_policy": true,
+      "artifact_path": ".dossier/reviews/F-0029/spec-compact--spec-conformance-reviewer--r02--pass--84e38f33fe7a.json",
+      "audit_class": "spec-conformance-reviewer",
+      "evidence_count": 3,
+      "event_commit": "84e38f33fe7a8b3a9c743238da09e0a30711e9b1",
+      "implementation_scope": null,
+      "invalidated": false,
+      "latest_copy_path": ".dossier/reviews/F-0029/spec-compact--spec-conformance-reviewer--latest.json",
+      "must_fix_count": 0,
+      "recorded_at": "2026-04-29T16:47:34.465Z",
+      "review_mode": "external",
+      "review_attempt_id": "spec-compact--spec-conformance-reviewer--r02",
+      "review_round_id": "r02",
+      "review_round_number": 2,
+      "reviewer": "agent-019dda1f-b65e-70f2-a3e2-3abb15516748",
+      "reviewer_agent_id": "019dda1f-b65e-70f2-a3e2-3abb15516748",
+      "reviewer_skill": "spec-conformance-reviewer",
+      "reviewer_thread_id": "019dda1f-b65e-70f2-a3e2-3abb15516748",
+      "security_trigger_reason": null,
+      "stale": false,
+      "verdict": "PASS"
+    },
+    {
+      "allowed_by_policy": true,
+      "artifact_path": ".dossier/reviews/F-0029/spec-compact--spec-conformance-reviewer--r03--pass--c8c156700334.json",
+      "audit_class": "spec-conformance-reviewer",
+      "evidence_count": 3,
+      "event_commit": "c8c156700334eb08f70ab6652d0e57867c23fabf",
+      "implementation_scope": null,
+      "invalidated": false,
+      "latest_copy_path": ".dossier/reviews/F-0029/spec-compact--spec-conformance-reviewer--latest.json",
+      "must_fix_count": 0,
+      "recorded_at": "2026-04-29T16:49:31.430Z",
+      "review_mode": "external",
+      "review_attempt_id": "spec-compact--spec-conformance-reviewer--r03",
+      "review_round_id": "r03",
+      "review_round_number": 3,
+      "reviewer": "agent-019dda1f-b65e-70f2-a3e2-3abb15516748",
+      "reviewer_agent_id": "019dda1f-b65e-70f2-a3e2-3abb15516748",
+      "reviewer_skill": "spec-conformance-reviewer",
+      "reviewer_thread_id": "019dda1f-b65e-70f2-a3e2-3abb15516748",
+      "security_trigger_reason": null,
+      "stale": false,
+      "verdict": "PASS"
+    }
+  ],
+  "reviewer_skills": [
+    "spec-conformance-reviewer"
+  ],
+  "reviewer_agent_ids": [
+    "019dda1f-b65e-70f2-a3e2-3abb15516748"
+  ],
+  "review_trace_commits": [
+    "c8c156700334eb08f70ab6652d0e57867c23fabf"
+  ],
+  "degraded_review_present": false,
+  "invalidated_review_present": false,
+  "stale_review_present": false,
+  "skills_used": [
+    "unified-dossier-engineer"
+  ],
+  "skill_issues": [],
+  "skill_followups": [],
+  "process_misses": [],
+  "session_id": "ed155f06-ce9e-4679-9691-3a40061d3c89",
+  "trace_runtime": "codex",
+  "trace_locator_kind": "session_id",
+  "stage_entry_commit": null,
+  "final_delivery_commit": "e43b06d5be0044f3f84b64221ae1ec4e71514ad4",
+  "final_closure_commit": "c8c156700334eb08f70ab6652d0e57867c23fabf",
+  "implementation_review_scope": null,
+  "required_security_review": false,
+  "security_trigger_reasons": [],
+  "step_close_ts": "2026-04-29T16:49:40.393Z",
+  "step_artifact": ".dossier/steps/F-0029/spec-compact.json",
+  "process_complete_ts": "2026-04-29T16:49:40.393Z",
+  "intake_process_complete_ts": null,
+  "local_gates_green_ts": null,
+  "first_review_agent_started_ts": "2026-04-29T16:46:48.320Z",
+  "final_pass_ts": "2026-04-29T16:49:31.430Z"
+}
