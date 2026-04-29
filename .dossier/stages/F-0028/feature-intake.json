@@ -9,15 +9,43 @@
   "primary_feature_id": "F-0028",
   "primary_backlog_item_key": "CF-026",
   "phase_scope": "feature-intake для CF-026 support/operability contract и incident discipline",
-  "closure_bundle_id": null,
-  "closure_bundle_round": null,
-  "closure_bundle_rounds_by_audit_class": {},
-  "selected_review_artifacts": [],
-  "selected_verification_artifact": null,
-  "selected_step_artifact": null,
-  "selected_closure_ts": null,
-  "rpa_source_identity": null,
-  "rpa_source_quality": null,
+  "closure_bundle_id": "feature-intake--bundle-afa8fbc6badf--r01--6b227ff40232",
+  "closure_bundle_round": 1,
+  "closure_bundle_rounds_by_audit_class": {
+    "spec-conformance-reviewer": 1
+  },
+  "selected_review_artifacts": [
+    ".dossier/reviews/F-0028/feature-intake--spec-conformance-reviewer--r01--pass--6b227ff40232.json"
+  ],
+  "selected_verification_artifact": ".dossier/verification/F-0028/feature-intake-6b227ff40232.json",
+  "selected_step_artifact": ".dossier/steps/F-0028/feature-intake.json",
+  "selected_closure_ts": "2026-04-29T10:27:49.017Z",
+  "rpa_source_identity": {
+    "schema_version": 1,
+    "feature_id": "F-0028",
+    "backlog_item_key": "CF-026",
+    "feature_cycle_id": "fc-F-0028-mojwnhzd",
+    "cycle_id": "intake-a6f9dff8",
+    "stage": "feature-intake",
+    "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
+    "stage_log": ".dossier/logs/feature-intake/F-0028--fc-F-0028-mojwnhzd.md",
+    "stage_state_path": ".dossier/stages/F-0028/feature-intake.json",
+    "step_artifact": ".dossier/steps/F-0028/feature-intake.json",
+    "event_commit": "6b227ff40232ae51014f99c81f228ea490ebcc41",
+    "session_id": "afd61985-aa2a-4222-b0de-b401579d1786",
+    "trace_runtime": "codex"
+  },
+  "rpa_source_quality": {
+    "schema_version": 1,
+    "review_history_quality": "complete",
+    "selected_bundle_quality": "complete",
+    "missing_fail_artifact_count": 0,
+    "trace_only_fail_count": 0,
+    "same_thread_rejected_count": 0,
+    "invalid_launch_mode_process_miss_count": 0,
+    "unrecoverable_historical_fail_present": false,
+    "limitations": []
+  },
   "non_pass_review_events": [],
   "policy_admission_risk_profile": null,
   "policy_admission_risk_rationale": null,
@@ -26,10 +54,12 @@
   "policy_admission_matrix_status": "missing",
   "policy_admission_matrix_blockers": [],
   "backlog_lifecycle_target": "intaken",
-  "backlog_lifecycle_current": "defined",
-  "backlog_lifecycle_reconciled": false,
-  "backlog_actualization_artifacts": [],
-  "backlog_actualization_verdict": "actualization_required",
+  "backlog_lifecycle_current": "intaken",
+  "backlog_lifecycle_reconciled": true,
+  "backlog_actualization_artifacts": [
+    ".dossier/backlog/patches/805268c9709e--2026-04-29-059-f0028-feature-intake-actualization.patch.json"
+  ],
+  "backlog_actualization_verdict": "actualized_by_backlog_artifact",
   "post_close_backlog_hygiene_required": false,
   "post_close_backlog_hygiene_status": "not_required",
   "post_close_backlog_hygiene_artifact": null,
@@ -69,14 +99,50 @@
   "required_audit_classes": [
     "spec-conformance-reviewer"
   ],
-  "executed_audit_classes": [],
-  "required_external_review_pending": true,
-  "review_artifacts": [],
-  "verification_artifacts": [],
-  "review_events": [],
-  "reviewer_skills": [],
-  "reviewer_agent_ids": [],
-  "review_trace_commits": [],
+  "executed_audit_classes": [
+    "spec-conformance-reviewer"
+  ],
+  "required_external_review_pending": false,
+  "review_artifacts": [
+    ".dossier/reviews/F-0028/feature-intake--spec-conformance-reviewer--r01--pass--6b227ff40232.json"
+  ],
+  "verification_artifacts": [
+    ".dossier/verification/F-0028/feature-intake-6b227ff40232.json"
+  ],
+  "review_events": [
+    {
+      "allowed_by_policy": true,
+      "artifact_path": ".dossier/reviews/F-0028/feature-intake--spec-conformance-reviewer--r01--pass--6b227ff40232.json",
+      "audit_class": "spec-conformance-reviewer",
+      "evidence_count": 0,
+      "event_commit": "6b227ff40232ae51014f99c81f228ea490ebcc41",
+      "implementation_scope": null,
+      "invalidated": false,
+      "latest_copy_path": ".dossier/reviews/F-0028/feature-intake--spec-conformance-reviewer--latest.json",
+      "must_fix_count": 0,
+      "recorded_at": "2026-04-29T10:27:06.682Z",
+      "review_mode": "external",
+      "review_attempt_id": "feature-intake--spec-conformance-reviewer--r01",
+      "review_round_id": "r01",
+      "review_round_number": 1,
+      "reviewer": "external-agent-codex",
+      "reviewer_agent_id": "019dd8c5-1e62-78f0-b984-5e73435baab6",
+      "reviewer_skill": "spec-conformance-reviewer",
+      "reviewer_thread_id": "019dd8c5-1e62-78f0-b984-5e73435baab6",
+      "security_trigger_reason": null,
+      "stale": false,
+      "verdict": "PASS"
+    }
+  ],
+  "reviewer_skills": [
+    "spec-conformance-reviewer"
+  ],
+  "reviewer_agent_ids": [
+    "019dd8c5-1e62-78f0-b984-5e73435baab6"
+  ],
+  "review_trace_commits": [
+    "6b227ff40232ae51014f99c81f228ea490ebcc41"
+  ],
   "degraded_review_present": false,
   "invalidated_review_present": false,
   "stale_review_present": false,
@@ -91,15 +157,15 @@
   "trace_locator_kind": "session_id",
   "stage_entry_commit": null,
   "final_delivery_commit": "2562b9deba98ea194d03dd14c1c357febd2ef56f",
-  "final_closure_commit": null,
+  "final_closure_commit": "6b227ff40232ae51014f99c81f228ea490ebcc41",
   "implementation_review_scope": null,
-  "required_security_review": null,
+  "required_security_review": false,
   "security_trigger_reasons": [],
-  "step_close_ts": null,
-  "step_artifact": null,
-  "process_complete_ts": null,
-  "intake_process_complete_ts": null,
+  "step_close_ts": "2026-04-29T10:27:49.038Z",
+  "step_artifact": ".dossier/steps/F-0028/feature-intake.json",
+  "process_complete_ts": "2026-04-29T10:27:49.038Z",
+  "intake_process_complete_ts": "2026-04-29T10:27:49.038Z",
   "local_gates_green_ts": null,
-  "first_review_agent_started_ts": null,
-  "final_pass_ts": null
+  "first_review_agent_started_ts": "2026-04-29T10:27:06.682Z",
+  "final_pass_ts": "2026-04-29T10:27:06.682Z"
 }
