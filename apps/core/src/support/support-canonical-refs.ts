@@ -28,6 +28,11 @@ export type SupportCanonicalSurfaceAuditRow = {
   rawForeignWrite: boolean;
 };
 
+const CANONICAL_READER_UNAVAILABLE: unique symbol = Symbol('canonical_reader_unavailable');
+const isCanonicalReaderUnavailable = (
+  value: unknown,
+): value is typeof CANONICAL_READER_UNAVAILABLE => value === CANONICAL_READER_UNAVAILABLE;
+
 export const SUPPORT_CANONICAL_SURFACE_AUDIT: readonly SupportCanonicalSurfaceAuditRow[] = [
   {
     owner: SUPPORT_OWNER_REF.OPERATOR_API,
@@ -201,30 +206,51 @@ export const resolveSupportCanonicalEvidenceStates = async (input: {
   const states: SupportCanonicalEvidenceState[] = [];
 
   if (input.bundle.reportRunRefs.length > 0) {
-    const reportingBundle = readers.getReportingBundle ? await readers.getReportingBundle() : null;
-    const reportRuns = reportingBundle ? flattenReportRuns(reportingBundle) : [];
-    for (const ref of input.bundle.reportRunRefs) {
-      const row = reportRuns.find((candidate) => candidate.reportRunId === ref);
-      states.push({
-        owner: SUPPORT_OWNER_REF.REPORTING,
-        ref,
-        freshness: row
-          ? reportFreshness(row.availabilityStatus)
-          : SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING,
-        observedAt: input.observedAt,
-      });
+    const reportingBundle: ReportingBundle | null | typeof CANONICAL_READER_UNAVAILABLE =
+      readers.getReportingBundle
+        ? await readers.getReportingBundle().catch(() => CANONICAL_READER_UNAVAILABLE)
+        : null;
+    if (isCanonicalReaderUnavailable(reportingBundle)) {
+      for (const ref of input.bundle.reportRunRefs) {
+        states.push({
+          owner: SUPPORT_OWNER_REF.REPORTING,
+          ref,
+          freshness: SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.UNAVAILABLE,
+          observedAt: input.observedAt,
+        });
+      }
+    } else {
+      const reportRuns = reportingBundle ? flattenReportRuns(reportingBundle) : [];
+      for (const ref of input.bundle.reportRunRefs) {
+        const row = reportRuns.find((candidate) => candidate.reportRunId === ref);
+        states.push({
+          owner: SUPPORT_OWNER_REF.REPORTING,
+          ref,
+          freshness: row
+            ? reportFreshness(row.availabilityStatus)
+            : SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING,
+          observedAt: input.observedAt,
+        });
+      }
     }
   }
 
   const releaseRequestRefs = input.bundle.releaseRefs.filter((ref) =>
     ref.startsWith('release-request:'),
   );
-  const releaseInspections = new Map<string, ReleaseInspection | null>();
-  const inspectReleaseRef = async (requestId: string): Promise<ReleaseInspection | null> => {
+  const releaseInspections = new Map<
+    string,
+    ReleaseInspection | null | typeof CANONICAL_READER_UNAVAILABLE
+  >();
+  const inspectReleaseRef = async (
+    requestId: string,
+  ): Promise<ReleaseInspection | null | typeof CANONICAL_READER_UNAVAILABLE> => {
     if (!releaseInspections.has(requestId)) {
       releaseInspections.set(
         requestId,
-        readers.inspectRelease ? await readers.inspectRelease(requestId) : null,
+        readers.inspectRelease
+          ? await readers.inspectRelease(requestId).catch(() => CANONICAL_READER_UNAVAILABLE)
+          : null,
       );
     }
 
@@ -244,8 +270,20 @@ export const resolveSupportCanonicalEvidenceStates = async (input: {
 
     const candidateRequestRefs = ref.startsWith('release-request:') ? [ref] : releaseRequestRefs;
     const candidateInspections = await Promise.all(candidateRequestRefs.map(inspectReleaseRef));
+    if (candidateInspections.some(isCanonicalReaderUnavailable)) {
+      states.push({
+        owner: SUPPORT_OWNER_REF.RELEASE_AUTOMATION,
+        ref,
+        freshness: SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.UNAVAILABLE,
+        observedAt: input.observedAt,
+      });
+      continue;
+    }
     const freshness = candidateInspections
-      .filter((inspection): inspection is ReleaseInspection => inspection !== null)
+      .filter(
+        (inspection): inspection is ReleaseInspection =>
+          inspection !== null && !isCanonicalReaderUnavailable(inspection),
+      )
       .map((inspection) => releaseInspectionFreshness(inspection, ref));
 
     states.push({
@@ -261,13 +299,13 @@ export const resolveSupportCanonicalEvidenceStates = async (input: {
 
   for (const ref of input.bundle.operatorEvidenceRefs) {
     const valid = readers.validateOperatorAuthEvidence
-      ? await readers.validateOperatorAuthEvidence(ref)
+      ? await readers.validateOperatorAuthEvidence(ref).catch(() => CANONICAL_READER_UNAVAILABLE)
       : null;
     states.push({
       owner: SUPPORT_OWNER_REF.OPERATOR_AUTH,
       ref,
       freshness:
-        valid === null
+        valid === null || isCanonicalReaderUnavailable(valid)
           ? SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.UNAVAILABLE
           : valid
             ? SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH

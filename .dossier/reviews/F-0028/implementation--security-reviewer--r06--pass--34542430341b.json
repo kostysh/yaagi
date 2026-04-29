@@ -2,7 +2,7 @@
   "version": 1,
   "created_at": "2026-04-29T13:17:16.771Z",
   "audit_class": "security-reviewer",
-  "artifact_role": "latest_copy",
+  "artifact_role": "immutable_attempt",
   "review_mode": "external",
   "reviewer": "r06-security-reviewer",
   "reviewer_skill": "security-reviewer",
@@ -33,6 +33,5 @@
       "Focused verification run passed: pnpm test -- --test-reporter=tap apps/core/test/support/support-evidence.contract.test.ts apps/core/test/platform/operator-support.integration.test.ts apps/core/test/security/operator-auth-service.contract.test.ts packages/db/test/support-store.integration.test.ts packages/contracts/test/support.contract.test.ts packages/contracts/test/operator-api.contract.test.ts (42 tests)."
     ]
   },
-  "notes": "Security audit r06 for commit 34542430341b: no confirmed exploitable findings. Reviewed support route RBAC/admission, evidence redaction/trust boundary, owner action routing, idempotency/replay, post-claim failure handling, first-attempt service failure status, incident listing bounds, and F-0024/F-0026 validation boundaries.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--security-reviewer--r06--pass--34542430341b.json"
+  "notes": "Security audit r06 for commit 34542430341b: no confirmed exploitable findings. Reviewed support route RBAC/admission, evidence redaction/trust boundary, owner action routing, idempotency/replay, post-claim failure handling, first-attempt service failure status, incident listing bounds, and F-0024/F-0026 validation boundaries."
 }

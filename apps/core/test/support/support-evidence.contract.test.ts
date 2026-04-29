@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SUPPORT_ACTION_MODE,
+  SUPPORT_ACTION_STATUS,
   SUPPORT_CLOSURE_STATUS,
   SUPPORT_INCIDENT_CLASS,
   SUPPORT_SEVERITY,
@@ -216,8 +217,9 @@ const createMemoryStore = (): {
       }
       const row: SupportIncidentRow = {
         ...bundle,
-        requestId,
-        normalizedRequestHash,
+        requestId: incidents[input.supportIncidentId]?.requestId ?? requestId,
+        normalizedRequestHash:
+          incidents[input.supportIncidentId]?.normalizedRequestHash ?? normalizedRequestHash,
         closureReadinessStatus: readiness.status,
         closureReadinessReasons: readiness.reasons,
       };
@@ -375,7 +377,7 @@ void test('AC-F0028-02 AC-F0028-10 does not reroute owner actions on open replay
   assert.equal(ownerSeamCalls, 1);
 });
 
-void test('AC-F0028-02 rejects open replay after action routing fails following internal claim', async () => {
+void test('AC-F0028-02 records failed open action routing without rerouting on replay', async () => {
   const { store } = createMemoryStore();
   let ownerSeamCalls = 0;
   const service = createSupportEvidenceService({
@@ -404,18 +406,18 @@ void test('AC-F0028-02 rejects open replay after action routing fails following 
     ],
   };
 
-  await assert.rejects(() => service.openIncident(open), /report owner down/);
+  const first = await service.openIncident(open);
   const replay = await service.openIncident(open);
 
-  assert.equal(replay.accepted, false);
-  if (!replay.accepted) {
-    assert.equal(replay.reason, 'request_failed');
-    assert.deepEqual(replay.closureReasons, ['post_claim_action_routing_failed']);
+  assert.equal(first.accepted, true);
+  assert.equal(replay.accepted, true);
+  if (replay.accepted) {
+    assert.equal(replay.incident.actionRefs[0]?.status, SUPPORT_ACTION_STATUS.FAILED);
   }
   assert.equal(ownerSeamCalls, 1);
 });
 
-void test('AC-F0028-02 rejects replay after an owner seam fails following update claim', async () => {
+void test('AC-F0028-02 records failed update action routing after the support update is durable', async () => {
   const { store } = createMemoryStore();
   let ownerSeamCalls = 0;
   const service = createSupportEvidenceService({
@@ -451,18 +453,48 @@ void test('AC-F0028-02 rejects replay after an owner seam fails following update
     ],
   };
 
-  await assert.rejects(() => service.updateIncident(update), /report owner down/);
+  const first = await service.updateIncident(update);
   const replay = await service.updateIncident(update);
 
-  assert.equal(replay.accepted, false);
-  if (!replay.accepted) {
-    assert.equal(replay.reason, 'request_failed');
-    assert.deepEqual(replay.closureReasons, ['post_claim_update_failed']);
+  assert.equal(first.accepted, true);
+  assert.equal(replay.accepted, true);
+  if (replay.accepted) {
+    assert.equal(replay.incident.actionRefs[0]?.status, SUPPORT_ACTION_STATUS.FAILED);
   }
   assert.equal(ownerSeamCalls, 1);
 });
 
-void test('AC-F0028-02 rejects replay after a canonical reader fails following update claim', async () => {
+void test('AC-F0028-02 keeps open replay independent from unavailable canonical readers', async () => {
+  const { store } = createMemoryStore();
+  let readerCalls = 0;
+  const service = createSupportEvidenceService({
+    store,
+    now: () => now,
+    readers: {
+      validateOperatorAuthEvidence: () => {
+        readerCalls += 1;
+        return Promise.reject(new Error('auth reader down'));
+      },
+    },
+  });
+
+  const open = {
+    requestId: 'support-request-reader-open-replay',
+    incidentClass: SUPPORT_INCIDENT_CLASS.OPERATOR_ACCESS,
+    severity: SUPPORT_SEVERITY.WARNING,
+    sourceRefs: ['operator-route:/state'],
+    operatorEvidenceRefs: ['operator-auth-evidence:reader-open-replay'],
+  };
+
+  const first = await service.openIncident(open);
+  const replay = await service.openIncident(open);
+
+  assert.equal(first.accepted, true);
+  assert.equal(replay.accepted, true);
+  assert.equal(readerCalls, 0);
+});
+
+void test('AC-F0028-02 marks unavailable canonical readers as closure blockers before replay', async () => {
   const { store } = createMemoryStore();
   let readerCalls = 0;
   const service = createSupportEvidenceService({
@@ -488,16 +520,25 @@ void test('AC-F0028-02 rejects replay after a canonical reader fails following u
   const update = {
     supportIncidentId: opened.incident.supportIncidentId,
     requestId: 'support-request-reader-failure-update',
+    closureStatus: SUPPORT_CLOSURE_STATUS.RESOLVED,
     addOperatorEvidenceRefs: ['operator-auth-evidence:reader-failure'],
+    addEscalationRefs: ['escalation:auth-owner'],
+    addClosureCriteria: ['operator auth evidence must be fresh'],
   };
 
-  await assert.rejects(() => service.updateIncident(update), /auth reader down/);
+  const first = await service.updateIncident(update);
   const replay = await service.updateIncident(update);
 
+  assert.equal(first.accepted, false);
   assert.equal(replay.accepted, false);
-  if (!replay.accepted) {
-    assert.equal(replay.reason, 'request_failed');
-    assert.deepEqual(replay.closureReasons, ['post_claim_update_failed']);
+  if (!first.accepted && !replay.accepted) {
+    assert.equal(first.reason, 'closure_blocked');
+    assert.equal(replay.reason, 'closure_blocked');
+    assert.deepEqual(first.closureReasons, [
+      'action_refs_missing',
+      'canonical_evidence_unavailable:operator-auth-evidence:reader-failure',
+    ]);
+    assert.deepEqual(replay.closureReasons, first.closureReasons);
   }
   assert.equal(readerCalls, 1);
 });

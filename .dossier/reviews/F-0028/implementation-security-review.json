@@ -1,23 +1,23 @@
 {
   "version": 1,
-  "created_at": "2026-04-29T13:04:17.991Z",
+  "created_at": "2026-04-29T13:17:16.771Z",
   "audit_class": "security-reviewer",
   "artifact_role": "latest_copy",
   "review_mode": "external",
-  "reviewer": "r05-security-reviewer",
+  "reviewer": "r06-security-reviewer",
   "reviewer_skill": "security-reviewer",
   "reviewer_agent_id": null,
-  "reviewer_thread_id": "019dd954-337d-7413-9c47-bb8511a9ee5f",
-  "review_attempt_id": "implementation--security-reviewer--r05",
-  "review_round_id": "r05",
-  "review_round_number": 5,
+  "reviewer_thread_id": "019dd960-2486-7c62-b506-049b24f5d7fa",
+  "review_attempt_id": "implementation--security-reviewer--r06",
+  "review_round_id": "r06",
+  "review_round_number": 6,
   "latest_copy_path": ".dossier/reviews/F-0028/implementation-security-review.json",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
   "feature_id": "F-0028",
-  "event_commit": "7b1acee828512fcc25d66cb2d77df87adaf316a1",
+  "event_commit": "34542430341bff797aecb4efba73ddffe4a6a417",
   "implementation_scope": "code-bearing",
-  "security_trigger_reason": "Fresh source commit 7b1acee82851 changed protected support incident route error classification after r04; audit freshness required for implementation security scope.",
+  "security_trigger_reason": "F-0028 implementation changes protected support incident routes, support evidence persistence, owner-routed action handling, and idempotent replay behavior.",
   "invalidated": false,
   "rerun_reason": null,
   "allowed_by_policy": true,
@@ -26,9 +26,13 @@
     "must_fix": [],
     "should_fix": [],
     "evidence": [
-      "apps/core/src/platform/operator-api.ts:679 protects support runbooks with F-0024 admission; apps/core/src/platform/operator-api.ts:702 protects incident listing with admission and limit 1..100; apps/core/src/platform/operator-api.ts:734 and :777 parse bounded JSON then require support-operation admission before writes; apps/core/src/platform/operator-api.ts:771 and :815 map durable request_failed to 503, and :773/:817 now return 503 for first-attempt service throws. packages/contracts/src/operator-auth.ts:201 classifies POST/PATCH support incidents as SUPPORT_OPERATION and :265 grants that class only to support_operator among ordinary roles. packages/contracts/src/support.ts:275 and :299 bound request shapes and reject caller-supplied action status/evidence; :403 redacts bearer/basic/operator tokens and secret-like key/value material. apps/core/src/support/support-evidence.ts:199 and :213 redact request content before bundle persistence/hash; :401/:442/:533 resolve canonical evidence via owner readers; :424/:479 claim update request ids before side effects; :456/:551 mark post-claim failures request_failed. apps/core/src/support/support-actions.ts:43 documents human_only without execution; :55 only invokes server-wired owner seams for owner_routed actions and requires returned evidence. packages/db/src/support.ts:261 rejects non-support write surfaces; :620 and :887 use parameterized SQL; :676 and :837 enforce replay conflict/idempotency; :870 blocks unsafe terminal closure. infra/migrations/028_support_incidents.sql:29 stores support-owned incident rows with bounded enums and :101 tracks update request replay state. apps/core/test/platform/operator-support.integration.test.ts:45 covers RBAC and provenance forwarding, :158 covers first service failure 503; apps/core/test/support/support-evidence.contract.test.ts:274/:318/:365/:405/:469 cover replay, post-claim failure, critical closure, and forged action evidence; apps/core/test/support/support-canonical-refs.integration.test.ts:22/:74/:201 cover canonical reporting/release/auth evidence freshness."
+      "apps/core/src/platform/operator-api.ts:679 and :702 require F-0024 admission before support read routes; :734 and :777 parse bounded support bodies and require admission before POST/PATCH service invocation.",
+      "packages/contracts/src/operator-auth.ts:190-211 classifies support reads as read introspection and support writes as SUPPORT_OPERATION; :257-273 gives SUPPORT_OPERATION only to support_operator while observer/operator write attempts are forbidden by auth service checks.",
+      "apps/core/src/support/support-evidence.ts:199-231 redacts refs/actions/notes before hashing/persistence; :407-464 preserves the internal open action-routing claim replay result and rejects failed post-claim action routing; :476-560 rejects failed claimed update replay.",
+      "packages/db/src/support.ts:589-712 and :714-943 enforce request-id dedupe/conflict handling, claim/reject/apply state, closure-readiness blocking, and parameterized SQL; :949-967 limits incident listing through the service query.",
+      "Focused verification run passed: pnpm test -- --test-reporter=tap apps/core/test/support/support-evidence.contract.test.ts apps/core/test/platform/operator-support.integration.test.ts apps/core/test/security/operator-auth-service.contract.test.ts packages/db/test/support-store.integration.test.ts packages/contracts/test/support.contract.test.ts packages/contracts/test/operator-api.contract.test.ts (42 tests)."
     ]
   },
-  "notes": "Security review PASS for target commit 7b1acee82851. Reviewed support route RBAC/admission, evidence trust boundary, owner-action side effects, idempotency/replay behavior, post-claim failures, first-attempt service error classification, redaction before persistence/hash, incident listing exposure, and F-0024/F-0026 bounded validation. No high-confidence exploitable findings found. Narrow verification run passed: node --experimental-strip-types --experimental-test-module-mocks --test packages/contracts/test/operator-auth.contract.test.ts packages/contracts/test/operator-api.contract.test.ts apps/core/test/platform/operator-support.integration.test.ts apps/core/test/support/support-evidence.contract.test.ts apps/core/test/support/support-canonical-refs.integration.test.ts.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--security-reviewer--r05--pass--7b1acee82851.json"
+  "notes": "Security audit r06 for commit 34542430341b: no confirmed exploitable findings. Reviewed support route RBAC/admission, evidence redaction/trust boundary, owner action routing, idempotency/replay, post-claim failure handling, first-attempt service failure status, incident listing bounds, and F-0024/F-0026 validation boundaries.",
+  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--security-reviewer--r06--pass--34542430341b.json"
 }

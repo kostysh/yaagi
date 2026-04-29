@@ -1,21 +1,21 @@
 {
   "version": 1,
-  "created_at": "2026-04-29T13:04:53.208Z",
+  "created_at": "2026-04-29T13:16:33.887Z",
   "audit_class": "spec-conformance-reviewer",
   "artifact_role": "latest_copy",
   "review_mode": "external",
-  "reviewer": "r05-spec-conformance-reviewer",
+  "reviewer": "r06-spec-conformance-reviewer",
   "reviewer_skill": "spec-conformance-reviewer",
   "reviewer_agent_id": null,
-  "reviewer_thread_id": "019dd953-c139-7f73-8660-4118e390c373",
-  "review_attempt_id": "implementation--spec-conformance-reviewer--r05",
-  "review_round_id": "r05",
-  "review_round_number": 5,
+  "reviewer_thread_id": "019dd95f-ca06-70d2-92a2-115eaebdb531",
+  "review_attempt_id": "implementation--spec-conformance-reviewer--r06",
+  "review_round_id": "r06",
+  "review_round_number": 6,
   "latest_copy_path": ".dossier/reviews/F-0028/implementation-spec-conformance-review.json",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
   "feature_id": "F-0028",
-  "event_commit": "7b1acee828512fcc25d66cb2d77df87adaf316a1",
+  "event_commit": "34542430341bff797aecb4efba73ddffe4a6a417",
   "implementation_scope": "code-bearing",
   "security_trigger_reason": null,
   "invalidated": false,
@@ -26,9 +26,9 @@
     "must_fix": [],
     "should_fix": [],
     "evidence": [
-      "apps/core/src/platform/operator-api.ts:745, apps/core/src/platform/operator-api.ts:763, apps/core/src/platform/operator-api.ts:788, apps/core/src/platform/operator-api.ts:806, apps/core/test/platform/operator-support.integration.test.ts:158, packages/contracts/src/support.ts:31, packages/contracts/src/support.ts:379, apps/core/src/support/support-canonical-refs.ts:31, apps/core/src/support/support-actions.ts:43; local focused tests passed: node --experimental-strip-types --experimental-test-module-mocks --test packages/contracts/test/support.contract.test.ts packages/db/test/support-store.integration.test.ts apps/core/test/support/support-evidence.contract.test.ts apps/core/test/support/support-canonical-refs.integration.test.ts apps/core/test/support/support-action-boundary.contract.test.ts apps/core/test/support/support-usage-audit.contract.test.ts apps/core/test/platform/operator-support.integration.test.ts"
+      "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md AC-F0028-02/05/08/10/11/12/13/14/15; apps/core/src/support/support-evidence.ts:414-465; apps/core/test/support/support-evidence.contract.test.ts:341-416; packages/db/src/support.ts:414-464,714-943; apps/core/src/platform/operator-api.ts:679-774; apps/core/src/support/support-canonical-refs.ts:31-69,192-279; apps/core/src/support/support-actions.ts:37-85"
     ]
   },
-  "notes": "Spec conformance PASS for commit 7b1acee82851. Reviewed F-0028 dossier ACs plus adjacent F-0013/F-0023/F-0024/F-0026 owner contracts. The r05 fix maps first POST/PATCH support runtime service throws after payload validation/admission to 503, aligning first failure behavior with durable request_failed replay status. No bounded-owner, replay/idempotency, evidence freshness, closure, or r03/r04 remediation gaps found.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r05--pass--7b1acee82851.json"
+  "notes": "PASS: Spec-conformance audit of commit 34542430341b found no blocking deviation from F-0028 or adjacent owner contracts. The r05 replay blocker is fixed: openIncident now continues into the internal :action-routing claim on open replay and returns rejected/applied claim state instead of the original open result, preserving failed owner-seam routing as request_failed. Bounded surfaces remain inside F-0013/F-0024 support routes, support storage writes only F-0028-owned rows, canonical F-0023/F-0024/F-0026 refs are consumed as refs/read contracts, and closure readiness blocks critical terminal closure without owner evidence or human-only residual-risk disposition.",
+  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r06--pass--34542430341b.json"
 }

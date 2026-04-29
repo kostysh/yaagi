@@ -106,7 +106,7 @@
   "stage_state": "ready_for_close",
   "start_ts": "2026-04-29T10:55:00.903Z",
   "entered_ts": "2026-04-29T10:55:00.903Z",
-  "ready_for_close_ts": "2026-04-29T13:11:57.434Z",
+  "ready_for_close_ts": "2026-04-29T13:31:38.471Z",
   "transition_events": [
     {
       "kind": "entered",
@@ -175,6 +175,18 @@
     {
       "kind": "ready_for_close",
       "at": "2026-04-29T13:11:57.434Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-29T13:13:24.982Z"
+    },
+    {
+      "kind": "blocked",
+      "at": "2026-04-29T13:18:27.509Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-29T13:31:38.471Z"
     }
   ],
   "required_audit_classes": [
@@ -182,48 +194,14 @@
     "code-reviewer",
     "security-reviewer"
   ],
-  "executed_audit_classes": [
-    "spec-conformance-reviewer"
-  ],
+  "executed_audit_classes": [],
   "required_external_review_pending": true,
-  "review_artifacts": [
-    ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r05--pass--7b1acee82851.json"
-  ],
-  "verification_artifacts": [
-    ".dossier/verification/F-0028/implementation-7b1acee82851.json"
-  ],
-  "review_events": [
-    {
-      "allowed_by_policy": true,
-      "artifact_path": ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r05--pass--7b1acee82851.json",
-      "audit_class": "spec-conformance-reviewer",
-      "evidence_count": 1,
-      "event_commit": "7b1acee828512fcc25d66cb2d77df87adaf316a1",
-      "implementation_scope": "code-bearing",
-      "invalidated": false,
-      "latest_copy_path": ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--latest.json",
-      "must_fix_count": 0,
-      "recorded_at": "2026-04-29T13:04:53.231Z",
-      "review_mode": "external",
-      "review_attempt_id": "implementation--spec-conformance-reviewer--r05",
-      "review_round_id": "r05",
-      "review_round_number": 5,
-      "reviewer": "r05-spec-conformance-reviewer",
-      "reviewer_agent_id": null,
-      "reviewer_skill": "spec-conformance-reviewer",
-      "reviewer_thread_id": "019dd953-c139-7f73-8660-4118e390c373",
-      "security_trigger_reason": null,
-      "stale": false,
-      "verdict": "PASS"
-    }
-  ],
-  "reviewer_skills": [
-    "spec-conformance-reviewer"
-  ],
+  "review_artifacts": [],
+  "verification_artifacts": [],
+  "review_events": [],
+  "reviewer_skills": [],
   "reviewer_agent_ids": [],
-  "review_trace_commits": [
-    "7b1acee828512fcc25d66cb2d77df87adaf316a1"
-  ],
+  "review_trace_commits": [],
   "degraded_review_present": false,
   "invalidated_review_present": false,
   "stale_review_present": false,
@@ -286,13 +264,20 @@
       "severity": "high",
       "resolved": true,
       "summary": "round5 code audit blocker fixed by checking the internal action-routing request state on support open replay and covering successful plus failed open action replay"
+    },
+    {
+      "id": "implementation-audit-fail-round6",
+      "category": "review",
+      "severity": "high",
+      "resolved": true,
+      "summary": "round6 code audit blockers fixed by making support open replay idempotency-first, mapping canonical reader failures to unavailable states, and persisting requested action records before owner action routing"
     }
   ],
   "session_id": "350b48a7-b180-4582-ae1d-ccb8e70b9a6b",
   "trace_runtime": "codex",
   "trace_locator_kind": "session_id",
   "stage_entry_commit": "616e09befd1f1a86b904a4ce7a149f7c99c8aebf",
-  "final_delivery_commit": "7b1acee828512fcc25d66cb2d77df87adaf316a1",
+  "final_delivery_commit": "34542430341bff797aecb4efba73ddffe4a6a417",
   "final_closure_commit": null,
   "implementation_review_scope": "code-bearing",
   "required_security_review": true,
@@ -301,7 +286,7 @@
   "step_artifact": null,
   "process_complete_ts": null,
   "intake_process_complete_ts": null,
-  "local_gates_green_ts": "2026-04-29T13:11:57.434Z",
+  "local_gates_green_ts": "2026-04-29T13:31:38.471Z",
   "first_review_agent_started_ts": null,
   "final_pass_ts": null
 }

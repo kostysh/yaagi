@@ -322,11 +322,19 @@ export const createSupportEvidenceService = (input: {
     actionRecords: readonly SupportActionRecord[],
   ): Promise<SupportActionRecord[]> => {
     const routed = await Promise.all(
-      actionRecords.map((actionRecord) =>
+      actionRecords.map(async (actionRecord) =>
         routeSupportAction({
           action: actionRecord,
           ...(input.ownerSeams ? { ownerSeams: input.ownerSeams } : {}),
-        }),
+        }).catch(() => ({
+          accepted: false as const,
+          reason: 'owner_seam_unavailable' as const,
+          action: {
+            ...actionRecord,
+            status: SUPPORT_ACTION_STATUS.FAILED,
+            evidenceRef: null,
+          },
+        })),
       ),
     );
 
@@ -348,6 +356,80 @@ export const createSupportEvidenceService = (input: {
       reason: 'request_failed',
       closureReasons: [closureReason],
     });
+
+  const resolveCanonicalEvidenceStatesForBundle = (
+    bundle: SupportEvidenceBundle,
+    observedAt: string,
+  ) =>
+    isSupportTerminalClosureStatus(bundle.closureStatus)
+      ? resolveSupportCanonicalEvidenceStates({
+          bundle,
+          observedAt,
+          ...(input.readers ? { readers: input.readers } : {}),
+        })
+      : Promise.resolve([]);
+
+  const routeClaimedActionUpdate = async (inputParams: {
+    supportIncidentId: string;
+    requestId: string;
+    normalizedRequestHash: string;
+    actionRefs: readonly SupportActionRecord[];
+    observedAt: string;
+    scalarFieldUpdates?: {
+      closureStatus?: boolean;
+      residualRisk?: boolean;
+      nextOwnerRef?: boolean;
+    };
+    scalarValues?: {
+      closureStatus: SupportEvidenceBundle['closureStatus'];
+      residualRisk: SupportEvidenceBundle['residualRisk'];
+      nextOwnerRef: SupportEvidenceBundle['nextOwnerRef'];
+      closedAt: SupportEvidenceBundle['closedAt'];
+    };
+  }): Promise<SupportIncidentRecordResult> => {
+    const claim = await input.store.claimIncidentUpdate({
+      supportIncidentId: inputParams.supportIncidentId,
+      requestId: inputParams.requestId,
+      normalizedRequestHash: inputParams.normalizedRequestHash,
+      createdAt: inputParams.observedAt,
+    });
+    if (!claim.accepted || claim.deduplicated) {
+      return claim;
+    }
+
+    try {
+      const routedActionRefs = await routeActionRequests(inputParams.actionRefs);
+      const { bundle: claimBundle } = stripIncidentRowMetadata(claim.incident);
+      const routedBundle = supportEvidenceBundleSchema.parse({
+        ...claimBundle,
+        ...(inputParams.scalarValues ?? {}),
+        actionRefs: uniqueActions([...claimBundle.actionRefs, ...routedActionRefs]),
+        updatedAt: inputParams.observedAt,
+      });
+      const routedCanonicalEvidenceStates = await resolveCanonicalEvidenceStatesForBundle(
+        routedBundle,
+        inputParams.observedAt,
+      );
+
+      return await input.store.updateIncident({
+        ...routedBundle,
+        requestId: inputParams.requestId,
+        normalizedRequestHash: inputParams.normalizedRequestHash,
+        canonicalEvidenceStates: routedCanonicalEvidenceStates,
+        requestClaimed: true,
+        scalarFieldUpdates: inputParams.scalarFieldUpdates ?? {},
+      });
+    } catch (error) {
+      await rejectClaimedIncidentUpdate(
+        inputParams.supportIncidentId,
+        inputParams.requestId,
+        inputParams.normalizedRequestHash,
+        inputParams.observedAt,
+        'post_claim_action_routing_failed',
+      );
+      throw error;
+    }
+  };
 
   return {
     listRunbooks() {
@@ -398,17 +480,10 @@ export const createSupportEvidenceService = (input: {
         updatedAt: observedAt,
         closedAt: null,
       });
-      const canonicalEvidenceStates = await resolveSupportCanonicalEvidenceStates({
-        bundle,
-        observedAt,
-        ...(input.readers ? { readers: input.readers } : {}),
-      });
-
       const opened = await input.store.openIncident({
         ...bundle,
         requestId: parsed.requestId,
         normalizedRequestHash: stableHash({ ...parsed, supportIncidentId }),
-        canonicalEvidenceStates,
       });
 
       if (!opened.accepted || actionRefs.length === 0) {
@@ -421,48 +496,14 @@ export const createSupportEvidenceService = (input: {
         requestId: actionRequestId,
         actionRefs,
       });
-      const claim = await input.store.claimIncidentUpdate({
+
+      return routeClaimedActionUpdate({
         supportIncidentId,
         requestId: actionRequestId,
         normalizedRequestHash: normalizedActionRequestHash,
-        createdAt: observedAt,
+        actionRefs,
+        observedAt,
       });
-      if (!claim.accepted || claim.deduplicated) {
-        return claim;
-      }
-
-      try {
-        const routedActionRefs = await routeActionRequests(actionRefs);
-        const { bundle: claimBundle } = stripIncidentRowMetadata(claim.incident);
-        const routedBundle = supportEvidenceBundleSchema.parse({
-          ...claimBundle,
-          actionRefs: uniqueActions([...claimBundle.actionRefs, ...routedActionRefs]),
-          updatedAt: observedAt,
-        });
-        const routedCanonicalEvidenceStates = await resolveSupportCanonicalEvidenceStates({
-          bundle: routedBundle,
-          observedAt,
-          ...(input.readers ? { readers: input.readers } : {}),
-        });
-
-        return await input.store.updateIncident({
-          ...routedBundle,
-          requestId: actionRequestId,
-          normalizedRequestHash: normalizedActionRequestHash,
-          canonicalEvidenceStates: routedCanonicalEvidenceStates,
-          requestClaimed: true,
-          scalarFieldUpdates: {},
-        });
-      } catch (error) {
-        await rejectClaimedIncidentUpdate(
-          supportIncidentId,
-          actionRequestId,
-          normalizedActionRequestHash,
-          observedAt,
-          'post_claim_action_routing_failed',
-        );
-        throw error;
-      }
     },
 
     async updateIncident(rawInput) {
@@ -488,8 +529,11 @@ export const createSupportEvidenceService = (input: {
 
       const existing = claim.incident;
       const { bundle: existingBundle } = stripIncidentRowMetadata(existing);
+      let mainUpdateApplied = false;
 
       try {
+        const requestedActions = requestedActionRecords(parsed.addActionRefs, observedAt);
+        const hasActionRouting = requestedActions.length > 0;
         const note = parsed.note
           ? createSupportOperatorNote({
               noteId: noteIdForRequest(parsed.requestId),
@@ -499,10 +543,17 @@ export const createSupportEvidenceService = (input: {
               createdAt: observedAt,
             })
           : null;
-        const closureStatus = parsed.closureStatus ?? existing.closureStatus;
-        const routedActionRefs = await routeActionRequests(
-          requestedActionRecords(parsed.addActionRefs, observedAt),
-        );
+        const requestedClosureStatus =
+          parsed.closureStatus === undefined ? existing.closureStatus : parsed.closureStatus;
+        const closureStatus = hasActionRouting ? existing.closureStatus : requestedClosureStatus;
+        const residualRisk =
+          parsed.residualRisk === undefined || hasActionRouting
+            ? existing.residualRisk
+            : parsed.residualRisk;
+        const nextOwnerRef =
+          parsed.nextOwnerRef === undefined || hasActionRouting
+            ? existing.nextOwnerRef
+            : parsed.nextOwnerRef;
         const bundle = supportEvidenceBundleSchema.parse({
           ...existingBundle,
           sourceRefs: uniqueSorted([...existing.sourceRefs, ...parsed.addSourceRefs]),
@@ -513,7 +564,7 @@ export const createSupportEvidenceService = (input: {
             ...parsed.addOperatorEvidenceRefs,
             ...(operatorEvidenceRef ? [redactSupportText(operatorEvidenceRef)] : []),
           ]),
-          actionRefs: uniqueActions([...existing.actionRefs, ...routedActionRefs]),
+          actionRefs: uniqueActions([...existing.actionRefs, ...requestedActions]),
           escalationRefs: uniqueSorted([...existing.escalationRefs, ...parsed.addEscalationRefs]),
           closureCriteria: uniqueSorted([
             ...existing.closureCriteria,
@@ -521,27 +572,63 @@ export const createSupportEvidenceService = (input: {
           ]),
           operatorNotes: uniqueNotes([...existing.operatorNotes, ...(note ? [note] : [])]),
           closureStatus,
-          residualRisk:
-            parsed.residualRisk === undefined ? existing.residualRisk : parsed.residualRisk,
-          nextOwnerRef:
-            parsed.nextOwnerRef === undefined ? existing.nextOwnerRef : parsed.nextOwnerRef,
+          residualRisk,
+          nextOwnerRef,
           updatedAt: observedAt,
           closedAt: isSupportTerminalClosureStatus(closureStatus)
             ? (existing.closedAt ?? observedAt)
             : null,
         });
-        const canonicalEvidenceStates = await resolveSupportCanonicalEvidenceStates({
+        const canonicalEvidenceStates = await resolveCanonicalEvidenceStatesForBundle(
           bundle,
           observedAt,
-          ...(input.readers ? { readers: input.readers } : {}),
-        });
+        );
 
-        return await input.store.updateIncident({
+        const updateResult = await input.store.updateIncident({
           ...bundle,
           requestId: parsed.requestId,
           normalizedRequestHash,
           canonicalEvidenceStates,
           requestClaimed: true,
+          scalarFieldUpdates: {
+            closureStatus: parsed.closureStatus !== undefined && !hasActionRouting,
+            residualRisk: parsed.residualRisk !== undefined && !hasActionRouting,
+            nextOwnerRef: parsed.nextOwnerRef !== undefined && !hasActionRouting,
+          },
+        });
+        if (!updateResult.accepted || !hasActionRouting) {
+          return updateResult;
+        }
+        mainUpdateApplied = true;
+
+        const actionRequestId = `${parsed.requestId}:action-routing`;
+        const normalizedActionRequestHash = stableHash({
+          supportIncidentId,
+          requestId: actionRequestId,
+          actionRefs: requestedActions,
+          scalarFieldUpdates: {
+            closureStatus: parsed.closureStatus !== undefined,
+            residualRisk: parsed.residualRisk !== undefined,
+            nextOwnerRef: parsed.nextOwnerRef !== undefined,
+          },
+        });
+
+        return await routeClaimedActionUpdate({
+          supportIncidentId,
+          requestId: actionRequestId,
+          normalizedRequestHash: normalizedActionRequestHash,
+          actionRefs: requestedActions,
+          observedAt,
+          scalarValues: {
+            closureStatus: requestedClosureStatus,
+            residualRisk:
+              parsed.residualRisk === undefined ? existing.residualRisk : parsed.residualRisk,
+            nextOwnerRef:
+              parsed.nextOwnerRef === undefined ? existing.nextOwnerRef : parsed.nextOwnerRef,
+            closedAt: isSupportTerminalClosureStatus(requestedClosureStatus)
+              ? (existing.closedAt ?? observedAt)
+              : null,
+          },
           scalarFieldUpdates: {
             closureStatus: parsed.closureStatus !== undefined,
             residualRisk: parsed.residualRisk !== undefined,
@@ -549,13 +636,15 @@ export const createSupportEvidenceService = (input: {
           },
         });
       } catch (error) {
-        await rejectClaimedIncidentUpdate(
-          supportIncidentId,
-          parsed.requestId,
-          normalizedRequestHash,
-          observedAt,
-          'post_claim_update_failed',
-        );
+        if (!mainUpdateApplied) {
+          await rejectClaimedIncidentUpdate(
+            supportIncidentId,
+            parsed.requestId,
+            normalizedRequestHash,
+            observedAt,
+            'post_claim_update_failed',
+          );
+        }
         throw error;
       }
     },
