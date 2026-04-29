@@ -1,12 +1,14 @@
 # Матрица выявленных проблем с корнями и точками правки
 
-Status: agent-authored follow-up matrix
+Статус: follow-up документ, подготовленный агентом
 
-## Scope
+## Область анализа
 
-Этот документ является follow-up к ретроспективе сессии `019dd8e7-0a47-7093-af99-12cfa514ab67`.
+Документ дополняет ретроспективу сессии `019dd8e7-0a47-7093-af99-12cfa514ab67`.
 
-Он предназначен для агента, который не видел текущую сессию. Используй этот документ как вход для последующей работы над улучшением skills и runtime-инструкций. Сам документ не меняет skills; он фиксирует, что именно нужно изменить в соответствующих skill-инструкциях или runtime-логике.
+Цель документа: дать будущему агенту самодостаточный список проблем, причин и точек исправления в skills/runtime-инструкциях. Агенту не нужен контекст этой сессии: здесь указаны ID проблемы, затронутый skill, корень проблемы, причина появления, предлагаемое решение, конкретное место изменения и критерий приемки.
+
+Этот документ сам не меняет skills. Он фиксирует, что именно нужно изменить в следующих итерациях.
 
 Основные источники:
 
@@ -17,7 +19,7 @@ Status: agent-authored follow-up matrix
 - `.dossier/steps/F-0029/implementation.json`
 - `.dossier/verification/F-0029/implementation-post-close-backlog-hygiene.json`
 
-## ID Convention
+## Соглашение об ID
 
 - `RCM-UDE-*`: `unified-dossier-engineer`
 - `RCM-ID-*`: `implementation-discipline`
@@ -30,389 +32,426 @@ Status: agent-authored follow-up matrix
 
 ## unified-dossier-engineer
 
-### RCM-UDE-001: Capability gap surfaced only during operator conversation
+### RCM-UDE-001: Пробел в операторском интерфейсе обнаружился только в разговоре
 
-Problem:
-The Telegram operator chat capability was not present in the backlog before the operator asked how to communicate with Polyphony. The process recovered correctly by creating `F-0029`, but discovery happened late.
+Проблема:
+Возможность общаться с Polyphony через Telegram не была заранее отражена в backlog. Она появилась только после вопроса оператора "как я смогу общаться с полифонией?". Процесс восстановился правильно через `F-0029`, но обнаружение произошло поздно.
 
-Root cause:
-The backlog workflow has strong mechanics for processing known sources, but the skill does not explicitly instruct agents to treat operator-facing "how will I use/talk to the system?" questions as possible backlog coverage gaps.
+Корень:
+Workflow хорошо обрабатывает уже зарегистрированные источники и backlog items, но в skill нет явного правила: вопросы оператора о том, как он будет взаимодействовать с системой, могут означать пробел покрытия backlog.
 
-Current relevant rule:
-`unified-dossier-engineer/SKILL.md` says the model must preserve backlog truth and that new durable source material should enter the backlog truth layer. It does not explicitly name operator interaction surface discovery as a backlog gap trigger.
+Причина появления:
+Агент мог трактовать такой вопрос как обычное объяснение текущей системы, а не как сигнал "в backlog отсутствует операторский interaction surface".
 
-Change to make:
-Add an operator-interface gap trigger.
+Проверенное текущее правило:
+В `unified-dossier-engineer/SKILL.md` сказано, что нужно сохранять backlog truth layer и заводить durable source material в backlog truth layer. Но там не назван операторский канал взаимодействия как отдельный trigger для gap/change-proposal.
 
-Where to change:
+Решение:
+Добавить явный trigger для operator-interface gap.
+
+Где менять:
 `<skills-root>/unified-dossier-engineer/SKILL.md`
 
-Section:
+Раздел:
 `Workflow stage: Maintain the model`
 
-Add after the current invariant list:
+Что добавить:
+После списка текущих инвариантов добавить правило:
 
 ```md
-7. When an operator asks how they will interact with, operate, command, approve, or communicate with the system, check whether that interaction surface is already represented by a backlog item or dossier. If it is not represented, treat it as a potential backlog gap and route it through change-proposal or feature-intake before implementation.
+Когда оператор спрашивает, как он будет взаимодействовать с системой, управлять ей, давать команды, подтверждать действия или общаться с ней, агент должен проверить, представлен ли этот interaction surface в backlog item или dossier. Если представления нет, это потенциальный backlog gap; перед реализацией его нужно провести через change-proposal или feature-intake.
 ```
 
-Acceptance check:
-An agent reading only the skill should know that operator-channel questions can create backlog work and must not be answered as "already covered" unless a dossier/backlog item actually covers the surface.
+Критерий приемки:
+Агент, прочитавший только skill, должен понимать: операторский вопрос о канале взаимодействия может создавать новую backlog работу и не должен автоматически считаться "уже покрытым".
 
-### RCM-UDE-002: Post-close hygiene was separate from functional closure and easy to miss
+### RCM-UDE-002: Post-close hygiene была отдельной от функционального закрытия
 
-Problem:
-`F-0029` implementation was functionally closed, but backlog normalization still had to be done afterward. The final state was clean only after a separate hygiene pass.
+Проблема:
+`F-0029` была функционально реализована и закрыта, но backlog стал нормальным только после отдельного hygiene-прохода. До него оставались post-close/source-review состояния, которые требовали нормализации.
 
-Root cause:
-The skill already says post-close backlog hygiene must remain explicit, but closure output and agent behavior can still treat "implementation closed" as if the entire backlog is normal.
+Корень:
+В skill уже есть требование делать post-close backlog hygiene явной, но агентское поведение все еще может воспринимать "implementation closed" как "вся сессия завершена".
 
-Current relevant rule:
-`unified-dossier-engineer/SKILL.md`, `Workflow stage: Maintain the model`, item 4: "Keep implementation post-close backlog hygiene evidence explicit after closure and before branch-complete reporting or next-intake recommendation."
+Причина появления:
+Закрытие implementation и чистота backlog находятся в разных слоях процесса. Без жесткой формулировки агент может закончить отчет после closure artifact, не дождавшись чистых `status`, `queue`, `attention` и post-close hygiene.
 
-Change to make:
-Strengthen this rule from "keep evidence explicit" to "do not report branch/session complete until hygiene commands are clean."
+Проверенное текущее правило:
+`unified-dossier-engineer/SKILL.md`, `Workflow stage: Maintain the model`, пункт 4: нужно держать post-close backlog hygiene evidence explicit после closure и до branch-complete reporting / next-intake recommendation.
 
-Where to change:
+Решение:
+Усилить правило: нельзя сообщать, что branch/session завершена, пока hygiene-команды не чистые.
+
+Где менять:
 `<skills-root>/unified-dossier-engineer/SKILL.md`
 
-Section:
+Раздел:
 `Workflow stage: Maintain the model`
 
-Replace item 4 with:
+Что заменить:
+Заменить текущий пункт 4 на правило со смыслом:
 
 ```md
-4. Keep implementation post-close backlog hygiene evidence explicit after closure and before branch-complete reporting or next-intake recommendation. After any implementation closure, the agent must run or inspect the post-close hygiene result and must not report the branch/session as complete while `status`, `queue`, `attention`, source-review, lifecycle drift, or post-close hygiene blockers remain unresolved.
+После любого implementation closure агент должен выполнить или проверить post-close hygiene result. Нельзя сообщать, что branch/session завершена, если `status`, `queue`, `attention`, source-review, lifecycle drift или post-close hygiene blockers остаются нерешенными.
 ```
 
-Runtime follow-up:
-If changing the runtime is in scope, update the `implementation` or `dossier-step-close` completion output in `<skills-root>/unified-dossier-engineer/scripts/dossier-engineer.mjs` so it prints a direct next action when post-close hygiene is required or stale.
+Доработка runtime:
+Если меняется runtime, обновить completion output в `<skills-root>/unified-dossier-engineer/scripts/dossier-engineer.mjs` для `implementation` или `dossier-step-close`, чтобы при required/stale hygiene он печатал прямое следующее действие.
 
-Acceptance check:
-After closing an implementation, the agent should either report "post-close hygiene is clean" or name the exact remaining blocker and next command.
+Критерий приемки:
+После закрытия implementation агент либо пишет "post-close hygiene clean", либо называет конкретный blocker и следующую команду.
 
-### RCM-UDE-003: Review reround reasons were not machine-readable
+### RCM-UDE-003: Причины review reround не были машиночитаемыми
 
-Problem:
-The session had several review rerounds, but the durable logs did not compactly say why each review class was launched again.
+Проблема:
+В сессии было несколько review rerounds, но durable logs не фиксировали компактно, почему каждый review class запускался повторно.
 
-Root cause:
-The stage artifact model records review artifacts and verdicts, but does not require a small structured launch reason such as `spec-risk`, `security-risk`, `code-risk`, `hygiene-only`, or `operator-requested`.
+Корень:
+Stage artifact model хранит review artifacts и verdicts, но не требует маленького структурного поля причины запуска: `spec-risk`, `security-risk`, `code-risk`, `hygiene-only`, `operator-requested`.
 
-Current relevant rule:
-`unified-dossier-engineer/SKILL.md` says stage log frontmatter mirrors bounded fields including review attempt events and process misses. It does not require review-launch reason classification.
+Причина появления:
+Без такого поля будущий ретро-анализ вынужден восстанавливать мотивы reround из chat trace и review prompts, что дорого и ненадежно.
 
-Change to make:
-Add a bounded optional field to review attempt events and make it recommended/required for rerounds.
+Проверенное текущее правило:
+`unified-dossier-engineer/SKILL.md` говорит, что stage log frontmatter зеркалит bounded fields, включая review attempt events и process misses. Но review launch reason там не обязателен.
 
-Where to change:
+Решение:
+Добавить bounded optional/required field для повторных review attempts.
+
+Где менять:
 `<skills-root>/unified-dossier-engineer/SKILL.md`
 
-Section:
-`Overview`, paragraph beginning "For machine-complete stage artifacts..."
+Раздел:
+`Overview`, абзац про machine-complete stage artifacts.
 
-Add:
+Что добавить:
 
 ```md
-For every review reround after the first attempt for the same audit class, record a bounded `review_launch_reason`: `spec-risk`, `security-risk`, `code-risk`, `runtime-test-risk`, `hygiene-only`, or `operator-requested`. The reason must explain why the latest change can affect that audit class, or explicitly state that it cannot and that the review is being skipped.
+Для каждого review reround после первой попытки того же audit class фиксировать bounded `review_launch_reason`: `spec-risk`, `security-risk`, `code-risk`, `runtime-test-risk`, `hygiene-only` или `operator-requested`. Причина должна объяснять, почему последнее изменение может затронуть этот audit class, либо явно фиксировать, что риска нет и review пропущен.
 ```
 
-Runtime follow-up:
-Update the review-event schema and any stage-log writer in `<skills-root>/unified-dossier-engineer/scripts/dossier-engineer.mjs` to preserve `review_launch_reason` when supplied.
+Доработка runtime:
+Обновить review-event schema и stage-log writer в `<skills-root>/unified-dossier-engineer/scripts/dossier-engineer.mjs`, чтобы сохранять `review_launch_reason`.
 
-Acceptance check:
-A future retrospective can group review rerounds by reason without reading the whole chat trace.
+Критерий приемки:
+Будущая ретроспектива может сгруппировать review rerounds по причинам без чтения всего chat trace.
 
 ## implementation-discipline
 
-### RCM-ID-001: Parallel-agent overlap caused avoidable rework
+### RCM-ID-001: Параллельная работа другого агента привела к переделке
 
-Problem:
-The operator warned that another agent might be working in the same repo. Work had to pause because another agent removed prior local work.
+Проблема:
+Оператор предупредил, что другой агент может работать в том же репозитории. Работу пришлось остановить, потому что другой агент удалил часть локальных наработок.
 
-Root cause:
-`implementation-discipline` covers assumptions, surgical diffs, and verification, but it does not explicitly define a shared-workspace conflict checklist when another agent may be active.
+Корень:
+`implementation-discipline` описывает явные assumptions, surgical diff и verification, но не задает отдельный checklist для shared-workspace conflict, когда в том же repo может работать другой агент.
 
-Current relevant rule:
-`implementation-discipline/SKILL.md`, `Workflow stage: Clarify the task and the target`, says to surface ambiguity and define success before changing code. It does not name multi-agent repository overlap as a blocking ambiguity.
+Причина появления:
+Без явного правила агент может продолжить редактирование после сигнала о параллельной работе, хотя baseline уже потенциально нестабилен.
 
-Change to make:
-Add a shared-workspace ambiguity rule.
+Проверенное текущее правило:
+`implementation-discipline/SKILL.md`, `Workflow stage: Clarify the task and the target`, требует surface ambiguity и success criteria перед изменением кода. Но multi-agent repository overlap не назван как blocking ambiguity.
 
-Where to change:
+Решение:
+Добавить правило shared-workspace ambiguity.
+
+Где менять:
 `<skills-root>/implementation-discipline/SKILL.md`
 
-Section:
+Раздел:
 `Workflow stage: Clarify the task and the target`
 
-Add after item 2:
+Что добавить:
+После пункта 2 добавить правило:
 
 ```md
-3. If the operator mentions another active agent, a parallel implementation, or possible overwritten work in the same repository, treat that as a blocking workspace ambiguity. Stop editing, inspect `git status`, recent commits, touched files, and the relevant task/dossier state, then resume only after the operator confirms or the repository baseline is unambiguous.
+Если оператор упоминает другого активного агента, параллельную implementation или возможное перетирание работы в том же репозитории, считать это blocking workspace ambiguity. Остановить редактирование, проверить `git status`, последние commits, затронутые файлы и relevant task/dossier state. Возобновлять работу только после подтверждения оператора или после того, как repository baseline стал однозначным.
 ```
 
-Renumber the remaining item in that section.
+После добавления перенумеровать оставшиеся пункты раздела.
 
-Acceptance check:
-An agent should not continue editing after an operator says another agent may be changing the same worktree.
+Критерий приемки:
+Агент не продолжает редактировать файлы после сообщения оператора о возможной параллельной работе другого агента.
 
 ## spec-conformance-reviewer
 
-### RCM-SCR-001: Spec audits were launched without an explicit spec-risk decision
+### RCM-SCR-001: Spec audits запускались без явной классификации spec-risk
 
-Problem:
-The operator challenged extra audits: if a change cannot affect spec conformance, a spec audit is unnecessary overhead.
+Проблема:
+Оператор справедливо указал: если правка не влияет на соответствие спецификации, spec audit не нужен и только увеличивает задержку.
 
-Root cause:
-The skill says when it applies and when it does not, but it does not require an explicit risk decision before rerunning spec conformance after implementation fixes or hygiene-only changes.
+Корень:
+Skill хорошо описывает, когда он применим, но не требует перед rerun явно классифицировать последнюю правку как `spec-risk` или `no-spec-risk`.
 
-Current relevant rule:
-`spec-conformance-reviewer/SKILL.md`, `When NOT to use this skill`, excludes general merge-risk/security/style reviews. `Non-Negotiables` say to review implementation against normative requirements.
+Причина появления:
+После implementation fixes или hygiene-only edits агент может запускать spec-conformance review по инерции, без проверки, изменился ли normative surface.
 
-Change to make:
-Add a rerun gate for post-fix and hygiene-only contexts.
+Проверенное текущее правило:
+`spec-conformance-reviewer/SKILL.md`, `When NOT to use this skill`, исключает general merge-risk/security/style reviews. `Non-Negotiables` требуют проверять implementation against normative requirements. Но нет отдельного rerun gate.
 
-Where to change:
+Решение:
+Добавить rerun gate для post-fix и hygiene-only contexts.
+
+Где менять:
 `<skills-root>/spec-conformance-reviewer/SKILL.md`
 
-Section:
+Раздел:
 `When NOT to use this skill`
 
-Add bullet:
+Что добавить:
 
 ```md
-- Pure backlog, dossier, logging, formatting, or closure hygiene that does not change normative requirements, implementation behavior, tests used as requirement evidence, contracts, ADRs, or acceptance criteria. In that case, run the workflow/backlog verification owned by the relevant skill instead of a spec-conformance review.
+Не использовать skill для чистой backlog/dossier/logging/formatting/closure hygiene, если она не меняет normative requirements, implementation behavior, tests used as requirement evidence, contracts, ADRs или acceptance criteria. В таком случае выполнять workflow/backlog verification, принадлежащую соответствующему skill.
 ```
 
-Section:
+Раздел:
 `Fast Workflow`
 
-Add as step 0:
+Что добавить как шаг 0:
 
 ```md
-0. For any rerun after implementation fixes or hygiene changes, classify the latest change as `spec-risk` or `no-spec-risk`. Run this skill only for `spec-risk`; record `no-spec-risk` as the reason when skipping it.
+Перед любым rerun после implementation fixes или hygiene changes классифицировать последнее изменение как `spec-risk` или `no-spec-risk`. Запускать этот skill только при `spec-risk`; при пропуске фиксировать `no-spec-risk` как причину.
 ```
 
-Acceptance check:
-Future agents can justify every spec audit rerun in one sentence tied to changed normative surface.
+Критерий приемки:
+Каждый будущий spec audit rerun можно обосновать одной фразой, привязанной к изменившемуся normative surface.
 
 ## code-reviewer
 
-### RCM-CR-001: Code review rerounds were expensive because prompts lacked a mandatory compact delta
+### RCM-CR-001: Code review rerounds были дорогими из-за отсутствия обязательного delta handoff
 
-Problem:
-F-0029 needed several code-review rounds before final PASS. The review loop was valuable, but rerounds cost more than necessary.
+Проблема:
+Для `F-0029` потребовалось несколько code-review rounds до final PASS. Review loop был полезен, но каждый reround стоил больше, чем должен был.
 
-Root cause:
-`code-reviewer` requires reading the full diff and verifying findings, but it does not require the author to provide a compact "what changed since last review" handoff for rerounds.
+Корень:
+`code-reviewer` требует читать full diff и подтверждать findings, но не требует от автора компактного handoff "что изменилось с прошлого review".
 
-Current relevant rule:
-`code-reviewer/SKILL.md`, `Fast Workflow`, gathers context, reads the full diff, and routes by risk. It does not require reround prompts to include previous finding IDs, fixed files, and remaining risk.
+Причина появления:
+Reviewer вынужден заново восстанавливать контекст вместо focused validation предыдущих findings и новых changed files.
 
-Change to make:
-Add a reround handoff requirement.
+Проверенное текущее правило:
+`code-reviewer/SKILL.md`, `Fast Workflow`, требует собрать контекст, прочитать full diff и маршрутизировать риск. Но reround prompt не обязан содержать previous finding IDs, fixed files и remaining risk.
 
-Where to change:
+Решение:
+Добавить обязательный reround handoff.
+
+Где менять:
 `<skills-root>/code-reviewer/SKILL.md`
 
-Section:
+Раздел:
 `Fast Workflow`
 
-Add after step 1:
+Что добавить:
+После шага 1 добавить:
 
 ```md
-1a. For a reround after a previous review, require a compact reround handoff before reviewing: previous finding IDs/verdicts, changed files since the previous attempt, intended fixes, commands already run, and any intentionally unresolved risk. If the handoff is missing, reconstruct it from the diff and call out the missing handoff as a process issue.
+Для reround после предыдущего review требовать компактный reround handoff: IDs/verdicts предыдущих findings, changed files since previous attempt, intended fixes, уже выполненные команды и intentionally unresolved risk. Если handoff отсутствует, reviewer должен восстановить его из diff и отметить отсутствие handoff как process issue.
 ```
 
-Acceptance check:
-Reviewer prompts and persisted artifacts for rerounds should make it clear whether the reviewer is validating fixes or performing a first-pass review.
+Критерий приемки:
+По prompt или persisted artifact понятно, reviewer делает first-pass review или проверяет исправления после предыдущего review.
 
 ## security-reviewer
 
-### RCM-SR-001: Security review trigger needs to distinguish security-sensitive changes from hygiene
+### RCM-SR-001: Security review trigger должен отличать security-sensitive changes от hygiene
 
-Problem:
-Security review was absolutely justified for operator-only Telegram access, tokens, and allowlists. It was not justified for pure backlog sanitation.
+Проблема:
+Security review был необходим для operator-only Telegram access, tokens и allowlists. Но для чистой backlog sanitation он не нужен.
 
-Root cause:
-`security-reviewer` has clear applicability rules, but agents may still invoke it reflexively after every implementation-adjacent edit.
+Корень:
+`security-reviewer` уже имеет правила применимости, но агент может запускать его рефлекторно после каждой implementation-adjacent правки.
 
-Current relevant rule:
-`security-reviewer/SKILL.md`, `When to use this skill`, includes auth, tokens, secrets, permissions, webhooks, and sensitive flows. `When NOT to use this skill` excludes general non-security code quality review.
+Причина появления:
+В skill нет явного rerun gate `security-risk` / `no-security-risk` для ситуации после fixes или hygiene edits.
 
-Change to make:
-Add an explicit hygiene exclusion and rerun trigger.
+Проверенное текущее правило:
+`security-reviewer/SKILL.md`, `When to use this skill`, включает auth, tokens, secrets, permissions, webhooks и sensitive flows. `When NOT to use this skill` исключает general non-security code quality review.
 
-Where to change:
+Решение:
+Добавить явное hygiene exclusion и rerun trigger.
+
+Где менять:
 `<skills-root>/security-reviewer/SKILL.md`
 
-Section:
+Раздел:
 `When NOT to Use`
 
-Add bullet:
+Что добавить:
 
 ```md
-- Pure dossier/backlog/retro/logging/closure hygiene that does not change authn/authz, tokens, secrets, permissions, webhook behavior, operator allowlists, CI secret handling, or a sensitive input-to-sink flow.
+Не использовать skill для чистой dossier/backlog/retro/logging/closure hygiene, если она не меняет authn/authz, tokens, secrets, permissions, webhook behavior, operator allowlists, CI secret handling или sensitive input-to-sink flow.
 ```
 
-Section:
+Раздел:
 `Fast Workflow`
 
-Add as step 0:
+Что добавить как шаг 0:
 
 ```md
-0. For reruns after fixes or hygiene edits, classify the latest change as `security-risk` or `no-security-risk`. Run this skill only for `security-risk`; record `no-security-risk` as the reason when skipping it.
+Для reruns после fixes или hygiene edits классифицировать последнее изменение как `security-risk` или `no-security-risk`. Запускать этот skill только при `security-risk`; при пропуске фиксировать `no-security-risk` как причину.
 ```
 
-Acceptance check:
-A future agent should run security review for bot auth/allowlist changes, but should not run it for a documentation-only backlog cleanup unless the cleanup changes a security requirement.
+Критерий приемки:
+Будущий агент запускает security review для bot auth/allowlist changes, но не запускает его для documentation-only backlog cleanup, если cleanup не меняет security requirement.
 
 ## typescript-test-engineer
 
-### RCM-TT-001: Runtime/test evidence was less visible than dossier evidence
+### RCM-TT-001: Runtime/test evidence хуже видна в ретроспективе, чем dossier evidence
 
-Problem:
-The retrospective could easily list dossier verification checks, but the implementation test story was less compactly visible in the retrospective output.
+Проблема:
+Ретроспектива легко перечислила dossier verification checks, но runtime/test evidence по implementation пришлось восстанавливать менее компактно.
 
-Root cause:
-`typescript-test-engineer` requires running relevant tests and reporting checks, but `unified-dossier-engineer` stage logs do not require a compact runtime/test gate summary in the same way they preserve dossier artifacts.
+Корень:
+`typescript-test-engineer` требует запускать relevant tests и reporting checks, но `unified-dossier-engineer` stage logs не требуют отдельного compact runtime/test gate summary.
 
-Current relevant rule:
-`typescript-test-engineer/SKILL.md`, `Quick workflow`, steps 9-12 require running tests, inspecting warnings, coverage checkpoints, and final relevant tests. The rule is good; the logging bridge into dossier artifacts is weak.
+Причина появления:
+Проверки кода и тестов существуют в процессе, но не становятся таким же структурным evidence block, как dossier artifacts.
 
-Change to make:
-Do not change the core testing rule. Add a cross-skill logging instruction.
+Проверенное текущее правило:
+`typescript-test-engineer/SKILL.md`, `Quick workflow`, шаги 9-12 требуют запускать tests, смотреть warnings, делать coverage checkpoints и final relevant tests. Само правило корректное; слабое место в bridge к dossier logs.
 
-Where to change:
+Решение:
+Не менять core testing rule. Добавить cross-skill logging instruction.
+
+Где менять:
 `<skills-root>/typescript-test-engineer/SKILL.md`
 
-Section:
+Раздел:
 `Quick workflow`
 
-Add after step 12:
+Что добавить:
+После шага 12 добавить:
 
 ```md
-12a. When the work is part of a dossier-managed implementation stage, record a compact runtime/test gate summary in the stage log or closure artifact: exact commands, pass/fail status, warnings/stderr status, coverage status when applicable, and any skipped checks with reason.
+Если работа выполняется внутри dossier-managed implementation stage, записывать compact runtime/test gate summary в stage log или closure artifact: exact commands, pass/fail status, warnings/stderr status, coverage status when applicable, and skipped checks with reason.
 ```
 
-Where to change additionally:
+Дополнительно где менять:
 `<skills-root>/unified-dossier-engineer/SKILL.md`
 
-Section:
-`Overview`, paragraph about stage log frontmatter
+Раздел:
+`Overview`, абзац про stage log frontmatter.
 
-Add `runtime_test_gate_summary` to the examples of bounded machine fields.
+Что добавить:
+Добавить `runtime_test_gate_summary` к примерам bounded machine fields.
 
-Acceptance check:
-A retrospective should be able to identify both dossier checks and runtime/test checks without reconstructing them from chat.
+Критерий приемки:
+Ретроспектива может увидеть и dossier checks, и runtime/test checks без реконструкции из chat trace.
 
 ## retrospective-phase-analysis
 
-### RCM-RPA-001: Retrospective scan over-reported missing review artifacts
+### RCM-RPA-001: Retrospective scan переоценил trace-derived review signals
 
-Problem:
-Generated drafts reported many trace-derived non-PASS review signals without matching immutable artifacts, even though `.dossier/steps/F-0029/implementation.json` contained complete non-PASS review history with artifact paths.
+Проблема:
+Сгенерированный draft сообщил много trace-derived non-PASS review signals без matching immutable artifacts, хотя `.dossier/steps/F-0029/implementation.json` содержал complete non-PASS review history с artifact paths.
 
-Root cause:
-The retrospective scanner gave too much weight to trace-derived review mentions and not enough priority to structured step-artifact review history.
+Корень:
+Scanner дал слишком большой вес trace-derived review mentions и недостаточно приоритизировал structured step-artifact review history.
 
-Current relevant rule:
-`retrospective-phase-analysis/SKILL.md` says linked stage artifacts and review/verification/step artifacts are stronger evidence than broad trace mentions. The implementation needs to apply that hierarchy more strictly for review signals.
+Причина появления:
+Evidence hierarchy в skill описана, но runtime применяет ее недостаточно строго именно для review signals.
 
-Change to make:
-Prefer structured step artifacts over trace-derived review guesses.
+Проверенное текущее правило:
+`retrospective-phase-analysis/SKILL.md` говорит, что linked stage artifacts и review/verification/step artifacts сильнее broad trace mentions. Но нужен более конкретный rule для structured step review history.
 
-Where to change:
+Решение:
+Сделать structured step artifacts первичным источником review history.
+
+Где менять:
 `<skills-root>/retrospective-phase-analysis/SKILL.md`
 
-Section:
-`Procedure`, under scope/evidence rules
+Раздел:
+`Procedure`, scope/evidence rules.
 
-Add:
+Что добавить:
 
 ```md
-When an included step artifact contains structured `non_pass_review_events`, `selected_review_artifacts`, or `rpa_source_quality.review_history_quality`, treat that structured step history as the primary review-history source. Use trace-derived review mentions only to supplement gaps, and do not count trace-only mentions as missing immutable artifacts when the step artifact already records complete review history.
+Если included step artifact содержит structured `non_pass_review_events`, `selected_review_artifacts` или `rpa_source_quality.review_history_quality`, считать эту structured step history primary review-history source. Trace-derived review mentions использовать только для заполнения gaps. Не считать trace-only mentions missing immutable artifacts, если step artifact уже фиксирует complete review history.
 ```
 
-Runtime follow-up:
-Update `<skills-root>/retrospective-phase-analysis/scripts/retro-cli.mjs` so `scan` suppresses or downgrades trace-derived missing-review warnings when included step artifacts report `review_history_quality: "complete"` and `missing_fail_artifact_count: 0`.
+Доработка runtime:
+Обновить `<skills-root>/retrospective-phase-analysis/scripts/retro-cli.mjs`, чтобы `scan` suppress/downgrade trace-derived missing-review warnings, когда included step artifacts имеют `review_history_quality: "complete"` и `missing_fail_artifact_count: 0`.
 
-Acceptance check:
-Running `retro-cli scan` on this session should not produce a matrix dominated by duplicate "missing non-PASS artifact" rows when complete step review history exists.
+Критерий приемки:
+`retro-cli scan` на этой сессии не должен создавать матрицу, где доминируют дублирующиеся строки "missing non-PASS artifact", если complete step review history существует.
 
-### RCM-RPA-002: Manual artifact overrides were needed for same-session evidence
+### RCM-RPA-002: Для same-session evidence потребовались manual artifact overrides
 
-Problem:
-The first retrospective scan left relevant same-session stage/review/verification artifacts as referenced-only. A second scan had to include them manually.
+Проблема:
+Первый retrospective scan оставил важные same-session stage/review/verification artifacts как referenced-only. Пришлось запускать второй scan с явным manual inclusion.
 
-Root cause:
-The skill intentionally avoids broad inclusion for safety, but the runtime does not yet infer enough from explicitly included stage logs and their bounded artifact links.
+Корень:
+Skill сознательно ограничивает broad inclusion ради безопасности, но runtime пока недостаточно хорошо продвигает immutable artifacts, прямо связанные included stage logs.
 
-Current relevant rule:
-`retrospective-phase-analysis/SKILL.md` says included stage logs can promote linked review, verification, and step artifacts when they exist, are inside project root, and match scope.
+Причина появления:
+Scanner смешал mutable `latest` pointers, trace references и immutable stage-linked artifacts, поэтому часть надежных артефактов не вошла автоматически.
 
-Change to make:
-Clarify and implement same-session stage-log promotion rules.
+Проверенное текущее правило:
+`retrospective-phase-analysis/SKILL.md` говорит, что included stage logs могут продвигать linked review, verification и step artifacts, если они существуют, находятся внутри project root и совпадают по scope.
 
-Where to change:
+Решение:
+Уточнить и реализовать правила promotion для same-session stage-linked artifacts.
+
+Где менять:
 `<skills-root>/retrospective-phase-analysis/SKILL.md`
 
-Section:
-`Procedure`, scope rules around included stage logs
+Раздел:
+`Procedure`, scope rules around included stage logs.
 
-Replace the current broad sentence:
+Что заменить:
+Текущую широкую формулировку:
 
 ```md
 when an included stage log or bounded stage state declares `review_artifact(s)`, `verification_artifact(s)`, or `step_artifact(s)`, treat those links as stronger evidence than broad trace mentions only if the target path exists inside the confirmed project root and matches the artifact scope.
 ```
 
-With:
+Заменить на смысл:
 
 ```md
-when an included stage log or bounded stage state declares `review_artifact(s)`, `verification_artifact(s)`, or `step_artifact(s)`, auto-include those linked artifacts when the target path exists inside the confirmed project root, matches the same feature/stage scope, and is not a mutable `latest` pointer. Treat mutable `latest` pointers as navigation hints only, not as required immutable evidence.
+Когда included stage log или bounded stage state объявляет `review_artifact(s)`, `verification_artifact(s)` или `step_artifact(s)`, автоматически включать эти linked artifacts, если target path существует внутри confirmed project root, совпадает с тем же feature/stage scope и не является mutable `latest` pointer. Mutable `latest` pointers считать navigation hints, а не required immutable evidence.
 ```
 
-Runtime follow-up:
-Update `<skills-root>/retrospective-phase-analysis/scripts/retro-cli.mjs` artifact candidate inclusion logic to:
+Доработка runtime:
+Обновить artifact candidate inclusion logic в `<skills-root>/retrospective-phase-analysis/scripts/retro-cli.mjs`:
 
-1. auto-include immutable stage-linked artifacts;
-2. exclude `latest.json` pointers from missing-artifact counts;
-3. preserve a separate warning only for genuinely missing immutable artifacts.
+1. автоматически включать immutable stage-linked artifacts;
+2. исключать `latest.json` pointers из missing-artifact counts;
+3. сохранять отдельное предупреждение только для реально отсутствующих immutable artifacts.
 
-Acceptance check:
-The scanner should still avoid broad repo reads, but should not require manual overrides for immutable artifacts directly linked by an included stage log.
+Критерий приемки:
+Scanner по-прежнему избегает broad repo reads, но не требует manual overrides для immutable artifacts, прямо связанных included stage log.
 
 ## git-engineer
 
-### RCM-GIT-001: Commit structure was good; preserve as positive control
+### RCM-GIT-001: Структура commits была корректной, изменений не требуется
 
-Problem:
-No negative issue found. The session split feature implementation, closure, backlog hygiene, and retrospective into separate commits.
+Проблема:
+Негативной проблемы не выявлено. Сессия разделила feature implementation, closure, backlog hygiene и retrospective на отдельные commits.
 
-Root cause:
-`git-engineer` docs-only and conventional commit rules are clear enough for this case.
+Корень:
+Правила `git-engineer` для Conventional Commits и docs-only workflow достаточно ясны для такого случая.
 
-Current relevant rule:
-`git-engineer/SKILL.md`, `Docs-only commit workflow`, requires explicit docs paths, staged-file verification, `docs:` commit type, and clean status.
+Проверенное текущее правило:
+`git-engineer/SKILL.md`, `Docs-only commit workflow`, требует explicit docs paths, staged-file verification, `docs:` commit type и clean status.
 
-Change to make:
-No change required.
+Решение:
+Изменений не требуется. Сохранить текущий pattern как positive control.
 
-Acceptance check:
-Future agents should keep this pattern: one commit per coherent concern, using `docs:` for retrospective artifacts.
+Критерий приемки:
+Будущие агенты продолжают делать один commit на один связный concern и используют `docs:` для retrospective artifacts.
 
-## Cross-Skill Priority Order
+## Приоритет изменений
 
-1. `RCM-SCR-001`, `RCM-SR-001`, and `RCM-CR-001` should be addressed first because they directly reduce unnecessary review latency without weakening review quality.
-2. `RCM-RPA-001` and `RCM-RPA-002` should be addressed next because they reduce false-positive retrospective noise.
-3. `RCM-UDE-002` and `RCM-TT-001` improve closure observability and should be implemented together.
-4. `RCM-ID-001` is important for multi-agent reliability and should be added before the next known parallel-agent session.
-5. `RCM-UDE-001` improves backlog discovery for future operator-facing channels.
+1. `RCM-SCR-001`, `RCM-SR-001` и `RCM-CR-001` идут первыми, потому что напрямую уменьшают лишнюю задержку от review rerounds без ослабления review quality.
+2. `RCM-RPA-001` и `RCM-RPA-002` идут следующими, потому что уменьшают false-positive noise в ретроспективе.
+3. `RCM-UDE-002` и `RCM-TT-001` лучше делать вместе: они улучшают closure observability.
+4. `RCM-ID-001` важен перед следующей сессией с параллельными агентами.
+5. `RCM-UDE-001` улучшает discovery будущих operator-facing channels.
 
-## Implementation Notes for a Future Agent
+## Инструкции для будущего агента
 
-- Do not apply all changes blindly in one commit if editing actual skills. Split by skill or by tightly related runtime behavior.
-- For changes under `<skills-root>/retrospective-phase-analysis/scripts/retro-cli.mjs`, add or update CLI tests if the skill has a test harness.
-- For changes under `<skills-root>/unified-dossier-engineer/scripts/dossier-engineer.mjs`, use `implementation-discipline` because that is runtime code.
-- After changing any skill source, run the skill's own compile/check flow if it uses `skill-source-compiler`.
-- Keep the wording portable: do not mention this repository path or this session unless writing tests/fixtures for the exact retrospective case.
+- Не применять все изменения одним большим commit, если реально редактируются skills. Делить по skill или по тесно связанному runtime behavior.
+- Для изменений в `<skills-root>/retrospective-phase-analysis/scripts/retro-cli.mjs` добавить или обновить CLI tests, если в skill есть test harness.
+- Для изменений в `<skills-root>/unified-dossier-engineer/scripts/dossier-engineer.mjs` использовать `implementation-discipline`, потому что это runtime code.
+- После изменения skill source запускать собственный compile/check flow skill, если он использует `skill-source-compiler`.
+- Сохранять portability: не упоминать путь этого репозитория или эту сессию в самих skill-инструкциях, кроме случаев тестов/fixtures для точного ретро-кейса.
