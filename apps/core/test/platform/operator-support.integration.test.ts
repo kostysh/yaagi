@@ -59,6 +59,8 @@ void test('AC-F0028-05 AC-F0028-08 admits support incident writes only after F-0
     closureCriteria: [],
     operatorNotes: [],
     closureStatus: SUPPORT_CLOSURE_STATUS.OPEN,
+    closureReadinessStatus: 'ready',
+    closureReadinessReasons: [],
     residualRisk: null,
     nextOwnerRef: null,
     createdAt: now,
@@ -76,6 +78,7 @@ void test('AC-F0028-05 AC-F0028-08 admits support incident writes only after F-0
             accepted: true as const,
             deduplicated: false,
             incident: incident(input.requestId),
+            closureReadiness: { status: 'ready' as const, reasons: [] },
           });
         },
       }),

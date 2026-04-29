@@ -187,6 +187,18 @@ export const supportActionRecordSchema = z
 
 export type SupportActionRecord = z.infer<typeof supportActionRecordSchema>;
 
+export const supportActionRequestSchema = z
+  .object({
+    mode: supportActionModeSchema,
+    owner: z.string().min(1).max(SUPPORT_REF_MAX_LENGTH),
+    ref: supportRefSchema,
+    requestedAction: z.string().min(1).max(SUPPORT_ACTION_MAX_LENGTH),
+    recordedAt: isoTimestampSchema.optional(),
+  })
+  .strict();
+
+export type SupportActionRequest = z.infer<typeof supportActionRequestSchema>;
+
 export const supportOperatorNoteSchema = z
   .object({
     noteId: supportRefSchema,
@@ -272,7 +284,7 @@ export const supportOpenIncidentRequestSchema = z
     reportRunRefs: boundedRefArray(),
     releaseRefs: boundedRefArray(),
     operatorEvidenceRefs: boundedRefArray(),
-    actionRefs: z.array(supportActionRecordSchema).max(SUPPORT_ACTION_REF_MAX_COUNT).default([]),
+    actionRefs: z.array(supportActionRequestSchema).max(SUPPORT_ACTION_REF_MAX_COUNT).default([]),
     escalationRefs: boundedRefArray(),
     closureCriteria: z
       .array(z.string().min(1).max(SUPPORT_CLOSURE_CRITERIA_MAX_LENGTH))
@@ -291,7 +303,10 @@ export const supportUpdateIncidentRequestSchema = z
     addReportRunRefs: boundedRefArray(),
     addReleaseRefs: boundedRefArray(),
     addOperatorEvidenceRefs: boundedRefArray(),
-    addActionRefs: z.array(supportActionRecordSchema).max(SUPPORT_ACTION_REF_MAX_COUNT).default([]),
+    addActionRefs: z
+      .array(supportActionRequestSchema)
+      .max(SUPPORT_ACTION_REF_MAX_COUNT)
+      .default([]),
     addEscalationRefs: boundedRefArray(),
     addClosureCriteria: z
       .array(z.string().min(1).max(SUPPORT_CLOSURE_CRITERIA_MAX_LENGTH))
@@ -372,7 +387,13 @@ export const evaluateSupportClosureReadiness = (input: {
     }
   }
 
-  if (reasons.some((reason) => !reason.includes('canonical_evidence_stale:'))) {
+  if (
+    reasons.some(
+      (reason) =>
+        !reason.startsWith('canonical_evidence_stale:') &&
+        !reason.startsWith('canonical_evidence_degraded:'),
+    )
+  ) {
     return { status: 'blocked', reasons };
   }
 
@@ -382,9 +403,23 @@ export const evaluateSupportClosureReadiness = (input: {
 export const redactSupportText = (value: string): string =>
   value
     .replace(/\bBearer\s+[A-Za-z0-9._~+/=-]+/gi, 'Bearer <redacted>')
+    .replace(/\bBasic\s+[A-Za-z0-9._~+/=-]+/gi, 'Basic <redacted>')
     .replace(/\bopk_v1[A-Za-z0-9._~+/=-]*/g, 'opk_v1<redacted>')
+    .replace(
+      /"([A-Z0-9_]*(?:TOKEN|SECRET|PASSWORD|PASSWD|API[_-]?KEY|KEY)[A-Z0-9_]*)"\s*:\s*"[^"]*"/gi,
+      '"$1":"<redacted>"',
+    )
     .replace(/\b([A-Z0-9_]*(?:TOKEN|SECRET|PASSWORD|KEY)[A-Z0-9_]*)=([^\s]+)/gi, '$1=<redacted>')
-    .replace(/\b(password|passwd|secret|token)=([^\s]+)/gi, '$1=<redacted>');
+    .replace(
+      /\b([A-Z0-9_]*(?:TOKEN|SECRET|PASSWORD|PASSWD|API[_-]?KEY|KEY)[A-Z0-9_]*)\s*:\s*("[^"]*"|'[^']*'|[^\s,;}\]]+)/gi,
+      '$1:<redacted>',
+    )
+    .replace(/"(password|passwd|secret|token|api[_-]?key)"\s*:\s*"[^"]*"/gi, '"$1":"<redacted>"')
+    .replace(/\b(password|passwd|secret|token|api[_-]?key)=([^\s]+)/gi, '$1=<redacted>')
+    .replace(
+      /\b(password|passwd|secret|token|api[_-]?key)\s*:\s*("[^"]*"|'[^']*'|[^\s,;}\]]+)/gi,
+      '$1:<redacted>',
+    );
 
 export const createSupportOperatorNote = (input: {
   noteId: string;

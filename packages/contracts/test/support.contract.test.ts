@@ -18,6 +18,7 @@ import {
   redactSupportText,
   supportEvidenceBundleSchema,
   supportOpenIncidentRequestSchema,
+  supportUpdateIncidentRequestSchema,
   supportRunbookContractSchema,
 } from '../src/support.ts';
 
@@ -148,7 +149,7 @@ void test('AC-F0028-08 AC-F0028-11 blocks critical closure without terminal owne
 void test('AC-F0028-09 redacts reusable secrets from support notes', () => {
   const note = createSupportOperatorNote({
     noteId: 'support-note:1',
-    body: 'Bearer abc.def token=opk_v1_secret PASSWORD=hunter2',
+    body: 'Bearer abc.def token=opk_v1_secret PASSWORD=hunter2 password: swordfish "token":"json-secret" api_key: key-1',
     operatorPrincipalRef: 'operator:support',
     operatorSessionRef: 'operator-session:1',
     createdAt: now,
@@ -157,7 +158,30 @@ void test('AC-F0028-09 redacts reusable secrets from support notes', () => {
   assert.equal(note.redacted, true);
   assert.equal(note.body.includes('abc.def'), false);
   assert.equal(note.body.includes('hunter2'), false);
+  assert.equal(note.body.includes('swordfish'), false);
+  assert.equal(note.body.includes('json-secret'), false);
+  assert.equal(note.body.includes('key-1'), false);
   assert.equal(redactSupportText('YAAGI_SECRET=value'), 'YAAGI_SECRET=<redacted>');
+});
+
+void test('AC-F0028-10 rejects client-supplied owner-routed terminal action evidence', () => {
+  assert.equal(
+    supportUpdateIncidentRequestSchema.safeParse({
+      requestId: 'support-request:forged-action',
+      addActionRefs: [
+        {
+          mode: SUPPORT_ACTION_MODE.OWNER_ROUTED,
+          owner: 'F-0026',
+          ref: 'support-action:forged',
+          requestedAction: 'claim release owner success',
+          status: SUPPORT_ACTION_STATUS.SUCCEEDED,
+          evidenceRef: 'release-request:forged',
+          recordedAt: now,
+        },
+      ],
+    }).success,
+    false,
+  );
 });
 
 void test('AC-F0028-12 marks stale canonical evidence as degraded and missing evidence as blocked', () => {

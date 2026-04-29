@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SUPPORT_ACTION_MODE,
-  SUPPORT_ACTION_STATUS,
   SUPPORT_CLOSURE_STATUS,
   SUPPORT_INCIDENT_CLASS,
   SUPPORT_SEVERITY,
   evaluateSupportClosureReadiness,
 } from '@yaagi/contracts/support';
+import type { ReleaseInspection } from '@yaagi/contracts/release-automation';
 import type { SupportIncidentRecordResult, SupportIncidentRow, SupportStore } from '@yaagi/db';
 import { createSupportEvidenceService } from '../../src/support/support-evidence.ts';
 
@@ -47,9 +47,16 @@ const createMemoryStore = (): {
         ...bundle,
         requestId,
         normalizedRequestHash,
+        closureReadinessStatus: 'ready',
+        closureReadinessReasons: [],
       };
       incidents[row.supportIncidentId] = row;
-      return Promise.resolve({ accepted: true, deduplicated: false, incident: row });
+      return Promise.resolve({
+        accepted: true,
+        deduplicated: false,
+        incident: row,
+        closureReadiness: { status: 'ready', reasons: [] },
+      });
     },
     updateIncident: (input): Promise<SupportIncidentRecordResult> => {
       const {
@@ -77,9 +84,16 @@ const createMemoryStore = (): {
         ...bundle,
         requestId,
         normalizedRequestHash,
+        closureReadinessStatus: readiness.status,
+        closureReadinessReasons: readiness.reasons,
       };
       incidents[row.supportIncidentId] = row;
-      return Promise.resolve({ accepted: true, deduplicated: false, incident: row });
+      return Promise.resolve({
+        accepted: true,
+        deduplicated: false,
+        incident: row,
+        closureReadiness: readiness,
+      });
     },
     getIncident: (supportIncidentId) => Promise.resolve(incidents[supportIncidentId] ?? null),
     listIncidents: () => Promise.resolve(Object.values(incidents)),
@@ -90,7 +104,23 @@ const createMemoryStore = (): {
 
 void test('AC-F0028-08 AC-F0028-09 opens support evidence with operator provenance and redacted notes', async () => {
   const { store } = createMemoryStore();
-  const service = createSupportEvidenceService({ store, now: () => now });
+  const service = createSupportEvidenceService({
+    store,
+    now: () => now,
+    readers: {
+      inspectRelease: () =>
+        Promise.resolve({
+          request: { requestId: 'release-request:1' },
+          rollbackPlan: null,
+          deployAttempts: [],
+          evidenceBundles: [],
+          rollbackExecutions: [],
+        } as unknown as ReleaseInspection),
+    },
+    ownerSeams: {
+      'F-0026': () => Promise.resolve({ accepted: true, evidenceRef: 'release-request:1' }),
+    },
+  });
 
   const result = await service.openIncident({
     requestId: 'support-request-open-service',
@@ -114,7 +144,23 @@ void test('AC-F0028-08 AC-F0028-09 opens support evidence with operator provenan
 
 void test('AC-F0028-11 blocks critical terminal closure until owner evidence or human disposition exists', async () => {
   const { store } = createMemoryStore();
-  const service = createSupportEvidenceService({ store, now: () => now });
+  const service = createSupportEvidenceService({
+    store,
+    now: () => now,
+    readers: {
+      inspectRelease: () =>
+        Promise.resolve({
+          request: { requestId: 'release-request:1' },
+          rollbackPlan: null,
+          deployAttempts: [],
+          evidenceBundles: [],
+          rollbackExecutions: [],
+        } as unknown as ReleaseInspection),
+    },
+    ownerSeams: {
+      'F-0026': () => Promise.resolve({ accepted: true, evidenceRef: 'release-request:1' }),
+    },
+  });
   const opened = await service.openIncident({
     requestId: 'support-request-critical-service',
     incidentClass: SUPPORT_INCIDENT_CLASS.RELEASE_OR_ROLLBACK,
@@ -150,9 +196,6 @@ void test('AC-F0028-11 blocks critical terminal closure until owner evidence or 
         owner: 'F-0026',
         ref: 'support-action:release-owner',
         requestedAction: 'inspect release owner evidence',
-        status: SUPPORT_ACTION_STATUS.SUCCEEDED,
-        evidenceRef: 'release-request:1',
-        recordedAt: now,
       },
     ],
   });
@@ -160,5 +203,41 @@ void test('AC-F0028-11 blocks critical terminal closure until owner evidence or 
   assert.equal(resolved.accepted, true);
   if (resolved.accepted) {
     assert.equal(resolved.incident.closureStatus, SUPPORT_CLOSURE_STATUS.RESOLVED);
+  }
+});
+
+void test('AC-F0028-10 rejects forged owner-routed terminal evidence without owner seam', async () => {
+  const { store } = createMemoryStore();
+  const service = createSupportEvidenceService({ store, now: () => now });
+  const opened = await service.openIncident({
+    requestId: 'support-request-forged-action-open',
+    incidentClass: SUPPORT_INCIDENT_CLASS.RELEASE_OR_ROLLBACK,
+    severity: SUPPORT_SEVERITY.CRITICAL,
+    sourceRefs: ['release-request:1'],
+    releaseRefs: ['release-request:1'],
+  });
+  assert.equal(opened.accepted, true);
+  if (!opened.accepted) return;
+
+  const forged = await service.updateIncident({
+    supportIncidentId: opened.incident.supportIncidentId,
+    requestId: 'support-request-forged-action-close',
+    closureStatus: SUPPORT_CLOSURE_STATUS.RESOLVED,
+    addEscalationRefs: ['escalation:release-owner'],
+    addClosureCriteria: ['release owner evidence attached'],
+    addActionRefs: [
+      {
+        mode: SUPPORT_ACTION_MODE.OWNER_ROUTED,
+        owner: 'F-0026',
+        ref: 'support-action:forged-release-owner',
+        requestedAction: 'inspect release owner evidence',
+      },
+    ],
+  });
+
+  assert.equal(forged.accepted, false);
+  if (!forged.accepted) {
+    assert.equal(forged.reason, 'closure_blocked');
+    assert.equal(forged.closureReasons?.includes('critical_terminal_disposition_missing'), true);
   }
 });

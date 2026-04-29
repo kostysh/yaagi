@@ -30,6 +30,8 @@ type HarnessIncidentRow = {
   closureCriteriaJson: string[];
   operatorNotesJson: SupportEvidenceBundle['operatorNotes'];
   closureStatus: string;
+  closureReadinessStatus: string;
+  closureReadinessReasonsJson: string[];
   residualRisk: string | null;
   nextOwnerRef: string | null;
   createdAt: string;
@@ -61,11 +63,19 @@ const createHarness = (): {
 } => {
   const incidentsById: Record<string, HarnessIncidentRow> = {};
   const incidentRequestIndex: Record<string, string> = {};
+  const updateRequestsById: Record<
+    string,
+    { supportIncidentId: string; normalizedRequestHash: string }
+  > = {};
   const runbooksByClass: Record<string, HarnessRunbookRow> = {};
 
   const query = async (sqlText: string, params: unknown[] = []) => {
     await Promise.resolve();
     const sql = normalizeSql(sqlText);
+
+    if (sql === 'begin' || sql === 'commit' || sql === 'rollback') {
+      return { rows: [] };
+    }
 
     if (sql.includes('insert into polyphony_runtime.support_runbook_versions')) {
       const row: HarnessRunbookRow = {
@@ -106,7 +116,36 @@ const createHarness = (): {
       return { rows: row ? [row] : [] };
     }
 
+    if (sql.includes('insert into polyphony_runtime.support_incident_update_requests')) {
+      const requestId = String(params[0]);
+      if (updateRequestsById[requestId]) {
+        return { rows: [] };
+      }
+      updateRequestsById[requestId] = {
+        supportIncidentId: String(params[1]),
+        normalizedRequestHash: String(params[2]),
+      };
+      return { rows: [{ request_id: requestId }] };
+    }
+
+    if (sql.includes('from polyphony_runtime.support_incident_update_requests')) {
+      const row = updateRequestsById[String(params[0])];
+      return {
+        rows: row
+          ? [
+              {
+                supportIncidentId: row.supportIncidentId,
+                normalizedRequestHash: row.normalizedRequestHash,
+              },
+            ]
+          : [],
+      };
+    }
+
     if (sql.includes('insert into polyphony_runtime.support_incidents')) {
+      if (incidentRequestIndex[String(params[1])]) {
+        return { rows: [] };
+      }
       const row: HarnessIncidentRow = {
         supportIncidentId: String(params[0]),
         requestId: String(params[1]),
@@ -122,11 +161,13 @@ const createHarness = (): {
         closureCriteriaJson: parseJson<string[]>(params[11]),
         operatorNotesJson: parseJson<SupportEvidenceBundle['operatorNotes']>(params[12]),
         closureStatus: String(params[13]),
-        residualRisk: (params[14] as string | null) ?? null,
-        nextOwnerRef: (params[15] as string | null) ?? null,
-        createdAt: String(params[16]),
-        updatedAt: String(params[17]),
-        closedAt: (params[18] as string | null) ?? null,
+        closureReadinessStatus: String(params[14]),
+        closureReadinessReasonsJson: parseJson<string[]>(params[15]),
+        residualRisk: (params[16] as string | null) ?? null,
+        nextOwnerRef: (params[17] as string | null) ?? null,
+        createdAt: String(params[18]),
+        updatedAt: String(params[19]),
+        closedAt: (params[20] as string | null) ?? null,
       };
       incidentsById[row.supportIncidentId] = row;
       incidentRequestIndex[row.requestId] = row.supportIncidentId;
@@ -150,10 +191,12 @@ const createHarness = (): {
         closureCriteriaJson: parseJson<string[]>(params[7]),
         operatorNotesJson: parseJson<SupportEvidenceBundle['operatorNotes']>(params[8]),
         closureStatus: String(params[9]),
-        residualRisk: (params[10] as string | null) ?? null,
-        nextOwnerRef: (params[11] as string | null) ?? null,
-        updatedAt: String(params[12]),
-        closedAt: (params[13] as string | null) ?? null,
+        closureReadinessStatus: String(params[10]),
+        closureReadinessReasonsJson: parseJson<string[]>(params[11]),
+        residualRisk: (params[12] as string | null) ?? null,
+        nextOwnerRef: (params[13] as string | null) ?? null,
+        updatedAt: String(params[14]),
+        closedAt: (params[15] as string | null) ?? null,
       };
       incidentsById[supportIncidentId] = row;
       return { rows: [row] };
@@ -262,11 +305,78 @@ void test('AC-F0028-02 keeps open incident requests idempotent and rejects confl
   assert.equal(Object.keys(harness.incidentsById).length, 1);
 });
 
+void test('AC-F0028-02 keeps update requests idempotent and rejects conflicting replay', async () => {
+  const harness = createHarness();
+  const store = createSupportStore(harness.db);
+  await store.openIncident({
+    ...baseIncident(),
+    requestId: 'support-request-update-open',
+    normalizedRequestHash: 'hash-update-open',
+  });
+
+  const first = await store.updateIncident({
+    ...baseIncident({ sourceRefs: ['operator-route:/health', 'support-source:first'] }),
+    requestId: 'support-request-update-replay',
+    normalizedRequestHash: 'hash-update-replay',
+  });
+  const replay = await store.updateIncident({
+    ...baseIncident({ closureStatus: SUPPORT_CLOSURE_STATUS.RESOLVED, closedAt: now }),
+    requestId: 'support-request-update-replay',
+    normalizedRequestHash: 'hash-update-replay',
+  });
+  const conflict = await store.updateIncident({
+    ...baseIncident({ releaseRefs: ['release-request:conflict'] }),
+    requestId: 'support-request-update-replay',
+    normalizedRequestHash: 'different-update-hash',
+  });
+
+  assert.equal(first.accepted, true);
+  assert.deepEqual([replay.accepted, replay.accepted ? replay.deduplicated : null], [true, true]);
+  assert.equal(conflict.accepted, false);
+  if (!conflict.accepted) {
+    assert.equal(conflict.reason, 'conflicting_request_id');
+  }
+  assert.deepEqual(harness.incidentsById['support-incident:runtime-1']?.sourceRefsJson, [
+    'operator-route:/health',
+    'support-source:first',
+  ]);
+  assert.equal(
+    harness.incidentsById['support-incident:runtime-1']?.closureStatus,
+    SUPPORT_CLOSURE_STATUS.OPEN,
+  );
+});
+
+void test('AC-F0028-08 serializes support updates without dropping prior evidence refs', async () => {
+  const harness = createHarness();
+  const store = createSupportStore(harness.db);
+  await store.openIncident({
+    ...baseIncident(),
+    requestId: 'support-request-merge-open',
+    normalizedRequestHash: 'hash-merge-open',
+  });
+
+  await store.updateIncident({
+    ...baseIncident({ sourceRefs: ['operator-route:/health', 'support-source:first'] }),
+    requestId: 'support-request-merge-first',
+    normalizedRequestHash: 'hash-merge-first',
+  });
+  const second = await store.updateIncident({
+    ...baseIncident({ releaseRefs: ['release-request:second'] }),
+    requestId: 'support-request-merge-second',
+    normalizedRequestHash: 'hash-merge-second',
+  });
+
+  assert.equal(second.accepted, true);
+  if (!second.accepted) return;
+  assert.deepEqual(second.incident.sourceRefs, ['operator-route:/health', 'support-source:first']);
+  assert.deepEqual(second.incident.releaseRefs, ['release-request:second']);
+});
+
 void test('AC-F0028-11 AC-F0028-12 refuses blocked critical terminal closure', async () => {
   const harness = createHarness();
   const store = createSupportStore(harness.db);
   await store.openIncident({
-    ...baseIncident({ severity: SUPPORT_SEVERITY.CRITICAL }),
+    ...baseIncident({ severity: SUPPORT_SEVERITY.CRITICAL, actionRefs: [] }),
     requestId: 'support-request-critical-open',
     normalizedRequestHash: 'hash-critical-open',
   });
@@ -294,6 +404,40 @@ void test('AC-F0028-11 AC-F0028-12 refuses blocked critical terminal closure', a
     harness.incidentsById['support-incident:runtime-1']?.closureStatus,
     SUPPORT_CLOSURE_STATUS.OPEN,
   );
+});
+
+void test('AC-F0028-12 persists degraded closure readiness for stale canonical evidence', async () => {
+  const harness = createHarness();
+  const store = createSupportStore(harness.db);
+  await store.openIncident({
+    ...baseIncident(),
+    requestId: 'support-request-degraded-open',
+    normalizedRequestHash: 'hash-degraded-open',
+  });
+
+  const result = await store.updateIncident({
+    ...baseIncident({
+      closureStatus: SUPPORT_CLOSURE_STATUS.RESOLVED,
+      closedAt: now,
+    }),
+    requestId: 'support-request-degraded-close',
+    normalizedRequestHash: 'hash-degraded-close',
+    canonicalEvidenceStates: [
+      {
+        owner: 'F-0023',
+        ref: 'report-run:stale',
+        freshness: 'stale',
+        observedAt: now,
+      },
+    ],
+  });
+
+  assert.equal(result.accepted, true);
+  if (!result.accepted) return;
+  assert.equal(result.closureReadiness.status, 'degraded');
+  assert.deepEqual(result.incident.closureReadinessReasons, [
+    'canonical_evidence_stale:report-run:stale',
+  ]);
 });
 
 void test('AC-F0028-13 rejects foreign owner writes without mutating support rows', async () => {

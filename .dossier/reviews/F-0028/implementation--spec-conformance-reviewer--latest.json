@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T11:42:39.932Z",
+  "audit_class": "spec-conformance-reviewer",
+  "artifact_role": "latest_copy",
+  "review_mode": "external",
+  "reviewer": "external-agent-pauli",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": "019dd908-36a0-7290-ac98-a40c35d6f7a9",
+  "reviewer_thread_id": "019dd8ba-a8f1-73e0-9869-a4ac0ca0771e",
+  "review_attempt_id": "implementation--spec-conformance-reviewer--r01",
+  "review_round_id": "r01",
+  "review_round_number": 1,
+  "latest_copy_path": ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--latest.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
+  "feature_id": "F-0028",
+  "event_commit": "848642bd0a4715fc5265306fd8b4090064b49f39",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "FAIL",
+  "findings": {
+    "must_fix": [
+      "owner-routed actions can be self-asserted through support update without target owner admission",
+      "replay/conflicting-update protection is missing for evidence attach / incident update",
+      "release evidence freshness can be silently marked healthy instead of missing/unavailable",
+      "degraded stale evidence is not surfaced in the durable/API closure result"
+    ],
+    "should_fix": [],
+    "evidence": [
+      "apps/core/src/platform/operator-api.ts",
+      "apps/core/src/support/support-evidence.ts",
+      "packages/contracts/src/support.ts",
+      "packages/db/src/support.ts",
+      "apps/core/src/support/support-canonical-refs.ts"
+    ]
+  },
+  "notes": "External spec audit FAIL on commit 848642b: four must-fix blockers before implementation closure.",
+  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r01--fail--848642bd0a47.json"
+}

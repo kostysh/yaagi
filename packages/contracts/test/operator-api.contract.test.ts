@@ -142,12 +142,26 @@ void test('AC-F0028-08 bounds protected support incident payloads', () => {
           owner: 'human',
           ref: 'support-action:1',
           requestedAction: 'manual escalation',
-          status: 'documented',
-          evidenceRef: null,
-          recordedAt: '2026-04-29T12:00:00.000Z',
         },
       ],
     }).success,
     true,
+  );
+  assert.equal(
+    supportUpdateIncidentRequestSchema.safeParse({
+      requestId: 'support-request:update',
+      addActionRefs: [
+        {
+          mode: 'owner_routed',
+          owner: 'F-0026',
+          ref: 'support-action:forged',
+          requestedAction: 'claim release owner success',
+          status: 'succeeded',
+          evidenceRef: 'release-request:forged',
+          recordedAt: '2026-04-29T12:00:00.000Z',
+        },
+      ],
+    }).success,
+    false,
   );
 });

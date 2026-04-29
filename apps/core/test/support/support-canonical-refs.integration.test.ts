@@ -73,7 +73,12 @@ void test('AC-F0028-07 consumes F-0026 release refs through release inspection o
     severity: SUPPORT_SEVERITY.WARNING,
     sourceRefs: ['release-request:1'],
     reportRunRefs: [],
-    releaseRefs: ['release-request:1', 'release-request:missing'],
+    releaseRefs: [
+      'release-request:1',
+      'deploy-attempt:1',
+      'release-request:missing',
+      'deploy-attempt:missing',
+    ],
     operatorEvidenceRefs: ['operator-auth-evidence:req-1'],
     actionRefs: [],
     escalationRefs: [],
@@ -97,7 +102,7 @@ void test('AC-F0028-07 consumes F-0026 release refs through release inspection o
             ? ({
                 request: { requestId: 'release-request:1' },
                 rollbackPlan: null,
-                deployAttempts: [],
+                deployAttempts: [{ deployAttemptId: 'deploy-attempt:1' }],
                 evidenceBundles: [],
                 rollbackExecutions: [],
               } as unknown as ReleaseInspection)
@@ -110,8 +115,46 @@ void test('AC-F0028-07 consumes F-0026 release refs through release inspection o
     states.map((state) => [state.owner, state.ref, state.freshness]),
     [
       ['F-0026', 'release-request:1', SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH],
+      ['F-0026', 'deploy-attempt:1', SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH],
       ['F-0026', 'release-request:missing', SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING],
+      ['F-0026', 'deploy-attempt:missing', SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING],
       ['F-0024', 'operator-auth-evidence:req-1', SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH],
+    ],
+  );
+});
+
+void test('AC-F0028-07 marks release refs unavailable when F-0026 inspection is not wired', async () => {
+  const bundle = supportEvidenceBundleSchema.parse({
+    supportIncidentId: 'support-incident:release-unavailable',
+    incidentClass: SUPPORT_INCIDENT_CLASS.RELEASE_OR_ROLLBACK,
+    severity: SUPPORT_SEVERITY.WARNING,
+    sourceRefs: ['release-request:1'],
+    reportRunRefs: [],
+    releaseRefs: ['release-request:1', 'deploy-attempt:1'],
+    operatorEvidenceRefs: [],
+    actionRefs: [],
+    escalationRefs: [],
+    closureCriteria: [],
+    operatorNotes: [],
+    closureStatus: SUPPORT_CLOSURE_STATUS.OPEN,
+    residualRisk: null,
+    nextOwnerRef: null,
+    createdAt: now,
+    updatedAt: now,
+    closedAt: null,
+  });
+
+  const states = await resolveSupportCanonicalEvidenceStates({
+    bundle,
+    observedAt: now,
+    readers: {},
+  });
+
+  assert.deepEqual(
+    states.map((state) => [state.ref, state.freshness]),
+    [
+      ['release-request:1', SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.UNAVAILABLE],
+      ['deploy-attempt:1', SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.UNAVAILABLE],
     ],
   );
 });

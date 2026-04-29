@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import type { z } from 'zod';
 import {
   SUPPORT_CLOSURE_STATUS,
+  SUPPORT_ACTION_STATUS,
   SUPPORT_INCIDENT_CLASS,
   SUPPORT_OWNED_WRITE_SURFACE,
   SUPPORT_OWNER_REF,
@@ -12,6 +13,8 @@ import {
   supportRunbookContractSchema,
   supportUpdateIncidentRequestSchema,
   type SupportEvidenceBundle,
+  type SupportActionRecord,
+  type SupportActionRequest,
   type SupportRunbookContract,
 } from '@yaagi/contracts/support';
 import {
@@ -26,6 +29,7 @@ import {
   resolveSupportCanonicalEvidenceStates,
   type SupportCanonicalEvidenceReaders,
 } from './support-canonical-refs.ts';
+import { routeSupportAction, type SupportOwnerActionSeams } from './support-actions.ts';
 
 const supportOwnedWriteSurfaces = new Set<string>(Object.values(SUPPORT_OWNED_WRITE_SURFACE));
 
@@ -216,11 +220,33 @@ const withSupportStore = async <T>(
 export const createSupportEvidenceService = (input: {
   store: SupportStore;
   readers?: SupportCanonicalEvidenceReaders;
+  ownerSeams?: SupportOwnerActionSeams;
   runbooks?: readonly SupportRunbookContract[];
   now?: () => string;
 }): SupportEvidenceService => {
   const now = input.now ?? defaultNow;
   const runbooks = [...(input.runbooks ?? DEFAULT_SUPPORT_RUNBOOKS)];
+
+  const routeActionRequests = async (
+    actionRequests: readonly SupportActionRequest[],
+    observedAt: string,
+  ): Promise<SupportActionRecord[]> => {
+    const routed = await Promise.all(
+      actionRequests.map((actionRequest) =>
+        routeSupportAction({
+          action: {
+            ...actionRequest,
+            status: SUPPORT_ACTION_STATUS.REQUESTED,
+            evidenceRef: null,
+            recordedAt: actionRequest.recordedAt ?? observedAt,
+          },
+          ...(input.ownerSeams ? { ownerSeams: input.ownerSeams } : {}),
+        }),
+      ),
+    );
+
+    return routed.map((result) => result.action);
+  };
 
   return {
     listRunbooks() {
@@ -251,6 +277,7 @@ export const createSupportEvidenceService = (input: {
         ...parsed.operatorEvidenceRefs,
         ...(operatorEvidenceRef ? [operatorEvidenceRef] : []),
       ]);
+      const actionRefs = await routeActionRequests(parsed.actionRefs, observedAt);
       const bundle = supportEvidenceBundleSchema.parse({
         supportIncidentId,
         incidentClass: parsed.incidentClass,
@@ -259,7 +286,7 @@ export const createSupportEvidenceService = (input: {
         reportRunRefs: uniqueSorted(parsed.reportRunRefs),
         releaseRefs: uniqueSorted(parsed.releaseRefs),
         operatorEvidenceRefs,
-        actionRefs: uniqueActions(parsed.actionRefs),
+        actionRefs: uniqueActions(actionRefs),
         escalationRefs: uniqueSorted(parsed.escalationRefs),
         closureCriteria: uniqueSorted(parsed.closureCriteria),
         operatorNotes: note ? [note] : [],
@@ -307,10 +334,14 @@ export const createSupportEvidenceService = (input: {
       const {
         requestId: existingRequestId,
         normalizedRequestHash: existingNormalizedRequestHash,
+        closureReadinessStatus: existingClosureReadinessStatus,
+        closureReadinessReasons: existingClosureReadinessReasons,
         ...existingBundle
       } = existing;
       void existingRequestId;
       void existingNormalizedRequestHash;
+      void existingClosureReadinessStatus;
+      void existingClosureReadinessReasons;
 
       const observedAt = now();
       const note = parsed.note
@@ -323,6 +354,7 @@ export const createSupportEvidenceService = (input: {
           })
         : null;
       const closureStatus = parsed.closureStatus ?? existing.closureStatus;
+      const routedActionRefs = await routeActionRequests(parsed.addActionRefs, observedAt);
       const bundle = supportEvidenceBundleSchema.parse({
         ...existingBundle,
         sourceRefs: uniqueSorted([...existing.sourceRefs, ...parsed.addSourceRefs]),
@@ -333,7 +365,7 @@ export const createSupportEvidenceService = (input: {
           ...parsed.addOperatorEvidenceRefs,
           ...(operatorEvidenceRef ? [operatorEvidenceRef] : []),
         ]),
-        actionRefs: uniqueActions([...existing.actionRefs, ...parsed.addActionRefs]),
+        actionRefs: uniqueActions([...existing.actionRefs, ...routedActionRefs]),
         escalationRefs: uniqueSorted([...existing.escalationRefs, ...parsed.addEscalationRefs]),
         closureCriteria: uniqueSorted([...existing.closureCriteria, ...parsed.addClosureCriteria]),
         operatorNotes: uniqueNotes([...existing.operatorNotes, ...(note ? [note] : [])]),

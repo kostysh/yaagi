@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS polyphony_runtime.support_incidents (
   closure_criteria_json jsonb NOT NULL DEFAULT '[]'::jsonb,
   operator_notes_json jsonb NOT NULL DEFAULT '[]'::jsonb,
   closure_status text NOT NULL,
+  closure_readiness_status text NOT NULL DEFAULT 'ready',
+  closure_readiness_reasons_json jsonb NOT NULL DEFAULT '[]'::jsonb,
   residual_risk text NULL,
   next_owner_ref text NULL,
   created_at timestamptz NOT NULL,
@@ -60,6 +62,9 @@ CREATE TABLE IF NOT EXISTS polyphony_runtime.support_incidents (
   CONSTRAINT support_incidents_severity_check CHECK (severity IN ('warning', 'critical')),
   CONSTRAINT support_incidents_closure_status_check CHECK (
     closure_status IN ('open', 'blocked', 'resolved', 'transferred')
+  ),
+  CONSTRAINT support_incidents_closure_readiness_status_check CHECK (
+    closure_readiness_status IN ('ready', 'degraded', 'blocked')
   ),
   CONSTRAINT support_incidents_source_refs_array_check CHECK (
     jsonb_typeof(source_refs_json) = 'array'
@@ -85,9 +90,20 @@ CREATE TABLE IF NOT EXISTS polyphony_runtime.support_incidents (
   CONSTRAINT support_incidents_operator_notes_array_check CHECK (
     jsonb_typeof(operator_notes_json) = 'array'
   ),
+  CONSTRAINT support_incidents_closure_readiness_reasons_array_check CHECK (
+    jsonb_typeof(closure_readiness_reasons_json) = 'array'
+  ),
   CONSTRAINT support_incidents_terminal_closed_at_check CHECK (
     closure_status NOT IN ('resolved', 'transferred') OR closed_at IS NOT NULL
   )
+);
+
+CREATE TABLE IF NOT EXISTS polyphony_runtime.support_incident_update_requests (
+  request_id text PRIMARY KEY,
+  support_incident_id text NOT NULL REFERENCES polyphony_runtime.support_incidents (support_incident_id)
+    ON DELETE CASCADE,
+  normalized_request_hash text NOT NULL,
+  created_at timestamptz NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS polyphony_runtime.support_evidence_refs (

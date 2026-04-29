@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T11:43:02.887Z",
+  "audit_class": "security-reviewer",
+  "artifact_role": "latest_copy",
+  "review_mode": "external",
+  "reviewer": "external-agent-avicenna",
+  "reviewer_skill": "security-reviewer",
+  "reviewer_agent_id": "019dd908-8a4d-7353-973d-31650ab24ce3",
+  "reviewer_thread_id": "019dd8ba-a8f1-73e0-9869-a4ac0ca0771e",
+  "review_attempt_id": "implementation--security-reviewer--r01",
+  "review_round_id": "r01",
+  "review_round_number": 1,
+  "latest_copy_path": ".dossier/reviews/F-0028/implementation--security-reviewer--latest.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
+  "feature_id": "F-0028",
+  "event_commit": "848642bd0a4715fc5265306fd8b4090064b49f39",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": "code-bearing implementation adds protected support operator routes and privileged support incident writes",
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "FAIL",
+  "findings": {
+    "must_fix": [
+      "owner-routed support actions can be forged by support_operator",
+      "PATCH support incident replay/conflict protection is not enforced",
+      "support note redaction misses common secret formats exposed through read routes"
+    ],
+    "should_fix": [],
+    "evidence": [
+      "packages/contracts/src/support.ts",
+      "apps/core/src/platform/operator-api.ts",
+      "apps/core/src/support/support-evidence.ts",
+      "packages/db/src/support.ts",
+      "infra/migrations/028_support_incidents.sql"
+    ]
+  },
+  "notes": "External security audit FAIL on commit 848642b: owner-routed action forgery, update replay gap, and redaction gap.",
+  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--security-reviewer--r01--fail--848642bd0a47.json"
+}

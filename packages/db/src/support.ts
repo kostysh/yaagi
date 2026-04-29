@@ -4,6 +4,7 @@ import {
   evaluateSupportClosureReadiness,
   supportEvidenceBundleSchema,
   type SupportCanonicalEvidenceState,
+  type SupportClosureReadiness,
   type SupportEvidenceBundle,
   type SupportIncidentClass,
 } from '@yaagi/contracts/support';
@@ -12,6 +13,7 @@ import { RUNTIME_SCHEMA } from './runtime.ts';
 export type SupportDbExecutor = Pick<Client, 'query'>;
 
 const supportIncidentsTable = `${RUNTIME_SCHEMA}.support_incidents`;
+const supportIncidentUpdateRequestsTable = `${RUNTIME_SCHEMA}.support_incident_update_requests`;
 const supportRunbookVersionsTable = `${RUNTIME_SCHEMA}.support_runbook_versions`;
 const supportOwnedWriteSurfaces = new Set<string>(Object.values(SUPPORT_OWNED_WRITE_SURFACE));
 
@@ -33,6 +35,8 @@ const supportIncidentColumns = `
   closure_criteria_json as "closureCriteriaJson",
   operator_notes_json as "operatorNotesJson",
   closure_status as "closureStatus",
+  closure_readiness_status as "closureReadinessStatus",
+  closure_readiness_reasons_json as "closureReadinessReasonsJson",
   residual_risk as "residualRisk",
   next_owner_ref as "nextOwnerRef",
   ${asUtcIso('created_at', 'createdAt')},
@@ -82,6 +86,8 @@ const normalizeTimestamp = (value: unknown, field: string): string | null => {
 export type SupportIncidentRow = SupportEvidenceBundle & {
   requestId: string;
   normalizedRequestHash: string;
+  closureReadinessStatus: SupportClosureReadiness['status'];
+  closureReadinessReasons: string[];
 };
 
 export type SupportRunbookVersionRow = {
@@ -124,6 +130,7 @@ export type SupportIncidentRecordResult =
       accepted: true;
       deduplicated: boolean;
       incident: SupportIncidentRow;
+      closureReadiness: SupportClosureReadiness;
     }
   | {
       accepted: false;
@@ -180,6 +187,8 @@ const normalizeSupportIncidentRow = (row: QueryResultRow): SupportIncidentRow =>
     ...bundle,
     requestId: String(row['requestId']),
     normalizedRequestHash: String(row['normalizedRequestHash']),
+    closureReadinessStatus: row['closureReadinessStatus'] as SupportClosureReadiness['status'],
+    closureReadinessReasons: parseJson<string[]>(row['closureReadinessReasonsJson'], []),
   };
 };
 
@@ -206,6 +215,45 @@ const ensureWriteSurfaces = (
   return { accepted: true };
 };
 
+const uniqueStrings = (values: readonly string[]): string[] =>
+  Array.from(
+    new Set(values.map((value) => value.trim()).filter((value) => value.length > 0)),
+  ).sort();
+
+const uniqueActions = (
+  values: readonly SupportEvidenceBundle['actionRefs'][number][],
+): SupportEvidenceBundle['actionRefs'] =>
+  Array.from(new Map(values.map((action) => [action.ref, action])).values()).sort((left, right) =>
+    left.ref.localeCompare(right.ref),
+  );
+
+const uniqueNotes = (
+  values: readonly SupportEvidenceBundle['operatorNotes'][number][],
+): SupportEvidenceBundle['operatorNotes'] =>
+  Array.from(new Map(values.map((note) => [note.noteId, note])).values()).sort((left, right) =>
+    left.noteId.localeCompare(right.noteId),
+  );
+
+const mergeIncidentBundle = (
+  current: SupportIncidentRow,
+  next: SupportEvidenceBundle,
+): SupportEvidenceBundle =>
+  supportEvidenceBundleSchema.parse({
+    ...next,
+    createdAt: current.createdAt,
+    sourceRefs: uniqueStrings([...current.sourceRefs, ...next.sourceRefs]),
+    reportRunRefs: uniqueStrings([...current.reportRunRefs, ...next.reportRunRefs]),
+    releaseRefs: uniqueStrings([...current.releaseRefs, ...next.releaseRefs]),
+    operatorEvidenceRefs: uniqueStrings([
+      ...current.operatorEvidenceRefs,
+      ...next.operatorEvidenceRefs,
+    ]),
+    actionRefs: uniqueActions([...current.actionRefs, ...next.actionRefs]),
+    escalationRefs: uniqueStrings([...current.escalationRefs, ...next.escalationRefs]),
+    closureCriteria: uniqueStrings([...current.closureCriteria, ...next.closureCriteria]),
+    operatorNotes: uniqueNotes([...current.operatorNotes, ...next.operatorNotes]),
+  });
+
 export const createSupportStore = (db: SupportDbExecutor): SupportStore => {
   const getIncidentByRequestId = async (requestId: string): Promise<SupportIncidentRow | null> => {
     const result = await db.query<QueryResultRow>(
@@ -213,6 +261,21 @@ export const createSupportStore = (db: SupportDbExecutor): SupportStore => {
        from ${supportIncidentsTable}
        where request_id = $1`,
       [requestId],
+    );
+
+    return result.rows[0] ? normalizeSupportIncidentRow(result.rows[0]) : null;
+  };
+
+  const getIncidentById = async (
+    supportIncidentId: string,
+    options: { forUpdate?: boolean } = {},
+  ): Promise<SupportIncidentRow | null> => {
+    const result = await db.query<QueryResultRow>(
+      `select ${supportIncidentColumns}
+       from ${supportIncidentsTable}
+       where support_incident_id = $1
+       ${options.forUpdate ? 'for update' : ''}`,
+      [supportIncidentId],
     );
 
     return result.rows[0] ? normalizeSupportIncidentRow(result.rows[0]) : null;
@@ -309,23 +372,6 @@ export const createSupportStore = (db: SupportDbExecutor): SupportStore => {
         };
       }
 
-      const existing = await getIncidentByRequestId(requestId);
-      if (existing) {
-        if (existing.normalizedRequestHash !== normalizedRequestHash) {
-          return {
-            accepted: false,
-            reason: 'conflicting_request_id',
-            existingIncident: existing,
-          };
-        }
-
-        return {
-          accepted: true,
-          deduplicated: true,
-          incident: existing,
-        };
-      }
-
       const result = await db.query(
         `insert into ${supportIncidentsTable} (
            support_incident_id,
@@ -340,19 +386,23 @@ export const createSupportStore = (db: SupportDbExecutor): SupportStore => {
            action_refs_json,
            escalation_refs_json,
            closure_criteria_json,
-           operator_notes_json,
-           closure_status,
-           residual_risk,
-           next_owner_ref,
+	           operator_notes_json,
+	           closure_status,
+	           closure_readiness_status,
+	           closure_readiness_reasons_json,
+	           residual_risk,
+	           next_owner_ref,
            created_at,
            updated_at,
            closed_at
          )
-         values (
-           $1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb, $9::jsonb,
-           $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb, $14, $15, $16, $17, $18, $19
-         )
-         returning ${supportIncidentColumns}`,
+	         values (
+	           $1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb, $9::jsonb,
+	           $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb, $14, $15, $16::jsonb,
+	           $17, $18, $19, $20, $21
+	         )
+	         on conflict (request_id) do nothing
+	         returning ${supportIncidentColumns}`,
         [
           bundle.supportIncidentId,
           requestId,
@@ -368,6 +418,8 @@ export const createSupportStore = (db: SupportDbExecutor): SupportStore => {
           JSON.stringify(bundle.closureCriteria),
           JSON.stringify(bundle.operatorNotes),
           bundle.closureStatus,
+          readiness.status,
+          JSON.stringify(readiness.reasons),
           bundle.residualRisk,
           bundle.nextOwnerRef,
           bundle.createdAt,
@@ -376,10 +428,41 @@ export const createSupportStore = (db: SupportDbExecutor): SupportStore => {
         ],
       );
 
+      if (!result.rows[0]) {
+        const existing = await getIncidentByRequestId(requestId);
+        if (existing?.normalizedRequestHash !== normalizedRequestHash) {
+          return {
+            accepted: false,
+            reason: 'conflicting_request_id',
+            ...(existing ? { existingIncident: existing } : {}),
+          };
+        }
+
+        if (existing) {
+          return {
+            accepted: true,
+            deduplicated: true,
+            incident: existing,
+            closureReadiness: {
+              status: existing.closureReadinessStatus,
+              reasons: existing.closureReadinessReasons,
+            },
+          };
+        }
+
+        return {
+          accepted: false,
+          reason: 'incident_missing',
+        };
+      }
+
+      const incident = normalizeSupportIncidentRow(result.rows[0] as QueryResultRow);
+
       return {
         accepted: true,
         deduplicated: false,
-        incident: normalizeSupportIncidentRow(result.rows[0] as QueryResultRow),
+        incident,
+        closureReadiness: readiness,
       };
     },
 
@@ -400,82 +483,143 @@ export const createSupportStore = (db: SupportDbExecutor): SupportStore => {
         requestedWriteSurfaces,
         ...bundleInput
       } = input;
-      void requestId;
-      void normalizedRequestHash;
       void requestedWriteSurfaces;
       const bundle = supportEvidenceBundleSchema.parse(bundleInput);
-      const existing = await this.getIncident(bundle.supportIncidentId);
-      if (!existing) {
+
+      await db.query('begin');
+      try {
+        const updateRequest = await db.query<QueryResultRow>(
+          `insert into ${supportIncidentUpdateRequestsTable} (
+	             request_id,
+	             support_incident_id,
+	             normalized_request_hash,
+	             created_at
+	           )
+	           values ($1, $2, $3, $4)
+	           on conflict (request_id) do nothing
+	           returning request_id`,
+          [requestId, bundle.supportIncidentId, normalizedRequestHash, bundle.updatedAt],
+        );
+
+        if (!updateRequest.rows[0]) {
+          const replay = await db.query<QueryResultRow>(
+            `select support_incident_id as "supportIncidentId",
+	                    normalized_request_hash as "normalizedRequestHash"
+	             from ${supportIncidentUpdateRequestsTable}
+	             where request_id = $1`,
+            [requestId],
+          );
+          const replayRow = replay.rows[0];
+          const existing = await getIncidentById(
+            replayRow ? String(replayRow['supportIncidentId']) : bundle.supportIncidentId,
+          );
+          await db.query('commit');
+
+          if (!replayRow || replayRow['normalizedRequestHash'] !== normalizedRequestHash) {
+            return {
+              accepted: false,
+              reason: 'conflicting_request_id',
+              ...(existing ? { existingIncident: existing } : {}),
+            };
+          }
+
+          if (!existing) {
+            return {
+              accepted: false,
+              reason: 'incident_missing',
+            };
+          }
+
+          return {
+            accepted: true,
+            deduplicated: true,
+            incident: existing,
+            closureReadiness: {
+              status: existing.closureReadinessStatus,
+              reasons: existing.closureReadinessReasons,
+            },
+          };
+        }
+
+        const existing = await getIncidentById(bundle.supportIncidentId, { forUpdate: true });
+        if (!existing) {
+          await db.query('rollback');
+          return {
+            accepted: false,
+            reason: 'incident_missing',
+          };
+        }
+
+        const mergedBundle = mergeIncidentBundle(existing, bundle);
+        const readiness = evaluateSupportClosureReadiness({
+          bundle: mergedBundle,
+          ...(canonicalEvidenceStates ? { canonicalEvidenceStates } : {}),
+        });
+        if (readiness.status === 'blocked') {
+          await db.query('rollback');
+          return {
+            accepted: false,
+            reason: 'closure_blocked',
+            existingIncident: existing,
+            closureReasons: readiness.reasons,
+          };
+        }
+
+        const result = await db.query(
+          `update ${supportIncidentsTable}
+	           set source_refs_json = $2::jsonb,
+	               report_run_refs_json = $3::jsonb,
+	               release_refs_json = $4::jsonb,
+	               operator_evidence_refs_json = $5::jsonb,
+	               action_refs_json = $6::jsonb,
+	               escalation_refs_json = $7::jsonb,
+	               closure_criteria_json = $8::jsonb,
+	               operator_notes_json = $9::jsonb,
+	               closure_status = $10,
+	               closure_readiness_status = $11,
+	               closure_readiness_reasons_json = $12::jsonb,
+	               residual_risk = $13,
+	               next_owner_ref = $14,
+	               updated_at = $15,
+	               closed_at = $16
+	           where support_incident_id = $1
+	           returning ${supportIncidentColumns}`,
+          [
+            mergedBundle.supportIncidentId,
+            JSON.stringify(mergedBundle.sourceRefs),
+            JSON.stringify(mergedBundle.reportRunRefs),
+            JSON.stringify(mergedBundle.releaseRefs),
+            JSON.stringify(mergedBundle.operatorEvidenceRefs),
+            JSON.stringify(mergedBundle.actionRefs),
+            JSON.stringify(mergedBundle.escalationRefs),
+            JSON.stringify(mergedBundle.closureCriteria),
+            JSON.stringify(mergedBundle.operatorNotes),
+            mergedBundle.closureStatus,
+            readiness.status,
+            JSON.stringify(readiness.reasons),
+            mergedBundle.residualRisk,
+            mergedBundle.nextOwnerRef,
+            mergedBundle.updatedAt,
+            mergedBundle.closedAt,
+          ],
+        );
+        await db.query('commit');
+        const incident = normalizeSupportIncidentRow(result.rows[0] as QueryResultRow);
+
         return {
-          accepted: false,
-          reason: 'incident_missing',
+          accepted: true,
+          deduplicated: false,
+          incident,
+          closureReadiness: readiness,
         };
+      } catch (error) {
+        await db.query('rollback');
+        throw error;
       }
-
-      const readiness = evaluateSupportClosureReadiness({
-        bundle,
-        ...(canonicalEvidenceStates ? { canonicalEvidenceStates } : {}),
-      });
-      if (readiness.status === 'blocked') {
-        return {
-          accepted: false,
-          reason: 'closure_blocked',
-          existingIncident: existing,
-          closureReasons: readiness.reasons,
-        };
-      }
-
-      const result = await db.query(
-        `update ${supportIncidentsTable}
-         set source_refs_json = $2::jsonb,
-             report_run_refs_json = $3::jsonb,
-             release_refs_json = $4::jsonb,
-             operator_evidence_refs_json = $5::jsonb,
-             action_refs_json = $6::jsonb,
-             escalation_refs_json = $7::jsonb,
-             closure_criteria_json = $8::jsonb,
-             operator_notes_json = $9::jsonb,
-             closure_status = $10,
-             residual_risk = $11,
-             next_owner_ref = $12,
-             updated_at = $13,
-             closed_at = $14
-         where support_incident_id = $1
-         returning ${supportIncidentColumns}`,
-        [
-          bundle.supportIncidentId,
-          JSON.stringify(bundle.sourceRefs),
-          JSON.stringify(bundle.reportRunRefs),
-          JSON.stringify(bundle.releaseRefs),
-          JSON.stringify(bundle.operatorEvidenceRefs),
-          JSON.stringify(bundle.actionRefs),
-          JSON.stringify(bundle.escalationRefs),
-          JSON.stringify(bundle.closureCriteria),
-          JSON.stringify(bundle.operatorNotes),
-          bundle.closureStatus,
-          bundle.residualRisk,
-          bundle.nextOwnerRef,
-          bundle.updatedAt,
-          bundle.closedAt,
-        ],
-      );
-
-      return {
-        accepted: true,
-        deduplicated: false,
-        incident: normalizeSupportIncidentRow(result.rows[0] as QueryResultRow),
-      };
     },
 
     async getIncident(supportIncidentId) {
-      const result = await db.query<QueryResultRow>(
-        `select ${supportIncidentColumns}
-         from ${supportIncidentsTable}
-         where support_incident_id = $1`,
-        [supportIncidentId],
-      );
-
-      return result.rows[0] ? normalizeSupportIncidentRow(result.rows[0]) : null;
+      return getIncidentById(supportIncidentId);
     },
 
     async listIncidents(input = {}) {

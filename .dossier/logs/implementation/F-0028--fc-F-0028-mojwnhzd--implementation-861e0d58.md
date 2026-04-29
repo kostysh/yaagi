@@ -11,7 +11,7 @@ phase_scope: implementation для F-0028 support/operability contract и incide
 stage_state: ready_for_close
 start_ts: 2026-04-29T10:55:00.903Z
 entered_ts: 2026-04-29T10:55:00.903Z
-ready_for_close_ts: 2026-04-29T11:36:35.058Z
+ready_for_close_ts: 2026-04-29T12:03:26.249Z
 transition_events:
   - kind: entered
     at: 2026-04-29T10:55:00.903Z
@@ -23,6 +23,10 @@ transition_events:
     at: 2026-04-29T11:36:15.473Z
   - kind: ready_for_close
     at: 2026-04-29T11:36:35.058Z
+  - kind: blocked
+    at: 2026-04-29T11:43:42.265Z
+  - kind: ready_for_close
+    at: 2026-04-29T12:03:26.249Z
 backlog_followup_required: false
 backlog_followup_kind: null
 backlog_followup_resolved: false
@@ -52,6 +56,7 @@ skills_used:
   - typescript-engineer
   - typescript-test-engineer
   - hono-engineer
+  - git-engineer
 skill_issues: []
 skill_followups: []
 process_misses:
@@ -67,10 +72,17 @@ process_misses:
     resolved: true
     summary: unapplied CF-029 packet failed dry-run and was removed from F-0028
       material scope
+  - id: implementation-audit-fail-round1
+    category: review
+    severity: high
+    resolved: true
+    summary: round1 audit blockers fixed with server-side action routing, update
+      idempotency, release ref validation, degraded closure persistence and
+      redaction regressions
 session_id: 350b48a7-b180-4582-ae1d-ccb8e70b9a6b
 trace_runtime: codex
 trace_locator_kind: session_id
-final_delivery_commit: 616e09befd1f1a86b904a4ce7a149f7c99c8aebf
+final_delivery_commit: 848642bd0a4715fc5265306fd8b4090064b49f39
 final_closure_commit: null
 implementation_review_scope: code-bearing
 stage_entry_commit: 616e09befd1f1a86b904a4ce7a149f7c99c8aebf
@@ -93,7 +105,7 @@ pre_review_checklists:
   - risk_family: replay
     id: support-incident-replay
     status: pass
-    summary: idempotent incident open and conflicting replay rejection covered
+    summary: idempotent open and update replay/conflict handling covered
     evidence: support store and evidence service replay tests passed
     test_refs:
       - packages/db/test/support-store.integration.test.ts
@@ -101,7 +113,8 @@ pre_review_checklists:
   - risk_family: evidence
     id: support-closure-evidence
     status: pass
-    summary: critical closure and stale or missing canonical evidence paths covered
+    summary: critical closure and stale, missing, degraded canonical evidence paths
+      covered
     evidence: contract evidence and canonical refs tests passed
     test_refs:
       - packages/contracts/test/support.contract.test.ts
@@ -117,7 +130,7 @@ pre_review_checklists:
       - apps/core/test/support/support-usage-audit.contract.test.ts
 pre_review_checklist_status: complete
 pre_review_checklist_blockers: []
-local_gates_green_ts: 2026-04-29T11:36:35.058Z
+local_gates_green_ts: 2026-04-29T12:03:26.249Z
 step_artifact: null
 closure_bundle_id: null
 closure_bundle_round: null
@@ -196,6 +209,7 @@ post_close_backlog_hygiene_blockers: []
 
 - ude-backlog-mutation-parallel [low/tool-use, resolved] parallel remove-source attempt hit mutation lock, rerun sequentially succeeded
 - cf029-invalid-packet-cleanup [low/backlog-hygiene, resolved] unapplied CF-029 packet failed dry-run and was removed from F-0028 material scope
+- implementation-audit-fail-round1 [high/review, resolved] round1 audit blockers fixed with server-side action routing, update idempotency, release ref validation, degraded closure persistence and redaction regressions
 
 ## Transition events
 
@@ -204,6 +218,8 @@ post_close_backlog_hygiene_blockers: []
 - 2026-04-29T11:33:38.523Z: ready_for_close
 - 2026-04-29T11:36:15.473Z: resumed
 - 2026-04-29T11:36:35.058Z: ready_for_close
+- 2026-04-29T11:43:42.265Z: blocked
+- 2026-04-29T12:03:26.249Z: ready_for_close
 
 ## Close-out
 

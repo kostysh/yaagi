@@ -117,25 +117,42 @@ export const resolveSupportCanonicalEvidenceStates = async (input: {
     }
   }
 
+  const releaseRequestRefs = input.bundle.releaseRefs.filter((ref) =>
+    ref.startsWith('release-request:'),
+  );
+  const releaseInspections = new Map<string, ReleaseInspection | null>();
+  const inspectReleaseRef = async (requestId: string): Promise<ReleaseInspection | null> => {
+    if (!releaseInspections.has(requestId)) {
+      releaseInspections.set(
+        requestId,
+        readers.inspectRelease ? await readers.inspectRelease(requestId) : null,
+      );
+    }
+
+    return releaseInspections.get(requestId) ?? null;
+  };
+
   for (const ref of input.bundle.releaseRefs) {
-    if (!readers.inspectRelease || !ref.startsWith('release-request:')) {
+    if (!readers.inspectRelease) {
       states.push({
         owner: SUPPORT_OWNER_REF.RELEASE_AUTOMATION,
         ref,
-        freshness: SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH,
+        freshness: SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.UNAVAILABLE,
         observedAt: input.observedAt,
       });
       continue;
     }
 
-    const inspection = await readers.inspectRelease(ref);
+    const candidateRequestRefs = ref.startsWith('release-request:') ? [ref] : releaseRequestRefs;
+    const candidateInspections = await Promise.all(candidateRequestRefs.map(inspectReleaseRef));
     states.push({
       owner: SUPPORT_OWNER_REF.RELEASE_AUTOMATION,
       ref,
-      freshness:
-        inspection && hasReleaseRef(inspection, ref)
-          ? SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH
-          : SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING,
+      freshness: candidateInspections.some(
+        (inspection) => inspection && hasReleaseRef(inspection, ref),
+      )
+        ? SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH
+        : SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING,
       observedAt: input.observedAt,
     });
   }
