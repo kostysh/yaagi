@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T10:39:57.465Z",
+  "audit_class": "spec-conformance-reviewer",
+  "artifact_role": "immutable_attempt",
+  "review_mode": "external",
+  "reviewer": "external-agent-codex",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": "019dd8d0-c9eb-7372-8850-a09be760e595",
+  "reviewer_thread_id": "019dd8d0-c9eb-7372-8850-a09be760e595",
+  "review_attempt_id": "spec-compact--spec-conformance-reviewer--r01",
+  "review_round_id": "r01",
+  "review_round_number": 1,
+  "latest_copy_path": ".dossier/reviews/F-0028/spec-compact--spec-conformance-reviewer--latest.json",
+  "step": "spec-compact",
+  "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
+  "feature_id": "F-0028",
+  "event_commit": "739cb04f56836dea53a479b5cce1a69029487cc6",
+  "implementation_scope": null,
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": []
+  },
+  "notes": "PASS: F-0028 spec-compact is decidable for plan-slice, maps only to CF-026, preserves support/operability as a consumer of F-0013/F-0023/F-0024/F-0026 owner surfaces, defines incident classes/runbook/evidence/closure/action-boundary obligations, and current backlog truth plus applied patch evidence actualizes CF-026 to specified at trace commit 739cb04f56836dea53a479b5cce1a69029487cc6."
+}

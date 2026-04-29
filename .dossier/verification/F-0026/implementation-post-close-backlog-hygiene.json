@@ -1,28 +1,28 @@
 {
   "version": 2,
   "schema_version": 2,
-  "created_at": "2026-04-29T10:29:08.793Z",
+  "created_at": "2026-04-29T10:40:54.792Z",
   "feature_id": "F-0026",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0026-deploy-release-automation-rollback-orchestration.md",
   "implementation_step_artifact": ".dossier/steps/F-0026/implementation.json",
   "implementation_process_complete_ts": "2026-04-24T23:07:27.566Z",
-  "global_refresh_artifact": ".dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T10-29-08-208Z.json",
+  "global_refresh_artifact": ".dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T10-40-54-288Z.json",
   "affected_feature_ids": [
     "F-0026",
     "F-0027"
   ],
   "pre_status_summary": {
     "total_items": 28,
-    "last_refresh_at": "2026-04-29T10:15:03.244Z",
+    "last_refresh_at": "2026-04-29T10:29:08.469Z",
     "defined_count": 0,
-    "intaken_count": 1,
-    "specified_count": 0,
+    "intaken_count": 0,
+    "specified_count": 1,
     "planned_count": 0,
     "implemented_count": 27,
     "gaps_count": 0,
     "needs_attention_count": 0,
-    "ready_for_next_step_count": 0,
+    "ready_for_next_step_count": 1,
     "open_todo_count": 0,
     "artifact_integrity": {
       "applied_canonical_paths_exist": true,
@@ -44,15 +44,15 @@
   },
   "post_status_summary": {
     "total_items": 28,
-    "last_refresh_at": "2026-04-29T10:29:08.469Z",
+    "last_refresh_at": "2026-04-29T10:40:54.537Z",
     "defined_count": 0,
-    "intaken_count": 1,
-    "specified_count": 0,
+    "intaken_count": 0,
+    "specified_count": 1,
     "planned_count": 0,
     "implemented_count": 27,
     "gaps_count": 0,
     "needs_attention_count": 0,
-    "ready_for_next_step_count": 0,
+    "ready_for_next_step_count": 1,
     "open_todo_count": 0,
     "artifact_integrity": {
       "applied_canonical_paths_exist": true,
@@ -72,8 +72,8 @@
     ],
     "post_close_hygiene_blocked_feature_ids": []
   },
-  "refresh_ran_at": "2026-04-29T10:29:08.469Z",
-  "backlog_last_refresh_at": "2026-04-29T10:29:08.469Z",
+  "refresh_ran_at": "2026-04-29T10:40:54.537Z",
+  "backlog_last_refresh_at": "2026-04-29T10:40:54.537Z",
   "refresh_summary": {
     "changed_sources": [],
     "source_reviews_created": 0,
@@ -82,15 +82,15 @@
   },
   "status_summary": {
     "total_items": 28,
-    "last_refresh_at": "2026-04-29T10:29:08.469Z",
+    "last_refresh_at": "2026-04-29T10:40:54.537Z",
     "defined_count": 0,
-    "intaken_count": 1,
-    "specified_count": 0,
+    "intaken_count": 0,
+    "specified_count": 1,
     "planned_count": 0,
     "implemented_count": 27,
     "gaps_count": 0,
     "needs_attention_count": 0,
-    "ready_for_next_step_count": 0,
+    "ready_for_next_step_count": 1,
     "open_todo_count": 0,
     "artifact_integrity": {
       "applied_canonical_paths_exist": true,
@@ -112,9 +112,20 @@
   },
   "attention_summary": [],
   "queue_summary": {
-    "data": [],
+    "data": [
+      {
+        "root_item_key": "CF-026",
+        "items": [
+          "CF-026"
+        ],
+        "ordering_rule": [
+          "depth",
+          "downstream_dependency_count",
+          "item_key"
+        ]
+      }
+    ],
     "warnings": [
-      "Intaken backlog items continue via dossier-local spec-compact: CF-026",
       "Post-close backlog hygiene stale for implementation features: F-0026, F-0027"
     ]
   },
