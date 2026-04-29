@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T19:23:56.087Z",
+  "audit_class": "code-reviewer",
+  "artifact_role": "immutable_attempt",
+  "review_mode": "external",
+  "reviewer": "codex-gpt5-code-reviewer",
+  "reviewer_skill": "code-reviewer",
+  "reviewer_agent_id": "codex-gpt5-independent-review-f0029-20260429-r04",
+  "reviewer_thread_id": "019ddab0-fc74-7e83-b163-ac4d255bb79a",
+  "review_attempt_id": "implementation--code-reviewer--r04",
+  "review_round_id": "r04",
+  "review_round_number": 4,
+  "latest_copy_path": ".dossier/reviews/F-0029/implementation--code-reviewer--latest.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+  "feature_id": "F-0029",
+  "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "Reviewed current uncommitted F-0029 implementation with focus on prior blockers: active/stale sending duplicate sends, timeout retry, and replay text mismatch.",
+      "packages/db/src/telegram-egress.ts:295 markSending claims only pending/retry_scheduled rows; packages/db/src/telegram-egress.ts:380 listReadyToRetry selects only pending/retry_scheduled rows, so ambiguous sending rows are not automatically replayed.",
+      "apps/core/src/actions/tool-gateway.ts:1290 sends durable outbox text from sending.textJson; apps/core/src/actions/tool-gateway.ts:1313 records telegram_api_timeout as terminal failure.",
+      "Focused verification passed: pnpm test -- packages/contracts/test/telegram-egress.contract.test.ts packages/db/test/telegram-egress-store.integration.test.ts apps/core/test/actions/telegram-egress-tool.contract.test.ts apps/core/test/runtime/telegram-egress-retry.contract.test.ts.",
+      "Current verification artifact inspected: .dossier/verification/F-0029/implementation-45497bcf0b57.json."
+    ]
+  },
+  "notes": "PASS: prior code-review blockers are cleared. Active or stale sending rows are no longer automatic retry candidates, Telegram timeout is terminal failure, and replay transport uses the durable outbox text as authoritative."
+}

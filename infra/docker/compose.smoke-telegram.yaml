@@ -30,6 +30,8 @@ services:
       YAAGI_TELEGRAM_ENABLED: "true"
       YAAGI_TELEGRAM_BOT_TOKEN: "smoke-token"
       YAAGI_TELEGRAM_ALLOWED_CHAT_IDS: "12345"
+      YAAGI_TELEGRAM_EGRESS_ENABLED: "true"
+      YAAGI_TELEGRAM_OPERATOR_CHAT_ID: "12345"
       YAAGI_TELEGRAM_API_BASE_URL: "http://fake-telegram-api:8081"
     depends_on:
       fake-telegram-api:

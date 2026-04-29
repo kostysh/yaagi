@@ -10,6 +10,8 @@ export const createActionTestConfig = (rootDir: string): CoreRuntimeConfig => ({
   telegramEnabled: false,
   telegramBotToken: null,
   telegramAllowedChatIds: [],
+  telegramEgressEnabled: false,
+  telegramOperatorChatId: null,
   telegramApiBaseUrl: 'https://api.telegram.org',
   seedRootPath: path.join(rootDir, 'seed'),
   seedConstitutionPath: path.join(rootDir, 'seed', 'constitution.yaml'),

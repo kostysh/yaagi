@@ -557,13 +557,29 @@ async function resetFakeTelegramUpdates(): Promise<void> {
       '-c',
       [
         'import urllib.request',
-        "request = urllib.request.Request('http://127.0.0.1:8081/__test__/updates', method='DELETE')",
+        "request = urllib.request.Request('http://127.0.0.1:8081/__test__/state', method='DELETE')",
         'with urllib.request.urlopen(request, timeout=5) as response:',
         '    response.read()',
       ].join('\n'),
     ],
     { telegram: true },
   );
+}
+
+async function listFakeTelegramSentMessages(): Promise<Array<{ chat_id: string; text: string }>> {
+  const stdout = await execCoreScript(
+    `
+    const response = await fetch('http://fake-telegram-api:8081/__test__/sentMessages');
+    if (!response.ok) {
+      throw new Error('failed to list fake telegram sent messages: ' + response.status);
+    }
+    const payload = await response.json();
+    console.log(JSON.stringify(payload.result ?? []));
+  `,
+    { telegram: true },
+  );
+
+  return JSON.parse(stdout) as Array<{ chat_id: string; text: string }>;
 }
 
 async function enqueueFakeTelegramUpdate(input: {
@@ -2005,7 +2021,7 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
           await enqueueFakeTelegramUpdate({
             updateId: 1,
             chatId: '12345',
-            text: 'smoke telegram message',
+            text: 'smoke telegram message; answer with one short acknowledgement through telegram.sendMessage',
           });
 
           await waitForPostgresPredicate(
@@ -2022,6 +2038,13 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
                   and trigger_kind = 'system'
                   and status = 'completed'
               )
+              and exists(
+                select 1
+                from polyphony_runtime.telegram_egress_messages
+                where recipient_kind = 'operator_direct_chat'
+                  and status = 'sent'
+                  and attempt_count >= 1
+              )
             )::text;`,
             smokeReactivePredicateTimeoutMs,
             { telegram: true },
@@ -2031,6 +2054,8 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
             source: string | null;
             threadId: string | null;
             tickSourceKind: string | null;
+            egressStatus: string | null;
+            egressAttemptCount: number | null;
           }>(
             `select json_build_object(
               'source',
@@ -2055,6 +2080,20 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
                   and trigger_kind = 'system'
                   and status = 'completed'
                 limit 1
+              ),
+              'egressStatus',
+              (
+                select status
+                from polyphony_runtime.telegram_egress_messages
+                order by created_at desc
+                limit 1
+              ),
+              'egressAttemptCount',
+              (
+                select attempt_count
+                from polyphony_runtime.telegram_egress_messages
+                order by created_at desc
+                limit 1
               )
             )::text;`,
             { telegram: true },
@@ -2062,6 +2101,14 @@ void test('F-0007 deployment-cell smoke suite', { concurrency: false }, async (t
           assert.equal(telegramEvidence.source, 'telegram');
           assert.equal(telegramEvidence.threadId, '12345');
           assert.equal(telegramEvidence.tickSourceKind, 'telegram');
+          assert.equal(telegramEvidence.egressStatus, 'sent');
+          assert.equal(Number(telegramEvidence.egressAttemptCount) >= 1, true);
+          const sentMessages = await listFakeTelegramSentMessages();
+          assert.equal(sentMessages.length, 1);
+          assert.equal(
+            sentMessages.every((message) => message.chat_id === '12345'),
+            true,
+          );
         },
       );
     });

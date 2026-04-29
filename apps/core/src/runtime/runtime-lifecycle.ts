@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import type { Client, QueryResultRow } from 'pg';
 import { DEPENDENCY } from '@yaagi/contracts/boot';
-import type { ExecutiveVerdict } from '@yaagi/contracts/actions';
+import { TELEGRAM_SEND_MESSAGE_TOOL, type ExecutiveVerdict } from '@yaagi/contracts/actions';
 import {
   createEmptyNarrativeMemeticOutputs,
   type DecisionMode,
@@ -28,6 +28,7 @@ import {
   createOperatorAuthStore,
   createRuntimeActionLogStore,
   createPerceptionStore,
+  createTelegramEgressStore,
   createSpecialistPolicyStore,
   createRuntimeDbClient,
   createRuntimeModelProfileStore,
@@ -68,6 +69,7 @@ import {
   createExecutiveCenter,
   createPhase0ToolGateway,
   executiveVerdictToResultJson,
+  type ToolGateway,
 } from '../actions/index.ts';
 import { ConstitutionalBootService } from '../boot/index.ts';
 import {
@@ -247,6 +249,125 @@ export const startBoundedWorkshopWorker = async (
     logError('workshop worker failed to start; continuing in bounded degraded mode', error);
     return false;
   }
+};
+
+const TELEGRAM_EGRESS_RETRY_INTERVAL_MS = 5_000;
+const TELEGRAM_EGRESS_RETRY_LIMIT = 10;
+
+type TelegramEgressReplayRow = {
+  actionId: string;
+  tickId: string;
+  replyToStimulusId: string;
+  replyToTelegramUpdateId: number | null;
+  idempotencyKey: string;
+  textJson: Record<string, unknown>;
+};
+
+type TelegramEgressReplayStore = {
+  listReadyToRetry(input?: { limit?: number }): Promise<TelegramEgressReplayRow[]>;
+  markFailed(input: {
+    actionId: string;
+    reason: string;
+    errorJson?: Record<string, unknown>;
+  }): Promise<unknown>;
+};
+
+const readTelegramEgressText = (row: TelegramEgressReplayRow): string | null =>
+  typeof row.textJson['text'] === 'string' && row.textJson['text'].length > 0
+    ? row.textJson['text']
+    : null;
+
+export const replayReadyTelegramEgress = async (input: {
+  store: TelegramEgressReplayStore;
+  toolGateway: Pick<ToolGateway, 'execute'>;
+  limit?: number;
+  logError?: (message: string, error: unknown) => void;
+}): Promise<{ scanned: number; attempted: number }> => {
+  const rows = await input.store.listReadyToRetry({
+    limit: input.limit ?? TELEGRAM_EGRESS_RETRY_LIMIT,
+  });
+  let attempted = 0;
+
+  for (const row of rows) {
+    const text = readTelegramEgressText(row);
+    if (!text) {
+      await input.store.markFailed({
+        actionId: row.actionId,
+        reason: 'telegram_api_error',
+        errorJson: { reason: 'missing_telegram_egress_text' },
+      });
+      continue;
+    }
+
+    attempted += 1;
+    try {
+      await input.toolGateway.execute({
+        actionId: row.actionId,
+        tickId: row.tickId,
+        toolName: TELEGRAM_SEND_MESSAGE_TOOL,
+        verdictKind: 'tool_call',
+        parametersJson: {
+          text,
+          correlationId: row.idempotencyKey,
+          replyToStimulusId: row.replyToStimulusId,
+          ...(row.replyToTelegramUpdateId === null
+            ? {}
+            : { replyToTelegramUpdateId: row.replyToTelegramUpdateId }),
+        },
+      });
+    } catch (error) {
+      input.logError?.('telegram egress retry execution failed', error);
+    }
+  }
+
+  return {
+    scanned: rows.length,
+    attempted,
+  };
+};
+
+const createTelegramEgressRetryWorker = (input: {
+  enabled: boolean;
+  store: TelegramEgressReplayStore;
+  toolGateway: Pick<ToolGateway, 'execute'>;
+  logError?: (message: string, error: unknown) => void;
+}) => {
+  let timer: ReturnType<typeof setInterval> | null = null;
+  let running = false;
+
+  const drain = async (): Promise<void> => {
+    if (running) return;
+    running = true;
+    try {
+      await replayReadyTelegramEgress({
+        store: input.store,
+        toolGateway: input.toolGateway,
+        ...(input.logError ? { logError: input.logError } : {}),
+      });
+    } finally {
+      running = false;
+    }
+  };
+
+  return {
+    async start(): Promise<void> {
+      if (!input.enabled || timer) return;
+      await drain();
+      timer = setInterval(() => {
+        void drain().catch((error: unknown) => {
+          input.logError?.('telegram egress retry drain failed', error);
+        });
+      }, TELEGRAM_EGRESS_RETRY_INTERVAL_MS);
+    },
+
+    stop(): Promise<void> {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+      return Promise.resolve();
+    },
+  };
 };
 
 export const buildPhase0SubjectStateDelta = (input: FinishTickInput): SubjectStateDelta => {
@@ -944,6 +1065,76 @@ const createDbBackedActionLogStore = (config: CoreRuntimeConfig) => ({
     withRuntimeClient(config.postgresUrl, async (client) => {
       const store = createRuntimeActionLogStore(client);
       return await store.listActionLogForTick(input);
+    }),
+});
+
+const createDbBackedTelegramEgressStore = (config: CoreRuntimeConfig) => ({
+  getStimulusContext: (
+    stimulusId: Parameters<ReturnType<typeof createTelegramEgressStore>['getStimulusContext']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createTelegramEgressStore(client);
+      return await store.getStimulusContext(stimulusId);
+    }),
+
+  getByActionId: (
+    actionId: Parameters<ReturnType<typeof createTelegramEgressStore>['getByActionId']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createTelegramEgressStore(client);
+      return await store.getByActionId(actionId);
+    }),
+
+  recordIntent: (
+    input: Parameters<ReturnType<typeof createTelegramEgressStore>['recordIntent']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createTelegramEgressStore(client);
+      return await store.recordIntent(input);
+    }),
+
+  recordRefusal: (
+    input: Parameters<ReturnType<typeof createTelegramEgressStore>['recordRefusal']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createTelegramEgressStore(client);
+      return await store.recordRefusal(input);
+    }),
+
+  markSending: (
+    actionId: Parameters<ReturnType<typeof createTelegramEgressStore>['markSending']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createTelegramEgressStore(client);
+      return await store.markSending(actionId);
+    }),
+
+  markSent: (input: Parameters<ReturnType<typeof createTelegramEgressStore>['markSent']>[0]) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createTelegramEgressStore(client);
+      return await store.markSent(input);
+    }),
+
+  markRetryScheduled: (
+    input: Parameters<ReturnType<typeof createTelegramEgressStore>['markRetryScheduled']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createTelegramEgressStore(client);
+      return await store.markRetryScheduled(input);
+    }),
+
+  markFailed: (input: Parameters<ReturnType<typeof createTelegramEgressStore>['markFailed']>[0]) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createTelegramEgressStore(client);
+      return await store.markFailed(input);
+    }),
+
+  listReadyToRetry: (
+    input?: Parameters<ReturnType<typeof createTelegramEgressStore>['listReadyToRetry']>[0],
+  ) =>
+    withRuntimeClient(config.postgresUrl, async (client) => {
+      const store = createTelegramEgressStore(client);
+      return await store.listReadyToRetry(input);
     }),
 });
 
@@ -2023,7 +2214,17 @@ export function createPhase0RuntimeLifecycle(
     invokeAgent: invokeDecision,
     limits: DECISION_CONTEXT_LIMITS,
   });
-  const toolGateway = createPhase0ToolGateway({ config });
+  const telegramEgressStore = createDbBackedTelegramEgressStore(config);
+  const toolGateway = createPhase0ToolGateway({
+    config,
+    telegramEgressStore,
+  });
+  const telegramEgressRetryWorker = createTelegramEgressRetryWorker({
+    enabled: config.telegramEgressEnabled,
+    store: telegramEgressStore,
+    toolGateway,
+    logError: console.error,
+  });
   const executiveCenter = createExecutiveCenter({
     actionLogStore,
     toolGateway,
@@ -2298,6 +2499,7 @@ export function createPhase0RuntimeLifecycle(
         await runtimeSkills.start();
         await startBoundedWorkshopWorker(workshopWorker);
         await periodicHomeostatWorker.start();
+        await telegramEgressRetryWorker.start();
 
         await perceptionController.emitSystemSignal({
           signalType: 'system.boot.completed',
@@ -2312,6 +2514,7 @@ export function createPhase0RuntimeLifecycle(
         started = true;
       } catch (error) {
         await workshopWorker.stop().catch(() => {});
+        await telegramEgressRetryWorker.stop().catch(() => {});
         await periodicHomeostatWorker.stop().catch(() => {});
         await runtimeSkills.stop().catch(() => {});
         await perceptionController.stop().catch(() => {});
@@ -2347,6 +2550,7 @@ export function createPhase0RuntimeLifecycle(
         },
         stopPeriodicHomeostatWorker: async () => {
           await periodicHomeostatWorker.stop().catch(() => {});
+          await telegramEgressRetryWorker.stop().catch(() => {});
         },
         stopPerceptionController: () => perceptionController.stop(),
         stopRuntimeSkills: async () => {

@@ -11,6 +11,8 @@ export type CoreRuntimeConfig = {
   telegramEnabled: boolean;
   telegramBotToken: string | null;
   telegramAllowedChatIds: string[];
+  telegramEgressEnabled: boolean;
+  telegramOperatorChatId: string | null;
   telegramApiBaseUrl: string;
   seedRootPath: string;
   seedConstitutionPath: string;
@@ -153,6 +155,8 @@ const envSchema = z.object({
   YAAGI_TELEGRAM_BOT_TOKEN: z.string().optional(),
   YAAGI_TELEGRAM_BOT_TOKEN_FILE: z.string().optional(),
   YAAGI_TELEGRAM_ALLOWED_CHAT_IDS: z.string().optional(),
+  YAAGI_TELEGRAM_EGRESS_ENABLED: z.string().optional(),
+  YAAGI_TELEGRAM_OPERATOR_CHAT_ID: z.string().optional(),
   YAAGI_TELEGRAM_API_BASE_URL: z.string().optional(),
   YAAGI_SEED_ROOT_PATH: z.string().optional(),
   YAAGI_SEED_CONSTITUTION_PATH: z.string().optional(),
@@ -186,6 +190,9 @@ export function loadCoreRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Cor
     parsedEnv.YAAGI_TELEGRAM_BOT_TOKEN?.trim() ||
     readSecretFile(cwd, parsedEnv.YAAGI_TELEGRAM_BOT_TOKEN_FILE, 'YAAGI_TELEGRAM_BOT_TOKEN_FILE');
   const telegramAllowedChatIds = parseCsv(parsedEnv.YAAGI_TELEGRAM_ALLOWED_CHAT_IDS);
+  const telegramEgressEnabled = parseBoolean(parsedEnv.YAAGI_TELEGRAM_EGRESS_ENABLED, false);
+  const telegramOperatorChatId =
+    optionalEnvValue(parsedEnv.YAAGI_TELEGRAM_OPERATOR_CHAT_ID) ?? null;
 
   if (telegramEnabled && !telegramBotToken) {
     throw new Error('YAAGI_TELEGRAM_BOT_TOKEN is required when YAAGI_TELEGRAM_ENABLED=true');
@@ -194,6 +201,26 @@ export function loadCoreRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Cor
   if (telegramEnabled && telegramAllowedChatIds.length === 0) {
     throw new Error(
       'YAAGI_TELEGRAM_ALLOWED_CHAT_IDS must contain at least one chat id when YAAGI_TELEGRAM_ENABLED=true',
+    );
+  }
+
+  if (telegramEgressEnabled && !telegramBotToken) {
+    throw new Error('YAAGI_TELEGRAM_BOT_TOKEN is required when YAAGI_TELEGRAM_EGRESS_ENABLED=true');
+  }
+
+  if (telegramEgressEnabled && !telegramOperatorChatId) {
+    throw new Error(
+      'YAAGI_TELEGRAM_OPERATOR_CHAT_ID is required when YAAGI_TELEGRAM_EGRESS_ENABLED=true',
+    );
+  }
+
+  if (
+    telegramEgressEnabled &&
+    telegramOperatorChatId &&
+    !telegramAllowedChatIds.includes(telegramOperatorChatId)
+  ) {
+    throw new Error(
+      'YAAGI_TELEGRAM_OPERATOR_CHAT_ID must be included in YAAGI_TELEGRAM_ALLOWED_CHAT_IDS when YAAGI_TELEGRAM_EGRESS_ENABLED=true',
     );
   }
 
@@ -229,6 +256,8 @@ export function loadCoreRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Cor
     telegramEnabled,
     telegramBotToken,
     telegramAllowedChatIds,
+    telegramEgressEnabled,
+    telegramOperatorChatId,
     telegramApiBaseUrl: requireUrl(
       parsedEnv.YAAGI_TELEGRAM_API_BASE_URL ?? DEFAULT_TELEGRAM_API_BASE_URL,
       'YAAGI_TELEGRAM_API_BASE_URL',

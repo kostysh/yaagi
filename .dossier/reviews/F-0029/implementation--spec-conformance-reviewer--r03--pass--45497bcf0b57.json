@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T19:08:50.209Z",
+  "audit_class": "spec-conformance-reviewer",
+  "artifact_role": "immutable_attempt",
+  "review_mode": "external",
+  "reviewer": "spec-conformance-reviewer",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": "codex",
+  "reviewer_thread_id": "019ddaa1-a5f0-7040-8339-12fc9dc87c08",
+  "review_attempt_id": "implementation--spec-conformance-reviewer--r03",
+  "review_round_id": "r03",
+  "review_round_number": 3,
+  "latest_copy_path": ".dossier/reviews/F-0029/implementation--spec-conformance-reviewer--latest.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+  "feature_id": "F-0029",
+  "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+      ".dossier/verification/F-0029/implementation-45497bcf0b57.json",
+      "packages/db/src/telegram-egress.ts markSending/listReadyToRetry",
+      "apps/core/src/actions/tool-gateway.ts telegram.sendMessage claim-before-transport path",
+      "apps/core/test/actions/telegram-egress-tool.contract.test.ts active send claim coverage",
+      "packages/db/test/telegram-egress-store.integration.test.ts stale sending recovery coverage",
+      "apps/core/test/runtime/telegram-egress-retry.contract.test.ts replay through gateway coverage"
+    ]
+  },
+  "notes": "Reviewed uncommitted F-0029 implementation against F-0029 SSoT, README/runtime contracts, and current verification artifact .dossier/verification/F-0029/implementation-45497bcf0b57.json. Focused send-claim/stale retry path: markSending uses an atomic status/attempt/staleness conditional update, gateway refuses null send claims before Bot API transport, and retry replay routes ready rows back through the bounded telegram.sendMessage gateway. No blocking spec-conformance findings."
+}

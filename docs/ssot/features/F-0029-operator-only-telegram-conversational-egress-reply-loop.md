@@ -424,33 +424,33 @@ Completion is recognized only when acceptance criteria have focused tests, root 
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0029-01 | `apps/core/test/actions/telegram-egress-boundary.contract.test.ts` | planned |
-| AC-F0029-02 | `apps/core/test/perception/telegram-adapter.integration.test.ts`; `apps/core/test/actions/telegram-egress-boundary.contract.test.ts` | planned |
-| AC-F0029-03 | `apps/core/test/platform/core-config.contract.test.ts`; `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | planned |
-| AC-F0029-04 | `apps/core/test/platform/core-config.contract.test.ts` | planned |
-| AC-F0029-05 | `packages/contracts/test/telegram-egress.contract.test.ts`; `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | planned |
-| AC-F0029-06 | `packages/contracts/test/telegram-egress.contract.test.ts` | planned |
-| AC-F0029-07 | `apps/core/test/actions/telegram-egress-tool.integration.test.ts` | planned |
-| AC-F0029-08 | `apps/core/test/actions/telegram-egress-tool.integration.test.ts` | planned |
-| AC-F0029-09 | `apps/core/test/actions/telegram-egress-boundary.contract.test.ts`; `apps/core/test/perception/telegram-adapter.integration.test.ts` | planned |
-| AC-F0029-10 | `apps/core/test/actions/telegram-egress-boundary.contract.test.ts`; `apps/core/test/runtime/telegram-reply-loop.integration.test.ts` | planned |
-| AC-F0029-11 | `packages/db/test/telegram-egress-store.integration.test.ts`; `apps/core/test/actions/telegram-egress-tool.integration.test.ts` | planned |
-| AC-F0029-12 | `packages/db/test/telegram-egress-store.integration.test.ts` | planned |
-| AC-F0029-13 | `packages/db/test/telegram-egress-store.integration.test.ts` | planned |
-| AC-F0029-14 | `packages/db/test/telegram-egress-store.integration.test.ts` | planned |
-| AC-F0029-15 | `packages/db/test/telegram-egress-store.integration.test.ts`; `apps/core/test/actions/telegram-egress-tool.integration.test.ts` | planned |
-| AC-F0029-16 | `packages/db/test/telegram-egress-store.integration.test.ts`; `apps/core/test/actions/telegram-egress-tool.integration.test.ts` | planned |
-| AC-F0029-17 | `apps/core/test/actions/telegram-egress-tool.integration.test.ts`; `apps/core/test/runtime/telegram-reply-loop.integration.test.ts` | planned |
-| AC-F0029-18 | `packages/db/test/telegram-egress-store.integration.test.ts` | planned |
-| AC-F0029-19 | `packages/db/test/telegram-egress-store.integration.test.ts`; `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | planned |
-| AC-F0029-20 | `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | planned |
-| AC-F0029-21 | `apps/core/test/runtime/reporting-service.integration.test.ts`; `packages/db/test/reporting-store.integration.test.ts` | planned |
-| AC-F0029-22 | `apps/core/test/support/support-canonical-refs.integration.test.ts`; `apps/core/test/support/support-usage-audit.contract.test.ts` | planned |
-| AC-F0029-23 | `infra/docker/fake-telegram-api/server.py`; `infra/docker/test/compose-config.test.ts`; focused fake API smoke probe | planned |
-| AC-F0029-24 | `infra/docker/deployment-cell.smoke.ts`; `pnpm smoke:cell` | planned |
-| AC-F0029-25 | `infra/docker/deployment-cell.smoke.ts`; `pnpm smoke:cell` | planned |
-| AC-F0029-26 | `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | planned |
-| AC-F0029-27 | `packages/contracts/test/telegram-egress.contract.test.ts`; `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | planned |
+| AC-F0029-01 | `apps/core/test/actions/telegram-egress-boundary.contract.test.ts` | done |
+| AC-F0029-02 | `apps/core/test/perception/telegram-adapter.integration.test.ts`; `apps/core/test/actions/telegram-egress-boundary.contract.test.ts` | done |
+| AC-F0029-03 | `apps/core/test/platform/core-config.contract.test.ts`; `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | done |
+| AC-F0029-04 | `apps/core/test/platform/core-config.contract.test.ts` | done |
+| AC-F0029-05 | `packages/contracts/test/telegram-egress.contract.test.ts`; `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | done |
+| AC-F0029-06 | `packages/contracts/test/telegram-egress.contract.test.ts` | done |
+| AC-F0029-07 | `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | done |
+| AC-F0029-08 | `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | done |
+| AC-F0029-09 | `apps/core/test/actions/telegram-egress-boundary.contract.test.ts`; `apps/core/test/perception/telegram-adapter.integration.test.ts` | done |
+| AC-F0029-10 | `apps/core/test/actions/telegram-egress-boundary.contract.test.ts`; `infra/docker/deployment-cell.smoke.ts` | done |
+| AC-F0029-11 | `packages/db/test/telegram-egress-store.integration.test.ts`; `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | done |
+| AC-F0029-12 | `packages/db/test/telegram-egress-store.integration.test.ts` | done |
+| AC-F0029-13 | `packages/db/test/telegram-egress-store.integration.test.ts` | done |
+| AC-F0029-14 | `packages/db/test/telegram-egress-store.integration.test.ts`; `apps/core/test/runtime/telegram-egress-retry.contract.test.ts` | done |
+| AC-F0029-15 | `packages/db/test/telegram-egress-store.integration.test.ts`; `apps/core/test/actions/telegram-egress-tool.contract.test.ts`; `apps/core/test/runtime/telegram-egress-retry.contract.test.ts` | done |
+| AC-F0029-16 | `packages/db/test/telegram-egress-store.integration.test.ts`; `apps/core/test/actions/telegram-egress-tool.contract.test.ts`; `apps/core/test/runtime/telegram-egress-retry.contract.test.ts` | done |
+| AC-F0029-17 | `apps/core/test/actions/telegram-egress-tool.contract.test.ts`; `infra/docker/deployment-cell.smoke.ts` | done |
+| AC-F0029-18 | `packages/db/test/telegram-egress-store.integration.test.ts`; `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | done |
+| AC-F0029-19 | `packages/db/test/telegram-egress-store.integration.test.ts`; `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | done |
+| AC-F0029-20 | `apps/core/test/actions/telegram-egress-tool.contract.test.ts`; `apps/core/src/security/secret-hygiene.ts` | done |
+| AC-F0029-21 | `packages/contracts/test/reporting.contract.test.ts` | done |
+| AC-F0029-22 | `apps/core/test/support/support-canonical-refs.integration.test.ts` | done |
+| AC-F0029-23 | `infra/docker/fake-telegram-api/server.py`; `python -m py_compile infra/docker/fake-telegram-api/server.py` | done |
+| AC-F0029-24 | `infra/docker/deployment-cell.smoke.ts`; `pnpm smoke:cell` | done |
+| AC-F0029-25 | `infra/docker/deployment-cell.smoke.ts`; `pnpm smoke:cell` | done |
+| AC-F0029-26 | `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | done |
+| AC-F0029-27 | `packages/contracts/test/telegram-egress.contract.test.ts`; `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | done |
 
 ## 9. Decision log (ADR blocks)
 
@@ -497,3 +497,4 @@ Completion is recognized only when acceptance criteria have focused tests, root 
 - 2026-04-29 [intake clarification]: Recorded operator-only Telegram direct-chat boundary, normal organism decision path, bounded `telegram.sendMessage` action expectation, text-only V1, durable idempotent egress evidence and deferred implementation slices.
 - 2026-04-29 [spec-compact] [scope realignment]: Shaped `F-0029` as the operator-only Telegram egress owner with server-side recipient resolution, plain-text `telegram.sendMessage`, durable action-id-keyed outbox, bounded retry, fake Bot API verification, and no public bot or second reply persona.
 - 2026-04-29 [plan-slice] [dependency realignment]: Planned contract/config, outbox/fake API, executive gateway, runtime/support/reporting and deployment-smoke slices with explicit dependency visibility, policy/admission negative matrix and implementation task coverage for the full acceptance set.
+- 2026-04-29 [implementation]: Delivered operator-only `telegram.sendMessage` through the executive gateway, config fail-closed egress activation, `telegram_egress_messages` durable outbox, fake Bot API send capture/failure hooks, support/report read-only refs and deployment-cell smoke assertions.

@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-29-067-f0029-implementation-actualization",
+    "created_at": "2026-04-29T18:52:00.000Z",
+    "sequence": 67,
+    "target_item_keys": [
+      "CF-029"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-029",
+      "action": "replace_fields",
+      "fields": {
+        "delivery_state": "implemented"
+      }
+    }
+  ]
+}

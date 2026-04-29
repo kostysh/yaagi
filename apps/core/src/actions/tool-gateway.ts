@@ -1,17 +1,28 @@
 import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { lstat, readFile, realpath, unlink, writeFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import path from 'node:path';
 import {
   EXECUTION_PROFILE,
+  TELEGRAM_SEND_MESSAGE_RETRY_BUDGET,
+  TELEGRAM_SEND_MESSAGE_TEXT_LIMIT,
+  TELEGRAM_SEND_MESSAGE_TOOL,
   type BoundaryCheck,
   type ExecutiveRefusal,
   type ExecutiveRefusalReason,
   type ExecutiveVerdict,
   type ExecutionProfile,
+  type TelegramSendMessageFailureReason,
+  type TelegramSendMessageRefusalReason,
   type ToolInvocationRequest,
+  telegramSendMessageParametersSchema,
 } from '@yaagi/contracts/actions';
-import { createRuntimeJobEnqueuer } from '@yaagi/db';
+import {
+  TELEGRAM_EGRESS_STATUS,
+  createRuntimeJobEnqueuer,
+  type TelegramEgressStore,
+} from '@yaagi/db';
 import type { CoreRuntimeConfig } from '../platform/core-config.ts';
 
 const execFileAsync = promisify(execFile);
@@ -63,6 +74,17 @@ type ToolGatewayOptions = {
     payload: Record<string, unknown>,
     options?: { signal?: AbortSignal; timeoutMs?: number },
   ) => Promise<{ jobId: string; rollback: () => Promise<void> }>;
+  telegramEgressStore?: Pick<
+    TelegramEgressStore,
+    | 'getStimulusContext'
+    | 'getByActionId'
+    | 'recordIntent'
+    | 'recordRefusal'
+    | 'markSending'
+    | 'markSent'
+    | 'markRetryScheduled'
+    | 'markFailed'
+  >;
   fileOps?: Partial<ToolGatewayFileOps>;
 };
 
@@ -480,6 +502,88 @@ const buildAllowedHttpHosts = (config: CoreRuntimeConfig): Set<string> => {
   return hosts;
 };
 
+const telegramScalarLength = (value: string): number => [...value].length;
+
+const hashTelegramChatId = (chatId: string): string =>
+  `sha256:${createHash('sha256').update(chatId).digest('hex')}`;
+
+const sanitizeTelegramDetail = (value: unknown, token: string | null): string => {
+  const raw = typeof value === 'string' ? value : JSON.stringify(value);
+  return token && token.length > 0 ? raw.replaceAll(token, '<telegram-token>') : raw;
+};
+
+const getTelegramPayloadString = (
+  payload: Record<string, unknown>,
+  key: 'chatId' | 'chatType',
+): string | null => {
+  const direct = payload[key];
+  if (typeof direct === 'string') return direct;
+  if (typeof direct === 'number') return String(direct);
+  return null;
+};
+
+const getTelegramPayloadNumber = (
+  payload: Record<string, unknown>,
+  key: 'updateId',
+): number | null => {
+  const direct = payload[key];
+  if (typeof direct === 'number') return direct;
+  if (typeof direct === 'string' && direct.length > 0) return Number(direct);
+  return null;
+};
+
+const mapTelegramApiFailure = (
+  status: number,
+  payload: Record<string, unknown>,
+): TelegramSendMessageFailureReason => {
+  if (status === 401) return 'telegram_invalid_token';
+  if (status === 403) return 'telegram_bot_blocked';
+  if (status === 429) return 'telegram_rate_limited';
+
+  const errorCode = payload['error_code'];
+  if (errorCode === 401) return 'telegram_invalid_token';
+  if (errorCode === 403) return 'telegram_bot_blocked';
+  if (errorCode === 429) return 'telegram_rate_limited';
+
+  return 'telegram_api_error';
+};
+
+const createTelegramRefusalExecution = async (
+  store: ToolGatewayOptions['telegramEgressStore'] | undefined,
+  request: ToolInvocationRequest,
+  reason: TelegramSendMessageRefusalReason,
+  detail: string,
+  input?: {
+    replyToStimulusId?: string | null;
+    replyToTelegramUpdateId?: number | null;
+    recipientChatIdHash?: string | null;
+    text?: string | null;
+  },
+): Promise<ToolExecutionResult> => {
+  await store?.recordRefusal({
+    actionId: request.actionId,
+    tickId: request.tickId,
+    reason,
+    ...(input && input.replyToStimulusId !== undefined
+      ? { replyToStimulusId: input.replyToStimulusId }
+      : {}),
+    ...(input && input.replyToTelegramUpdateId !== undefined
+      ? { replyToTelegramUpdateId: input.replyToTelegramUpdateId }
+      : {}),
+    ...(input && input.recipientChatIdHash !== undefined
+      ? { recipientChatIdHash: input.recipientChatIdHash }
+      : {}),
+    ...(input && input.text !== undefined ? { text: input.text } : {}),
+  });
+
+  return createRefusalExecution(
+    request,
+    createDeniedBoundaryCheck(EXECUTION_PROFILE.TELEGRAM_EGRESS, detail, `telegram.${reason}`),
+    'boundary_denied',
+    detail,
+  );
+};
+
 export function createPhase0ToolGateway(options: ToolGatewayOptions): ToolGateway {
   const fetchImpl = options.fetchImpl ?? fetch;
   const executeShell = options.executeShell ?? defaultExecuteShell;
@@ -494,6 +598,7 @@ export function createPhase0ToolGateway(options: ToolGatewayOptions): ToolGatewa
       schema: options.config.pgBossSchema,
       timeoutMs: DEFAULT_IO_TIMEOUT_MS,
     });
+  const telegramEgressStore = options.telegramEgressStore;
   const allowedHttpHosts = buildAllowedHttpHosts(options.config);
 
   const definitions: Record<string, ToolDefinition> = {
@@ -958,6 +1063,357 @@ export function createPhase0ToolGateway(options: ToolGatewayOptions): ToolGatewa
             'execution_timeout',
             error instanceof Error ? error.message : String(error),
           );
+        }
+      },
+    },
+    [TELEGRAM_SEND_MESSAGE_TOOL]: {
+      executionProfile: EXECUTION_PROFILE.TELEGRAM_EGRESS,
+      supportedVerdictKind: 'tool_call',
+      async execute({ config, request }) {
+        const maybeText =
+          typeof request.parametersJson['text'] === 'string'
+            ? request.parametersJson['text']
+            : null;
+        const maybeReplyToStimulusId =
+          typeof request.parametersJson['replyToStimulusId'] === 'string'
+            ? request.parametersJson['replyToStimulusId']
+            : null;
+        const maybeReplyToTelegramUpdateId =
+          typeof request.parametersJson['replyToTelegramUpdateId'] === 'number'
+            ? request.parametersJson['replyToTelegramUpdateId']
+            : null;
+
+        if (!config.telegramEgressEnabled) {
+          return createTelegramRefusalExecution(
+            telegramEgressStore,
+            request,
+            'telegram_egress_disabled',
+            'telegram egress is disabled by configuration',
+            {
+              replyToStimulusId: maybeReplyToStimulusId,
+              replyToTelegramUpdateId: maybeReplyToTelegramUpdateId,
+              text: maybeText,
+            },
+          );
+        }
+
+        if (!config.telegramOperatorChatId) {
+          return createTelegramRefusalExecution(
+            telegramEgressStore,
+            request,
+            'operator_chat_not_configured',
+            'telegram egress requires YAAGI_TELEGRAM_OPERATOR_CHAT_ID',
+            {
+              replyToStimulusId: maybeReplyToStimulusId,
+              replyToTelegramUpdateId: maybeReplyToTelegramUpdateId,
+              text: maybeText,
+            },
+          );
+        }
+
+        const operatorChatIdHash = hashTelegramChatId(config.telegramOperatorChatId);
+        if (!config.telegramAllowedChatIds.includes(config.telegramOperatorChatId)) {
+          return createTelegramRefusalExecution(
+            telegramEgressStore,
+            request,
+            'operator_chat_not_allowed',
+            'telegram operator chat id is not included in YAAGI_TELEGRAM_ALLOWED_CHAT_IDS',
+            {
+              replyToStimulusId: maybeReplyToStimulusId,
+              replyToTelegramUpdateId: maybeReplyToTelegramUpdateId,
+              recipientChatIdHash: operatorChatIdHash,
+              text: maybeText,
+            },
+          );
+        }
+
+        if (!config.telegramBotToken) {
+          return createRefusalExecution(
+            request,
+            createDeniedBoundaryCheck(
+              EXECUTION_PROFILE.TELEGRAM_EGRESS,
+              'telegram egress requires a configured bot token',
+              'telegram.bot_token',
+            ),
+            'execution_failed',
+            'telegram egress requires a configured bot token',
+          );
+        }
+
+        if (!telegramEgressStore) {
+          return createRefusalExecution(
+            request,
+            createDeniedBoundaryCheck(
+              EXECUTION_PROFILE.TELEGRAM_EGRESS,
+              'telegram egress outbox store is unavailable',
+              'telegram.outbox',
+            ),
+            'execution_failed',
+            'telegram egress outbox store is unavailable',
+          );
+        }
+
+        const suppliedRecipient =
+          'chatId' in request.parametersJson ||
+          'chat_id' in request.parametersJson ||
+          'recipientChatId' in request.parametersJson;
+        const parsed = telegramSendMessageParametersSchema.safeParse(request.parametersJson);
+        if (!parsed.success) {
+          const reason: TelegramSendMessageRefusalReason = suppliedRecipient
+            ? 'non_operator_recipient'
+            : typeof request.parametersJson['text'] !== 'string'
+              ? 'non_text_payload'
+              : telegramScalarLength(request.parametersJson['text']) >
+                  TELEGRAM_SEND_MESSAGE_TEXT_LIMIT
+                ? 'text_too_long'
+                : 'non_text_payload';
+
+          return createTelegramRefusalExecution(
+            telegramEgressStore,
+            request,
+            reason,
+            `telegram.sendMessage refused invalid parameters: ${reason}`,
+            {
+              replyToStimulusId: maybeReplyToStimulusId,
+              replyToTelegramUpdateId: maybeReplyToTelegramUpdateId,
+              recipientChatIdHash: operatorChatIdHash,
+              text: maybeText,
+            },
+          );
+        }
+
+        const parameters = parsed.data;
+        const stimulus = await telegramEgressStore.getStimulusContext(parameters.replyToStimulusId);
+        const sourceChatId = stimulus
+          ? getTelegramPayloadString(stimulus.payloadJson, 'chatId')
+          : null;
+        const sourceChatType = stimulus
+          ? getTelegramPayloadString(stimulus.payloadJson, 'chatType')
+          : null;
+        const sourceUpdateId =
+          parameters.replyToTelegramUpdateId ??
+          (stimulus ? getTelegramPayloadNumber(stimulus.payloadJson, 'updateId') : null);
+
+        if (
+          !stimulus ||
+          stimulus.sourceKind !== 'telegram' ||
+          sourceChatId !== config.telegramOperatorChatId
+        ) {
+          return createTelegramRefusalExecution(
+            telegramEgressStore,
+            request,
+            'non_operator_recipient',
+            'telegram.sendMessage can only answer the configured operator telegram stimulus',
+            {
+              replyToStimulusId: parameters.replyToStimulusId,
+              replyToTelegramUpdateId: sourceUpdateId,
+              recipientChatIdHash: operatorChatIdHash,
+              text: parameters.text,
+            },
+          );
+        }
+
+        if (sourceChatType !== 'private') {
+          return createTelegramRefusalExecution(
+            telegramEgressStore,
+            request,
+            'group_or_channel_context',
+            'telegram.sendMessage refuses group, supergroup and channel contexts',
+            {
+              replyToStimulusId: parameters.replyToStimulusId,
+              replyToTelegramUpdateId: sourceUpdateId,
+              recipientChatIdHash: operatorChatIdHash,
+              text: parameters.text,
+            },
+          );
+        }
+
+        const intent = await telegramEgressStore.recordIntent({
+          actionId: request.actionId,
+          tickId: request.tickId,
+          replyToStimulusId: parameters.replyToStimulusId,
+          replyToTelegramUpdateId: sourceUpdateId,
+          recipientChatIdHash: operatorChatIdHash,
+          text: parameters.text,
+        });
+
+        if (intent.status === TELEGRAM_EGRESS_STATUS.SENT) {
+          return createAcceptedExecution(
+            request,
+            createAllowedBoundaryCheck(
+              EXECUTION_PROFILE.TELEGRAM_EGRESS,
+              'telegram.sendMessage was already sent for this action id',
+            ),
+            {
+              status: 'sent',
+              actionId: request.actionId,
+              egressMessageId: intent.egressMessageId,
+              telegramMessageId: intent.telegramMessageId,
+              attemptCount: intent.attemptCount,
+            },
+          );
+        }
+
+        if (
+          intent.status === TELEGRAM_EGRESS_STATUS.FAILED ||
+          intent.attemptCount >= TELEGRAM_SEND_MESSAGE_RETRY_BUDGET
+        ) {
+          const failed = await telegramEgressStore.markFailed({
+            actionId: request.actionId,
+            reason: 'retry_budget_exhausted',
+            errorJson: { reason: 'retry_budget_exhausted' },
+          });
+          return createRefusalExecution(
+            request,
+            createAllowedBoundaryCheck(
+              EXECUTION_PROFILE.TELEGRAM_EGRESS,
+              'telegram.sendMessage retry budget is exhausted',
+            ),
+            'execution_failed',
+            `telegram.sendMessage failed: retry_budget_exhausted (${failed.attemptCount} attempts)`,
+          );
+        }
+
+        const sending = await telegramEgressStore.markSending(request.actionId);
+        if (!sending) {
+          return createRefusalExecution(
+            request,
+            createAllowedBoundaryCheck(
+              EXECUTION_PROFILE.TELEGRAM_EGRESS,
+              'telegram.sendMessage send claim is already active or not yet retryable',
+            ),
+            'execution_failed',
+            'telegram.sendMessage is already sending or not ready to retry',
+          );
+        }
+
+        const durableText = getOptionalString(sending.textJson['text']);
+        if (!durableText) {
+          const failed = await telegramEgressStore.markFailed({
+            actionId: request.actionId,
+            reason: 'telegram_api_error',
+            errorJson: { reason: 'missing_durable_text' },
+          });
+          return createRefusalExecution(
+            request,
+            createAllowedBoundaryCheck(
+              EXECUTION_PROFILE.TELEGRAM_EGRESS,
+              'telegram.sendMessage durable outbox row is missing text',
+            ),
+            'execution_failed',
+            `telegram.sendMessage failed: telegram_api_error (${failed.attemptCount} attempts)`,
+          );
+        }
+
+        const telegramUrl = `${config.telegramApiBaseUrl.replace(/\/+$/, '')}/bot${config.telegramBotToken}/sendMessage`;
+        const failTransport = async (
+          reason: TelegramSendMessageFailureReason,
+          errorJson: Record<string, unknown>,
+        ): Promise<ToolExecutionResult> => {
+          const terminal =
+            reason === 'telegram_api_timeout' ||
+            reason === 'telegram_invalid_token' ||
+            reason === 'telegram_bot_blocked' ||
+            sending.attemptCount >= TELEGRAM_SEND_MESSAGE_RETRY_BUDGET;
+          const recorded = terminal
+            ? await telegramEgressStore.markFailed({
+                actionId: request.actionId,
+                reason:
+                  terminal && sending.attemptCount >= TELEGRAM_SEND_MESSAGE_RETRY_BUDGET
+                    ? 'retry_budget_exhausted'
+                    : reason,
+                errorJson,
+              })
+            : await telegramEgressStore.markRetryScheduled({
+                actionId: request.actionId,
+                reason,
+                errorJson,
+              });
+          const recordedReason = recorded.lastErrorCode ?? reason;
+
+          return createRefusalExecution(
+            request,
+            createAllowedBoundaryCheck(
+              EXECUTION_PROFILE.TELEGRAM_EGRESS,
+              'telegram.sendMessage passed admission checks before transport failure',
+            ),
+            'execution_failed',
+            `telegram.sendMessage failed: ${recordedReason} (${recorded.attemptCount} attempts)`,
+          );
+        };
+
+        const telegramTimeout = createTimeoutController(
+          DEFAULT_IO_TIMEOUT_MS,
+          'telegram.sendMessage timed out',
+        );
+        try {
+          const response = await withTimeout(
+            DEFAULT_IO_TIMEOUT_MS,
+            () =>
+              fetchImpl(telegramUrl, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                signal: telegramTimeout.signal,
+                body: JSON.stringify({
+                  chat_id: config.telegramOperatorChatId,
+                  text: durableText,
+                }),
+              }),
+            () => new Error('telegram.sendMessage timed out'),
+          );
+          telegramTimeout.throwIfTimedOut();
+          const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+          const result = payload['result'];
+          const telegramMessageId =
+            payload['ok'] === true &&
+            result &&
+            typeof result === 'object' &&
+            !Array.isArray(result) &&
+            typeof (result as Record<string, unknown>)['message_id'] === 'number'
+              ? ((result as Record<string, unknown>)['message_id'] as number)
+              : null;
+
+          if (response.ok && telegramMessageId !== null) {
+            const sent = await telegramEgressStore.markSent({
+              actionId: request.actionId,
+              telegramMessageId,
+            });
+            return createAcceptedExecution(
+              request,
+              createAllowedBoundaryCheck(
+                EXECUTION_PROFILE.TELEGRAM_EGRESS,
+                'telegram.sendMessage delivered to the configured operator chat',
+              ),
+              {
+                status: 'sent',
+                actionId: request.actionId,
+                egressMessageId: sent.egressMessageId,
+                telegramMessageId,
+                attemptCount: sent.attemptCount,
+              },
+            );
+          }
+
+          return failTransport(mapTelegramApiFailure(response.status, payload), {
+            status: response.status,
+            errorCode: payload['error_code'] ?? null,
+            description: sanitizeTelegramDetail(
+              payload['description'] ?? '',
+              config.telegramBotToken,
+            ),
+          });
+        } catch (error) {
+          const reason = telegramTimeout.isTimeoutError(error)
+            ? 'telegram_api_timeout'
+            : 'telegram_api_error';
+          return failTransport(reason, {
+            detail: sanitizeTelegramDetail(
+              error instanceof Error ? error.message : String(error),
+              config.telegramBotToken,
+            ),
+          });
+        } finally {
+          telegramTimeout.dispose();
         }
       },
     },

@@ -270,6 +270,45 @@ void test('AC-F0028-05 marks operator evidence unavailable without F-0024 reader
   );
 });
 
+void test('AC-F0029-22 links F-0029 telegram egress source refs through a read-only owner reader', async () => {
+  const bundle = supportEvidenceBundleSchema.parse({
+    supportIncidentId: 'support-incident:telegram-egress',
+    incidentClass: SUPPORT_INCIDENT_CLASS.RUNTIME_AVAILABILITY,
+    severity: SUPPORT_SEVERITY.WARNING,
+    sourceRefs: ['telegram-egress:action-valid', 'telegram-egress:missing'],
+    reportRunRefs: [],
+    releaseRefs: [],
+    operatorEvidenceRefs: [],
+    actionRefs: [],
+    escalationRefs: [],
+    closureCriteria: [],
+    operatorNotes: [],
+    closureStatus: SUPPORT_CLOSURE_STATUS.OPEN,
+    residualRisk: null,
+    nextOwnerRef: null,
+    createdAt: now,
+    updatedAt: now,
+    closedAt: null,
+  });
+
+  const states = await resolveSupportCanonicalEvidenceStates({
+    bundle,
+    observedAt: now,
+    readers: {
+      validateTelegramEgressEvidence: (ref) =>
+        Promise.resolve(ref === 'telegram-egress:action-valid'),
+    },
+  });
+
+  assert.deepEqual(
+    states.map((state) => [state.owner, state.ref, state.freshness]),
+    [
+      ['F-0029', 'telegram-egress:action-valid', SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH],
+      ['F-0029', 'telegram-egress:missing', SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING],
+    ],
+  );
+});
+
 void test('AC-F0028-07 marks release refs unavailable when F-0026 inspection is not wired', async () => {
   const bundle = supportEvidenceBundleSchema.parse({
     supportIncidentId: 'support-incident:release-unavailable',

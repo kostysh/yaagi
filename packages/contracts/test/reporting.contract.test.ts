@@ -38,6 +38,11 @@ void test('AC-F0023-01 AC-F0023-03 distinguishes CF-015 owned write surfaces fro
     () => assertReportingOwnedWriteSurface(REPORTING_FOREIGN_WRITE_SURFACE.SUBJECT_STATE),
     /foreign_owner_write_rejected/,
   );
+  assert.throws(
+    () =>
+      assertReportingOwnedWriteSurface(REPORTING_FOREIGN_WRITE_SURFACE.TELEGRAM_EGRESS_MESSAGES),
+    /foreign_owner_write_rejected/,
+  );
 });
 
 void test('AC-F0023-10 AC-F0023-15 validates report-run provenance and publication metadata', () => {
@@ -45,8 +50,12 @@ void test('AC-F0023-10 AC-F0023-15 validates report-run provenance and publicati
     assertValidReportRun({
       reportRunId: 'report-run-1',
       reportFamily: REPORT_FAMILY.IDENTITY_CONTINUITY,
-      sourceRefs: ['tick:tick-1', 'snapshot:snapshot-1'],
-      sourceOwnerRefs: [REPORT_SOURCE_OWNER.TICK_RUNTIME, REPORT_SOURCE_OWNER.BODY_EVOLUTION],
+      sourceRefs: ['tick:tick-1', 'snapshot:snapshot-1', 'telegram-egress:action-1'],
+      sourceOwnerRefs: [
+        REPORT_SOURCE_OWNER.TICK_RUNTIME,
+        REPORT_SOURCE_OWNER.BODY_EVOLUTION,
+        REPORT_SOURCE_OWNER.TELEGRAM_EGRESS,
+      ],
       sourceSnapshotSignature: 'sig:identity:1',
       materializedAt: '2026-04-21T16:30:00.000Z',
       availabilityStatus: REPORT_AVAILABILITY.FRESH,

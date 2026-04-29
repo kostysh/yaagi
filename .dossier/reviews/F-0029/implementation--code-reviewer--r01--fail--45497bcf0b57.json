@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T18:55:26.760Z",
+  "audit_class": "code-reviewer",
+  "artifact_role": "immutable_attempt",
+  "review_mode": "external",
+  "reviewer": "codex-gpt5-code-reviewer",
+  "reviewer_skill": "code-reviewer",
+  "reviewer_agent_id": "codex-gpt5-f0029-review-20260429",
+  "reviewer_thread_id": "019dda95-d4fa-7aa2-8626-54b4304bd297",
+  "review_attempt_id": "implementation--code-reviewer--r01",
+  "review_round_id": "r01",
+  "review_round_number": 1,
+  "latest_copy_path": ".dossier/reviews/F-0029/implementation--code-reviewer--latest.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+  "feature_id": "F-0029",
+  "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "FAIL",
+  "findings": {
+    "must_fix": [
+      "Blocking: packages/db/src/telegram-egress.ts markSending allows status='sending' and listReadyToRetry immediately selects status='sending' rows; apps/core/src/actions/tool-gateway.ts sends after markSending without an exclusive claim. Concurrent duplicate execution or retry-worker overlap for the same action_id can perform multiple Bot API sendMessage side effects before any sent terminal state is observed, violating AC-F0029-12/13 and duplicate-prevention NFR. Fix by making send acquisition an exclusive compare-and-set/lease that only one worker can own, adding a stale-sending recovery window or locked retry selection, and adding concurrency/retry overlap tests that assert one transport call per action_id."
+    ],
+    "should_fix": [],
+    "evidence": [
+      "Review inspected current uncommitted F-0029 diff, including tool-gateway, runtime retry worker, telegram egress store/migration, fake Telegram API, smoke harness, contract/config/support/reporting tests.",
+      "pnpm test PASS 575/575",
+      "pnpm smoke:cell PASS 21/21",
+      ".dossier/verification/F-0029/implementation-45497bcf0b57.json"
+    ]
+  },
+  "notes": "FAIL: blocking idempotency/concurrency bug in Telegram egress send ownership; same action_id can execute multiple Bot API sendMessage calls."
+}

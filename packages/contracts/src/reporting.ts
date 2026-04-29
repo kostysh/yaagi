@@ -28,6 +28,7 @@ export const REPORT_SOURCE_OWNER = Object.freeze({
   BODY_EVOLUTION: 'F-0017',
   LIFECYCLE: 'F-0019',
   PHASE6_POLICY_GOVERNANCE: 'F-0025',
+  TELEGRAM_EGRESS: 'F-0029',
 } as const);
 
 export type ReportSourceOwner = (typeof REPORT_SOURCE_OWNER)[keyof typeof REPORT_SOURCE_OWNER];
@@ -92,6 +93,7 @@ export const REPORTING_FOREIGN_WRITE_SURFACE = Object.freeze({
   CONSULTANT_ADMISSION_DECISIONS: 'polyphony_runtime.consultant_admission_decisions',
   PERCEPTION_POLICY_DECISIONS: 'polyphony_runtime.perception_policy_decisions',
   PHASE6_GOVERNANCE_EVENTS: 'polyphony_runtime.phase6_governance_events',
+  TELEGRAM_EGRESS_MESSAGES: 'polyphony_runtime.telegram_egress_messages',
 } as const);
 
 export type ReportingForeignWriteSurface =

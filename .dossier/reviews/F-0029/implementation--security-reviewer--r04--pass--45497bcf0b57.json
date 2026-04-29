@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T19:33:42.086Z",
+  "audit_class": "security-reviewer",
+  "artifact_role": "immutable_attempt",
+  "review_mode": "external",
+  "reviewer": "codex-security-reviewer",
+  "reviewer_skill": "security-reviewer",
+  "reviewer_agent_id": "codex-gpt5-security-reviewer-f0029-final-retry-idempotency-20260429",
+  "reviewer_thread_id": "019ddab8-ef6f-7cc2-bd95-0956b14b453a",
+  "review_attempt_id": "implementation--security-reviewer--r04",
+  "review_round_id": "r04",
+  "review_round_number": 4,
+  "latest_copy_path": ".dossier/reviews/F-0029/implementation--security-reviewer--latest.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+  "feature_id": "F-0029",
+  "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": "F-0029 implements Telegram egress with bot token handling, operator-only recipient admission, outbound Bot API transport, durable DB evidence, retry/idempotency behavior, terminal timeout behavior, no automatic resend of ambiguous sending rows, and fake Bot API smoke surfaces.",
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "apps/core/src/actions/tool-gateway.ts:1156 rejects caller-supplied recipient fields via strict telegram.sendMessage parameters before transport",
+      "apps/core/src/actions/tool-gateway.ts:1186 binds egress to an existing Telegram stimulus whose chat id matches the configured operator",
+      "apps/core/src/actions/tool-gateway.ts:1231 records durable outbox intent before send; :1290 sends stored outbox text, not replay caller text",
+      "apps/core/src/actions/tool-gateway.ts:1313 treats telegram_api_timeout as terminal failure; :1345 uses an AbortSignal timeout",
+      "packages/db/src/telegram-egress.ts:295 claims only pending/retry_scheduled rows; :380 retries only pending/retry_scheduled rows, not ambiguous sending rows",
+      "infra/docker/fake-telegram-api/server.py:93 implements fake sendMessage and :63 exposes sentMessages for smoke observation",
+      "infra/docker/deployment-cell.smoke.ts:2017 exercises Telegram overlay and :2106 asserts one sent fake Bot API message to chat 12345",
+      ".dossier/verification/F-0029/implementation-45497bcf0b57.json",
+      "Focused verification: pnpm test -- packages/contracts/test/telegram-egress.contract.test.ts packages/db/test/telegram-egress-store.integration.test.ts apps/core/test/actions/telegram-egress-tool.contract.test.ts apps/core/test/runtime/telegram-egress-retry.contract.test.ts (14 pass, 0 fail)"
+    ]
+  },
+  "notes": "PASS: reviewed current uncommitted F-0029 implementation after final retry/idempotency fixes. No high-confidence security findings in operator-only enforcement, no caller-supplied recipient, token leakage controls, durable outbox text authority, timeout terminal failure behavior, no automatic resend of ambiguous sending rows, or fake Bot API smoke surfaces."
+}

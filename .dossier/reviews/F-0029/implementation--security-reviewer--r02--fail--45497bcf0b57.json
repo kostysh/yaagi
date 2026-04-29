@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T19:08:19.539Z",
+  "audit_class": "security-reviewer",
+  "artifact_role": "immutable_attempt",
+  "review_mode": "external",
+  "reviewer": "codex-security-reviewer",
+  "reviewer_skill": "security-reviewer",
+  "reviewer_agent_id": "codex-security-reviewer-f0029-20260429",
+  "reviewer_thread_id": "019ddaa1-a727-7bb1-9c08-2850da2c3457",
+  "review_attempt_id": "implementation--security-reviewer--r02",
+  "review_round_id": "r02",
+  "review_round_number": 2,
+  "latest_copy_path": ".dossier/reviews/F-0029/implementation--security-reviewer--latest.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+  "feature_id": "F-0029",
+  "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": "F-0029 implements Telegram egress with bot token, operator-only recipient admission, outbound Bot API transport, durable DB evidence, retry behavior, and fake Bot API smoke surfaces.",
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "FAIL",
+  "findings": {
+    "must_fix": [
+      "Blocking security/side-effect idempotency issue: telegram.sendMessage transport uses a non-aborting timeout and records timeout as retryable, so a slow Bot API response can still deliver the first message while the outbox is marked retry_scheduled and later sends the same action_id again. Fix by making timeout handling non-duplicating for this protected side effect, for example by aborting transport where possible and treating ambiguous timeout delivery as non-retryable until reconciled, or by adding a durable unknown/lease state that cannot issue a second Bot API send for the same action_id without proof the first request did not reach Telegram."
+    ],
+    "should_fix": [],
+    "evidence": [
+      "apps/core/src/actions/tool-gateway.ts:410",
+      "apps/core/src/actions/tool-gateway.ts:1327",
+      "apps/core/src/actions/tool-gateway.ts:1380",
+      "packages/db/src/telegram-egress.ts:345",
+      "packages/db/src/telegram-egress.ts:387",
+      "apps/core/src/runtime/runtime-lifecycle.ts:280",
+      ".dossier/verification/F-0029/implementation-45497bcf0b57.json"
+    ]
+  },
+  "notes": "FAIL: operator admission, caller-recipient refusal, fail-closed config, token sanitization, DB token hygiene, and fake Bot API smoke coverage were reviewed; blocking risk is retrying ambiguous timed-out Telegram sends for the same protected side effect."
+}

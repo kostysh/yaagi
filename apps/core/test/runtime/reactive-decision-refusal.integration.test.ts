@@ -37,6 +37,8 @@ const perceptionConfig: CoreRuntimeConfig = {
   telegramEnabled: false,
   telegramBotToken: null,
   telegramAllowedChatIds: [],
+  telegramEgressEnabled: false,
+  telegramOperatorChatId: null,
   telegramApiBaseUrl: 'https://api.telegram.org',
   seedRootPath: '/tmp/yaagi-f0009-refusal',
   seedConstitutionPath: '/tmp/yaagi-f0009-refusal/constitution.yaml',

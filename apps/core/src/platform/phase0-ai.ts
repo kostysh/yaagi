@@ -79,6 +79,35 @@ const phase0DecisionServingSchema = jsonSchema<TickDecisionV1>(
   },
 );
 
+const buildTelegramReplyInstruction = (
+  input: Parameters<DecisionAgentInvoker>[0],
+): string | null => {
+  const summary = input.context.perceptualContext.summary;
+  const match = summary.match(/telegram\.private stimulus ([^\s]+) updateId=(\d+|unknown) text=/);
+  if (!match) {
+    return null;
+  }
+
+  const stimulusId = match[1];
+  if (!stimulusId || !input.context.perceptualMeta.sourceIds.includes(stimulusId)) {
+    return null;
+  }
+
+  const updateId = match[2] === 'unknown' ? null : Number(match[2]);
+  const argsJson = {
+    text: 'Acknowledged.',
+    correlationId: `telegram:${input.context.tickId}:${stimulusId}`,
+    replyToStimulusId: stimulusId,
+    ...(updateId === null ? {} : { replyToTelegramUpdateId: updateId }),
+  };
+
+  return [
+    'Current context includes an operator direct Telegram message that asks for a reply.',
+    'For this context, choose action.type="tool_call" and tool="telegram.sendMessage".',
+    `Use argsJson shaped like this, with natural reply text if you can improve it: ${JSON.stringify(argsJson)}.`,
+  ].join(' ');
+};
+
 const buildPhase0DecisionPrompt = (input: Parameters<DecisionAgentInvoker>[0]): string =>
   [
     'Build one bounded phase-0 decision from the canonical context below.',
@@ -86,10 +115,15 @@ const buildPhase0DecisionPrompt = (input: Parameters<DecisionAgentInvoker>[0]): 
     `Selected model endpoint (transport metadata only, never copy into action.tool): ${input.selectedProfile.endpoint}`,
     'Prefer deterministic observations and conservative actions. When uncertain, use action.type="reflect" or "none".',
     'If you choose action.type="tool_call", tool must be an allowlisted tool name and never a URL, endpoint, or model identifier.',
+    'When perceptualContext.summary contains a telegram.private stimulus that needs an answer, use action.type="tool_call" with tool="telegram.sendMessage".',
+    'For telegram.sendMessage argsJson, include only text, correlationId, replyToStimulusId and optional replyToTelegramUpdateId. Use the matching perceptualMeta.sourceIds stimulus id as replyToStimulusId and the summary updateId as replyToTelegramUpdateId when present. Never include chat_id, chatId, recipientChatId or any recipient field.',
+    buildTelegramReplyInstruction(input),
     'Return a JSON object that satisfies the requested decision schema and contains no surrounding prose.',
     'Decision context JSON:',
     JSON.stringify(input.context),
-  ].join('\n\n');
+  ]
+    .filter((line): line is string => typeof line === 'string' && line.length > 0)
+    .join('\n\n');
 
 const normalizeComparableUrl = (value: string): string => {
   const parsed = new URL(value);

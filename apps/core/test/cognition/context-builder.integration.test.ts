@@ -144,4 +144,50 @@ void test('AC-F0009-01 builds canonical bounded decision context from delivered 
     ['episode-1'],
   );
   assert.equal(built.context.resourcePostureJson['pressure'], 0.6);
+
+  const telegramBuilt = buildDecisionContext({
+    tickId: 'tick-reactive-context',
+    decisionMode: DECISION_MODE.REACTIVE,
+    selectedModelProfileId: 'reflex.fast@baseline',
+    selectedRole: 'reflex',
+    subjectStateSnapshot: snapshot,
+    recentEpisodes,
+    perceptionBatch: {
+      tickId: 'tick-reactive-context',
+      claimedStimulusIds: ['telegram-stimulus-1'],
+      highestPriority: 'high',
+      requiresImmediateTick: true,
+      sourceKinds: ['telegram'],
+      items: [
+        {
+          stimulusIds: ['telegram-stimulus-1'],
+          primaryStimulusId: 'telegram-stimulus-1',
+          source: 'telegram',
+          signalType: 'telegram.message',
+          occurredAt: '2026-03-24T00:00:00.000Z',
+          priority: 'high',
+          requiresImmediateTick: true,
+          threadId: '12345',
+          entityRefs: [],
+          payload: {
+            updateId: 77,
+            chatType: 'private',
+            text: 'answer with one short acknowledgement',
+          },
+          dedupeKey: 'telegram:update:77',
+          coalescedCount: 1,
+        },
+      ],
+    },
+  });
+
+  assert.equal(telegramBuilt.accepted, true);
+  if (!telegramBuilt.accepted) {
+    return;
+  }
+
+  assert.equal(
+    telegramBuilt.context.perceptualContext.summary,
+    '1 claimed stimuli (telegram:1); telegram.private stimulus telegram-stimulus-1 updateId=77 text="answer with one short acknowledgement"',
+  );
 });

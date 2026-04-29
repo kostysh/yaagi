@@ -284,6 +284,17 @@ void test('AC-F0009-03 returns a validated TickDecisionV1 envelope from the boun
               hasStringContent(message) && message.content.includes('never copy into action.tool'),
           ),
       );
+      assert.ok(
+        Array.isArray(messages) &&
+          messages.some(
+            (message) =>
+              hasStringContent(message) &&
+              message.content.includes(
+                'When perceptualContext.summary contains a telegram.private stimulus',
+              ) &&
+              message.content.includes('Use the matching perceptualMeta.sourceIds stimulus id'),
+          ),
+      );
 
       assert.equal((decision as { action: { type: string } }).action.type, 'reflect');
       assert.equal(
@@ -329,6 +340,67 @@ void test('AC-F0020-03 sanitizes endpoint-echo tool calls back into bounded inac
         'Keep the outcome bounded without invoking the model endpoint as a tool.',
       );
       assert.equal('tool' in (decision as { action: Record<string, unknown> }).action, false);
+    },
+  );
+});
+
+void test('AC-F0029-24 adds concrete Telegram reply correlation fields to the phase-0 prompt', async () => {
+  await withServer(
+    () =>
+      JSON.stringify({
+        observations: ['operator telegram stimulus needs a reply'],
+        interpretations: ['phase-0 can answer through the bounded telegram tool'],
+        action: {
+          type: 'tool_call',
+          tool: 'telegram.sendMessage',
+          summary: 'Send one bounded Telegram acknowledgement.',
+          argsJson: {
+            text: 'Acknowledged.',
+            correlationId: 'telegram:tick-phase0-ai:stimulus-telegram-1',
+            replyToStimulusId: 'stimulus-telegram-1',
+            replyToTelegramUpdateId: 77,
+          },
+        },
+        episode: {
+          summary: 'operator telegram reply was selected',
+          importance: 0.4,
+        },
+        developmentHints: ['keep telegram egress inside the executive gateway'],
+      }),
+    async (endpoint, requests) => {
+      const invokeDecision = createPhase0DecisionInvoker();
+      const decision = await invokeDecision({
+        context: {
+          ...baseContext,
+          perceptualContext: {
+            ...baseContext.perceptualContext,
+            summary:
+              '1 claimed stimuli (telegram:1); telegram.private stimulus stimulus-telegram-1 updateId=77 text="answer with one short acknowledgement"',
+          },
+          perceptualMeta: {
+            ...baseContext.perceptualMeta,
+            sourceIds: ['stimulus-telegram-1'],
+          },
+        },
+        selectedProfile: {
+          ...baseHarnessInput.selectedProfile,
+          endpoint,
+        },
+      });
+
+      const messages = requests[0]?.['messages'];
+      assert.ok(
+        Array.isArray(messages) &&
+          messages.some(
+            (message) =>
+              hasStringContent(message) &&
+              message.content.includes(
+                '"correlationId":"telegram:tick-phase0-ai:stimulus-telegram-1"',
+              ) &&
+              message.content.includes('"replyToTelegramUpdateId":77'),
+          ),
+      );
+      assert.equal((decision as { action: { type: string } }).action.type, 'tool_call');
     },
   );
 });

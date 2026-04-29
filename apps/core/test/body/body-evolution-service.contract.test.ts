@@ -49,6 +49,8 @@ const createConfig = (rootPath: string): CoreRuntimeConfig => ({
   telegramEnabled: false,
   telegramBotToken: null,
   telegramAllowedChatIds: [],
+  telegramEgressEnabled: false,
+  telegramOperatorChatId: null,
   telegramApiBaseUrl: 'https://api.telegram.org',
   seedRootPath: path.join(rootPath, 'seed'),
   seedConstitutionPath: path.join(rootPath, 'seed', 'constitution', 'constitution.yaml'),

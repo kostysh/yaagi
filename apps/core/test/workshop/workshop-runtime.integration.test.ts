@@ -48,6 +48,8 @@ void test('AC-F0015-02 registers the canonical workshop queue family on the pg-b
         telegramEnabled: false,
         telegramBotToken: null,
         telegramAllowedChatIds: [],
+        telegramEgressEnabled: false,
+        telegramOperatorChatId: null,
         telegramApiBaseUrl: 'https://api.telegram.org',
         seedRootPath: `${root}/seed`,
         seedConstitutionPath: `${root}/seed/constitution/constitution.yaml`,

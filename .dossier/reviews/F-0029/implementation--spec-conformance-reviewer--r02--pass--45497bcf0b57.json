@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T18:54:26.769Z",
+  "audit_class": "spec-conformance-reviewer",
+  "artifact_role": "immutable_attempt",
+  "review_mode": "external",
+  "reviewer": "codex-spec-reviewer",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": "codex-gpt5-20260429-f0029",
+  "reviewer_thread_id": "019dda95-d484-7bd3-82b7-7c1aa3a52006",
+  "review_attempt_id": "implementation--spec-conformance-reviewer--r02",
+  "review_round_id": "r02",
+  "review_round_number": 2,
+  "latest_copy_path": ".dossier/reviews/F-0029/implementation--spec-conformance-reviewer--latest.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+  "feature_id": "F-0029",
+  "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "pnpm test PASS 575/575",
+      "pnpm smoke:cell PASS 21/21",
+      ".dossier/verification/F-0029/implementation-45497bcf0b57.json"
+    ]
+  },
+  "notes": "PASS: no blocking spec-conformance findings for F-0029 after current diff review."
+}

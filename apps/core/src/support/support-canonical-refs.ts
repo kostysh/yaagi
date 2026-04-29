@@ -18,6 +18,7 @@ export type SupportCanonicalEvidenceReaders = {
   getReportingBundle?: () => Promise<ReportingBundle>;
   inspectRelease?: (requestId: string) => Promise<ReleaseInspection | null>;
   validateOperatorAuthEvidence?: (evidenceRef: string) => Promise<boolean>;
+  validateTelegramEgressEvidence?: (evidenceRef: string) => Promise<boolean>;
 };
 
 export type SupportCanonicalSurfaceAuditRow = {
@@ -58,6 +59,13 @@ export const SUPPORT_CANONICAL_SURFACE_AUDIT: readonly SupportCanonicalSurfaceAu
   {
     owner: SUPPORT_OWNER_REF.RELEASE_AUTOMATION,
     surface: 'F-0026 release inspection/evidence refs',
+    accessMode: 'read_contract',
+    rawForeignRead: false,
+    rawForeignWrite: false,
+  },
+  {
+    owner: SUPPORT_OWNER_REF.TELEGRAM_EGRESS,
+    surface: 'F-0029 telegram egress evidence refs',
     accessMode: 'read_contract',
     rawForeignRead: false,
     rawForeignWrite: false,
@@ -303,6 +311,25 @@ export const resolveSupportCanonicalEvidenceStates = async (input: {
       : null;
     states.push({
       owner: SUPPORT_OWNER_REF.OPERATOR_AUTH,
+      ref,
+      freshness:
+        valid === null || isCanonicalReaderUnavailable(valid)
+          ? SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.UNAVAILABLE
+          : valid
+            ? SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH
+            : SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING,
+      observedAt: input.observedAt,
+    });
+  }
+
+  for (const ref of input.bundle.sourceRefs.filter((candidate) =>
+    candidate.startsWith('telegram-egress:'),
+  )) {
+    const valid = readers.validateTelegramEgressEvidence
+      ? await readers.validateTelegramEgressEvidence(ref).catch(() => CANONICAL_READER_UNAVAILABLE)
+      : null;
+    states.push({
+      owner: SUPPORT_OWNER_REF.TELEGRAM_EGRESS,
       ref,
       freshness:
         valid === null || isCanonicalReaderUnavailable(valid)

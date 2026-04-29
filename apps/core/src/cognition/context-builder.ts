@@ -103,7 +103,23 @@ const summarizePerceptionItems = (items: PerceptionBatchItem[]): string => {
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([source, count]) => `${source}:${count}`);
 
-  return `${items.length} claimed stimuli (${parts.join(', ')})`;
+  const telegramParts = items
+    .filter((item) => item.source === 'telegram')
+    .slice(0, 3)
+    .map((item) => {
+      const updateId =
+        typeof item.payload['updateId'] === 'number' ? item.payload['updateId'] : 'unknown';
+      const chatType =
+        typeof item.payload['chatType'] === 'string' ? item.payload['chatType'] : 'unknown';
+      const text = typeof item.payload['text'] === 'string' ? item.payload['text'] : '';
+      const excerpt = text.length > 280 ? `${text.slice(0, 277)}...` : text;
+
+      return `telegram.${chatType} stimulus ${item.primaryStimulusId} updateId=${updateId} text=${JSON.stringify(excerpt)}`;
+    });
+
+  const telegramSummary = telegramParts.length ? `; ${telegramParts.join('; ')}` : '';
+
+  return `${items.length} claimed stimuli (${parts.join(', ')})${telegramSummary}`;
 };
 
 const readPerceptionMeta = (

@@ -17,9 +17,13 @@ void test('AC-F0005-05 forwards YAAGI_TELEGRAM_* variables through the canonical
   assert.match(composeText, /YAAGI_TELEGRAM_BOT_TOKEN:/);
   assert.match(composeText, /YAAGI_TELEGRAM_BOT_TOKEN_FILE:/);
   assert.match(composeText, /YAAGI_TELEGRAM_ALLOWED_CHAT_IDS:/);
+  assert.match(composeText, /YAAGI_TELEGRAM_EGRESS_ENABLED:/);
+  assert.match(composeText, /YAAGI_TELEGRAM_OPERATOR_CHAT_ID:/);
   assert.match(composeText, /YAAGI_TELEGRAM_API_BASE_URL:/);
   assert.match(envExampleText, /YAAGI_TELEGRAM_ENABLED=false/);
   assert.match(envExampleText, /YAAGI_TELEGRAM_BOT_TOKEN=/);
   assert.match(envExampleText, /YAAGI_TELEGRAM_BOT_TOKEN_FILE=/);
   assert.match(envExampleText, /YAAGI_TELEGRAM_ALLOWED_CHAT_IDS=/);
+  assert.match(envExampleText, /YAAGI_TELEGRAM_EGRESS_ENABLED=false/);
+  assert.match(envExampleText, /YAAGI_TELEGRAM_OPERATOR_CHAT_ID=/);
 });

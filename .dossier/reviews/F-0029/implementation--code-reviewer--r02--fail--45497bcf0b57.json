@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T19:08:25.527Z",
+  "audit_class": "code-reviewer",
+  "artifact_role": "immutable_attempt",
+  "review_mode": "external",
+  "reviewer": "codex-gpt5-code-reviewer",
+  "reviewer_skill": "code-reviewer",
+  "reviewer_agent_id": "codex-gpt5-019ddaa1-a684-7272-ab5b-434f01e1a314",
+  "reviewer_thread_id": "019ddaa1-a684-7272-ab5b-434f01e1a314",
+  "review_attempt_id": "implementation--code-reviewer--r02",
+  "review_round_id": "r02",
+  "review_round_number": 2,
+  "latest_copy_path": ".dossier/reviews/F-0029/implementation--code-reviewer--latest.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+  "feature_id": "F-0029",
+  "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "FAIL",
+  "findings": {
+    "must_fix": [
+      "Blocking: apps/core/src/actions/tool-gateway.ts uses Promise.race timeout around fetch without aborting the Bot API request, then records telegram_api_timeout and schedules retry; packages/db/src/telegram-egress.ts later reclaims retry_scheduled/stale sending rows and apps/core/src/runtime/runtime-lifecycle.ts replays them through the gateway. A timed-out or crashed send can still be delivered by Telegram but remain non-terminal in the outbox, so the retry worker can send the same action_id again. This violates AC-F0029-13 and the duplicate-prevention NFR. Fix by making unknown transport outcomes non-resendable until reconciled, or by adding a real cancellable transport/claim protocol whose tests prove one visible Bot API send per action_id across timeout, crash-after-send, and stale-sending recovery.",
+      "Blocking: apps/core/src/actions/tool-gateway.ts sends parameters.text after recordIntent even when recordIntent returned an existing row for the same action_id. A duplicate/concurrent invocation with different parameters can acquire the pending/retry claim and send text that does not match the durable outbox intent, breaking the durable evidence/idempotency contract in AC-F0029-11/12/18. Fix by treating the stored outbox row as authoritative after recordIntent conflict, or rejecting conflicting payloads before any send claim."
+    ],
+    "should_fix": [],
+    "evidence": [
+      "Reviewed current uncommitted F-0029 implementation with focus on packages/db/src/telegram-egress.ts send claim/listReadyToRetry, apps/core/src/actions/tool-gateway.ts telegram.sendMessage transport path, and apps/core/src/runtime/runtime-lifecycle.ts retry worker.",
+      "Normative source: docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md AC-F0029-11 through AC-F0029-18 and duplicate-prevention NFR.",
+      "Current verification artifact inspected: .dossier/verification/F-0029/implementation-45497bcf0b57.json."
+    ]
+  },
+  "notes": "FAIL: send-claim exclusivity improved, but stale/timeout recovery can still produce duplicate visible Telegram messages and conflicting durable intent evidence."
+}

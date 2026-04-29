@@ -123,6 +123,7 @@ export const SUPPORT_OWNER_REF = Object.freeze({
   OPERATOR_AUTH: 'F-0024',
   RELEASE_AUTOMATION: 'F-0026',
   SUPPORT: 'F-0028',
+  TELEGRAM_EGRESS: 'F-0029',
   HUMAN: 'human',
 } as const);
 

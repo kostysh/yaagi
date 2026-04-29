@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T18:50:55.308Z",
+  "audit_class": "spec-conformance-reviewer",
+  "artifact_role": "immutable_attempt",
+  "review_mode": "external",
+  "reviewer": "Kepler",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": "019dda8f-ba83-7380-b41d-d7c3c0b9e31c",
+  "reviewer_thread_id": "019dd8e7-0a47-7093-af99-12cfa514ab67",
+  "review_attempt_id": "implementation--spec-conformance-reviewer--r01",
+  "review_round_id": "r01",
+  "review_round_number": 1,
+  "latest_copy_path": ".dossier/reviews/F-0029/implementation--spec-conformance-reviewer--latest.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+  "feature_id": "F-0029",
+  "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "pnpm format PASS",
+      "pnpm typecheck PASS",
+      "pnpm lint PASS",
+      "focused F-0029 tests PASS",
+      "pnpm test PASS 575/575",
+      "pnpm smoke:cell PASS 21/21",
+      ".dossier/verification/F-0029/implementation-45497bcf0b57.json"
+    ]
+  },
+  "notes": "PASS: no blocking spec-conformance findings for F-0029. Previous blockers covered: retry replay uses bounded toolGateway.execute, sending rows are retry-selected, smoke asserts one sent fake Bot API capture to operator chat, phase-0 prompt carries concrete Telegram correlation fields. Residual notes are non-blocking."
+}

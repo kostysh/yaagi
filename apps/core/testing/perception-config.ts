@@ -107,6 +107,8 @@ export function buildPerceptionTestConfig(
     telegramEnabled: false,
     telegramBotToken: null,
     telegramAllowedChatIds: [],
+    telegramEgressEnabled: false,
+    telegramOperatorChatId: null,
     telegramApiBaseUrl: 'https://api.telegram.org',
     seedRootPath: path.join(root, 'seed'),
     seedConstitutionPath: path.join(root, 'seed/constitution/constitution.yaml'),

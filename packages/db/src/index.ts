@@ -216,6 +216,18 @@ export {
   type UpsertSupportRunbookVersionInput,
 } from './support.ts';
 export {
+  TELEGRAM_EGRESS_STATUS,
+  createTelegramEgressStore,
+  type MarkTelegramEgressFailureInput,
+  type RecordTelegramEgressIntentInput,
+  type RecordTelegramEgressRefusalInput,
+  type TelegramEgressDbExecutor,
+  type TelegramEgressMessageRow,
+  type TelegramEgressStatus,
+  type TelegramEgressStore,
+  type TelegramStimulusContext,
+} from './telegram-egress.ts';
+export {
   createSpecialistPolicyStore,
   SPECIALIST_POLICY_DEFAULT_ADMISSION_DECISION,
   SPECIALIST_POLICY_WRITE_SURFACES,

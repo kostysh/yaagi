@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T19:34:17.755Z",
+  "feature_id": "F-0029",
+  "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+  "step": "implementation",
+  "dossier_status": "planned",
+  "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+  "review_trace_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+  "review_trace_commits": [
+    "45497bcf0b57b7212624a2ec10e14393d76b20c1"
+  ],
+  "verification_trace_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+  "verification_artifact": ".dossier/verification/F-0029/implementation-45497bcf0b57.json",
+  "review_artifacts": [
+    ".dossier/reviews/F-0029/implementation--spec-conformance-reviewer--r04--pass--45497bcf0b57.json",
+    ".dossier/reviews/F-0029/implementation--code-reviewer--r05--pass--45497bcf0b57.json",
+    ".dossier/reviews/F-0029/implementation--security-reviewer--r04--pass--45497bcf0b57.json"
+  ],
+  "selected_closure_bundle": {
+    "closure_bundle_id": "implementation--bundle-39e5e21b5b59--r05--45497bcf0b57",
+    "closure_bundle_round": 5,
+    "closure_bundle_rounds_by_audit_class": {
+      "spec-conformance-reviewer": 4,
+      "code-reviewer": 5,
+      "security-reviewer": 4
+    },
+    "selected_review_artifacts": [
+      ".dossier/reviews/F-0029/implementation--spec-conformance-reviewer--r04--pass--45497bcf0b57.json",
+      ".dossier/reviews/F-0029/implementation--code-reviewer--r05--pass--45497bcf0b57.json",
+      ".dossier/reviews/F-0029/implementation--security-reviewer--r04--pass--45497bcf0b57.json"
+    ],
+    "selected_review_artifacts_by_audit_class": {
+      "spec-conformance-reviewer": ".dossier/reviews/F-0029/implementation--spec-conformance-reviewer--r04--pass--45497bcf0b57.json",
+      "code-reviewer": ".dossier/reviews/F-0029/implementation--code-reviewer--r05--pass--45497bcf0b57.json",
+      "security-reviewer": ".dossier/reviews/F-0029/implementation--security-reviewer--r04--pass--45497bcf0b57.json"
+    },
+    "selected_verification_artifact": ".dossier/verification/F-0029/implementation-45497bcf0b57.json",
+    "selected_step_artifact": ".dossier/steps/F-0029/implementation.json",
+    "audit_class_order": [
+      "spec-conformance-reviewer",
+      "code-reviewer",
+      "security-reviewer"
+    ],
+    "selected_closure_ts": "2026-04-29T19:34:17.754Z",
+    "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1"
+  },
+  "closure_bundle_id": "implementation--bundle-39e5e21b5b59--r05--45497bcf0b57",
+  "closure_bundle_round": 5,
+  "closure_bundle_rounds_by_audit_class": {
+    "spec-conformance-reviewer": 4,
+    "code-reviewer": 5,
+    "security-reviewer": 4
+  },
+  "selected_review_artifacts": [
+    ".dossier/reviews/F-0029/implementation--spec-conformance-reviewer--r04--pass--45497bcf0b57.json",
+    ".dossier/reviews/F-0029/implementation--code-reviewer--r05--pass--45497bcf0b57.json",
+    ".dossier/reviews/F-0029/implementation--security-reviewer--r04--pass--45497bcf0b57.json"
+  ],
+  "selected_verification_artifact": ".dossier/verification/F-0029/implementation-45497bcf0b57.json",
+  "selected_step_artifact": ".dossier/steps/F-0029/implementation.json",
+  "selected_closure_ts": "2026-04-29T19:34:17.754Z",
+  "rpa_source_identity": {
+    "schema_version": 1,
+    "feature_id": "F-0029",
+    "backlog_item_key": "CF-029",
+    "feature_cycle_id": "fc-F-0029-mok6q1ug",
+    "cycle_id": "implementation-393f6a55",
+    "stage": "implementation",
+    "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+    "stage_log": ".dossier/logs/implementation/F-0029--fc-F-0029-mok6q1ug--implementation-393f6a55.md",
+    "stage_state_path": ".dossier/stages/F-0029/implementation.json",
+    "step_artifact": ".dossier/steps/F-0029/implementation.json",
+    "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+    "session_id": "56d23d4d-e175-4a94-84a2-061a0036a352",
+    "trace_runtime": "codex"
+  },
+  "rpa_source_quality": {
+    "schema_version": 1,
+    "review_history_quality": "complete",
+    "selected_bundle_quality": "stale",
+    "missing_fail_artifact_count": 0,
+    "trace_only_fail_count": 0,
+    "same_thread_rejected_count": 0,
+    "invalid_launch_mode_process_miss_count": 0,
+    "unrecoverable_historical_fail_present": false,
+    "limitations": []
+  },
+  "non_pass_review_events": [
+    {
+      "review_attempt_id": "implementation--code-reviewer--r01",
+      "review_round_id": "r01",
+      "review_round_number": 1,
+      "audit_class": "code-reviewer",
+      "verdict": "FAIL",
+      "artifact_path": ".dossier/reviews/F-0029/implementation--code-reviewer--r01--fail--45497bcf0b57.json",
+      "latest_copy_path": ".dossier/reviews/F-0029/implementation--code-reviewer--latest.json",
+      "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+      "reviewer": "codex-gpt5-code-reviewer",
+      "reviewer_agent_id": "codex-gpt5-f0029-review-20260429",
+      "reviewer_skill": "code-reviewer",
+      "reviewer_thread_id": "019dda95-d4fa-7aa2-8626-54b4304bd297",
+      "risk_families": [],
+      "repair_next_action": null,
+      "review_mode": "external",
+      "stale": false,
+      "invalidated": false,
+      "must_fix_count": 1,
+      "evidence_count": 4
+    },
+    {
+      "review_attempt_id": "implementation--security-reviewer--r02",
+      "review_round_id": "r02",
+      "review_round_number": 2,
+      "audit_class": "security-reviewer",
+      "verdict": "FAIL",
+      "artifact_path": ".dossier/reviews/F-0029/implementation--security-reviewer--r02--fail--45497bcf0b57.json",
+      "latest_copy_path": ".dossier/reviews/F-0029/implementation--security-reviewer--latest.json",
+      "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+      "reviewer": "codex-security-reviewer",
+      "reviewer_agent_id": "codex-security-reviewer-f0029-20260429",
+      "reviewer_skill": "security-reviewer",
+      "reviewer_thread_id": "019ddaa1-a727-7bb1-9c08-2850da2c3457",
+      "risk_families": [],
+      "repair_next_action": null,
+      "review_mode": "external",
+      "stale": false,
+      "invalidated": false,
+      "must_fix_count": 1,
+      "evidence_count": 7
+    },
+    {
+      "review_attempt_id": "implementation--code-reviewer--r02",
+      "review_round_id": "r02",
+      "review_round_number": 2,
+      "audit_class": "code-reviewer",
+      "verdict": "FAIL",
+      "artifact_path": ".dossier/reviews/F-0029/implementation--code-reviewer--r02--fail--45497bcf0b57.json",
+      "latest_copy_path": ".dossier/reviews/F-0029/implementation--code-reviewer--latest.json",
+      "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+      "reviewer": "codex-gpt5-code-reviewer",
+      "reviewer_agent_id": "codex-gpt5-019ddaa1-a684-7272-ab5b-434f01e1a314",
+      "reviewer_skill": "code-reviewer",
+      "reviewer_thread_id": "019ddaa1-a684-7272-ab5b-434f01e1a314",
+      "risk_families": [],
+      "repair_next_action": null,
+      "review_mode": "external",
+      "stale": false,
+      "invalidated": false,
+      "must_fix_count": 2,
+      "evidence_count": 3
+    },
+    {
+      "review_attempt_id": "implementation--code-reviewer--r03",
+      "review_round_id": "r03",
+      "review_round_number": 3,
+      "audit_class": "code-reviewer",
+      "verdict": "FAIL",
+      "artifact_path": ".dossier/reviews/F-0029/implementation--code-reviewer--r03--fail--45497bcf0b57.json",
+      "latest_copy_path": ".dossier/reviews/F-0029/implementation--code-reviewer--latest.json",
+      "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+      "reviewer": "codex-gpt5-code-reviewer",
+      "reviewer_agent_id": "codex-gpt5-independent-review-f0029-20260429",
+      "reviewer_skill": "code-reviewer",
+      "reviewer_thread_id": "019ddaac-ac3c-7d82-8f46-8daf97db79f4",
+      "risk_families": [],
+      "repair_next_action": null,
+      "review_mode": "external",
+      "stale": false,
+      "invalidated": false,
+      "must_fix_count": 1,
+      "evidence_count": 4
+    }
+  ],
+  "review_freshness": "stale",
+  "required_audit_classes": [
+    "spec-conformance-reviewer",
+    "code-reviewer",
+    "security-reviewer"
+  ],
+  "executed_audit_classes": [
+    "spec-conformance-reviewer",
+    "code-reviewer",
+    "security-reviewer"
+  ],
+  "required_external_review_pending": true,
+  "implementation_review_scope": "code-bearing",
+  "required_security_review": true,
+  "degraded_review_present": false,
+  "invalidated_review_present": false,
+  "stale_review_present": true,
+  "reviewer_skills": [
+    "spec-conformance-reviewer",
+    "code-reviewer",
+    "security-reviewer"
+  ],
+  "reviewer_agent_ids": [
+    "codex-gpt5-f0029-final-spec-review-20260429",
+    "codex-gpt5-f0029-final-idempotency-review-20260429",
+    "codex-gpt5-security-reviewer-f0029-final-retry-idempotency-20260429"
+  ],
+  "security_trigger_reasons": [
+    "F-0029 implements Telegram egress with bot token handling, operator-only recipient admission, outbound Bot API transport, durable DB evidence, retry/idempotency behavior, terminal timeout behavior, no automatic resend of ambiguous sending rows, and fake Bot API smoke surfaces."
+  ],
+  "process_complete": false,
+  "blockers": [
+    "Required audits are stale against uncommitted material changes: dossier/backlog/applied.json, dossier/backlog/state.json, env.example, EADME.md, pps/core/src/actions/tool-gateway.ts, pps/core/src/cognition/context-builder.ts, pps/core/src/platform/core-config.ts, pps/core/src/platform/phase0-ai.ts, pps/core/src/runtime/runtime-lifecycle.ts, pps/core/src/support/support-canonical-refs.ts, pps/core/test/body/body-evolution-service.contract.test.ts, pps/core/test/body/body-evolution-usage-audit.integration.test.ts, pps/core/test/body/body-git-gateway.integration.test.ts, pps/core/test/cognition/context-builder.integration.test.ts, pps/core/test/platform/core-config.contract.test.ts, pps/core/test/platform/phase0-ai.integration.test.ts, pps/core/test/runtime/reactive-decision-refusal.integration.test.ts, pps/core/test/support/support-canonical-refs.integration.test.ts, pps/core/test/support/support-usage-audit.contract.test.ts, pps/core/test/workshop/workshop-runtime.integration.test.ts, pps/core/testing/action-test-config.ts, pps/core/testing/perception-config.ts, ocs/architecture/system.md, ocs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md, nfra/docker/compose.smoke-telegram.yaml, nfra/docker/compose.yaml, nfra/docker/deployment-cell.smoke.ts, nfra/docker/fake-telegram-api/server.py, nfra/docker/test/perception-local-secrets.contract.test.ts, ackages/contracts/src/actions.ts, ackages/contracts/src/reporting.ts, ackages/contracts/src/support.ts, ackages/contracts/test/reporting.contract.test.ts, ackages/db/src/index.ts, .dossier/backlog/patches/1649c5758546--2026-04-29-067-f0029-implementation-actualization.patch.json, .dossier/backlog/patches/2026-04-29-067-f0029-implementation-actualization.patch.json, apps/core/test/actions/telegram-egress-boundary.contract.test.ts, apps/core/test/actions/telegram-egress-tool.contract.test.ts, apps/core/test/runtime/telegram-egress-retry.contract.test.ts, infra/migrations/029_telegram_egress_messages.sql, packages/contracts/test/telegram-egress.contract.test.ts, packages/db/src/telegram-egress.ts, packages/db/test/telegram-egress-store.integration.test.ts"
+  ],
+  "next_step": "implementation"
+}

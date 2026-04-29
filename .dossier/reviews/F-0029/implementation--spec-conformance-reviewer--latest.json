@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T19:27:54.113Z",
+  "audit_class": "spec-conformance-reviewer",
+  "artifact_role": "latest_copy",
+  "review_mode": "external",
+  "reviewer": "independent-spec-conformance-reviewer",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": "codex-gpt5-f0029-final-spec-review-20260429",
+  "reviewer_thread_id": "019ddab3-6429-7b23-8c45-a5ebf283ffeb",
+  "review_attempt_id": "implementation--spec-conformance-reviewer--r04",
+  "review_round_id": "r04",
+  "review_round_number": 4,
+  "latest_copy_path": ".dossier/reviews/F-0029/implementation--spec-conformance-reviewer--latest.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+  "feature_id": "F-0029",
+  "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+      "packages/contracts/src/actions.ts",
+      "apps/core/src/actions/tool-gateway.ts",
+      "packages/db/src/telegram-egress.ts",
+      "apps/core/src/runtime/runtime-lifecycle.ts",
+      "apps/core/test/actions/telegram-egress-tool.contract.test.ts",
+      "packages/db/test/telegram-egress-store.integration.test.ts",
+      "apps/core/test/runtime/telegram-egress-retry.contract.test.ts",
+      "infra/docker/deployment-cell.smoke.ts",
+      ".dossier/verification/F-0029/implementation-45497bcf0b57.json"
+    ]
+  },
+  "notes": "PASS: final F-0029 implementation conforms to operator-only Telegram egress, durable action-id outbox authority, no automatic resend for ambiguous sending rows, exclusive send claim, terminal timeout failure, bounded retry/failure evidence, and fake-Bot-API smoke/spec surfaces. Focused reviewer tests passed; phase0 AI prompt test required local listen permission and passed when rerun outside sandbox.",
+  "immutable_artifact_path": ".dossier/reviews/F-0029/implementation--spec-conformance-reviewer--r04--pass--45497bcf0b57.json"
+}

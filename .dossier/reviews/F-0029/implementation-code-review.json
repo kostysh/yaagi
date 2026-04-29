@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T19:30:21.742Z",
+  "audit_class": "code-reviewer",
+  "artifact_role": "latest_copy",
+  "review_mode": "external",
+  "reviewer": "codex-gpt5-code-reviewer",
+  "reviewer_skill": "code-reviewer",
+  "reviewer_agent_id": "codex-gpt5-f0029-final-idempotency-review-20260429",
+  "reviewer_thread_id": "019ddab6-a83d-7a83-953f-8c0e4a57af73",
+  "review_attempt_id": "implementation--code-reviewer--r05",
+  "review_round_id": "r05",
+  "review_round_number": 5,
+  "latest_copy_path": ".dossier/reviews/F-0029/implementation-code-review.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
+  "feature_id": "F-0029",
+  "event_commit": "45497bcf0b57b7212624a2ec10e14393d76b20c1",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "Reviewed current uncommitted F-0029 implementation after final retry/idempotency fixes, with focus on active/stale sending duplicate sends, timeout retry, replay text mismatch, and Telegram egress state-machine regressions.",
+      "packages/db/src/telegram-egress.ts markSending claims only pending/retry_scheduled rows and listReadyToRetry selects only pending/retry_scheduled rows, so active or stale sending rows are not automatically replayed.",
+      "apps/core/src/actions/tool-gateway.ts sends durable outbox text from sending.textJson and records telegram_api_timeout as terminal failure.",
+      "Focused verification passed: pnpm test -- packages/contracts/test/telegram-egress.contract.test.ts packages/db/test/telegram-egress-store.integration.test.ts apps/core/test/actions/telegram-egress-tool.contract.test.ts apps/core/test/runtime/telegram-egress-retry.contract.test.ts.",
+      "Current verification artifact inspected: .dossier/verification/F-0029/implementation-45497bcf0b57.json."
+    ]
+  },
+  "notes": "PASS: prior code-review blockers are cleared; no confirmed local regression in the Telegram egress state machine.",
+  "immutable_artifact_path": ".dossier/reviews/F-0029/implementation--code-reviewer--r05--pass--45497bcf0b57.json"
+}

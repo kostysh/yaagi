@@ -9,6 +9,7 @@ export const EXECUTION_PROFILE = Object.freeze({
   NETWORK_HTTP: 'network_http',
   RESTRICTED_SHELL: 'restricted_shell',
   JOB_ENQUEUE: 'job_enqueue',
+  TELEGRAM_EGRESS: 'telegram_egress',
 } as const);
 
 export type ExecutionProfile = (typeof EXECUTION_PROFILE)[keyof typeof EXECUTION_PROFILE];
@@ -19,7 +20,81 @@ export const executionProfileSchema = z.enum([
   EXECUTION_PROFILE.NETWORK_HTTP,
   EXECUTION_PROFILE.RESTRICTED_SHELL,
   EXECUTION_PROFILE.JOB_ENQUEUE,
+  EXECUTION_PROFILE.TELEGRAM_EGRESS,
 ]);
+
+export const TELEGRAM_SEND_MESSAGE_TOOL = 'telegram.sendMessage' as const;
+export const TELEGRAM_SEND_MESSAGE_TEXT_LIMIT = 3500;
+export const TELEGRAM_SEND_MESSAGE_RETRY_BUDGET = 3;
+
+export const telegramSendMessageRefusalReasonSchema = z.enum([
+  'telegram_egress_disabled',
+  'operator_chat_not_configured',
+  'operator_chat_not_allowed',
+  'non_operator_recipient',
+  'group_or_channel_context',
+  'non_text_payload',
+  'text_too_long',
+]);
+
+export type TelegramSendMessageRefusalReason = z.infer<
+  typeof telegramSendMessageRefusalReasonSchema
+>;
+
+export const telegramSendMessageFailureReasonSchema = z.enum([
+  'telegram_api_timeout',
+  'telegram_api_error',
+  'telegram_rate_limited',
+  'telegram_bot_blocked',
+  'telegram_invalid_token',
+  'retry_budget_exhausted',
+]);
+
+export type TelegramSendMessageFailureReason = z.infer<
+  typeof telegramSendMessageFailureReasonSchema
+>;
+
+const boundedTelegramTextSchema = z
+  .string()
+  .min(1)
+  .refine((value) => [...value].length <= TELEGRAM_SEND_MESSAGE_TEXT_LIMIT, {
+    message: `telegram.sendMessage text must be at most ${TELEGRAM_SEND_MESSAGE_TEXT_LIMIT} Unicode scalar values`,
+  });
+
+export const telegramSendMessageParametersSchema = z
+  .object({
+    text: boundedTelegramTextSchema,
+    correlationId: z.string().min(1),
+    replyToStimulusId: z.string().min(1),
+    replyToTelegramUpdateId: z.number().int().safe().optional(),
+  })
+  .strict();
+
+export type TelegramSendMessageParameters = z.infer<typeof telegramSendMessageParametersSchema>;
+
+export const telegramSendMessageResultSchema = z.discriminatedUnion('status', [
+  z.object({
+    status: z.literal('sent'),
+    actionId: z.string().min(1),
+    egressMessageId: z.string().min(1),
+    telegramMessageId: z.number().int().safe(),
+    attemptCount: z.number().int().min(1).max(TELEGRAM_SEND_MESSAGE_RETRY_BUDGET),
+  }),
+  z.object({
+    status: z.literal('refused'),
+    actionId: z.string().min(1),
+    reason: telegramSendMessageRefusalReasonSchema,
+  }),
+  z.object({
+    status: z.literal('failed'),
+    actionId: z.string().min(1),
+    egressMessageId: z.string().min(1),
+    reason: telegramSendMessageFailureReasonSchema,
+    attemptCount: z.number().int().min(0).max(TELEGRAM_SEND_MESSAGE_RETRY_BUDGET),
+  }),
+]);
+
+export type TelegramSendMessageResult = z.infer<typeof telegramSendMessageResultSchema>;
 
 export const executiveVerdictKindSchema = z.enum([
   'tool_call',
