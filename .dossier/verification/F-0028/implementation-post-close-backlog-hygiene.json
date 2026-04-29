@@ -1,54 +1,23 @@
 {
   "version": 2,
   "schema_version": 2,
-  "created_at": "2026-04-29T14:54:11.290Z",
+  "created_at": "2026-04-29T15:08:49.471Z",
   "feature_id": "F-0028",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
   "implementation_step_artifact": ".dossier/steps/F-0028/implementation.json",
   "implementation_process_complete_ts": "2026-04-29T14:52:58.422Z",
-  "global_refresh_artifact": ".dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T14-54-10-828Z.json",
+  "global_refresh_artifact": ".dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T15-08-48-989Z.json",
   "affected_feature_ids": [
     "F-0026",
     "F-0027",
     "F-0028"
   ],
   "pre_status_summary": {
-    "total_items": 28,
-    "last_refresh_at": "2026-04-29T14:53:10.566Z",
-    "defined_count": 0,
-    "intaken_count": 0,
-    "specified_count": 0,
-    "planned_count": 0,
-    "implemented_count": 28,
-    "gaps_count": 0,
-    "needs_attention_count": 0,
-    "ready_for_next_step_count": 0,
-    "open_todo_count": 0,
-    "artifact_integrity": {
-      "applied_canonical_paths_exist": true,
-      "missing_canonical_paths": []
-    },
-    "open_source_review_count": 0,
-    "source_review_blocked_item_count": 0,
-    "lifecycle_reconciliation_drift_count": 0,
-    "lifecycle_reconciliation_drifts": [],
-    "post_close_hygiene_missing_count": 0,
-    "post_close_hygiene_stale_count": 0,
-    "post_close_hygiene_blocked_count": 3,
-    "post_close_hygiene_missing_feature_ids": [],
-    "post_close_hygiene_stale_feature_ids": [],
-    "post_close_hygiene_blocked_feature_ids": [
-      "F-0026",
-      "F-0027",
-      "F-0028"
-    ]
-  },
-  "post_status_summary": {
-    "total_items": 28,
+    "total_items": 29,
     "last_refresh_at": "2026-04-29T14:54:11.054Z",
     "defined_count": 0,
-    "intaken_count": 0,
+    "intaken_count": 1,
     "specified_count": 0,
     "planned_count": 0,
     "implemented_count": 28,
@@ -75,8 +44,39 @@
     ],
     "post_close_hygiene_blocked_feature_ids": []
   },
-  "refresh_ran_at": "2026-04-29T14:54:11.054Z",
-  "backlog_last_refresh_at": "2026-04-29T14:54:11.054Z",
+  "post_status_summary": {
+    "total_items": 29,
+    "last_refresh_at": "2026-04-29T15:08:49.234Z",
+    "defined_count": 0,
+    "intaken_count": 1,
+    "specified_count": 0,
+    "planned_count": 0,
+    "implemented_count": 28,
+    "gaps_count": 0,
+    "needs_attention_count": 0,
+    "ready_for_next_step_count": 0,
+    "open_todo_count": 0,
+    "artifact_integrity": {
+      "applied_canonical_paths_exist": true,
+      "missing_canonical_paths": []
+    },
+    "open_source_review_count": 0,
+    "source_review_blocked_item_count": 0,
+    "lifecycle_reconciliation_drift_count": 0,
+    "lifecycle_reconciliation_drifts": [],
+    "post_close_hygiene_missing_count": 0,
+    "post_close_hygiene_stale_count": 3,
+    "post_close_hygiene_blocked_count": 0,
+    "post_close_hygiene_missing_feature_ids": [],
+    "post_close_hygiene_stale_feature_ids": [
+      "F-0026",
+      "F-0027",
+      "F-0028"
+    ],
+    "post_close_hygiene_blocked_feature_ids": []
+  },
+  "refresh_ran_at": "2026-04-29T15:08:49.234Z",
+  "backlog_last_refresh_at": "2026-04-29T15:08:49.234Z",
   "refresh_summary": {
     "changed_sources": [],
     "source_reviews_created": 0,
@@ -84,10 +84,10 @@
     "source_review_ids": []
   },
   "status_summary": {
-    "total_items": 28,
-    "last_refresh_at": "2026-04-29T14:54:11.054Z",
+    "total_items": 29,
+    "last_refresh_at": "2026-04-29T15:08:49.234Z",
     "defined_count": 0,
-    "intaken_count": 0,
+    "intaken_count": 1,
     "specified_count": 0,
     "planned_count": 0,
     "implemented_count": 28,
@@ -118,6 +118,7 @@
   "queue_summary": {
     "data": [],
     "warnings": [
+      "Intaken backlog items continue via dossier-local spec-compact: CF-029",
       "Post-close backlog hygiene stale for implementation features: F-0026, F-0027, F-0028"
     ]
   },

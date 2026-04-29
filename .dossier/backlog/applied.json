@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-29T11:32:33.306Z",
-  "next_apply_index": 64,
+  "updated_at": "2026-04-29T15:07:32.960Z",
+  "next_apply_index": 66,
   "packets": [
     {
       "packet_id": "f0947cdd-67be-4f98-9cbd-bec31fce4589",
@@ -48,6 +48,16 @@
       "applied_at": "2026-04-17T17:01:49.742Z",
       "item_keys": [
         "CF-028"
+      ]
+    },
+    {
+      "packet_id": "800dcdb5-f5a6-4e95-b3f1-8000bed26931",
+      "apply_index": 64,
+      "canonical_path": ".dossier/backlog/packets/b292192d27c4--2026-04-29-063-cf029-operator-telegram-reply-loop.json",
+      "content_hash": "b292192d27c4ba76925935ab97a7e5234ec3c603b256c98d877c212d68d40402",
+      "applied_at": "2026-04-29T15:03:01.370Z",
+      "item_keys": [
+        "CF-029"
       ]
     }
   ],
@@ -830,6 +840,18 @@
       "kind": "patch-item",
       "target_item_keys": [
         "CF-026"
+      ]
+    },
+    {
+      "patch_id": "2026-04-29-064-f0029-feature-intake-actualization",
+      "apply_index": 65,
+      "canonical_path": ".dossier/backlog/patches/90b55ab96fce--2026-04-29-064-f0029-feature-intake-actualization.patch.json",
+      "content_hash": "90b55ab96fcefe64586a3c208514b2d26ec86b3248a85768133c4d9c0c2af404",
+      "sequence": 64,
+      "applied_at": "2026-04-29T15:07:32.960Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-029"
       ]
     }
   ]

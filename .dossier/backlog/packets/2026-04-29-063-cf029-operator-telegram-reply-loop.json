@@ -1,0 +1,52 @@
+{
+  "context": {
+    "glossary": [],
+    "key_strategy": {
+      "item_key_space": "Preserve legacy CF-* seam identifiers as stable backlog item keys during migration to the unified dossier-engineer runtime.",
+      "delivery_state_rule": "Legacy intaken maps to implemented by explicit operator instruction; confirmed maps to planned; remaining candidate seams stay defined unless a carried migration gap blocks them.",
+      "source_traceability": "Architecture and legacy planning inputs stay attached through registered source IDs, while current truth is read from dossier-engineer backlog state after packet apply."
+    },
+    "target_system": [],
+    "as_built": [],
+    "claims": [],
+    "contracts": [],
+    "data_domains": [],
+    "quality_attributes": [],
+    "policy_decisions": []
+  },
+  "items": [
+    {
+      "item_key": "CF-029",
+      "title": "Operator-only Telegram conversational egress and reply loop",
+      "type": "feature",
+      "delivery_state": "defined",
+      "gaps": [],
+      "depends_on_keys": ["CF-004", "CF-007", "CF-014", "CF-015", "CF-024"],
+      "origin_source_ids": [
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "5b9f63ff-21ce-440c-a3a3-7416945dde4f",
+        "c4d83779-b8da-4e9e-ade8-924d14fcedc2"
+      ],
+      "specification_source_ids": [
+        "ff2bfce0-f4c6-46e5-9c7e-e405cfe3607f",
+        "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
+        "5b9f63ff-21ce-440c-a3a3-7416945dde4f",
+        "3f23a351-c025-451f-928e-50aedf53eb50",
+        "82d4907f-5a61-4a14-8466-2ae0fce570fd",
+        "101e300d-dc80-4a8b-a11d-0a3f1849f368",
+        "11be6013-db68-403c-89de-d95746927830",
+        "e0133250-25a7-4dc2-bebb-f4e2148a98ed",
+        "c4d83779-b8da-4e9e-ade8-924d14fcedc2"
+      ],
+      "plan_source_ids": [],
+      "implementation_source_ids": [],
+      "test_source_ids": [],
+      "claim_keys": [],
+      "contract_keys": [],
+      "data_domain_keys": [],
+      "quality_attribute_keys": [],
+      "policy_decision_keys": []
+    }
+  ]
+}

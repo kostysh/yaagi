@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-29T11:32:49.601Z_
+_Last sync: 2026-04-29T15:03:22.790Z_
 
 ## Features
 
@@ -38,6 +38,7 @@ _Last sync: 2026-04-29T11:32:49.601Z_
 | F-0026 | Deploy/release automation и rollback orchestration | done | strict | platform | F-0002, F-0007, F-0020, F-0023, F-0016, F-0019 | platform,deployment,release,rollback,operations | `features/F-0026-deploy-release-automation-rollback-orchestration.md` |
 | F-0027 | Специализированные органы и политика вывода из эксплуатации | done | strict | models | F-0014, F-0015, F-0016, F-0020, F-0026 | models,runtime,workshop,governance,release | `features/F-0027-specialist-organs-rollout-retirement-policy.md` |
 | F-0028 | Support / operability contract и incident discipline | done | deferred | operations | F-0013, F-0023, F-0024, F-0026 | operations,support,incident-response,observability,release | `features/F-0028-support-operability-contract-incident-discipline.md` |
+| F-0029 | Operator-only Telegram conversational egress and reply loop | proposed | deferred | communication | F-0005, F-0010, F-0018, F-0023, F-0024 | communication,telegram,runtime,actions,observability,security | `features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
@@ -73,6 +74,7 @@ graph TD
   F0026["F-0026 Deploy/release automation и rollback orchestration"]
   F0027["F-0027 Специализированные органы и политика вывода из эксплуатации"]
   F0028["F-0028 Support / operability contract и incident discipline"]
+  F0029["F-0029 Operator-only Telegram conversational egress and reply loop"]
   F0001 --> F0002
   F0003 --> F0001
   F0003 --> F0002
@@ -180,6 +182,11 @@ graph TD
   F0028 --> F0023
   F0028 --> F0024
   F0028 --> F0026
+  F0029 --> F0005
+  F0029 --> F0010
+  F0029 --> F0018
+  F0029 --> F0023
+  F0029 --> F0024
 ```
 <!-- END GENERATED DEP_GRAPH -->
 
@@ -273,4 +280,5 @@ graph TD
 - **WARN** F-0025 — Potential compound ACs detected: AC-F0025-01, AC-F0025-02, AC-F0025-03, AC-F0025-05, AC-F0025-07, AC-F0025-08, AC-F0025-09, AC-F0025-10, AC-F0025-11, AC-F0025-12, AC-F0025-13, AC-F0025-14, AC-F0025-01, AC-F0025-01, AC-F0025-02, AC-F0025-03, AC-F0025-09, AC-F0025-04, AC-F0025-11, AC-F0025-09, AC-F0025-12. Prefer one obligation per AC.
 - **WARN** F-0026 — Potential compound ACs detected: AC-F0026-07, AC-F0026-01, AC-F0026-01, AC-F0026-01, AC-F0026-04, AC-F0026-07, AC-F0026-05, AC-F0026-09, AC-F0026-09, AC-F0026-07, AC-F0026-08, AC-F0026-12, AC-F0026-01. Prefer one obligation per AC.
 - **WARN** F-0028 — Potential compound ACs detected: AC-F0028-01, AC-F0028-02, AC-F0028-03, AC-F0028-04, AC-F0028-05, AC-F0028-06, AC-F0028-07, AC-F0028-08, AC-F0028-09, AC-F0028-10, AC-F0028-11, AC-F0028-12, AC-F0028-13, AC-F0028-14, AC-F0028-15, AC-F0028-01, AC-F0028-08, AC-F0028-02, AC-F0028-06, AC-F0028-05, AC-F0028-10, AC-F0028-11, AC-F0028-01, AC-F0028-05, AC-F0028-08, AC-F0028-11, AC-F0028-10, AC-F0028-12. Prefer one obligation per AC.
+- **WARN** F-0029 — Potential compound ACs detected: AC-F0029-01, AC-F0029-02, AC-F0029-03, AC-F0029-04, AC-F0029-05, AC-F0029-06, AC-F0029-07, AC-F0029-08, AC-F0029-09, AC-F0029-10, AC-F0029-02. Prefer one obligation per AC.
 <!-- END GENERATED RED_FLAGS -->

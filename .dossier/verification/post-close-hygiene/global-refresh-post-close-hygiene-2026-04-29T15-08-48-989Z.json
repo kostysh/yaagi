@@ -1,18 +1,14 @@
 {
   "version": 2,
   "schema_version": 2,
+  "run_id": "post-close-hygiene-2026-04-29T15-08-48-989Z",
   "created_at": "2026-04-29T15:08:49.471Z",
-  "feature_id": "F-0027",
+  "updated_at": "2026-04-29T15:08:49.532Z",
   "step": "implementation",
-  "dossier": "docs/ssot/features/F-0027-specialist-organs-rollout-retirement-policy.md",
-  "implementation_step_artifact": ".dossier/steps/F-0027/implementation.json",
-  "implementation_process_complete_ts": "2026-04-28T14:00:31.377Z",
-  "global_refresh_artifact": ".dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T15-08-48-989Z.json",
-  "affected_feature_ids": [
-    "F-0026",
-    "F-0027",
-    "F-0028"
-  ],
+  "command": "post-close-hygiene",
+  "result": "complete",
+  "durability_status": "final",
+  "global_refresh_ran_at": "2026-04-29T15:08:49.234Z",
   "pre_status_summary": {
     "total_items": 29,
     "last_refresh_at": "2026-04-29T14:54:11.054Z",
@@ -43,6 +39,12 @@
       "F-0028"
     ],
     "post_close_hygiene_blocked_feature_ids": []
+  },
+  "refresh_summary": {
+    "changed_sources": [],
+    "source_reviews_created": 0,
+    "source_reviews_updated": 0,
+    "source_review_ids": []
   },
   "post_status_summary": {
     "total_items": 29,
@@ -75,58 +77,28 @@
     ],
     "post_close_hygiene_blocked_feature_ids": []
   },
-  "refresh_ran_at": "2026-04-29T15:08:49.234Z",
-  "backlog_last_refresh_at": "2026-04-29T15:08:49.234Z",
-  "refresh_summary": {
-    "changed_sources": [],
-    "source_reviews_created": 0,
-    "source_reviews_updated": 0,
-    "source_review_ids": []
-  },
-  "status_summary": {
-    "total_items": 29,
-    "last_refresh_at": "2026-04-29T15:08:49.234Z",
-    "defined_count": 0,
-    "intaken_count": 1,
-    "specified_count": 0,
-    "planned_count": 0,
-    "implemented_count": 28,
-    "gaps_count": 0,
-    "needs_attention_count": 0,
-    "ready_for_next_step_count": 0,
-    "open_todo_count": 0,
-    "artifact_integrity": {
-      "applied_canonical_paths_exist": true,
-      "missing_canonical_paths": []
+  "affected_feature_ids": [
+    "F-0026",
+    "F-0027",
+    "F-0028"
+  ],
+  "failed_feature_ids": [],
+  "per_feature_results": [
+    {
+      "artifact_path": ".dossier/verification/F-0026/implementation-post-close-backlog-hygiene.json",
+      "feature_id": "F-0026",
+      "result": "clean"
     },
-    "open_source_review_count": 0,
-    "source_review_blocked_item_count": 0,
-    "lifecycle_reconciliation_drift_count": 0,
-    "lifecycle_reconciliation_drifts": [],
-    "post_close_hygiene_missing_count": 0,
-    "post_close_hygiene_stale_count": 3,
-    "post_close_hygiene_blocked_count": 0,
-    "post_close_hygiene_missing_feature_ids": [],
-    "post_close_hygiene_stale_feature_ids": [
-      "F-0026",
-      "F-0027",
-      "F-0028"
-    ],
-    "post_close_hygiene_blocked_feature_ids": []
-  },
-  "attention_summary": [],
-  "queue_summary": {
-    "data": [],
-    "warnings": [
-      "Intaken backlog items continue via dossier-local spec-compact: CF-029",
-      "Post-close backlog hygiene stale for implementation features: F-0026, F-0027, F-0028"
-    ]
-  },
-  "open_source_review_count": 0,
-  "source_review_blocked_item_count": 0,
-  "lifecycle_reconciliation_drift_count": 0,
-  "unresolved_attention_present": false,
-  "backlog_clean": true,
-  "result": "clean",
-  "blockers": []
+    {
+      "artifact_path": ".dossier/verification/F-0027/implementation-post-close-backlog-hygiene.json",
+      "feature_id": "F-0027",
+      "result": "clean"
+    },
+    {
+      "artifact_path": ".dossier/verification/F-0028/implementation-post-close-backlog-hygiene.json",
+      "feature_id": "F-0028",
+      "result": "clean"
+    }
+  ],
+  "retry_command": null
 }
