@@ -1,7 +1,7 @@
 ---
 id: F-0029
 title: Operator-only Telegram conversational egress and reply loop
-status: shaped
+status: planned
 coverage_gate: deferred
 backlog_item_key: CF-029
 owners: ["@codex"]
@@ -309,48 +309,148 @@ type TelegramSendMessageResult =
 
 ## 6. Slicing plan (2–6 increments)
 
-Implementation slicing is deferred to `plan-slice`, but the spec fixes the first valid slice boundaries:
+### Spec-compact decisions
 
-- `SL-F0029-01`: contracts and config validation for operator-chat binding, action schema and refusal vocabulary.
-- `SL-F0029-02`: durable outbox/store and fake Bot API `sendMessage` support.
-- `SL-F0029-03`: executive/tool gateway integration with operator-only recipient checks and idempotent send execution.
-- `SL-F0029-04`: runtime wiring, observability/support evidence, docs/config updates and deployment-cell smoke closure.
+- **SD-F0029-01:** `F-0029` owns Telegram egress and reply-loop behavior only. `F-0005` remains the Telegram ingress owner.
+- **SD-F0029-02:** Telegram egress is operator-only in V1. Cognition never supplies a raw recipient chat id.
+- **SD-F0029-03:** Replies are organism actions. Perception adapters and runtime lifecycle hooks must not send automatic Telegram replies.
+- **SD-F0029-04:** V1 is plain text only and must enforce the `3500` Unicode scalar text bound before Bot API transport.
+- **SD-F0029-05:** Durable owner outbox keyed by `action_id` is required before any Bot API side effect so retry/restart cannot create visible duplicates.
+- **SD-F0029-06:** No repo-level ADR is required for the planned path. Change-proposal or ADR becomes required if implementation introduces webhook/public bot behavior, a second worker topology, a public route, or cross-feature write authority changes.
+
+### Plan-slice decisions
+
+- **PL-F0029-01:** Plan Mode was assessed before `plan-slice` and is not required. The spec already fixes the operator-only boundary, action schema, outbox requirement, retry budget and no-second-persona constraint; this step only orders implementation and verification.
+- **PL-F0029-02:** The first implementation target is one complete operator-only Telegram reply seam: config, action contract, outbox, fake Bot API, executive gateway execution, runtime handoff, read-only support/report refs and deployment-cell smoke.
+- **PL-F0029-03:** Implementation order is contract/config first, durable outbox second, gateway execution third, runtime/support/report wiring fourth, smoke/docs closure last.
+- **PL-F0029-04:** `YAAGI_TELEGRAM_EGRESS_ENABLED` remains off by default. Enabling egress without `YAAGI_TELEGRAM_OPERATOR_CHAT_ID`, without the operator in `YAAGI_TELEGRAM_ALLOWED_CHAT_IDS`, or without the existing bot token must fail closed for egress.
+- **PL-F0029-05:** The sender resolves the raw operator chat id at execution time from config. Outbox evidence stores only hashed recipient evidence and canonical refs.
+- **PL-F0029-06:** Policy/admission risk is applicable. Declared families are `admission`, `replay`, `evidence` and `runtime-gating`; `release-policy` is excluded because this feature does not alter release/deploy/rollback decisions.
+
+### Execution target
+
+Implementation must deliver a complete operator-only Telegram conversational egress path:
+
+- config-gated `telegram.sendMessage` action with server-side recipient resolution;
+- explicit refusal vocabulary for disabled egress, missing/misaligned operator chat config, non-operator source, non-private chat context, non-text payload and over-bound text;
+- durable `telegram_egress_messages` outbox with `action_id` uniqueness, retry state and token-free evidence;
+- fake Telegram Bot API `sendMessage` success/failure support;
+- executive/tool gateway execution that writes outbox intent before Bot API transport;
+- runtime reply-loop integration from Telegram stimulus through reactive tick and executive action;
+- read-only reporting/support evidence refs without foreign owner writes;
+- deployment-cell smoke proving one fake Telegram ingress can lead to one operator-only egress attempt while reusing the existing runtime/model stack.
+
+Completion is recognized only when acceptance criteria have focused tests, root quality gates pass, and `pnpm smoke:cell` covers the Telegram egress overlay. If implementation discovers a need for public bot behavior, webhook ingress, a separate egress worker service or cross-owner writes, work must stop for change-proposal/ADR realignment.
+
+### Dependency visibility
+
+- **Depends on `F-0005`:** Telegram ingress, allowed-chat filtering, stimulus payload shape, update dedupe and fake Bot API smoke overlay. Unblock condition: egress consumes `stimulus_inbox` / perception refs read-only and does not change ingress ownership.
+- **Depends on `F-0010`:** executive center, tool gateway, action id reservation and `action_log`. Unblock condition: `telegram.sendMessage` is a bounded tool under the existing executive action boundary and records action results through the existing action contract.
+- **Depends on `F-0018`:** perimeter and secret hygiene constraints. Unblock condition: no bot token persistence/logging and no direct side-effect path outside the bounded tool gateway.
+- **Depends on `F-0023`:** diagnostic/report consumers. Unblock condition: reporting reads egress evidence read-only or surfaces unavailable/degraded evidence without mutating egress source truth.
+- **Depends on `F-0024`:** operator identity/RBAC and protected operator surfaces. Unblock condition: Telegram direct chat binding remains a local operator-only recipient binding; public/group bot behavior remains denied.
+- **Depends on `F-0028`:** support evidence and incident discipline. Unblock condition: support links egress refs without mutating action, perception, auth or egress source tables.
+
+### Policy/admission negative matrix
+
+| Row ID | Risk | AC basis | Negative case | Production path | Required evidence |
+|---|---|---|---|---|---|
+| NEG-F0029-01 | runtime-gating | AC-F0029-26 | disabled egress action attempt | `telegram.sendMessage` gateway admission | Gateway tests prove pre-transport refusal |
+| NEG-F0029-02 | runtime-gating | AC-F0029-03 | `YAAGI_TELEGRAM_EGRESS_ENABLED=true` without operator chat id | `loadCoreRuntimeConfig` | Config tests prove fail-closed startup/config behavior |
+| NEG-F0029-03 | admission | AC-F0029-04 | operator chat id not in allowlist | config validation | Config tests prove fail-closed startup/config behavior |
+| NEG-F0029-04 | admission | AC-F0029-07 | action correlated to non-operator Telegram stimulus | stimulus lookup; tool gateway recipient guard | Tests prove pre-transport refusal with durable refusal evidence |
+| NEG-F0029-05 | admission | AC-F0029-08 | Telegram group/supergroup/channel context reaches action execution | stimulus payload `chatType`; tool gateway context guard | Tests prove refusal before Bot API side effect |
+| NEG-F0029-06 | admission | AC-F0029-05 | caller supplies recipient chat id | action schema; tool gateway payload validation | Contract tests prove arbitrary-recipient messages are impossible |
+| NEG-F0029-07 | admission | AC-F0029-27 | caller supplies over-bound text | action schema; tool gateway payload validation | Contract tests prove unbounded text never reaches transport |
+| NEG-F0029-08 | replay | AC-F0029-13 | restart replays a sent action | `telegram_egress_messages` unique `action_id`; outbox retry selection | Store/integration tests prove no visible duplicate |
+| NEG-F0029-09 | evidence | AC-F0029-18 | egress decision lacks durable evidence | action log / egress outbox | Evidence tests prove complete decision records |
+| NEG-F0029-10 | evidence | AC-F0029-20 | bot token appears in persisted/logged evidence | outbox evidence / logging snapshots | Evidence tests prove token-free rows/log snapshots |
+| NEG-F0029-11 | runtime-gating | AC-F0029-09 | perception adapter sends a Telegram reply directly | import/static boundary tests | Boundary tests prove only the executive gateway owns Bot API `sendMessage` |
+| NEG-F0029-12 | runtime-gating | AC-F0029-25 | Telegram smoke starts a second model/runtime stack | `infra/docker/deployment-cell.smoke.ts`; compose overlay | Smoke asserts shared model container identity plus one operator-only egress attempt |
+
+### SL-F0029-01: Contracts, config and admission vocabulary
+
+- **Result:** `telegram.sendMessage` action contract, typed refusal vocabulary, egress config fields and fail-closed validation.
+- Depends on: `F-0005` allowed-chat config, `F-0010` action contract and `F-0018` secret config rules.
+- **Primary files:** `packages/contracts/src/actions.ts`, optional `packages/contracts/src/telegram-egress.ts`, `apps/core/src/platform/core-config.ts`, `apps/core/testing/action-test-config.ts`, `.env.example`, `README.md`.
+- **Coverage:** see the Section 8 coverage map.
+- **Verification:** `packages/contracts/test/actions.contract.test.ts` or a new `telegram-egress.contract.test.ts`; `apps/core/test/platform/core-config.contract.test.ts`; `apps/core/test/actions/tool-gateway.contract.test.ts`.
+
+### SL-F0029-02: Durable outbox and fake Bot API send support
+
+- **Result:** owner outbox table/store, idempotency and retry state machine, token-free evidence, fake Bot API `sendMessage` success/failure scenarios.
+- Depends on: `F-0010` `action_id` semantics, `F-0005` fake Telegram API harness and `F-0028` support ref conventions.
+- **Primary files:** `infra/migrations/029_telegram_egress_messages.sql`, `packages/db/src/telegram-egress.ts`, `packages/db/src/index.ts`, `packages/db/test/telegram-egress-store.integration.test.ts`, `infra/docker/fake-telegram-api/server.py`.
+- **Coverage:** see the Section 8 coverage map.
+- **Verification:** outbox store integration tests for durable intent, `action_id` uniqueness, retry budget, sent terminal state and token-free rows; fake API tests for `sendMessage` success/failure.
+
+### SL-F0029-03: Executive tool gateway egress execution
+
+- **Result:** `telegram.sendMessage` gateway execution that resolves operator recipient server-side, checks stimulus context, writes outbox intent before transport, performs bounded Bot API send and records action verdicts.
+- Depends on: `F-0010` tool gateway/action log, `F-0005` stimulus payload refs and `F-0018` bounded side-effect rules.
+- **Primary files:** `apps/core/src/actions/tool-gateway.ts`, optional `apps/core/src/actions/telegram-egress.ts`, `packages/db/src/perception.ts` for read-only stimulus lookup, `apps/core/test/actions/telegram-egress-tool.contract.test.ts`, `apps/core/test/actions/telegram-egress-tool.integration.test.ts`.
+- **Coverage:** see the Section 8 coverage map.
+- **Verification:** gateway tests for disabled egress, missing/misaligned operator chat config, non-operator stimulus, non-private chat context, caller-supplied recipient denial, over-bound text denial, outbox-before-transport ordering, Bot API failure and no core crash.
+
+### SL-F0029-04: Runtime reply loop, reporting and support refs
+
+- **Result:** Telegram stimulus can lead to one bounded executive egress attempt through the normal reactive tick; report/support consumers can link/read egress refs without owning egress state.
+- Depends on: `F-0005` reactive stimulus intake, `F-0010` executive handoff, `F-0023` reporting read conventions and `F-0028` support evidence refs.
+- **Primary files:** `apps/core/src/runtime/index.ts`, `apps/core/test/runtime/reactive-action-handoff.integration.test.ts`, `apps/core/src/runtime/reporting.ts`, `packages/db/src/reporting.ts`, `apps/core/src/support/support-canonical-refs.ts`, `apps/core/test/runtime/telegram-reply-loop.integration.test.ts`, `apps/core/test/support/support-canonical-refs.integration.test.ts`.
+- **Coverage:** see the Section 8 coverage map.
+- **Verification:** runtime integration tests for Telegram stimulus -> decision -> executive action; reporting/support tests proving read-only egress refs and no foreign owner writes.
+
+### SL-F0029-05: Deployment smoke, docs and closure gates
+
+- **Result:** Telegram egress overlay is documented and smoke-proven in the canonical deployment cell with shared runtime/model stack.
+- Depends on: `SL-F0029-01` through `SL-F0029-04`.
+- **Primary files:** `infra/docker/compose.smoke-telegram.yaml`, `infra/docker/deployment-cell.smoke.ts`, `infra/docker/test/compose-config.test.ts`, `README.md`, `docs/architecture/system.md`, `docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md`.
+- **Coverage:** see the Section 8 coverage map.
+- **Verification:** root gates `pnpm format`, `pnpm typecheck`, `pnpm lint`; focused tests; `pnpm test`; `pnpm smoke:cell`; dossier verification and external review closure.
 
 ## 7. Task list (implementation units)
 
-- Deferred to `plan-slice`.
+- **T-F0029-01** (`SL-F0029-01`): Add Telegram egress config fields, fail-closed validation and `.env.example` / README configuration notes.
+- **T-F0029-02** (`SL-F0029-01`): Add `telegram.sendMessage` contract, parameters/result/refusal vocabulary and tests forbidding caller-supplied recipient chat ids and non-text payloads.
+- **T-F0029-03** (`SL-F0029-02`): Add `telegram_egress_messages` migration, typed store, `action_id` idempotency and retry state transitions.
+- **T-F0029-04** (`SL-F0029-02`): Extend fake Telegram API with deterministic `sendMessage` success/failure capture and reset endpoints.
+- **T-F0029-05** (`SL-F0029-03`): Implement gateway-side operator recipient resolution, stimulus context lookup and admission guards for disabled/non-operator/non-private/invalid payload cases.
+- **T-F0029-06** (`SL-F0029-03`): Implement outbox-before-send ordering, bounded Bot API delivery, failure mapping, retry scheduling and action verdict evidence.
+- **T-F0029-07** (`SL-F0029-04`): Wire the runtime reply loop through the existing reactive tick and executive handoff without perception/lifecycle direct sends.
+- **T-F0029-08** (`SL-F0029-04`): Add read-only reporting/support canonical refs for Telegram egress evidence.
+- **T-F0029-09** (`SL-F0029-05`): Update smoke overlay, deployment-cell smoke assertions, docs, coverage map and closure evidence.
 
 ## 8. Test plan & Coverage map
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0029-01 | Future ownership/static boundary tests over Telegram egress writes | deferred |
-| AC-F0029-02 | Future ownership/static boundary tests proving `F-0005` remains ingress owner | deferred |
-| AC-F0029-03 | Future config validation tests for missing `YAAGI_TELEGRAM_OPERATOR_CHAT_ID` | deferred |
-| AC-F0029-04 | Future config validation tests for operator chat absent from ingress allowlist | deferred |
-| AC-F0029-05 | Future action schema contract test forbidding caller-supplied recipient chat id | deferred |
-| AC-F0029-06 | Future action schema contract test for plain-text-only payloads | deferred |
-| AC-F0029-07 | Future tool gateway test for non-operator chat refusal before Bot API call | deferred |
-| AC-F0029-08 | Future tool gateway test for group/channel refusal before Bot API call | deferred |
-| AC-F0029-09 | Future perception boundary test proving adapters do not import/use Telegram egress sender | deferred |
-| AC-F0029-10 | Future runtime boundary test proving lifecycle code does not send Telegram replies | deferred |
-| AC-F0029-11 | Future outbox integration test proving durable intent before Bot API call | deferred |
-| AC-F0029-12 | Future outbox integration test proving `action_id` idempotency key uniqueness | deferred |
-| AC-F0029-13 | Future restart/idempotency test proving sent rows are not resent | deferred |
-| AC-F0029-14 | Future restart/idempotency test proving pending rows resume without duplicate intent | deferred |
-| AC-F0029-15 | Future retry-budget test proving at most three attempts | deferred |
-| AC-F0029-16 | Future failure-state test proving terminal failed evidence | deferred |
-| AC-F0029-17 | Future adapter/API failure integration test proving core stays alive | deferred |
-| AC-F0029-18 | Future action/outbox evidence tests for accepted/refused/sent/failed attempts | deferred |
-| AC-F0029-19 | Future secret-hygiene test over outbox rows | deferred |
-| AC-F0029-20 | Future secret-hygiene test over logs/reports/support snapshots | deferred |
-| AC-F0029-21 | Future reporting consumer test proving read-only egress evidence access | deferred |
-| AC-F0029-22 | Future support consumer test proving ref linking without foreign writes | deferred |
-| AC-F0029-23 | Future fake Telegram API unit/integration tests for `sendMessage` success/failure | deferred |
-| AC-F0029-24 | Future deployment-cell smoke for ingress-to-tick-to-egress | deferred |
-| AC-F0029-25 | Future deployment-cell smoke assertion for shared runtime/model stack reuse | deferred |
-| AC-F0029-26 | Future tool gateway test proving disabled egress refuses before Bot API send | deferred |
-| AC-F0029-27 | Future action/tool gateway test proving over-bound text never reaches Bot API transport unbounded | deferred |
+| AC-F0029-01 | `apps/core/test/actions/telegram-egress-boundary.contract.test.ts` | planned |
+| AC-F0029-02 | `apps/core/test/perception/telegram-adapter.integration.test.ts`; `apps/core/test/actions/telegram-egress-boundary.contract.test.ts` | planned |
+| AC-F0029-03 | `apps/core/test/platform/core-config.contract.test.ts`; `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | planned |
+| AC-F0029-04 | `apps/core/test/platform/core-config.contract.test.ts` | planned |
+| AC-F0029-05 | `packages/contracts/test/telegram-egress.contract.test.ts`; `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | planned |
+| AC-F0029-06 | `packages/contracts/test/telegram-egress.contract.test.ts` | planned |
+| AC-F0029-07 | `apps/core/test/actions/telegram-egress-tool.integration.test.ts` | planned |
+| AC-F0029-08 | `apps/core/test/actions/telegram-egress-tool.integration.test.ts` | planned |
+| AC-F0029-09 | `apps/core/test/actions/telegram-egress-boundary.contract.test.ts`; `apps/core/test/perception/telegram-adapter.integration.test.ts` | planned |
+| AC-F0029-10 | `apps/core/test/actions/telegram-egress-boundary.contract.test.ts`; `apps/core/test/runtime/telegram-reply-loop.integration.test.ts` | planned |
+| AC-F0029-11 | `packages/db/test/telegram-egress-store.integration.test.ts`; `apps/core/test/actions/telegram-egress-tool.integration.test.ts` | planned |
+| AC-F0029-12 | `packages/db/test/telegram-egress-store.integration.test.ts` | planned |
+| AC-F0029-13 | `packages/db/test/telegram-egress-store.integration.test.ts` | planned |
+| AC-F0029-14 | `packages/db/test/telegram-egress-store.integration.test.ts` | planned |
+| AC-F0029-15 | `packages/db/test/telegram-egress-store.integration.test.ts`; `apps/core/test/actions/telegram-egress-tool.integration.test.ts` | planned |
+| AC-F0029-16 | `packages/db/test/telegram-egress-store.integration.test.ts`; `apps/core/test/actions/telegram-egress-tool.integration.test.ts` | planned |
+| AC-F0029-17 | `apps/core/test/actions/telegram-egress-tool.integration.test.ts`; `apps/core/test/runtime/telegram-reply-loop.integration.test.ts` | planned |
+| AC-F0029-18 | `packages/db/test/telegram-egress-store.integration.test.ts` | planned |
+| AC-F0029-19 | `packages/db/test/telegram-egress-store.integration.test.ts`; `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | planned |
+| AC-F0029-20 | `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | planned |
+| AC-F0029-21 | `apps/core/test/runtime/reporting-service.integration.test.ts`; `packages/db/test/reporting-store.integration.test.ts` | planned |
+| AC-F0029-22 | `apps/core/test/support/support-canonical-refs.integration.test.ts`; `apps/core/test/support/support-usage-audit.contract.test.ts` | planned |
+| AC-F0029-23 | `infra/docker/fake-telegram-api/server.py`; `infra/docker/test/compose-config.test.ts`; focused fake API smoke probe | planned |
+| AC-F0029-24 | `infra/docker/deployment-cell.smoke.ts`; `pnpm smoke:cell` | planned |
+| AC-F0029-25 | `infra/docker/deployment-cell.smoke.ts`; `pnpm smoke:cell` | planned |
+| AC-F0029-26 | `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | planned |
+| AC-F0029-27 | `packages/contracts/test/telegram-egress.contract.test.ts`; `apps/core/test/actions/telegram-egress-tool.contract.test.ts` | planned |
 
 ## 9. Decision log (ADR blocks)
 
@@ -396,3 +496,4 @@ Implementation slicing is deferred to `plan-slice`, but the spec fixes the first
 - 2026-04-29: Initial dossier created from backlog item `CF-029` at backlog delivery state `defined`.
 - 2026-04-29 [intake clarification]: Recorded operator-only Telegram direct-chat boundary, normal organism decision path, bounded `telegram.sendMessage` action expectation, text-only V1, durable idempotent egress evidence and deferred implementation slices.
 - 2026-04-29 [spec-compact] [scope realignment]: Shaped `F-0029` as the operator-only Telegram egress owner with server-side recipient resolution, plain-text `telegram.sendMessage`, durable action-id-keyed outbox, bounded retry, fake Bot API verification, and no public bot or second reply persona.
+- 2026-04-29 [plan-slice] [dependency realignment]: Planned contract/config, outbox/fake API, executive gateway, runtime/support/reporting and deployment-smoke slices with explicit dependency visibility, policy/admission negative matrix and implementation task coverage for the full acceptance set.

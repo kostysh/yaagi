@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "stage": "plan-slice",
+  "feature_id": "F-0029",
+  "feature_cycle_id": "fc-F-0029-mok6q1ug",
+  "cycle_id": "plan-slice-a2293759",
+  "log_path": ".dossier/logs/plan-slice/F-0029--fc-F-0029-mok6q1ug--plan-slice-a2293759.md",
+  "backlog_item_key": "CF-029",
+  "primary_feature_id": "F-0029",
+  "primary_backlog_item_key": "CF-029",
+  "phase_scope": "plan-slice",
+  "closure_bundle_id": null,
+  "closure_bundle_round": null,
+  "closure_bundle_rounds_by_audit_class": {},
+  "selected_review_artifacts": [],
+  "selected_verification_artifact": null,
+  "selected_step_artifact": null,
+  "selected_closure_ts": null,
+  "rpa_source_identity": null,
+  "rpa_source_quality": null,
+  "non_pass_review_events": [],
+  "policy_admission_risk_profile": "applicable",
+  "policy_admission_risk_rationale": "F-0029 contains operator-only admission, fail-closed egress enablement, refusal-before-send, idempotency/replay and evidence requirements that must be represented in the plan-slice negative matrix.",
+  "policy_admission_risk_families": [
+    "admission",
+    "replay",
+    "evidence",
+    "runtime-gating"
+  ],
+  "policy_admission_negative_matrix": [
+    {
+      "ac": "AC-F0029-26",
+      "risk": "runtime-gating",
+      "negative_test": "disabled egress action attempt",
+      "production_path": "telegram.sendMessage gateway admission",
+      "evidence": "Gateway tests prove pre-transport refusal"
+    },
+    {
+      "ac": "AC-F0029-03",
+      "risk": "runtime-gating",
+      "negative_test": "YAAGI_TELEGRAM_EGRESS_ENABLED true without operator chat id",
+      "production_path": "loadCoreRuntimeConfig",
+      "evidence": "Config tests prove fail-closed startup config behavior"
+    },
+    {
+      "ac": "AC-F0029-04",
+      "risk": "admission",
+      "negative_test": "operator chat id not in allowlist",
+      "production_path": "config validation",
+      "evidence": "Config tests prove fail-closed startup config behavior"
+    },
+    {
+      "ac": "AC-F0029-07",
+      "risk": "admission",
+      "negative_test": "action correlated to non-operator Telegram stimulus",
+      "production_path": "stimulus lookup plus tool gateway recipient guard",
+      "evidence": "Tests prove pre-transport refusal with durable refusal evidence"
+    },
+    {
+      "ac": "AC-F0029-08",
+      "risk": "admission",
+      "negative_test": "Telegram group supergroup channel context reaches action execution",
+      "production_path": "stimulus payload chatType plus tool gateway context guard",
+      "evidence": "Tests prove refusal before Bot API side effect"
+    },
+    {
+      "ac": "AC-F0029-05",
+      "risk": "admission",
+      "negative_test": "caller supplies recipient chat id",
+      "production_path": "action schema plus tool gateway payload validation",
+      "evidence": "Contract tests prove arbitrary-recipient messages are impossible"
+    },
+    {
+      "ac": "AC-F0029-27",
+      "risk": "admission",
+      "negative_test": "caller supplies over-bound text",
+      "production_path": "action schema plus tool gateway payload validation",
+      "evidence": "Contract tests prove bounded text before transport"
+    },
+    {
+      "ac": "AC-F0029-13",
+      "risk": "replay",
+      "negative_test": "restart replays a sent action",
+      "production_path": "telegram_egress_messages unique action_id plus outbox retry selection",
+      "evidence": "Store integration tests prove no visible duplicate"
+    },
+    {
+      "ac": "AC-F0029-18",
+      "risk": "evidence",
+      "negative_test": "egress decision lacks durable evidence",
+      "production_path": "action log plus egress outbox",
+      "evidence": "Evidence tests prove complete decision records"
+    },
+    {
+      "ac": "AC-F0029-20",
+      "risk": "evidence",
+      "negative_test": "bot token appears in persisted logged evidence",
+      "production_path": "outbox evidence plus logging snapshots",
+      "evidence": "Evidence tests prove token-free rows log snapshots"
+    },
+    {
+      "ac": "AC-F0029-09",
+      "risk": "runtime-gating",
+      "negative_test": "perception adapter sends a Telegram reply directly",
+      "production_path": "import static boundary tests",
+      "evidence": "Boundary tests prove executive gateway ownership"
+    },
+    {
+      "ac": "AC-F0029-25",
+      "risk": "runtime-gating",
+      "negative_test": "Telegram smoke starts a second model runtime stack",
+      "production_path": "infra docker deployment-cell smoke plus compose overlay",
+      "evidence": "Smoke asserts shared model container identity plus one operator-only egress attempt"
+    }
+  ],
+  "policy_admission_matrix_status": "complete",
+  "policy_admission_matrix_blockers": [],
+  "backlog_lifecycle_target": "planned",
+  "backlog_lifecycle_current": "planned",
+  "backlog_lifecycle_reconciled": true,
+  "backlog_actualization_artifacts": [],
+  "backlog_actualization_verdict": "current_state_satisfies_target",
+  "post_close_backlog_hygiene_required": false,
+  "post_close_backlog_hygiene_status": "not_required",
+  "post_close_backlog_hygiene_artifact": null,
+  "post_close_backlog_hygiene_global_refresh_artifact": null,
+  "post_close_affected_feature_ids": [],
+  "post_close_pre_status_summary": null,
+  "post_close_post_status_summary": null,
+  "post_close_hygiene_schema_version": null,
+  "post_close_backlog_hygiene_checked_at": null,
+  "post_close_backlog_hygiene_refresh_at": null,
+  "post_close_open_source_review_count": null,
+  "post_close_source_review_blocked_item_count": null,
+  "post_close_lifecycle_reconciliation_drift_count": null,
+  "post_close_unresolved_attention_present": null,
+  "post_close_backlog_hygiene_blockers": [],
+  "pre_review_risk_families": [],
+  "pre_review_checklists": [],
+  "pre_review_checklist_status": "not_required",
+  "pre_review_checklist_blockers": [],
+  "backlog_followup_required": false,
+  "backlog_followup_kind": null,
+  "backlog_followup_resolved": false,
+  "stage_state": "ready_for_close",
+  "start_ts": "2026-04-29T17:15:23.610Z",
+  "entered_ts": "2026-04-29T17:15:23.610Z",
+  "ready_for_close_ts": "2026-04-29T17:24:03.936Z",
+  "transition_events": [
+    {
+      "kind": "entered",
+      "at": "2026-04-29T17:15:23.610Z"
+    },
+    {
+      "kind": "resumed",
+      "at": "2026-04-29T17:19:10.698Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-29T17:19:37.290Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-29T17:24:03.936Z"
+    }
+  ],
+  "required_audit_classes": [
+    "spec-conformance-reviewer"
+  ],
+  "executed_audit_classes": [],
+  "required_external_review_pending": true,
+  "review_artifacts": [],
+  "verification_artifacts": [
+    ".dossier/verification/F-0029/plan-slice-de422330af09.json"
+  ],
+  "review_events": [],
+  "reviewer_skills": [],
+  "reviewer_agent_ids": [],
+  "review_trace_commits": [],
+  "degraded_review_present": false,
+  "invalidated_review_present": false,
+  "stale_review_present": false,
+  "skills_used": [
+    "unified-dossier-engineer"
+  ],
+  "skill_issues": [],
+  "skill_followups": [],
+  "process_misses": [],
+  "session_id": "99a34b4b-962c-4511-b255-83a5915b567d",
+  "trace_runtime": "codex",
+  "trace_locator_kind": "session_id",
+  "stage_entry_commit": null,
+  "final_delivery_commit": "de422330af09dcb6e5d69c7edcc0d45444edd64c",
+  "final_closure_commit": null,
+  "implementation_review_scope": null,
+  "required_security_review": null,
+  "security_trigger_reasons": [],
+  "step_close_ts": null,
+  "step_artifact": null,
+  "process_complete_ts": null,
+  "intake_process_complete_ts": null,
+  "local_gates_green_ts": null,
+  "first_review_agent_started_ts": null,
+  "final_pass_ts": null
+}

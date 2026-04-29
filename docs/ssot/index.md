@@ -3,7 +3,7 @@
 > Single-file navigation source of truth.  
 > **Do not duplicate requirements here.** Link to Feature Dossiers instead.
 
-_Last sync: 2026-04-29T16:40:42.966Z_
+_Last sync: 2026-04-29T17:20:14.514Z_
 
 ## Features
 
@@ -38,7 +38,7 @@ _Last sync: 2026-04-29T16:40:42.966Z_
 | F-0026 | Deploy/release automation и rollback orchestration | done | strict | platform | F-0002, F-0007, F-0020, F-0023, F-0016, F-0019 | platform,deployment,release,rollback,operations | `features/F-0026-deploy-release-automation-rollback-orchestration.md` |
 | F-0027 | Специализированные органы и политика вывода из эксплуатации | done | strict | models | F-0014, F-0015, F-0016, F-0020, F-0026 | models,runtime,workshop,governance,release | `features/F-0027-specialist-organs-rollout-retirement-policy.md` |
 | F-0028 | Support / operability contract и incident discipline | done | deferred | operations | F-0013, F-0023, F-0024, F-0026 | operations,support,incident-response,observability,release | `features/F-0028-support-operability-contract-incident-discipline.md` |
-| F-0029 | Operator-only Telegram conversational egress and reply loop | shaped | deferred | communication | F-0005, F-0010, F-0018, F-0023, F-0024 | communication,telegram,runtime,actions,observability,security | `features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md` |
+| F-0029 | Operator-only Telegram conversational egress and reply loop | planned | deferred | communication | F-0005, F-0010, F-0018, F-0023, F-0024 | communication,telegram,runtime,actions,observability,security | `features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md` |
 <!-- END GENERATED FEATURES -->
 
 ## Dependency graph
