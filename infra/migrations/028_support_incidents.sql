@@ -103,7 +103,17 @@ CREATE TABLE IF NOT EXISTS polyphony_runtime.support_incident_update_requests (
   support_incident_id text NOT NULL REFERENCES polyphony_runtime.support_incidents (support_incident_id)
     ON DELETE CASCADE,
   normalized_request_hash text NOT NULL,
-  created_at timestamptz NOT NULL
+  status text NOT NULL DEFAULT 'pending',
+  rejection_reason text NULL,
+  closure_reasons_json jsonb NOT NULL DEFAULT '[]'::jsonb,
+  created_at timestamptz NOT NULL,
+  completed_at timestamptz NULL,
+  CONSTRAINT support_incident_update_requests_status_check CHECK (
+    status IN ('pending', 'applied', 'rejected')
+  ),
+  CONSTRAINT support_incident_update_requests_closure_reasons_array_check CHECK (
+    jsonb_typeof(closure_reasons_json) = 'array'
+  )
 );
 
 CREATE TABLE IF NOT EXISTS polyphony_runtime.support_evidence_refs (

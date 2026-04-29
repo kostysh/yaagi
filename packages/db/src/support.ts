@@ -2,6 +2,7 @@ import type { Client, QueryResultRow } from 'pg';
 import {
   SUPPORT_OWNED_WRITE_SURFACE,
   evaluateSupportClosureReadiness,
+  isSupportTerminalClosureStatus,
   supportEvidenceBundleSchema,
   type SupportCanonicalEvidenceState,
   type SupportClosureReadiness,
@@ -105,7 +106,8 @@ export type SupportRejectionReason =
   | 'conflicting_request_id'
   | 'foreign_owner_write_rejected'
   | 'closure_blocked'
-  | 'incident_missing';
+  | 'incident_missing'
+  | 'request_in_progress';
 
 type RequestedWriteSurfaces = {
   requestedWriteSurfaces?: readonly string[];
@@ -123,7 +125,48 @@ export type UpdateSupportIncidentInput = SupportEvidenceBundle &
     requestId: string;
     normalizedRequestHash: string;
     canonicalEvidenceStates?: readonly SupportCanonicalEvidenceState[];
+    requestClaimed?: boolean;
+    scalarFieldUpdates?: {
+      closureStatus?: boolean;
+      residualRisk?: boolean;
+      nextOwnerRef?: boolean;
+    };
   };
+
+export type ClaimSupportIncidentUpdateInput = RequestedWriteSurfaces & {
+  supportIncidentId: string;
+  requestId: string;
+  normalizedRequestHash: string;
+  createdAt: string;
+};
+
+type UpdateRequestRow = {
+  supportIncidentId: string;
+  normalizedRequestHash: string;
+  status: 'pending' | 'applied' | 'rejected';
+  rejectionReason: SupportRejectionReason | null;
+  closureReasons: string[];
+};
+
+type UpdateRequestClaimResult =
+  | {
+      accepted: true;
+      inserted: true;
+      incident: SupportIncidentRow;
+    }
+  | {
+      accepted: true;
+      inserted: false;
+      replay: UpdateRequestRow | null;
+      incident: SupportIncidentRow | null;
+    }
+  | {
+      accepted: false;
+      reason: SupportRejectionReason;
+      existingIncident?: SupportIncidentRow;
+      rejectedWriteSurface?: string;
+      closureReasons?: string[];
+    };
 
 export type SupportIncidentRecordResult =
   | {
@@ -154,6 +197,7 @@ export type SupportStore = {
   upsertRunbookVersion(input: UpsertSupportRunbookVersionInput): Promise<SupportRunbookVersionRow>;
   listRunbookVersions(): Promise<SupportRunbookVersionRow[]>;
   openIncident(input: OpenSupportIncidentInput): Promise<SupportIncidentRecordResult>;
+  claimIncidentUpdate(input: ClaimSupportIncidentUpdateInput): Promise<SupportIncidentRecordResult>;
   updateIncident(input: UpdateSupportIncidentInput): Promise<SupportIncidentRecordResult>;
   getIncident(supportIncidentId: string): Promise<SupportIncidentRow | null>;
   listIncidents(input?: {
@@ -237,8 +281,20 @@ const uniqueNotes = (
 const mergeIncidentBundle = (
   current: SupportIncidentRow,
   next: SupportEvidenceBundle,
-): SupportEvidenceBundle =>
-  supportEvidenceBundleSchema.parse({
+  scalarFieldUpdates: UpdateSupportIncidentInput['scalarFieldUpdates'] = {},
+): SupportEvidenceBundle => {
+  const closureStatus = scalarFieldUpdates.closureStatus
+    ? next.closureStatus
+    : current.closureStatus;
+  const residualRisk = scalarFieldUpdates.residualRisk ? next.residualRisk : current.residualRisk;
+  const nextOwnerRef = scalarFieldUpdates.nextOwnerRef ? next.nextOwnerRef : current.nextOwnerRef;
+  const closedAt = scalarFieldUpdates.closureStatus
+    ? isSupportTerminalClosureStatus(closureStatus)
+      ? (current.closedAt ?? next.updatedAt)
+      : null
+    : current.closedAt;
+
+  return supportEvidenceBundleSchema.parse({
     ...next,
     createdAt: current.createdAt,
     sourceRefs: uniqueStrings([...current.sourceRefs, ...next.sourceRefs]),
@@ -252,7 +308,12 @@ const mergeIncidentBundle = (
     escalationRefs: uniqueStrings([...current.escalationRefs, ...next.escalationRefs]),
     closureCriteria: uniqueStrings([...current.closureCriteria, ...next.closureCriteria]),
     operatorNotes: uniqueNotes([...current.operatorNotes, ...next.operatorNotes]),
+    closureStatus,
+    residualRisk,
+    nextOwnerRef,
+    closedAt,
   });
+};
 
 export const createSupportStore = (db: SupportDbExecutor): SupportStore => {
   const getIncidentByRequestId = async (requestId: string): Promise<SupportIncidentRow | null> => {
@@ -279,6 +340,179 @@ export const createSupportStore = (db: SupportDbExecutor): SupportStore => {
     );
 
     return result.rows[0] ? normalizeSupportIncidentRow(result.rows[0]) : null;
+  };
+
+  const normalizeUpdateRequestRow = (row: QueryResultRow): UpdateRequestRow => ({
+    supportIncidentId: String(row['supportIncidentId']),
+    normalizedRequestHash: String(row['normalizedRequestHash']),
+    status: row['status'] as UpdateRequestRow['status'],
+    rejectionReason:
+      typeof row['rejectionReason'] === 'string'
+        ? (row['rejectionReason'] as SupportRejectionReason)
+        : null,
+    closureReasons: parseJson<string[]>(row['closureReasonsJson'], []),
+  });
+
+  const updateRequestColumns = `
+    support_incident_id as "supportIncidentId",
+    normalized_request_hash as "normalizedRequestHash",
+    status,
+    rejection_reason as "rejectionReason",
+    closure_reasons_json as "closureReasonsJson"
+  `;
+
+  const selectUpdateRequest = async (
+    requestId: string,
+    options: { forUpdate?: boolean } = {},
+  ): Promise<UpdateRequestRow | null> => {
+    const result = await db.query<QueryResultRow>(
+      `select ${updateRequestColumns}
+       from ${supportIncidentUpdateRequestsTable}
+       where request_id = $1
+       ${options.forUpdate ? 'for update' : ''}`,
+      [requestId],
+    );
+
+    return result.rows[0] ? normalizeUpdateRequestRow(result.rows[0]) : null;
+  };
+
+  const completeUpdateRequest = async (input: {
+    requestId: string;
+    status: UpdateRequestRow['status'];
+    completedAt: string;
+    rejectionReason?: SupportRejectionReason | null;
+    closureReasons?: readonly string[];
+  }): Promise<void> => {
+    await db.query(
+      `update ${supportIncidentUpdateRequestsTable}
+       set status = $2,
+           rejection_reason = $3,
+           closure_reasons_json = $4::jsonb,
+           completed_at = $5
+       where request_id = $1`,
+      [
+        input.requestId,
+        input.status,
+        input.rejectionReason ?? null,
+        JSON.stringify(input.closureReasons ?? []),
+        input.completedAt,
+      ],
+    );
+  };
+
+  const interpretUpdateRequestReplay = async (
+    replay: UpdateRequestRow | null,
+    input: ClaimSupportIncidentUpdateInput,
+  ): Promise<SupportIncidentRecordResult> => {
+    const existing = replay ? await getIncidentById(replay.supportIncidentId) : null;
+    if (
+      !replay ||
+      replay.normalizedRequestHash !== input.normalizedRequestHash ||
+      replay.supportIncidentId !== input.supportIncidentId
+    ) {
+      return {
+        accepted: false,
+        reason: 'conflicting_request_id',
+        ...(existing ? { existingIncident: existing } : {}),
+      };
+    }
+
+    if (replay.status === 'pending') {
+      return {
+        accepted: false,
+        reason: 'request_in_progress',
+        ...(existing ? { existingIncident: existing } : {}),
+      };
+    }
+
+    if (replay.status === 'rejected') {
+      return {
+        accepted: false,
+        reason: replay.rejectionReason ?? 'conflicting_request_id',
+        ...(existing ? { existingIncident: existing } : {}),
+        ...(replay.closureReasons.length > 0 ? { closureReasons: replay.closureReasons } : {}),
+      };
+    }
+
+    if (!existing) {
+      return {
+        accepted: false,
+        reason: 'incident_missing',
+      };
+    }
+
+    return {
+      accepted: true,
+      deduplicated: true,
+      incident: existing,
+      closureReadiness: {
+        status: existing.closureReadinessStatus,
+        reasons: existing.closureReadinessReasons,
+      },
+    };
+  };
+
+  const claimUpdateRequest = async (
+    input: ClaimSupportIncidentUpdateInput,
+  ): Promise<UpdateRequestClaimResult> => {
+    const surfaces = ensureWriteSurfaces(input.requestedWriteSurfaces);
+    if (!surfaces.accepted) {
+      return {
+        accepted: false,
+        reason: 'foreign_owner_write_rejected',
+        rejectedWriteSurface: surfaces.rejectedWriteSurface,
+      };
+    }
+
+    await db.query('begin');
+    try {
+      const existing = await getIncidentById(input.supportIncidentId, { forUpdate: true });
+      if (!existing) {
+        await db.query('rollback');
+        return {
+          accepted: false,
+          reason: 'incident_missing',
+        };
+      }
+
+      const result = await db.query<QueryResultRow>(
+        `insert into ${supportIncidentUpdateRequestsTable} (
+           request_id,
+           support_incident_id,
+           normalized_request_hash,
+           status,
+           rejection_reason,
+           closure_reasons_json,
+           created_at,
+           completed_at
+         )
+         values ($1, $2, $3, 'pending', null, '[]'::jsonb, $4, null)
+         on conflict (request_id) do nothing
+         returning request_id`,
+        [input.requestId, input.supportIncidentId, input.normalizedRequestHash, input.createdAt],
+      );
+
+      if (result.rows[0]) {
+        await db.query('commit');
+        return {
+          accepted: true,
+          inserted: true,
+          incident: existing,
+        };
+      }
+
+      const replay = await selectUpdateRequest(input.requestId, { forUpdate: true });
+      await db.query('commit');
+      return {
+        accepted: true,
+        inserted: false,
+        replay: replay as UpdateRequestRow,
+        incident: replay ? await getIncidentById(replay.supportIncidentId) : null,
+      };
+    } catch (error) {
+      await db.query('rollback');
+      throw error;
+    }
   };
 
   return {
@@ -466,6 +700,27 @@ export const createSupportStore = (db: SupportDbExecutor): SupportStore => {
       };
     },
 
+    async claimIncidentUpdate(input) {
+      const claim = await claimUpdateRequest(input);
+      if (!claim.accepted) {
+        return claim;
+      }
+
+      if (!claim.inserted) {
+        return interpretUpdateRequestReplay(claim.replay, input);
+      }
+
+      return {
+        accepted: true,
+        deduplicated: false,
+        incident: claim.incident,
+        closureReadiness: {
+          status: claim.incident.closureReadinessStatus,
+          reasons: claim.incident.closureReadinessReasons,
+        },
+      };
+    },
+
     async updateIncident(input) {
       const surfaces = ensureWriteSurfaces(input.requestedWriteSurfaces);
       if (!surfaces.accepted) {
@@ -481,6 +736,8 @@ export const createSupportStore = (db: SupportDbExecutor): SupportStore => {
         requestId,
         normalizedRequestHash,
         requestedWriteSurfaces,
+        requestClaimed,
+        scalarFieldUpdates,
         ...bundleInput
       } = input;
       void requestedWriteSurfaces;
@@ -488,34 +745,15 @@ export const createSupportStore = (db: SupportDbExecutor): SupportStore => {
 
       await db.query('begin');
       try {
-        const updateRequest = await db.query<QueryResultRow>(
-          `insert into ${supportIncidentUpdateRequestsTable} (
-	             request_id,
-	             support_incident_id,
-	             normalized_request_hash,
-	             created_at
-	           )
-	           values ($1, $2, $3, $4)
-	           on conflict (request_id) do nothing
-	           returning request_id`,
-          [requestId, bundle.supportIncidentId, normalizedRequestHash, bundle.updatedAt],
-        );
-
-        if (!updateRequest.rows[0]) {
-          const replay = await db.query<QueryResultRow>(
-            `select support_incident_id as "supportIncidentId",
-	                    normalized_request_hash as "normalizedRequestHash"
-	             from ${supportIncidentUpdateRequestsTable}
-	             where request_id = $1`,
-            [requestId],
-          );
-          const replayRow = replay.rows[0];
-          const existing = await getIncidentById(
-            replayRow ? String(replayRow['supportIncidentId']) : bundle.supportIncidentId,
-          );
-          await db.query('commit');
-
-          if (!replayRow || replayRow['normalizedRequestHash'] !== normalizedRequestHash) {
+        if (requestClaimed) {
+          const claimed = await selectUpdateRequest(requestId, { forUpdate: true });
+          if (
+            !claimed ||
+            claimed.normalizedRequestHash !== normalizedRequestHash ||
+            claimed.supportIncidentId !== bundle.supportIncidentId
+          ) {
+            const existing = claimed ? await getIncidentById(claimed.supportIncidentId) : null;
+            await db.query('commit');
             return {
               accepted: false,
               reason: 'conflicting_request_id',
@@ -523,40 +761,75 @@ export const createSupportStore = (db: SupportDbExecutor): SupportStore => {
             };
           }
 
-          if (!existing) {
-            return {
-              accepted: false,
-              reason: 'incident_missing',
-            };
+          if (claimed.status !== 'pending') {
+            await db.query('commit');
+            return interpretUpdateRequestReplay(claimed, {
+              supportIncidentId: bundle.supportIncidentId,
+              requestId,
+              normalizedRequestHash,
+              createdAt: bundle.updatedAt,
+            });
           }
+        } else {
+          const updateRequest = await db.query<QueryResultRow>(
+            `insert into ${supportIncidentUpdateRequestsTable} (
+               request_id,
+               support_incident_id,
+               normalized_request_hash,
+               status,
+               rejection_reason,
+               closure_reasons_json,
+               created_at,
+               completed_at
+             )
+             values ($1, $2, $3, 'pending', null, '[]'::jsonb, $4, null)
+             on conflict (request_id) do nothing
+             returning request_id`,
+            [requestId, bundle.supportIncidentId, normalizedRequestHash, bundle.updatedAt],
+          );
 
-          return {
-            accepted: true,
-            deduplicated: true,
-            incident: existing,
-            closureReadiness: {
-              status: existing.closureReadinessStatus,
-              reasons: existing.closureReadinessReasons,
-            },
-          };
+          if (!updateRequest.rows[0]) {
+            const replay = await selectUpdateRequest(requestId);
+            const replayResult = await interpretUpdateRequestReplay(replay, {
+              supportIncidentId: bundle.supportIncidentId,
+              requestId,
+              normalizedRequestHash,
+              createdAt: bundle.updatedAt,
+            });
+            await db.query('commit');
+            return replayResult;
+          }
         }
 
         const existing = await getIncidentById(bundle.supportIncidentId, { forUpdate: true });
         if (!existing) {
-          await db.query('rollback');
+          await completeUpdateRequest({
+            requestId,
+            status: 'rejected',
+            rejectionReason: 'incident_missing',
+            completedAt: bundle.updatedAt,
+          });
+          await db.query('commit');
           return {
             accepted: false,
             reason: 'incident_missing',
           };
         }
 
-        const mergedBundle = mergeIncidentBundle(existing, bundle);
+        const mergedBundle = mergeIncidentBundle(existing, bundle, scalarFieldUpdates);
         const readiness = evaluateSupportClosureReadiness({
           bundle: mergedBundle,
           ...(canonicalEvidenceStates ? { canonicalEvidenceStates } : {}),
         });
         if (readiness.status === 'blocked') {
-          await db.query('rollback');
+          await completeUpdateRequest({
+            requestId,
+            status: 'rejected',
+            rejectionReason: 'closure_blocked',
+            closureReasons: readiness.reasons,
+            completedAt: bundle.updatedAt,
+          });
+          await db.query('commit');
           return {
             accepted: false,
             reason: 'closure_blocked',
@@ -603,6 +876,11 @@ export const createSupportStore = (db: SupportDbExecutor): SupportStore => {
             mergedBundle.closedAt,
           ],
         );
+        await completeUpdateRequest({
+          requestId,
+          status: 'applied',
+          completedAt: bundle.updatedAt,
+        });
         await db.query('commit');
         const incident = normalizeSupportIncidentRow(result.rows[0] as QueryResultRow);
 

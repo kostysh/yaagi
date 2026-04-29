@@ -18,6 +18,10 @@ const createMemoryStore = (): {
   incidents: Record<string, SupportIncidentRow>;
 } => {
   const incidents: Record<string, SupportIncidentRow> = {};
+  const updateRequests: Record<
+    string,
+    { supportIncidentId: string; normalizedRequestHash: string }
+  > = {};
 
   const store: SupportStore = {
     assertOwnedWriteSurface: () => undefined,
@@ -58,15 +62,69 @@ const createMemoryStore = (): {
         closureReadiness: { status: 'ready', reasons: [] },
       });
     },
+    claimIncidentUpdate: (input): Promise<SupportIncidentRecordResult> => {
+      const existingRequest = updateRequests[input.requestId];
+      if (existingRequest) {
+        const incident = incidents[existingRequest.supportIncidentId];
+        if (
+          existingRequest.supportIncidentId !== input.supportIncidentId ||
+          existingRequest.normalizedRequestHash !== input.normalizedRequestHash
+        ) {
+          return Promise.resolve({
+            accepted: false,
+            reason: 'conflicting_request_id',
+            ...(incident ? { existingIncident: incident } : {}),
+          });
+        }
+
+        if (!incident) {
+          return Promise.resolve({ accepted: false, reason: 'incident_missing' });
+        }
+
+        return Promise.resolve({
+          accepted: true,
+          deduplicated: true,
+          incident,
+          closureReadiness: {
+            status: incident.closureReadinessStatus,
+            reasons: incident.closureReadinessReasons,
+          },
+        });
+      }
+
+      const incident = incidents[input.supportIncidentId];
+      if (!incident) {
+        return Promise.resolve({ accepted: false, reason: 'incident_missing' });
+      }
+
+      updateRequests[input.requestId] = {
+        supportIncidentId: input.supportIncidentId,
+        normalizedRequestHash: input.normalizedRequestHash,
+      };
+
+      return Promise.resolve({
+        accepted: true,
+        deduplicated: false,
+        incident,
+        closureReadiness: {
+          status: incident.closureReadinessStatus,
+          reasons: incident.closureReadinessReasons,
+        },
+      });
+    },
     updateIncident: (input): Promise<SupportIncidentRecordResult> => {
       const {
         requestId,
         normalizedRequestHash,
         canonicalEvidenceStates,
         requestedWriteSurfaces,
+        requestClaimed,
+        scalarFieldUpdates,
         ...bundle
       } = input;
       void requestedWriteSurfaces;
+      void requestClaimed;
+      void scalarFieldUpdates;
       const readiness = evaluateSupportClosureReadiness({
         bundle,
         ...(canonicalEvidenceStates ? { canonicalEvidenceStates } : {}),
@@ -88,6 +146,10 @@ const createMemoryStore = (): {
         closureReadinessReasons: readiness.reasons,
       };
       incidents[row.supportIncidentId] = row;
+      updateRequests[input.requestId] = {
+        supportIncidentId: row.supportIncidentId,
+        normalizedRequestHash,
+      };
       return Promise.resolve({
         accepted: true,
         deduplicated: false,
@@ -127,6 +189,15 @@ void test('AC-F0028-08 AC-F0028-09 opens support evidence with operator provenan
     incidentClass: SUPPORT_INCIDENT_CLASS.OPERATOR_ACCESS,
     severity: SUPPORT_SEVERITY.WARNING,
     sourceRefs: ['operator-route:/state'],
+    closureCriteria: ['operator password: swordfish removed'],
+    actionRefs: [
+      {
+        mode: SUPPORT_ACTION_MODE.HUMAN_ONLY,
+        owner: 'human',
+        ref: 'support-action:redact',
+        requestedAction: 'rotate api_key: key-1',
+      },
+    ],
     note: 'observed Bearer abc.def PASSWORD=hunter2',
     operatorPrincipalRef: 'operator:test-support',
     operatorSessionRef: 'operator-session:1',
@@ -140,6 +211,52 @@ void test('AC-F0028-08 AC-F0028-09 opens support evidence with operator provenan
   assert.equal(result.incident.operatorNotes[0]?.operatorPrincipalRef, 'operator:test-support');
   assert.equal(result.incident.operatorNotes[0]?.body.includes('hunter2'), false);
   assert.equal(result.incident.operatorNotes[0]?.redacted, true);
+  assert.equal(result.incident.closureCriteria[0]?.includes('swordfish'), false);
+  assert.equal(result.incident.actionRefs[0]?.requestedAction.includes('key-1'), false);
+});
+
+void test('AC-F0028-02 AC-F0028-10 does not reroute owner actions on update replay', async () => {
+  const { store } = createMemoryStore();
+  let ownerSeamCalls = 0;
+  const service = createSupportEvidenceService({
+    store,
+    now: () => now,
+    ownerSeams: {
+      'F-0023': () => {
+        ownerSeamCalls += 1;
+        return Promise.resolve({ accepted: true, evidenceRef: 'report-run:owner-evidence' });
+      },
+    },
+  });
+
+  const opened = await service.openIncident({
+    requestId: 'support-request-action-replay-open',
+    incidentClass: SUPPORT_INCIDENT_CLASS.REPORTING_FRESHNESS,
+    severity: SUPPORT_SEVERITY.WARNING,
+    sourceRefs: ['report-run:source'],
+  });
+  assert.equal(opened.accepted, true);
+  if (!opened.accepted) return;
+
+  const update = {
+    supportIncidentId: opened.incident.supportIncidentId,
+    requestId: 'support-request-action-replay-update',
+    addActionRefs: [
+      {
+        mode: SUPPORT_ACTION_MODE.OWNER_ROUTED,
+        owner: 'F-0023',
+        ref: 'support-action:report-owner',
+        requestedAction: 'inspect reporting owner evidence',
+      },
+    ],
+  };
+
+  const first = await service.updateIncident(update);
+  const replay = await service.updateIncident(update);
+
+  assert.equal(first.accepted, true);
+  assert.equal(replay.accepted, true);
+  assert.equal(ownerSeamCalls, 1);
 });
 
 void test('AC-F0028-11 blocks critical terminal closure until owner evidence or human disposition exists', async () => {

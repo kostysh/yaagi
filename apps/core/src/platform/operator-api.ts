@@ -428,6 +428,7 @@ const supportFailureStatus = (
   switch (result.reason) {
     case 'conflicting_request_id':
     case 'closure_blocked':
+    case 'request_in_progress':
       return 409;
     case 'foreign_owner_write_rejected':
       return 403;

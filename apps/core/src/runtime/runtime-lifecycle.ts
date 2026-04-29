@@ -1894,6 +1894,19 @@ export function createPhase0RuntimeLifecycle(
   const supportEvidence = createDbBackedSupportEvidenceService(config, {
     getReportingBundle: () => reportingService.getReportingBundle(),
     inspectRelease: (requestId) => releaseAutomation.inspectRelease(requestId),
+    validateOperatorAuthEvidence: (evidenceRef) =>
+      withRuntimeClient(config.postgresUrl, async (client) => {
+        const result = await client.query(
+          `select 1
+           from polyphony_runtime.operator_auth_audit_events
+           where evidence_ref = $1
+             and decision = 'allow'
+           limit 1`,
+          [evidenceRef],
+        );
+
+        return result.rows.length > 0;
+      }),
   });
   const policyGovernance = createDbBackedPolicyGovernanceService(config);
   const homeostatService: HomeostatService = createDbBackedHomeostatService(config, {

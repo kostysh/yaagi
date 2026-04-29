@@ -8,6 +8,7 @@ import {
   SUPPORT_OWNER_REF,
   createSupportOperatorNote,
   isSupportTerminalClosureStatus,
+  redactSupportText,
   supportEvidenceBundleSchema,
   supportOpenIncidentRequestSchema,
   supportRunbookContractSchema,
@@ -177,6 +178,96 @@ const uniqueNotes = (
     left.noteId.localeCompare(right.noteId),
   );
 
+const redactSupportRefs = (values: readonly string[]): string[] =>
+  uniqueSorted(values.map((value) => redactSupportText(value)));
+
+const redactActionRequest = (action: SupportActionRequest): SupportActionRequest => ({
+  ...action,
+  owner: redactSupportText(action.owner),
+  ref: redactSupportText(action.ref),
+  requestedAction: redactSupportText(action.requestedAction),
+});
+
+const redactActionRecord = (action: SupportActionRecord): SupportActionRecord => ({
+  ...action,
+  owner: redactSupportText(action.owner),
+  ref: redactSupportText(action.ref),
+  requestedAction: redactSupportText(action.requestedAction),
+  evidenceRef: action.evidenceRef ? redactSupportText(action.evidenceRef) : null,
+});
+
+const redactOpenRequest = (
+  parsed: z.infer<typeof supportOpenIncidentRequestSchema>,
+): z.infer<typeof supportOpenIncidentRequestSchema> => ({
+  ...parsed,
+  sourceRefs: redactSupportRefs(parsed.sourceRefs),
+  reportRunRefs: redactSupportRefs(parsed.reportRunRefs),
+  releaseRefs: redactSupportRefs(parsed.releaseRefs),
+  operatorEvidenceRefs: redactSupportRefs(parsed.operatorEvidenceRefs),
+  actionRefs: parsed.actionRefs.map(redactActionRequest),
+  escalationRefs: redactSupportRefs(parsed.escalationRefs),
+  closureCriteria: redactSupportRefs(parsed.closureCriteria),
+  ...(parsed.note ? { note: redactSupportText(parsed.note) } : {}),
+});
+
+const redactUpdateRequest = (
+  parsed: z.infer<typeof supportUpdateIncidentRequestSchema>,
+): z.infer<typeof supportUpdateIncidentRequestSchema> => ({
+  ...parsed,
+  addSourceRefs: redactSupportRefs(parsed.addSourceRefs),
+  addReportRunRefs: redactSupportRefs(parsed.addReportRunRefs),
+  addReleaseRefs: redactSupportRefs(parsed.addReleaseRefs),
+  addOperatorEvidenceRefs: redactSupportRefs(parsed.addOperatorEvidenceRefs),
+  addActionRefs: parsed.addActionRefs.map(redactActionRequest),
+  addEscalationRefs: redactSupportRefs(parsed.addEscalationRefs),
+  addClosureCriteria: redactSupportRefs(parsed.addClosureCriteria),
+  ...(parsed.residualRisk !== undefined && parsed.residualRisk !== null
+    ? { residualRisk: redactSupportText(parsed.residualRisk) }
+    : {}),
+  ...(parsed.nextOwnerRef !== undefined && parsed.nextOwnerRef !== null
+    ? { nextOwnerRef: redactSupportText(parsed.nextOwnerRef) }
+    : {}),
+  ...(parsed.note ? { note: redactSupportText(parsed.note) } : {}),
+});
+
+const requestedActionRecords = (
+  actionRequests: readonly SupportActionRequest[],
+  observedAt: string,
+): SupportActionRecord[] =>
+  actionRequests.map((actionRequest) =>
+    redactActionRecord({
+      ...actionRequest,
+      status: SUPPORT_ACTION_STATUS.REQUESTED,
+      evidenceRef: null,
+      recordedAt: actionRequest.recordedAt ?? observedAt,
+    }),
+  );
+
+const stripIncidentRowMetadata = (
+  incident: SupportIncidentRow,
+): {
+  bundle: SupportEvidenceBundle;
+  closureReadiness: Pick<SupportIncidentRow, 'closureReadinessStatus' | 'closureReadinessReasons'>;
+} => {
+  const {
+    requestId,
+    normalizedRequestHash,
+    closureReadinessStatus,
+    closureReadinessReasons,
+    ...bundle
+  } = incident;
+  void requestId;
+  void normalizedRequestHash;
+
+  return {
+    bundle,
+    closureReadiness: {
+      closureReadinessStatus,
+      closureReadinessReasons,
+    },
+  };
+};
+
 const stableNormalize = (value: unknown): unknown => {
   if (Array.isArray(value)) {
     return value.map(stableNormalize);
@@ -228,24 +319,18 @@ export const createSupportEvidenceService = (input: {
   const runbooks = [...(input.runbooks ?? DEFAULT_SUPPORT_RUNBOOKS)];
 
   const routeActionRequests = async (
-    actionRequests: readonly SupportActionRequest[],
-    observedAt: string,
+    actionRecords: readonly SupportActionRecord[],
   ): Promise<SupportActionRecord[]> => {
     const routed = await Promise.all(
-      actionRequests.map((actionRequest) =>
+      actionRecords.map((actionRecord) =>
         routeSupportAction({
-          action: {
-            ...actionRequest,
-            status: SUPPORT_ACTION_STATUS.REQUESTED,
-            evidenceRef: null,
-            recordedAt: actionRequest.recordedAt ?? observedAt,
-          },
+          action: actionRecord,
           ...(input.ownerSeams ? { ownerSeams: input.ownerSeams } : {}),
         }),
       ),
     );
 
-    return routed.map((result) => result.action);
+    return routed.map((result) => redactActionRecord(result.action));
   };
 
   return {
@@ -260,7 +345,7 @@ export const createSupportEvidenceService = (input: {
     async openIncident(rawInput) {
       const { operatorPrincipalRef, operatorSessionRef, operatorEvidenceRef, ...requestInput } =
         rawInput;
-      const parsed = supportOpenIncidentRequestSchema.parse(requestInput);
+      const parsed = redactOpenRequest(supportOpenIncidentRequestSchema.parse(requestInput));
       const observedAt = now();
       const supportIncidentId =
         parsed.supportIncidentId ?? supportIncidentIdForRequest(parsed.requestId);
@@ -275,9 +360,9 @@ export const createSupportEvidenceService = (input: {
         : null;
       const operatorEvidenceRefs = uniqueSorted([
         ...parsed.operatorEvidenceRefs,
-        ...(operatorEvidenceRef ? [operatorEvidenceRef] : []),
+        ...(operatorEvidenceRef ? [redactSupportText(operatorEvidenceRef)] : []),
       ]);
-      const actionRefs = await routeActionRequests(parsed.actionRefs, observedAt);
+      const actionRefs = requestedActionRecords(parsed.actionRefs, observedAt);
       const bundle = supportEvidenceBundleSchema.parse({
         supportIncidentId,
         incidentClass: parsed.incidentClass,
@@ -303,15 +388,53 @@ export const createSupportEvidenceService = (input: {
         ...(input.readers ? { readers: input.readers } : {}),
       });
 
-      return input.store.openIncident({
+      const opened = await input.store.openIncident({
         ...bundle,
         requestId: parsed.requestId,
-        normalizedRequestHash: stableHash({
-          ...parsed,
-          supportIncidentId,
-          operatorEvidenceRefs: parsed.operatorEvidenceRefs,
-        }),
+        normalizedRequestHash: stableHash({ ...parsed, supportIncidentId }),
         canonicalEvidenceStates,
+      });
+
+      if (!opened.accepted || opened.deduplicated || actionRefs.length === 0) {
+        return opened;
+      }
+
+      const actionRequestId = `${parsed.requestId}:action-routing`;
+      const normalizedActionRequestHash = stableHash({
+        supportIncidentId,
+        requestId: actionRequestId,
+        actionRefs,
+      });
+      const claim = await input.store.claimIncidentUpdate({
+        supportIncidentId,
+        requestId: actionRequestId,
+        normalizedRequestHash: normalizedActionRequestHash,
+        createdAt: observedAt,
+      });
+      if (!claim.accepted || claim.deduplicated) {
+        return opened;
+      }
+
+      const routedActionRefs = await routeActionRequests(actionRefs);
+      const { bundle: claimBundle } = stripIncidentRowMetadata(claim.incident);
+      const routedBundle = supportEvidenceBundleSchema.parse({
+        ...claimBundle,
+        actionRefs: uniqueActions([...claimBundle.actionRefs, ...routedActionRefs]),
+        updatedAt: observedAt,
+      });
+      const routedCanonicalEvidenceStates = await resolveSupportCanonicalEvidenceStates({
+        bundle: routedBundle,
+        observedAt,
+        ...(input.readers ? { readers: input.readers } : {}),
+      });
+
+      return input.store.updateIncident({
+        ...routedBundle,
+        requestId: actionRequestId,
+        normalizedRequestHash: normalizedActionRequestHash,
+        canonicalEvidenceStates: routedCanonicalEvidenceStates,
+        requestClaimed: true,
+        scalarFieldUpdates: {},
       });
     },
 
@@ -323,27 +446,22 @@ export const createSupportEvidenceService = (input: {
         operatorEvidenceRef,
         ...requestInput
       } = rawInput;
-      const parsed = supportUpdateIncidentRequestSchema.parse(requestInput);
-      const existing = await input.store.getIncident(supportIncidentId);
-      if (!existing) {
-        return {
-          accepted: false,
-          reason: 'incident_missing',
-        };
-      }
-      const {
-        requestId: existingRequestId,
-        normalizedRequestHash: existingNormalizedRequestHash,
-        closureReadinessStatus: existingClosureReadinessStatus,
-        closureReadinessReasons: existingClosureReadinessReasons,
-        ...existingBundle
-      } = existing;
-      void existingRequestId;
-      void existingNormalizedRequestHash;
-      void existingClosureReadinessStatus;
-      void existingClosureReadinessReasons;
-
+      const parsed = redactUpdateRequest(supportUpdateIncidentRequestSchema.parse(requestInput));
       const observedAt = now();
+      const normalizedRequestHash = stableHash({ supportIncidentId, request: parsed });
+      const claim = await input.store.claimIncidentUpdate({
+        supportIncidentId,
+        requestId: parsed.requestId,
+        normalizedRequestHash,
+        createdAt: observedAt,
+      });
+      if (!claim.accepted || claim.deduplicated) {
+        return claim;
+      }
+
+      const existing = claim.incident;
+      const { bundle: existingBundle } = stripIncidentRowMetadata(existing);
+
       const note = parsed.note
         ? createSupportOperatorNote({
             noteId: noteIdForRequest(parsed.requestId),
@@ -354,7 +472,9 @@ export const createSupportEvidenceService = (input: {
           })
         : null;
       const closureStatus = parsed.closureStatus ?? existing.closureStatus;
-      const routedActionRefs = await routeActionRequests(parsed.addActionRefs, observedAt);
+      const routedActionRefs = await routeActionRequests(
+        requestedActionRecords(parsed.addActionRefs, observedAt),
+      );
       const bundle = supportEvidenceBundleSchema.parse({
         ...existingBundle,
         sourceRefs: uniqueSorted([...existing.sourceRefs, ...parsed.addSourceRefs]),
@@ -363,7 +483,7 @@ export const createSupportEvidenceService = (input: {
         operatorEvidenceRefs: uniqueSorted([
           ...existing.operatorEvidenceRefs,
           ...parsed.addOperatorEvidenceRefs,
-          ...(operatorEvidenceRef ? [operatorEvidenceRef] : []),
+          ...(operatorEvidenceRef ? [redactSupportText(operatorEvidenceRef)] : []),
         ]),
         actionRefs: uniqueActions([...existing.actionRefs, ...routedActionRefs]),
         escalationRefs: uniqueSorted([...existing.escalationRefs, ...parsed.addEscalationRefs]),
@@ -388,8 +508,14 @@ export const createSupportEvidenceService = (input: {
       return input.store.updateIncident({
         ...bundle,
         requestId: parsed.requestId,
-        normalizedRequestHash: stableHash(parsed),
+        normalizedRequestHash,
         canonicalEvidenceStates,
+        requestClaimed: true,
+        scalarFieldUpdates: {
+          closureStatus: parsed.closureStatus !== undefined,
+          residualRisk: parsed.residualRisk !== undefined,
+          nextOwnerRef: parsed.nextOwnerRef !== undefined,
+        },
       });
     },
   };
@@ -418,6 +544,11 @@ export const createDbBackedSupportEvidenceService = (
     openIncident(input) {
       return withSupportStore(config.postgresUrl, (supportStore) =>
         supportStore.openIncident(input),
+      );
+    },
+    claimIncidentUpdate(input) {
+      return withSupportStore(config.postgresUrl, (supportStore) =>
+        supportStore.claimIncidentUpdate(input),
       );
     },
     updateIncident(input) {

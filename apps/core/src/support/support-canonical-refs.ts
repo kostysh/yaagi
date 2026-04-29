@@ -1,5 +1,11 @@
 import { REPORT_AVAILABILITY } from '@yaagi/contracts/reporting';
 import {
+  DEPLOY_ATTEMPT_STATUS,
+  RELEASE_SMOKE_STATUS,
+  ROLLBACK_EXECUTION_STATUS,
+  ROLLBACK_PLAN_PREFLIGHT_STATUS,
+} from '@yaagi/contracts/release-automation';
+import {
   SUPPORT_CANONICAL_EVIDENCE_FRESHNESS,
   SUPPORT_OWNER_REF,
   type SupportCanonicalEvidenceState,
@@ -11,6 +17,7 @@ import type { ReportingBundle } from '../runtime/reporting.ts';
 export type SupportCanonicalEvidenceReaders = {
   getReportingBundle?: () => Promise<ReportingBundle>;
   inspectRelease?: (requestId: string) => Promise<ReleaseInspection | null>;
+  validateOperatorAuthEvidence?: (evidenceRef: string) => Promise<boolean>;
 };
 
 export type SupportCanonicalSurfaceAuditRow = {
@@ -83,12 +90,104 @@ const flattenReportRuns = (
       row !== null,
   );
 
-const hasReleaseRef = (inspection: ReleaseInspection, ref: string): boolean =>
-  inspection.request.requestId === ref ||
-  inspection.rollbackPlan?.rollbackPlanId === ref ||
-  inspection.deployAttempts.some((attempt) => attempt.deployAttemptId === ref) ||
-  inspection.evidenceBundles.some((bundle) => bundle.evidenceBundleId === ref) ||
-  inspection.rollbackExecutions.some((execution) => execution.rollbackExecutionId === ref);
+const mostSevereFreshness = (
+  values: readonly SupportCanonicalEvidenceState['freshness'][],
+): SupportCanonicalEvidenceState['freshness'] => {
+  if (values.includes(SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.UNAVAILABLE)) {
+    return SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.UNAVAILABLE;
+  }
+  if (values.includes(SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING)) {
+    return SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING;
+  }
+  if (values.includes(SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.STALE)) {
+    return SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.STALE;
+  }
+  if (values.includes(SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.DEGRADED)) {
+    return SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.DEGRADED;
+  }
+
+  return SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH;
+};
+
+const releaseInspectionFreshness = (
+  inspection: ReleaseInspection,
+  ref: string,
+): SupportCanonicalEvidenceState['freshness'] => {
+  const matchingStates: SupportCanonicalEvidenceState['freshness'][] = [];
+
+  if (inspection.request.requestId === ref) {
+    matchingStates.push(SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH);
+  }
+
+  if (inspection.rollbackPlan?.rollbackPlanId === ref) {
+    matchingStates.push(
+      inspection.rollbackPlan.preflightStatus === ROLLBACK_PLAN_PREFLIGHT_STATUS.BLOCKED
+        ? SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.DEGRADED
+        : SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH,
+    );
+  }
+
+  for (const attempt of inspection.deployAttempts) {
+    const attemptFreshness =
+      attempt.status === DEPLOY_ATTEMPT_STATUS.FAILED ||
+      attempt.status === DEPLOY_ATTEMPT_STATUS.SMOKE_FAILED ||
+      attempt.status === DEPLOY_ATTEMPT_STATUS.ROLLED_BACK
+        ? SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.DEGRADED
+        : SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH;
+    if (attempt.deployAttemptId === ref) {
+      matchingStates.push(attemptFreshness);
+    }
+    if (inspection.request.requestId === ref) {
+      matchingStates.push(attemptFreshness);
+    }
+  }
+
+  for (const bundle of inspection.evidenceBundles) {
+    const smokeFreshness =
+      bundle.smokeOnDeployResult.status === RELEASE_SMOKE_STATUS.PASSED
+        ? SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH
+        : bundle.smokeOnDeployResult.status === RELEASE_SMOKE_STATUS.UNAVAILABLE
+          ? SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.UNAVAILABLE
+          : SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.DEGRADED;
+    if (bundle.evidenceBundleId === ref) {
+      matchingStates.push(smokeFreshness);
+    }
+    if (bundle.deployAttemptId === ref || inspection.request.requestId === ref) {
+      matchingStates.push(smokeFreshness);
+    }
+  }
+
+  for (const execution of inspection.rollbackExecutions) {
+    const executionFreshness =
+      execution.status === ROLLBACK_EXECUTION_STATUS.SUCCEEDED
+        ? SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH
+        : execution.status === ROLLBACK_EXECUTION_STATUS.RUNNING
+          ? SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.STALE
+          : SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.DEGRADED;
+    if (execution.rollbackExecutionId === ref) {
+      matchingStates.push(executionFreshness);
+    }
+    if (execution.deployAttemptId === ref || inspection.request.requestId === ref) {
+      matchingStates.push(executionFreshness);
+    }
+  }
+
+  return matchingStates.length > 0
+    ? mostSevereFreshness(matchingStates)
+    : SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING;
+};
+
+const releaseFreshnessAcrossInspections = (
+  values: readonly SupportCanonicalEvidenceState['freshness'][],
+): SupportCanonicalEvidenceState['freshness'] => {
+  const foundValues = values.filter(
+    (value) => value !== SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING,
+  );
+
+  return foundValues.length > 0
+    ? mostSevereFreshness(foundValues)
+    : SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING;
+};
 
 export const resolveSupportCanonicalEvidenceStates = async (input: {
   bundle: Pick<
@@ -145,25 +244,34 @@ export const resolveSupportCanonicalEvidenceStates = async (input: {
 
     const candidateRequestRefs = ref.startsWith('release-request:') ? [ref] : releaseRequestRefs;
     const candidateInspections = await Promise.all(candidateRequestRefs.map(inspectReleaseRef));
+    const freshness = candidateInspections
+      .filter((inspection): inspection is ReleaseInspection => inspection !== null)
+      .map((inspection) => releaseInspectionFreshness(inspection, ref));
+
     states.push({
       owner: SUPPORT_OWNER_REF.RELEASE_AUTOMATION,
       ref,
-      freshness: candidateInspections.some(
-        (inspection) => inspection && hasReleaseRef(inspection, ref),
-      )
-        ? SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH
-        : SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING,
+      freshness:
+        freshness.length > 0
+          ? releaseFreshnessAcrossInspections(freshness)
+          : SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING,
       observedAt: input.observedAt,
     });
   }
 
   for (const ref of input.bundle.operatorEvidenceRefs) {
+    const valid = readers.validateOperatorAuthEvidence
+      ? await readers.validateOperatorAuthEvidence(ref)
+      : null;
     states.push({
       owner: SUPPORT_OWNER_REF.OPERATOR_AUTH,
       ref,
-      freshness: ref.startsWith('operator-auth-evidence:')
-        ? SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH
-        : SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING,
+      freshness:
+        valid === null
+          ? SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.UNAVAILABLE
+          : valid
+            ? SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.FRESH
+            : SUPPORT_CANONICAL_EVIDENCE_FRESHNESS.MISSING,
       observedAt: input.observedAt,
     });
   }
