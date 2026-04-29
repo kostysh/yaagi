@@ -67,6 +67,10 @@
       "types": "./src/release-automation.ts",
       "default": "./src/release-automation.ts"
     },
+    "./support": {
+      "types": "./src/support.ts",
+      "default": "./src/support.ts"
+    },
     "./specialists": {
       "types": "./src/specialists.ts",
       "default": "./src/specialists.ts"

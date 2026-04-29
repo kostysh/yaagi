@@ -124,6 +124,10 @@ import {
   type ReleaseAutomationService,
 } from '../platform/release-automation.ts';
 import {
+  createDbBackedSupportEvidenceService,
+  type SupportEvidenceService,
+} from '../support/support-evidence.ts';
+import {
   createDbBackedWorkshopService,
   createWorkshopWorker,
   type WorkshopWorker,
@@ -199,6 +203,16 @@ type RuntimeLifecycle = {
   inspectRelease(
     requestId: Parameters<ReleaseAutomationService['inspectRelease']>[0],
   ): ReturnType<ReleaseAutomationService['inspectRelease']>;
+  listSupportRunbooks(): ReturnType<SupportEvidenceService['listRunbooks']>;
+  listSupportIncidents(
+    input?: Parameters<SupportEvidenceService['listIncidents']>[0],
+  ): ReturnType<SupportEvidenceService['listIncidents']>;
+  openSupportIncident(
+    input: Parameters<SupportEvidenceService['openIncident']>[0],
+  ): ReturnType<SupportEvidenceService['openIncident']>;
+  updateSupportIncident(
+    input: Parameters<SupportEvidenceService['updateIncident']>[0],
+  ): ReturnType<SupportEvidenceService['updateIncident']>;
   ingestHttpStimulus(input: HttpIngestStimulusInput): Promise<StimulusIngestResult>;
   health(): Promise<PerceptionHealthSnapshot>;
   getSubjectStateSnapshot(input?: SubjectStateSnapshotInput): Promise<SubjectStateSnapshot>;
@@ -1877,6 +1891,10 @@ export function createPhase0RuntimeLifecycle(
     createDbBackedDevelopmentGovernorService(config);
   const releaseAutomation = createDbBackedReleaseAutomationService(config);
   const reportingService = createDbBackedReportingService(config);
+  const supportEvidence = createDbBackedSupportEvidenceService(config, {
+    getReportingBundle: () => reportingService.getReportingBundle(),
+    inspectRelease: (requestId) => releaseAutomation.inspectRelease(requestId),
+  });
   const policyGovernance = createDbBackedPolicyGovernanceService(config);
   const homeostatService: HomeostatService = createDbBackedHomeostatService(config, {
     handleReactionRequest: async (request) => {
@@ -2373,6 +2391,22 @@ export function createPhase0RuntimeLifecycle(
 
     inspectRelease(requestId) {
       return releaseAutomation.inspectRelease(requestId);
+    },
+
+    listSupportRunbooks() {
+      return supportEvidence.listRunbooks();
+    },
+
+    listSupportIncidents(input) {
+      return supportEvidence.listIncidents(input);
+    },
+
+    openSupportIncident(input) {
+      return supportEvidence.openIncident(input);
+    },
+
+    updateSupportIncident(input) {
+      return supportEvidence.updateIncident(input);
     },
 
     ingestHttpStimulus(input) {

@@ -23,6 +23,7 @@ const testToken = (role: string): string =>
 export const OPERATOR_TEST_TOKENS = Object.freeze({
   observer: testToken('operator:test-observer'),
   operator: testToken('operator:test-operator'),
+  support: testToken('operator:test-support'),
   governor: testToken('operator:test-governor'),
   release: testToken('operator:test-release'),
 });
@@ -168,6 +169,16 @@ export const createPlatformTempWorkspace = async (
               {
                 credentialRef: 'credential:test-operator',
                 tokenSha256: sha256(OPERATOR_TEST_TOKENS.operator),
+              },
+            ],
+          },
+          {
+            principalRef: 'operator:test-support',
+            roles: [OPERATOR_ROLE.SUPPORT_OPERATOR],
+            credentials: [
+              {
+                credentialRef: 'credential:test-support',
+                tokenSha256: sha256(OPERATOR_TEST_TOKENS.support),
               },
             ],
           },

@@ -15,6 +15,7 @@ const jsonRecordSchema = z.record(z.string(), z.unknown());
 export const OPERATOR_ROLE = Object.freeze({
   OBSERVER: 'observer',
   OPERATOR: 'operator',
+  SUPPORT_OPERATOR: 'support_operator',
   GOVERNOR_OPERATOR: 'governor_operator',
   RELEASE_OPERATOR: 'release_operator',
   ADMIN: 'admin',
@@ -27,6 +28,7 @@ export const OPERATOR_ROUTE_CLASS = Object.freeze({
   PUBLIC_HEALTH: 'public_health',
   READ_INTROSPECTION: 'read_introspection',
   TICK_CONTROL: 'tick_control',
+  SUPPORT_OPERATION: 'support_operation',
   GOVERNOR_SUBMISSION: 'governor_submission',
   RELEASE_CONTROL: 'release_control',
   HUMAN_OVERRIDE: 'human_override',
@@ -82,6 +84,7 @@ export type OperatorAuthFailureReason = OperatorAuthDenialReason | OperatorAuthU
 export const operatorRoleSchema = z.enum([
   OPERATOR_ROLE.OBSERVER,
   OPERATOR_ROLE.OPERATOR,
+  OPERATOR_ROLE.SUPPORT_OPERATOR,
   OPERATOR_ROLE.GOVERNOR_OPERATOR,
   OPERATOR_ROLE.RELEASE_OPERATOR,
   OPERATOR_ROLE.ADMIN,
@@ -92,6 +95,7 @@ export const operatorRouteClassSchema = z.enum([
   OPERATOR_ROUTE_CLASS.PUBLIC_HEALTH,
   OPERATOR_ROUTE_CLASS.READ_INTROSPECTION,
   OPERATOR_ROUTE_CLASS.TICK_CONTROL,
+  OPERATOR_ROUTE_CLASS.SUPPORT_OPERATION,
   OPERATOR_ROUTE_CLASS.GOVERNOR_SUBMISSION,
   OPERATOR_ROUTE_CLASS.RELEASE_CONTROL,
   OPERATOR_ROUTE_CLASS.HUMAN_OVERRIDE,
@@ -136,7 +140,7 @@ export const operatorAuthFailureReasonSchema = z.union([
 
 export const operatorRouteDescriptorSchema = z
   .object({
-    method: z.enum(['GET', 'POST']),
+    method: z.enum(['GET', 'POST', 'PATCH']),
     path: z.string().min(1).max(OPERATOR_ROUTE_MAX_LENGTH),
     routeClass: operatorRouteClassSchema,
     riskClass: operatorRiskClassSchema,
@@ -181,6 +185,30 @@ export const OPERATOR_ROUTE_DESCRIPTORS = [
     path: '/reports',
     routeClass: OPERATOR_ROUTE_CLASS.READ_INTROSPECTION,
     riskClass: OPERATOR_RISK_CLASS.READ_ONLY,
+  },
+  {
+    method: 'GET',
+    path: '/support/runbooks',
+    routeClass: OPERATOR_ROUTE_CLASS.READ_INTROSPECTION,
+    riskClass: OPERATOR_RISK_CLASS.READ_ONLY,
+  },
+  {
+    method: 'GET',
+    path: '/support/incidents',
+    routeClass: OPERATOR_ROUTE_CLASS.READ_INTROSPECTION,
+    riskClass: OPERATOR_RISK_CLASS.READ_ONLY,
+  },
+  {
+    method: 'POST',
+    path: '/support/incidents',
+    routeClass: OPERATOR_ROUTE_CLASS.SUPPORT_OPERATION,
+    riskClass: OPERATOR_RISK_CLASS.CONTROL,
+  },
+  {
+    method: 'PATCH',
+    path: '/support/incidents/:id',
+    routeClass: OPERATOR_ROUTE_CLASS.SUPPORT_OPERATION,
+    riskClass: OPERATOR_RISK_CLASS.CONTROL,
   },
   {
     method: 'POST',
@@ -234,6 +262,10 @@ export const OPERATOR_ROLE_ROUTE_CLASS_PERMISSIONS: Readonly<
     OPERATOR_ROUTE_CLASS.READ_INTROSPECTION,
     OPERATOR_ROUTE_CLASS.TICK_CONTROL,
   ],
+  [OPERATOR_ROLE.SUPPORT_OPERATOR]: [
+    OPERATOR_ROUTE_CLASS.READ_INTROSPECTION,
+    OPERATOR_ROUTE_CLASS.SUPPORT_OPERATION,
+  ],
   [OPERATOR_ROLE.GOVERNOR_OPERATOR]: [OPERATOR_ROUTE_CLASS.GOVERNOR_SUBMISSION],
   [OPERATOR_ROLE.RELEASE_OPERATOR]: [OPERATOR_ROUTE_CLASS.RELEASE_CONTROL],
   [OPERATOR_ROLE.ADMIN]: [OPERATOR_ROUTE_CLASS.ADMIN_AUTH],
@@ -246,6 +278,22 @@ const normalizeRoutePath = (route: string): string => {
   return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
 };
 
+const routePathMatches = (descriptorPath: string, actualPath: string): boolean => {
+  if (descriptorPath === actualPath) {
+    return true;
+  }
+
+  const descriptorSegments = descriptorPath.split('/');
+  const actualSegments = actualPath.split('/');
+  if (descriptorSegments.length !== actualSegments.length) {
+    return false;
+  }
+
+  return descriptorSegments.every(
+    (segment, index) => segment.startsWith(':') || segment === actualSegments[index],
+  );
+};
+
 export const classifyOperatorRoute = (
   method: string,
   route: string,
@@ -255,7 +303,8 @@ export const classifyOperatorRoute = (
 
   return (
     OPERATOR_ROUTE_DESCRIPTORS.find(
-      (descriptor) => descriptor.method === normalizedMethod && descriptor.path === normalizedPath,
+      (descriptor) =>
+        descriptor.method === normalizedMethod && routePathMatches(descriptor.path, normalizedPath),
     ) ?? null
   );
 };

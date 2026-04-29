@@ -29,6 +29,18 @@ void test('AC-F0024-01 AC-F0024-05 classifies delivered operator routes without 
     routeClass: OPERATOR_ROUTE_CLASS.READ_INTROSPECTION,
     riskClass: OPERATOR_RISK_CLASS.READ_ONLY,
   });
+  assert.deepEqual(classifyOperatorRoute('GET', '/support/runbooks'), {
+    method: 'GET',
+    path: '/support/runbooks',
+    routeClass: OPERATOR_ROUTE_CLASS.READ_INTROSPECTION,
+    riskClass: OPERATOR_RISK_CLASS.READ_ONLY,
+  });
+  assert.deepEqual(classifyOperatorRoute('PATCH', '/support/incidents/support-incident:1'), {
+    method: 'PATCH',
+    path: '/support/incidents/:id',
+    routeClass: OPERATOR_ROUTE_CLASS.SUPPORT_OPERATION,
+    riskClass: OPERATOR_RISK_CLASS.CONTROL,
+  });
   assert.deepEqual(classifyOperatorRoute('POST', '/control/tick'), {
     method: 'POST',
     path: '/control/tick',
@@ -109,6 +121,20 @@ void test('AC-F0024-04 AC-F0024-06 keeps default role permissions explicit and d
   assert.equal(
     isOperatorRouteClassAllowedForRoles(
       [OPERATOR_ROLE.OPERATOR],
+      OPERATOR_ROUTE_CLASS.SUPPORT_OPERATION,
+    ),
+    false,
+  );
+  assert.equal(
+    isOperatorRouteClassAllowedForRoles(
+      [OPERATOR_ROLE.SUPPORT_OPERATOR],
+      OPERATOR_ROUTE_CLASS.SUPPORT_OPERATION,
+    ),
+    true,
+  );
+  assert.equal(
+    isOperatorRouteClassAllowedForRoles(
+      [OPERATOR_ROLE.SUPPORT_OPERATOR],
       OPERATOR_ROUTE_CLASS.RELEASE_CONTROL,
     ),
     false,

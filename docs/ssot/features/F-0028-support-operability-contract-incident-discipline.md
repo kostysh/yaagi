@@ -1,7 +1,7 @@
 ---
 id: F-0028
 title: Support / operability contract и incident discipline
-status: planned
+status: done
 coverage_gate: deferred
 backlog_item_key: CF-026
 owners: ["@codex"]
@@ -16,6 +16,14 @@ links:
   docs:
     - "README.md"
     - "docs/architecture/system.md"
+    - "docs/support/runbooks/_template.md"
+    - "docs/support/runbooks/runtime_availability.md"
+    - "docs/support/runbooks/operator_access.md"
+    - "docs/support/runbooks/reporting_freshness.md"
+    - "docs/support/runbooks/release_or_rollback.md"
+    - "docs/support/runbooks/model_readiness.md"
+    - "docs/support/runbooks/governance_or_safety_escalation.md"
+    - "docs/support/runbooks/support_process_gap.md"
     - "docs/polyphony_concept.md"
     - "docs/notes/backlog-legacy/feature-candidates.md"
     - "docs/notes/backlog-legacy/working-system-roadmap-matrix-2026-03-26.md"
@@ -383,21 +391,21 @@ Completion is recognized only when acceptance criteria are covered by tests, run
 
 | AC ID | Test reference | Status |
 |---|---|---|
-| AC-F0028-01 | `packages/contracts/test/support.contract.test.ts`; `docs/support/runbooks/**` | planned |
-| AC-F0028-02 | `apps/core/test/support/support-action-boundary.contract.test.ts` | planned |
-| AC-F0028-03 | `packages/contracts/test/support.contract.test.ts` | planned |
-| AC-F0028-04 | runbook required-section lint/contract test | planned |
-| AC-F0028-05 | `apps/core/test/platform/operator-support.integration.test.ts` | planned |
-| AC-F0028-06 | `apps/core/test/support/support-canonical-refs.integration.test.ts` | planned |
-| AC-F0028-07 | `apps/core/test/support/support-canonical-refs.integration.test.ts` | planned |
-| AC-F0028-08 | `apps/core/test/support/support-evidence.contract.test.ts`; `packages/db/test/support-store.integration.test.ts` | planned |
-| AC-F0028-09 | `apps/core/test/support/support-evidence.contract.test.ts` redaction cases | planned |
-| AC-F0028-10 | `apps/core/test/support/support-action-boundary.contract.test.ts` | planned |
-| AC-F0028-11 | `apps/core/test/support/support-evidence.contract.test.ts` critical closure negative cases | planned |
-| AC-F0028-12 | `apps/core/test/support/support-canonical-refs.integration.test.ts` stale/missing evidence cases | planned |
-| AC-F0028-13 | `apps/core/test/support/support-action-boundary.contract.test.ts`; `packages/db/test/support-store.integration.test.ts` | planned |
-| AC-F0028-14 | `apps/core/test/support/support-usage-audit.contract.test.ts` | planned |
-| AC-F0028-15 | `pnpm format`; `pnpm typecheck`; `pnpm lint`; `pnpm smoke:cell` when triggered | planned |
+| AC-F0028-01 | `packages/contracts/test/support.contract.test.ts`; `docs/support/runbooks/**` | implemented |
+| AC-F0028-02 | `packages/db/test/support-store.integration.test.ts`; `apps/core/test/support/support-usage-audit.contract.test.ts` | implemented |
+| AC-F0028-03 | `packages/contracts/test/support.contract.test.ts` | implemented |
+| AC-F0028-04 | `packages/contracts/test/support.contract.test.ts`; `docs/support/runbooks/*.md` | implemented |
+| AC-F0028-05 | `apps/core/test/platform/operator-support.integration.test.ts` | implemented |
+| AC-F0028-06 | `apps/core/test/support/support-canonical-refs.integration.test.ts` | implemented |
+| AC-F0028-07 | `apps/core/test/support/support-canonical-refs.integration.test.ts` | implemented |
+| AC-F0028-08 | `apps/core/test/support/support-evidence.contract.test.ts`; `packages/db/test/support-store.integration.test.ts` | implemented |
+| AC-F0028-09 | `apps/core/test/support/support-evidence.contract.test.ts`; `packages/contracts/test/support.contract.test.ts` | implemented |
+| AC-F0028-10 | `apps/core/test/support/support-action-boundary.contract.test.ts` | implemented |
+| AC-F0028-11 | `apps/core/test/support/support-evidence.contract.test.ts`; `packages/contracts/test/support.contract.test.ts` | implemented |
+| AC-F0028-12 | `apps/core/test/support/support-canonical-refs.integration.test.ts`; `packages/contracts/test/support.contract.test.ts` | implemented |
+| AC-F0028-13 | `apps/core/test/support/support-action-boundary.contract.test.ts`; `packages/db/test/support-store.integration.test.ts`; `apps/core/test/support/support-usage-audit.contract.test.ts` | implemented |
+| AC-F0028-14 | `apps/core/test/support/support-usage-audit.contract.test.ts` | implemented |
+| AC-F0028-15 | `pnpm format`; `pnpm typecheck`; `pnpm lint`; targeted support tests; `pnpm test`; `pnpm smoke:cell` | implemented |
 
 ## 9. Decision log (ADR blocks)
 
@@ -448,3 +456,4 @@ Completion is recognized only when acceptance criteria are covered by tests, run
 - 2026-04-29: Initial dossier created from backlog item `CF-026` at backlog delivery state `defined`.
 - 2026-04-29: [spec-compact] [scope realignment] Shaped `CF-026` into a support/operability contract with first incident taxonomy, support evidence bundle semantics, runbook boundaries, owner-routed/human-only recovery action classification and explicit read-only consumption of operator/reporting/auth/release surfaces.
 - 2026-04-29: [plan-slice] [dependency realignment] Planned implementation order, execution target, slice ownership, dependency visibility, verification map and applicable policy/admission negative matrix for `admission`, `replay`, `evidence` and `runtime-gating`.
+- 2026-04-29: [implementation] Delivered support contracts, runbooks, support-owned PostgreSQL incident storage, protected support operator routes, canonical ref evaluation, action boundary handling, usage audit coverage and negative evidence gates.

@@ -15,6 +15,12 @@ import {
   releaseTargetEnvironmentSchema,
 } from './release-automation.ts';
 import { TICK_KIND } from './runtime.ts';
+export {
+  supportOpenIncidentRequestSchema,
+  supportUpdateIncidentRequestSchema,
+  type SupportOpenIncidentRequest,
+  type SupportUpdateIncidentRequest,
+} from './support.ts';
 
 const isoTimestampSchema = z.string().datetime({ offset: true });
 const jsonRecordSchema = z.record(z.string(), z.unknown());
@@ -31,6 +37,7 @@ export const OPERATOR_TICK_PAYLOAD_MAX_BYTES = 8192;
 export const OPERATOR_TICK_BODY_MAX_BYTES = 12_000;
 export const OPERATOR_GOVERNOR_CONTROL_BODY_MAX_BYTES = 64_000;
 export const OPERATOR_RELEASE_CONTROL_BODY_MAX_BYTES = 64_000;
+export const OPERATOR_SUPPORT_BODY_MAX_BYTES = 64_000;
 
 const boundedInt = (max: number) => z.coerce.number().int().positive().max(max);
 

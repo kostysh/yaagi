@@ -4,6 +4,7 @@ import { ZodError } from 'zod';
 import {
   OPERATOR_GOVERNOR_CONTROL_BODY_MAX_BYTES,
   OPERATOR_RELEASE_CONTROL_BODY_MAX_BYTES,
+  OPERATOR_SUPPORT_BODY_MAX_BYTES,
   OPERATOR_TICK_BODY_MAX_BYTES,
   operatorDevelopmentProposalRequestSchema,
   operatorEpisodeCursorSchema,
@@ -14,6 +15,8 @@ import {
   operatorReleasePrepareRequestSchema,
   operatorReleaseRollbackRequestSchema,
   operatorStateQuerySchema,
+  supportOpenIncidentRequestSchema,
+  supportUpdateIncidentRequestSchema,
   operatorTickControlRequestSchema,
   operatorTimelineCursorSchema,
   operatorTimelineQuerySchema,
@@ -22,6 +25,8 @@ import {
   type OperatorReleaseRollbackRequest,
   type OperatorTickControlRequest,
   type OperatorTimelineCursor,
+  type SupportOpenIncidentRequest,
+  type SupportUpdateIncidentRequest,
 } from '@yaagi/contracts/operator-api';
 import type { DevelopmentFreezeResult, DevelopmentProposalResult } from '@yaagi/contracts/governor';
 import {
@@ -41,6 +46,8 @@ import type {
   RuntimeTimelineEventRow,
   RecordOperatorAuthAuditEventInput,
   RecordOperatorAuthAuditEventResult,
+  SupportIncidentRecordResult,
+  SupportIncidentRow,
   SubjectStateSnapshot,
   SubjectStateSnapshotInput,
 } from '@yaagi/db';
@@ -67,6 +74,11 @@ import type {
   RunReleaseDeployAttemptInput,
   RunReleaseDeployAttemptResult,
 } from './release-automation.ts';
+import type { SupportRunbookContract } from '@yaagi/contracts/support';
+import type {
+  OpenSupportIncidentInput,
+  UpdateSupportIncidentInput,
+} from '../support/support-evidence.ts';
 
 const PUBLIC_FAST_MODEL_ALIAS = 'model-fast';
 
@@ -123,6 +135,10 @@ export type OperatorRuntimeLifecycle = {
     input: ExecuteReleaseRollbackInput,
   ): Promise<ExecuteReleaseRollbackResult>;
   inspectRelease?: ReleaseAutomationService['inspectRelease'];
+  listSupportRunbooks?(): Promise<SupportRunbookContract[]>;
+  listSupportIncidents?(input?: { limit?: number }): Promise<SupportIncidentRow[]>;
+  openSupportIncident?(input: OpenSupportIncidentInput): Promise<SupportIncidentRecordResult>;
+  updateSupportIncident?(input: UpdateSupportIncidentInput): Promise<SupportIncidentRecordResult>;
   recordOperatorAuthAuditEvent?(
     input: RecordOperatorAuthAuditEventInput,
   ): Promise<RecordOperatorAuthAuditEventResult>;
@@ -220,6 +236,10 @@ const OPERATOR_ROUTE = Object.freeze({
   EPISODES: requireOperatorRoute('GET', '/episodes'),
   MODELS: requireOperatorRoute('GET', '/models'),
   REPORTS: requireOperatorRoute('GET', '/reports'),
+  SUPPORT_RUNBOOKS: requireOperatorRoute('GET', '/support/runbooks'),
+  SUPPORT_INCIDENTS_GET: requireOperatorRoute('GET', '/support/incidents'),
+  SUPPORT_INCIDENTS_POST: requireOperatorRoute('POST', '/support/incidents'),
+  SUPPORT_INCIDENT_PATCH: requireOperatorRoute('PATCH', '/support/incidents/:id'),
   TICK: requireOperatorRoute('POST', '/control/tick'),
   FREEZE_DEVELOPMENT: requireOperatorRoute('POST', '/control/freeze-development'),
   DEVELOPMENT_PROPOSALS: requireOperatorRoute('POST', '/control/development-proposals'),
@@ -402,6 +422,27 @@ const releaseServiceFailureResponse = (context: Context, error: unknown) =>
     503,
   );
 
+const supportFailureStatus = (
+  result: Extract<SupportIncidentRecordResult, { accepted: false }>,
+): 400 | 403 | 404 | 409 => {
+  switch (result.reason) {
+    case 'conflicting_request_id':
+    case 'closure_blocked':
+      return 409;
+    case 'foreign_owner_write_rejected':
+      return 403;
+    case 'incident_missing':
+      return 404;
+  }
+};
+
+const supportServiceUnavailableResponse = (action: 'runbooks' | 'incidents') => ({
+  available: false,
+  action,
+  owner: 'F-0028',
+  reason: OPERATOR_AUTH_UNAVAILABLE_REASON.DOWNSTREAM_OWNER_UNAVAILABLE,
+});
+
 const buildPage = <TItem extends RuntimeTimelineEventRow | RuntimeEpisodeRow>(
   rows: TItem[],
   limit: number,
@@ -446,7 +487,11 @@ export function registerOperatorApiRoutes(
     runtimeLifecycle.prepareRelease !== undefined ||
     runtimeLifecycle.runReleaseDeployAttempt !== undefined ||
     runtimeLifecycle.executeReleaseRollback !== undefined ||
-    runtimeLifecycle.inspectRelease !== undefined;
+    runtimeLifecycle.inspectRelease !== undefined ||
+    runtimeLifecycle.listSupportRunbooks !== undefined ||
+    runtimeLifecycle.listSupportIncidents !== undefined ||
+    runtimeLifecycle.openSupportIncident !== undefined ||
+    runtimeLifecycle.updateSupportIncident !== undefined;
 
   if (!operatorApiEnabled) {
     return;
@@ -625,6 +670,148 @@ export function registerOperatorApiRoutes(
       return context.json(bundle);
     } catch (error) {
       return context.json({ error: toValidationError(error) }, 500);
+    }
+  });
+
+  app.get('/support/runbooks', async (context) => {
+    const admission = await requireAdmission(
+      context,
+      operatorAuth,
+      OPERATOR_ROUTE.SUPPORT_RUNBOOKS,
+    );
+    if (!admission.accepted) {
+      return admission.response;
+    }
+
+    if (!runtimeLifecycle.listSupportRunbooks) {
+      return context.json(supportServiceUnavailableResponse('runbooks'), 503);
+    }
+
+    try {
+      return context.json({
+        items: await runtimeLifecycle.listSupportRunbooks(),
+      });
+    } catch (error) {
+      return context.json({ accepted: false, error: toValidationError(error) }, 500);
+    }
+  });
+
+  app.get('/support/incidents', async (context) => {
+    const admission = await requireAdmission(
+      context,
+      operatorAuth,
+      OPERATOR_ROUTE.SUPPORT_INCIDENTS_GET,
+    );
+    if (!admission.accepted) {
+      return admission.response;
+    }
+
+    if (!runtimeLifecycle.listSupportIncidents) {
+      return context.json(supportServiceUnavailableResponse('incidents'), 503);
+    }
+
+    try {
+      const rawLimit = context.req.query('limit');
+      const limit = rawLimit === undefined ? 50 : Number.parseInt(rawLimit, 10);
+      if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+        return context.json(
+          { accepted: false, error: 'limit must be an integer from 1 to 100' },
+          400,
+        );
+      }
+
+      return context.json({
+        items: await runtimeLifecycle.listSupportIncidents({ limit }),
+      });
+    } catch (error) {
+      return context.json({ accepted: false, error: toValidationError(error) }, 500);
+    }
+  });
+
+  app.post('/support/incidents', async (context) => {
+    let parsed: SupportOpenIncidentRequest | null = null;
+    let payloadError: unknown = null;
+    try {
+      parsed = supportOpenIncidentRequestSchema.parse(
+        await readBoundedJson(context.req.raw.clone(), OPERATOR_SUPPORT_BODY_MAX_BYTES),
+      );
+    } catch (error) {
+      payloadError = error;
+    }
+
+    const admission = await requireAdmission(
+      context,
+      operatorAuth,
+      OPERATOR_ROUTE.SUPPORT_INCIDENTS_POST,
+      parsed?.requestId,
+    );
+    if (!admission.accepted) {
+      return admission.response;
+    }
+
+    if (!runtimeLifecycle.openSupportIncident) {
+      return context.json(supportServiceUnavailableResponse('incidents'), 503);
+    }
+
+    if (!parsed) {
+      return context.json({ accepted: false, error: toValidationError(payloadError) }, 400);
+    }
+
+    try {
+      const result = await runtimeLifecycle.openSupportIncident({
+        ...parsed,
+        operatorPrincipalRef: admission.evidence.principalRef,
+        operatorSessionRef: admission.evidence.sessionRef,
+        operatorEvidenceRef: admission.evidence.evidenceRef,
+      });
+
+      return context.json(result, result.accepted ? 202 : supportFailureStatus(result));
+    } catch (error) {
+      return context.json({ accepted: false, error: toValidationError(error) }, 400);
+    }
+  });
+
+  app.patch('/support/incidents/:id', async (context) => {
+    let parsed: SupportUpdateIncidentRequest | null = null;
+    let payloadError: unknown = null;
+    try {
+      parsed = supportUpdateIncidentRequestSchema.parse(
+        await readBoundedJson(context.req.raw.clone(), OPERATOR_SUPPORT_BODY_MAX_BYTES),
+      );
+    } catch (error) {
+      payloadError = error;
+    }
+
+    const admission = await requireAdmission(
+      context,
+      operatorAuth,
+      OPERATOR_ROUTE.SUPPORT_INCIDENT_PATCH,
+      parsed?.requestId,
+    );
+    if (!admission.accepted) {
+      return admission.response;
+    }
+
+    if (!runtimeLifecycle.updateSupportIncident) {
+      return context.json(supportServiceUnavailableResponse('incidents'), 503);
+    }
+
+    if (!parsed) {
+      return context.json({ accepted: false, error: toValidationError(payloadError) }, 400);
+    }
+
+    try {
+      const result = await runtimeLifecycle.updateSupportIncident({
+        ...parsed,
+        supportIncidentId: context.req.param('id'),
+        operatorPrincipalRef: admission.evidence.principalRef,
+        operatorSessionRef: admission.evidence.sessionRef,
+        operatorEvidenceRef: admission.evidence.evidenceRef,
+      });
+
+      return context.json(result, result.accepted ? 200 : supportFailureStatus(result));
+    } catch (error) {
+      return context.json({ accepted: false, error: toValidationError(error) }, 400);
     }
   });
 

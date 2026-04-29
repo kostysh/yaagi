@@ -203,6 +203,17 @@ export {
   type StartDeployAttemptResult,
 } from './release-automation.ts';
 export {
+  createSupportStore,
+  type OpenSupportIncidentInput,
+  type SupportDbExecutor,
+  type SupportIncidentRecordResult,
+  type SupportIncidentRow,
+  type SupportRunbookVersionRow,
+  type SupportStore,
+  type UpdateSupportIncidentInput,
+  type UpsertSupportRunbookVersionInput,
+} from './support.ts';
+export {
   createSpecialistPolicyStore,
   SPECIALIST_POLICY_DEFAULT_ADMISSION_DECISION,
   SPECIALIST_POLICY_WRITE_SURFACES,
