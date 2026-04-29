@@ -1,21 +1,21 @@
 {
   "version": 1,
-  "created_at": "2026-04-29T12:09:50.164Z",
+  "created_at": "2026-04-29T12:32:03.604Z",
   "audit_class": "code-reviewer",
   "artifact_role": "latest_copy",
   "review_mode": "external",
-  "reviewer": "external-agent-erdos",
+  "reviewer": "external-agent-r03-code",
   "reviewer_skill": "code-reviewer",
-  "reviewer_agent_id": "019dd920-76bb-7570-a18e-a56eefae1bad",
-  "reviewer_thread_id": "019dd8ba-a8f1-73e0-9869-a4ac0ca0771e",
-  "review_attempt_id": "implementation--code-reviewer--r02",
-  "review_round_id": "r02",
-  "review_round_number": 2,
+  "reviewer_agent_id": "019dd920-r03-code",
+  "reviewer_thread_id": "019dd936-4364-74d2-9a70-1dc5f462e701",
+  "review_attempt_id": "implementation--code-reviewer--r03",
+  "review_round_id": "r03",
+  "review_round_number": 3,
   "latest_copy_path": ".dossier/reviews/F-0028/implementation--code-reviewer--latest.json",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
   "feature_id": "F-0028",
-  "event_commit": "9bdad6afc208624d2b449a152048b6ea2fb5d423",
+  "event_commit": "d733b7d87be043864fd006e6ef3b810baf88b115",
   "implementation_scope": "code-bearing",
   "security_trigger_reason": null,
   "invalidated": false,
@@ -24,15 +24,15 @@
   "verdict": "FAIL",
   "findings": {
     "must_fix": [
-      "Claim/check idempotency before owner-routed action side effects, or make routing idempotent under the same persisted request record.",
-      "Preserve current scalar incident state under row lock unless the patch explicitly changes it.",
-      "Include target supportIncidentId in update replay identity and reject same requestId/body against a different incident."
+      "Complete or reject claimed support incident update requests when owner routing/canonical-ref resolution throws, or make replay safely resume the claimed request instead of returning permanent request_in_progress.",
+      "Replace runtime-lifecycle support auth evidence validation raw reads of polyphony_runtime.operator_auth_audit_events with a bounded F-0024 owner/read contract, and make the usage audit cover the actual deployed path."
     ],
     "should_fix": [],
     "evidence": [
-      "apps/core/src/support/support-evidence.ts:357; packages/db/src/support.ts:237; apps/core/src/support/support-evidence.ts:388"
+      "apps/core/src/support/support-evidence.ts:408 claims action-routing update before routeActionRequests at line 418; apps/core/src/support/support-evidence.ts:452 claims PATCH update before routeActionRequests at line 475; packages/db/src/support.ts:420 returns request_in_progress for pending claims.",
+      "apps/core/src/runtime/runtime-lifecycle.ts:1897 queries polyphony_runtime.operator_auth_audit_events directly; docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md AC-F0028-05/13/14 require bounded owner-surface consumption and no raw foreign reads."
     ]
   },
-  "notes": "Round 2 FAIL: owner side effects before update idempotency claim, stale scalar overwrite, update replay identity missing target incident.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--code-reviewer--r02--fail--9bdad6afc208.json"
+  "notes": "Round 3 FAIL: remaining idempotency status-machine wedge after claim-before-route failures, plus support auth canonical-ref validation uses a raw F-0024 table read despite the F-0028 owner-boundary contract.",
+  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--code-reviewer--r03--fail--d733b7d87be0.json"
 }

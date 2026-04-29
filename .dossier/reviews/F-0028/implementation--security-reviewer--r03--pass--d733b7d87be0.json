@@ -2,7 +2,7 @@
   "version": 1,
   "created_at": "2026-04-29T12:31:28.878Z",
   "audit_class": "security-reviewer",
-  "artifact_role": "latest_copy",
+  "artifact_role": "immutable_attempt",
   "review_mode": "external",
   "reviewer": "external-agent-r03-security",
   "reviewer_skill": "security-reviewer",
@@ -11,7 +11,7 @@
   "review_attempt_id": "implementation--security-reviewer--r03",
   "review_round_id": "r03",
   "review_round_number": 3,
-  "latest_copy_path": ".dossier/reviews/F-0028/implementation-security-review.json",
+  "latest_copy_path": ".dossier/reviews/F-0028/implementation--security-reviewer--latest.json",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
   "feature_id": "F-0028",
@@ -32,6 +32,5 @@
       "apps/core/src/support/support-canonical-refs.ts:234 release refs require F-0026 inspection and failed evidence maps degraded/missing; apps/core/src/runtime/runtime-lifecycle.ts:1894 validates F-0024 auth evidence from audit rows"
     ]
   },
-  "notes": "PASS: d733b7d redacts support evidence refs/actions/closure text before hash and persistence, keeps support write routes behind F-0024 admission, claims update/action-routing idempotency before owner routing, validates auth/release evidence through owner readers, and exposes support incidents only through admitted operator reads. No high-confidence exploitable findings.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--security-reviewer--r03--pass--d733b7d87be0.json"
+  "notes": "PASS: d733b7d redacts support evidence refs/actions/closure text before hash and persistence, keeps support write routes behind F-0024 admission, claims update/action-routing idempotency before owner routing, validates auth/release evidence through owner readers, and exposes support incidents only through admitted operator reads. No high-confidence exploitable findings."
 }

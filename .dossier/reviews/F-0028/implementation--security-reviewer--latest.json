@@ -1,36 +1,37 @@
 {
   "version": 1,
-  "created_at": "2026-04-29T12:09:41.615Z",
+  "created_at": "2026-04-29T12:31:28.878Z",
   "audit_class": "security-reviewer",
   "artifact_role": "latest_copy",
   "review_mode": "external",
-  "reviewer": "external-agent-locke",
+  "reviewer": "external-agent-r03-security",
   "reviewer_skill": "security-reviewer",
-  "reviewer_agent_id": "019dd920-9dbb-7912-bc90-f1693e4c2b4c",
-  "reviewer_thread_id": "019dd8ba-a8f1-73e0-9869-a4ac0ca0771e",
-  "review_attempt_id": "implementation--security-reviewer--r02",
-  "review_round_id": "r02",
-  "review_round_number": 2,
+  "reviewer_agent_id": "019dd920-r03-security",
+  "reviewer_thread_id": "019dd936-759d-7ae1-af6c-4bb842bbb29c",
+  "review_attempt_id": "implementation--security-reviewer--r03",
+  "review_round_id": "r03",
+  "review_round_number": 3,
   "latest_copy_path": ".dossier/reviews/F-0028/implementation--security-reviewer--latest.json",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
   "feature_id": "F-0028",
-  "event_commit": "9bdad6afc208624d2b449a152048b6ea2fb5d423",
+  "event_commit": "d733b7d87be043864fd006e6ef3b810baf88b115",
   "implementation_scope": "code-bearing",
   "security_trigger_reason": "implementation touches support RBAC, evidence persistence, replay/idempotency and secret redaction boundaries",
   "invalidated": false,
   "rerun_reason": null,
   "allowed_by_policy": true,
-  "verdict": "FAIL",
+  "verdict": "PASS",
   "findings": {
-    "must_fix": [
-      "Redact every support free-text evidence field before normalizedRequestHash calculation and persistence, including requestedAction, closureCriteria, residualRisk and support refs where secret-looking values appear."
-    ],
+    "must_fix": [],
     "should_fix": [],
     "evidence": [
-      "packages/contracts/src/support.ts:181,226,235; apps/core/src/support/support-evidence.ts:357,370; packages/db/src/support.ts:593,600; apps/core/src/platform/operator-api.ts:723"
+      "apps/core/src/platform/operator-api.ts:677 support routes require operator admission; POST/PATCH use bounded body parse before admission and pass F-0024 provenance to service",
+      "apps/core/src/support/support-evidence.ts:199 redacts support refs, action fields, closure criteria, residual risk and notes before normalizedRequestHash and persistence",
+      "packages/db/src/support.ts:467 update claims and row locks enforce replay/conflict handling before incident mutation; packages/db/src/support.ts:724 preserves idempotent update state",
+      "apps/core/src/support/support-canonical-refs.ts:234 release refs require F-0026 inspection and failed evidence maps degraded/missing; apps/core/src/runtime/runtime-lifecycle.ts:1894 validates F-0024 auth evidence from audit rows"
     ]
   },
-  "notes": "Round 2 FAIL: incomplete redaction across support free-text evidence fields before hashing/persistence.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--security-reviewer--r02--fail--9bdad6afc208.json"
+  "notes": "PASS: d733b7d redacts support evidence refs/actions/closure text before hash and persistence, keeps support write routes behind F-0024 admission, claims update/action-routing idempotency before owner routing, validates auth/release evidence through owner readers, and exposes support incidents only through admitted operator reads. No high-confidence exploitable findings.",
+  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--security-reviewer--r03--pass--d733b7d87be0.json"
 }

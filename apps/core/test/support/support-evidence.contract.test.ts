@@ -12,6 +12,7 @@ import type { SupportIncidentRecordResult, SupportIncidentRow, SupportStore } fr
 import { createSupportEvidenceService } from '../../src/support/support-evidence.ts';
 
 const now = '2026-04-29T12:00:00.000Z';
+type SupportRejectionReason = Extract<SupportIncidentRecordResult, { accepted: false }>['reason'];
 
 const createMemoryStore = (): {
   store: SupportStore;
@@ -20,7 +21,13 @@ const createMemoryStore = (): {
   const incidents: Record<string, SupportIncidentRow> = {};
   const updateRequests: Record<
     string,
-    { supportIncidentId: string; normalizedRequestHash: string }
+    {
+      supportIncidentId: string;
+      normalizedRequestHash: string;
+      status: 'pending' | 'applied' | 'rejected';
+      rejectionReason: SupportRejectionReason | null;
+      closureReasons: string[];
+    }
   > = {};
 
   const store: SupportStore = {
@@ -77,6 +84,25 @@ const createMemoryStore = (): {
           });
         }
 
+        if (existingRequest.status === 'pending') {
+          return Promise.resolve({
+            accepted: false,
+            reason: 'request_in_progress',
+            ...(incident ? { existingIncident: incident } : {}),
+          });
+        }
+
+        if (existingRequest.status === 'rejected') {
+          return Promise.resolve({
+            accepted: false,
+            reason: existingRequest.rejectionReason ?? 'conflicting_request_id',
+            ...(incident ? { existingIncident: incident } : {}),
+            ...(existingRequest.closureReasons.length > 0
+              ? { closureReasons: existingRequest.closureReasons }
+              : {}),
+          });
+        }
+
         if (!incident) {
           return Promise.resolve({ accepted: false, reason: 'incident_missing' });
         }
@@ -100,6 +126,9 @@ const createMemoryStore = (): {
       updateRequests[input.requestId] = {
         supportIncidentId: input.supportIncidentId,
         normalizedRequestHash: input.normalizedRequestHash,
+        status: 'pending',
+        rejectionReason: null,
+        closureReasons: [],
       };
 
       return Promise.resolve({
@@ -111,6 +140,23 @@ const createMemoryStore = (): {
           reasons: incident.closureReadinessReasons,
         },
       });
+    },
+    rejectIncidentUpdate: (input): Promise<void> => {
+      const existingRequest = updateRequests[input.requestId];
+      if (
+        existingRequest &&
+        existingRequest.status === 'pending' &&
+        existingRequest.supportIncidentId === input.supportIncidentId &&
+        existingRequest.normalizedRequestHash === input.normalizedRequestHash
+      ) {
+        updateRequests[input.requestId] = {
+          ...existingRequest,
+          status: 'rejected',
+          rejectionReason: input.reason ?? 'request_failed',
+          closureReasons: [...(input.closureReasons ?? [])],
+        };
+      }
+      return Promise.resolve();
     },
     updateIncident: (input): Promise<SupportIncidentRecordResult> => {
       const {
@@ -130,6 +176,13 @@ const createMemoryStore = (): {
         ...(canonicalEvidenceStates ? { canonicalEvidenceStates } : {}),
       });
       if (readiness.status === 'blocked') {
+        updateRequests[input.requestId] = {
+          supportIncidentId: input.supportIncidentId,
+          normalizedRequestHash,
+          status: 'rejected',
+          rejectionReason: 'closure_blocked',
+          closureReasons: readiness.reasons,
+        };
         const existingIncident = incidents[input.supportIncidentId];
         return Promise.resolve({
           accepted: false,
@@ -149,6 +202,9 @@ const createMemoryStore = (): {
       updateRequests[input.requestId] = {
         supportIncidentId: row.supportIncidentId,
         normalizedRequestHash,
+        status: 'applied',
+        rejectionReason: null,
+        closureReasons: [],
       };
       return Promise.resolve({
         accepted: true,
@@ -257,6 +313,93 @@ void test('AC-F0028-02 AC-F0028-10 does not reroute owner actions on update repl
   assert.equal(first.accepted, true);
   assert.equal(replay.accepted, true);
   assert.equal(ownerSeamCalls, 1);
+});
+
+void test('AC-F0028-02 rejects replay after an owner seam fails following update claim', async () => {
+  const { store } = createMemoryStore();
+  let ownerSeamCalls = 0;
+  const service = createSupportEvidenceService({
+    store,
+    now: () => now,
+    ownerSeams: {
+      'F-0023': () => {
+        ownerSeamCalls += 1;
+        throw new Error('report owner down');
+      },
+    },
+  });
+
+  const opened = await service.openIncident({
+    requestId: 'support-request-owner-failure-open',
+    incidentClass: SUPPORT_INCIDENT_CLASS.REPORTING_FRESHNESS,
+    severity: SUPPORT_SEVERITY.WARNING,
+    sourceRefs: ['report-run:source'],
+  });
+  assert.equal(opened.accepted, true);
+  if (!opened.accepted) return;
+
+  const update = {
+    supportIncidentId: opened.incident.supportIncidentId,
+    requestId: 'support-request-owner-failure-update',
+    addActionRefs: [
+      {
+        mode: SUPPORT_ACTION_MODE.OWNER_ROUTED,
+        owner: 'F-0023',
+        ref: 'support-action:report-owner-failure',
+        requestedAction: 'inspect reporting owner evidence',
+      },
+    ],
+  };
+
+  await assert.rejects(() => service.updateIncident(update), /report owner down/);
+  const replay = await service.updateIncident(update);
+
+  assert.equal(replay.accepted, false);
+  if (!replay.accepted) {
+    assert.equal(replay.reason, 'request_failed');
+    assert.deepEqual(replay.closureReasons, ['post_claim_update_failed']);
+  }
+  assert.equal(ownerSeamCalls, 1);
+});
+
+void test('AC-F0028-02 rejects replay after a canonical reader fails following update claim', async () => {
+  const { store } = createMemoryStore();
+  let readerCalls = 0;
+  const service = createSupportEvidenceService({
+    store,
+    now: () => now,
+    readers: {
+      validateOperatorAuthEvidence: () => {
+        readerCalls += 1;
+        return Promise.reject(new Error('auth reader down'));
+      },
+    },
+  });
+
+  const opened = await service.openIncident({
+    requestId: 'support-request-reader-failure-open',
+    incidentClass: SUPPORT_INCIDENT_CLASS.OPERATOR_ACCESS,
+    severity: SUPPORT_SEVERITY.WARNING,
+    sourceRefs: ['operator-route:/state'],
+  });
+  assert.equal(opened.accepted, true);
+  if (!opened.accepted) return;
+
+  const update = {
+    supportIncidentId: opened.incident.supportIncidentId,
+    requestId: 'support-request-reader-failure-update',
+    addOperatorEvidenceRefs: ['operator-auth-evidence:reader-failure'],
+  };
+
+  await assert.rejects(() => service.updateIncident(update), /auth reader down/);
+  const replay = await service.updateIncident(update);
+
+  assert.equal(replay.accepted, false);
+  if (!replay.accepted) {
+    assert.equal(replay.reason, 'request_failed');
+    assert.deepEqual(replay.closureReasons, ['post_claim_update_failed']);
+  }
+  assert.equal(readerCalls, 1);
 });
 
 void test('AC-F0028-11 blocks critical terminal closure until owner evidence or human disposition exists', async () => {

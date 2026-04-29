@@ -1,10 +1,11 @@
 import type { Client, QueryResultRow } from 'pg';
-import type {
-  OperatorAuthAuditEventRow,
-  OperatorAuthDecision,
-  OperatorAuthFailureReason,
-  OperatorRiskClass,
-  OperatorRouteClass,
+import {
+  OPERATOR_AUTH_DECISION,
+  type OperatorAuthAuditEventRow,
+  type OperatorAuthDecision,
+  type OperatorAuthFailureReason,
+  type OperatorRiskClass,
+  type OperatorRouteClass,
 } from '@yaagi/contracts/operator-auth';
 import { RUNTIME_SCHEMA } from './runtime.ts';
 
@@ -95,10 +96,24 @@ export type OperatorAuthStore = {
   recordAuthAuditEvent(
     input: RecordOperatorAuthAuditEventInput,
   ): Promise<RecordOperatorAuthAuditEventResult>;
+  hasAllowedAuthEvidence(evidenceRef: string): Promise<boolean>;
 };
 
 export function createOperatorAuthStore(db: OperatorAuthDbExecutor): OperatorAuthStore {
   return {
+    async hasAllowedAuthEvidence(evidenceRef: string): Promise<boolean> {
+      const result = await db.query(
+        `select 1
+         from ${operatorAuthAuditEventsTable}
+         where evidence_ref = $1
+           and decision = $2
+         limit 1`,
+        [evidenceRef, OPERATOR_AUTH_DECISION.ALLOW],
+      );
+
+      return result.rows.length > 0;
+    },
+
     async recordAuthAuditEvent(
       input: RecordOperatorAuthAuditEventInput,
     ): Promise<RecordOperatorAuthAuditEventResult> {

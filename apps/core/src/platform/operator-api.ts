@@ -424,12 +424,14 @@ const releaseServiceFailureResponse = (context: Context, error: unknown) =>
 
 const supportFailureStatus = (
   result: Extract<SupportIncidentRecordResult, { accepted: false }>,
-): 400 | 403 | 404 | 409 => {
+): 400 | 403 | 404 | 409 | 503 => {
   switch (result.reason) {
     case 'conflicting_request_id':
     case 'closure_blocked':
     case 'request_in_progress':
       return 409;
+    case 'request_failed':
+      return 503;
     case 'foreign_owner_write_rejected':
       return 403;
     case 'incident_missing':

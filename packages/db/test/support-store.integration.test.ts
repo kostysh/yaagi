@@ -369,6 +369,46 @@ void test('AC-F0028-02 keeps update requests idempotent and rejects conflicting 
   );
 });
 
+void test('AC-F0028-02 rejects replay after a claimed update fails before application', async () => {
+  const harness = createHarness();
+  const store = createSupportStore(harness.db);
+  await store.openIncident({
+    ...baseIncident(),
+    requestId: 'support-request-failed-claim-open',
+    normalizedRequestHash: 'hash-failed-claim-open',
+  });
+
+  const claimed = await store.claimIncidentUpdate({
+    supportIncidentId: 'support-incident:runtime-1',
+    requestId: 'support-request-failed-claim-update',
+    normalizedRequestHash: 'hash-failed-claim-update',
+    createdAt: now,
+  });
+  assert.equal(claimed.accepted, true);
+
+  await store.rejectIncidentUpdate({
+    supportIncidentId: 'support-incident:runtime-1',
+    requestId: 'support-request-failed-claim-update',
+    normalizedRequestHash: 'hash-failed-claim-update',
+    completedAt: now,
+    reason: 'request_failed',
+    closureReasons: ['post_claim_update_failed'],
+  });
+
+  const replay = await store.claimIncidentUpdate({
+    supportIncidentId: 'support-incident:runtime-1',
+    requestId: 'support-request-failed-claim-update',
+    normalizedRequestHash: 'hash-failed-claim-update',
+    createdAt: now,
+  });
+
+  assert.equal(replay.accepted, false);
+  if (!replay.accepted) {
+    assert.equal(replay.reason, 'request_failed');
+    assert.deepEqual(replay.closureReasons, ['post_claim_update_failed']);
+  }
+});
+
 void test('AC-F0028-02 rejects update replay when the request id targets another incident', async () => {
   const harness = createHarness();
   const store = createSupportStore(harness.db);

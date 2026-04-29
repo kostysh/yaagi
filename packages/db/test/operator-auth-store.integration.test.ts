@@ -55,6 +55,14 @@ const createHarness = (): Harness => {
       return Promise.resolve({ rows: [row] });
     }
 
+    if (sql.startsWith('select 1 from polyphony_runtime.operator_auth_audit_events')) {
+      const [evidenceRef, decision] = params;
+      const matched = events.some(
+        (event) => event.evidenceRef === evidenceRef && event.decision === decision,
+      );
+      return Promise.resolve({ rows: matched ? [{ one: 1 }] : [] });
+    }
+
     throw new Error(`unsupported sql in operator auth harness: ${sqlText}`);
   }) as OperatorAuthDbExecutor['query'];
 
@@ -113,6 +121,44 @@ void test('AC-F0024-11 records denied decisions with null principal and bounded 
   assert.equal(result.event.sessionRef, null);
   assert.equal(result.event.denialReason, OPERATOR_AUTH_DENIAL_REASON.UNAUTHENTICATED);
   assert.deepEqual(result.event.payloadJson, {});
+});
+
+void test('AC-F0028-13 exposes bounded allowed-auth evidence lookup for support', async () => {
+  const harness = createHarness();
+  const store = createOperatorAuthStore(harness.db);
+
+  await store.recordAuthAuditEvent({
+    auditEventId: 'operator-auth-audit:allowed-evidence',
+    requestId: 'http-request-allowed-evidence',
+    principalRef: 'operator:observer',
+    sessionRef: 'operator-session:observer:primary',
+    method: 'GET',
+    route: '/state',
+    routeClass: OPERATOR_ROUTE_CLASS.READ_INTROSPECTION,
+    riskClass: OPERATOR_RISK_CLASS.READ_ONLY,
+    decision: OPERATOR_AUTH_DECISION.ALLOW,
+    denialReason: null,
+    evidenceRef: 'operator-auth-evidence:allowed',
+    createdAt: '2026-04-23T10:02:00.000Z',
+  });
+  await store.recordAuthAuditEvent({
+    auditEventId: 'operator-auth-audit:denied-evidence',
+    requestId: 'http-request-denied-evidence',
+    principalRef: null,
+    sessionRef: null,
+    method: 'GET',
+    route: '/state',
+    routeClass: OPERATOR_ROUTE_CLASS.READ_INTROSPECTION,
+    riskClass: OPERATOR_RISK_CLASS.READ_ONLY,
+    decision: OPERATOR_AUTH_DECISION.DENY,
+    denialReason: OPERATOR_AUTH_DENIAL_REASON.UNAUTHENTICATED,
+    evidenceRef: 'operator-auth-evidence:denied',
+    createdAt: '2026-04-23T10:03:00.000Z',
+  });
+
+  assert.equal(await store.hasAllowedAuthEvidence('operator-auth-evidence:allowed'), true);
+  assert.equal(await store.hasAllowedAuthEvidence('operator-auth-evidence:denied'), false);
+  assert.equal(await store.hasAllowedAuthEvidence('operator-auth-evidence:missing'), false);
 });
 
 void test('AC-F0026 protected release routes can persist operator auth audit events', async () => {

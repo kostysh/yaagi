@@ -107,6 +107,7 @@ export type SupportRejectionReason =
   | 'foreign_owner_write_rejected'
   | 'closure_blocked'
   | 'incident_missing'
+  | 'request_failed'
   | 'request_in_progress';
 
 type RequestedWriteSurfaces = {
@@ -138,6 +139,15 @@ export type ClaimSupportIncidentUpdateInput = RequestedWriteSurfaces & {
   requestId: string;
   normalizedRequestHash: string;
   createdAt: string;
+};
+
+export type RejectSupportIncidentUpdateInput = RequestedWriteSurfaces & {
+  supportIncidentId: string;
+  requestId: string;
+  normalizedRequestHash: string;
+  completedAt: string;
+  reason?: SupportRejectionReason;
+  closureReasons?: readonly string[];
 };
 
 type UpdateRequestRow = {
@@ -198,6 +208,7 @@ export type SupportStore = {
   listRunbookVersions(): Promise<SupportRunbookVersionRow[]>;
   openIncident(input: OpenSupportIncidentInput): Promise<SupportIncidentRecordResult>;
   claimIncidentUpdate(input: ClaimSupportIncidentUpdateInput): Promise<SupportIncidentRecordResult>;
+  rejectIncidentUpdate(input: RejectSupportIncidentUpdateInput): Promise<void>;
   updateIncident(input: UpdateSupportIncidentInput): Promise<SupportIncidentRecordResult>;
   getIncident(supportIncidentId: string): Promise<SupportIncidentRow | null>;
   listIncidents(input?: {
@@ -719,6 +730,41 @@ export const createSupportStore = (db: SupportDbExecutor): SupportStore => {
           reasons: claim.incident.closureReadinessReasons,
         },
       };
+    },
+
+    async rejectIncidentUpdate(input) {
+      const surfaces = ensureWriteSurfaces(input.requestedWriteSurfaces);
+      if (!surfaces.accepted) {
+        throw new Error(
+          `support update rejection attempted foreign owner write: ${surfaces.rejectedWriteSurface}`,
+        );
+      }
+
+      await db.query('begin');
+      try {
+        const claimed = await selectUpdateRequest(input.requestId, { forUpdate: true });
+        if (
+          !claimed ||
+          claimed.normalizedRequestHash !== input.normalizedRequestHash ||
+          claimed.supportIncidentId !== input.supportIncidentId ||
+          claimed.status !== 'pending'
+        ) {
+          await db.query('commit');
+          return;
+        }
+
+        await completeUpdateRequest({
+          requestId: input.requestId,
+          status: 'rejected',
+          rejectionReason: input.reason ?? 'request_failed',
+          closureReasons: input.closureReasons ?? [],
+          completedAt: input.completedAt,
+        });
+        await db.query('commit');
+      } catch (error) {
+        await db.query('rollback');
+        throw error;
+      }
     },
 
     async updateIncident(input) {

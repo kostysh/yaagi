@@ -205,9 +205,11 @@ export {
 export {
   createSupportStore,
   type OpenSupportIncidentInput,
+  type RejectSupportIncidentUpdateInput,
   type SupportDbExecutor,
   type SupportIncidentRecordResult,
   type SupportIncidentRow,
+  type SupportRejectionReason,
   type SupportRunbookVersionRow,
   type SupportStore,
   type UpdateSupportIncidentInput,
