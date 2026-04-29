@@ -372,8 +372,8 @@ step_artifact: .dossier/steps/F-0027/implementation.json
 post_close_backlog_hygiene_required: true
 post_close_backlog_hygiene_status: clean
 post_close_backlog_hygiene_artifact: .dossier/verification/F-0027/implementation-post-close-backlog-hygiene.json
-post_close_backlog_hygiene_checked_at: 2026-04-29T10:15:03.483Z
-post_close_backlog_hygiene_refresh_at: 2026-04-29T10:15:03.244Z
+post_close_backlog_hygiene_checked_at: 2026-04-29T10:29:08.793Z
+post_close_backlog_hygiene_refresh_at: 2026-04-29T10:29:08.469Z
 post_close_open_source_review_count: 0
 post_close_source_review_blocked_item_count: 0
 post_close_lifecycle_reconciliation_drift_count: 0
@@ -395,21 +395,21 @@ selected_closure_ts: null
 rpa_source_identity: null
 rpa_source_quality: null
 non_pass_review_events: []
-post_close_backlog_hygiene_global_refresh_artifact: .dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T10-15-03-022Z.json
+post_close_backlog_hygiene_global_refresh_artifact: .dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T10-29-08-208Z.json
 post_close_affected_feature_ids:
   - F-0026
   - F-0027
 post_close_pre_status_summary:
   total_items: 28
-  last_refresh_at: 2026-04-28T14:03:56.833Z
-  defined_count: 1
-  intaken_count: 0
+  last_refresh_at: 2026-04-29T10:15:03.244Z
+  defined_count: 0
+  intaken_count: 1
   specified_count: 0
   planned_count: 0
   implemented_count: 27
   gaps_count: 0
   needs_attention_count: 0
-  ready_for_next_step_count: 1
+  ready_for_next_step_count: 0
   open_todo_count: 0
   artifact_integrity:
     applied_canonical_paths_exist: true
@@ -419,23 +419,24 @@ post_close_pre_status_summary:
   lifecycle_reconciliation_drift_count: 0
   lifecycle_reconciliation_drifts: []
   post_close_hygiene_missing_count: 0
-  post_close_hygiene_stale_count: 1
+  post_close_hygiene_stale_count: 2
   post_close_hygiene_blocked_count: 0
   post_close_hygiene_missing_feature_ids: []
   post_close_hygiene_stale_feature_ids:
     - F-0026
+    - F-0027
   post_close_hygiene_blocked_feature_ids: []
 post_close_post_status_summary:
   total_items: 28
-  last_refresh_at: 2026-04-29T10:15:03.244Z
-  defined_count: 1
-  intaken_count: 0
+  last_refresh_at: 2026-04-29T10:29:08.469Z
+  defined_count: 0
+  intaken_count: 1
   specified_count: 0
   planned_count: 0
   implemented_count: 27
   gaps_count: 0
   needs_attention_count: 0
-  ready_for_next_step_count: 1
+  ready_for_next_step_count: 0
   open_todo_count: 0
   artifact_integrity:
     applied_canonical_paths_exist: true

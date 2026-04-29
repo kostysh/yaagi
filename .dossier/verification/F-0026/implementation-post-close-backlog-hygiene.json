@@ -1,57 +1,28 @@
 {
   "version": 2,
   "schema_version": 2,
-  "created_at": "2026-04-29T10:15:03.483Z",
+  "created_at": "2026-04-29T10:29:08.793Z",
   "feature_id": "F-0026",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0026-deploy-release-automation-rollback-orchestration.md",
   "implementation_step_artifact": ".dossier/steps/F-0026/implementation.json",
   "implementation_process_complete_ts": "2026-04-24T23:07:27.566Z",
-  "global_refresh_artifact": ".dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T10-15-03-022Z.json",
+  "global_refresh_artifact": ".dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T10-29-08-208Z.json",
   "affected_feature_ids": [
     "F-0026",
     "F-0027"
   ],
   "pre_status_summary": {
     "total_items": 28,
-    "last_refresh_at": "2026-04-28T14:03:56.833Z",
-    "defined_count": 1,
-    "intaken_count": 0,
-    "specified_count": 0,
-    "planned_count": 0,
-    "implemented_count": 27,
-    "gaps_count": 0,
-    "needs_attention_count": 0,
-    "ready_for_next_step_count": 1,
-    "open_todo_count": 0,
-    "artifact_integrity": {
-      "applied_canonical_paths_exist": true,
-      "missing_canonical_paths": []
-    },
-    "open_source_review_count": 0,
-    "source_review_blocked_item_count": 0,
-    "lifecycle_reconciliation_drift_count": 0,
-    "lifecycle_reconciliation_drifts": [],
-    "post_close_hygiene_missing_count": 0,
-    "post_close_hygiene_stale_count": 1,
-    "post_close_hygiene_blocked_count": 0,
-    "post_close_hygiene_missing_feature_ids": [],
-    "post_close_hygiene_stale_feature_ids": [
-      "F-0026"
-    ],
-    "post_close_hygiene_blocked_feature_ids": []
-  },
-  "post_status_summary": {
-    "total_items": 28,
     "last_refresh_at": "2026-04-29T10:15:03.244Z",
-    "defined_count": 1,
-    "intaken_count": 0,
+    "defined_count": 0,
+    "intaken_count": 1,
     "specified_count": 0,
     "planned_count": 0,
     "implemented_count": 27,
     "gaps_count": 0,
     "needs_attention_count": 0,
-    "ready_for_next_step_count": 1,
+    "ready_for_next_step_count": 0,
     "open_todo_count": 0,
     "artifact_integrity": {
       "applied_canonical_paths_exist": true,
@@ -71,8 +42,38 @@
     ],
     "post_close_hygiene_blocked_feature_ids": []
   },
-  "refresh_ran_at": "2026-04-29T10:15:03.244Z",
-  "backlog_last_refresh_at": "2026-04-29T10:15:03.244Z",
+  "post_status_summary": {
+    "total_items": 28,
+    "last_refresh_at": "2026-04-29T10:29:08.469Z",
+    "defined_count": 0,
+    "intaken_count": 1,
+    "specified_count": 0,
+    "planned_count": 0,
+    "implemented_count": 27,
+    "gaps_count": 0,
+    "needs_attention_count": 0,
+    "ready_for_next_step_count": 0,
+    "open_todo_count": 0,
+    "artifact_integrity": {
+      "applied_canonical_paths_exist": true,
+      "missing_canonical_paths": []
+    },
+    "open_source_review_count": 0,
+    "source_review_blocked_item_count": 0,
+    "lifecycle_reconciliation_drift_count": 0,
+    "lifecycle_reconciliation_drifts": [],
+    "post_close_hygiene_missing_count": 0,
+    "post_close_hygiene_stale_count": 2,
+    "post_close_hygiene_blocked_count": 0,
+    "post_close_hygiene_missing_feature_ids": [],
+    "post_close_hygiene_stale_feature_ids": [
+      "F-0026",
+      "F-0027"
+    ],
+    "post_close_hygiene_blocked_feature_ids": []
+  },
+  "refresh_ran_at": "2026-04-29T10:29:08.469Z",
+  "backlog_last_refresh_at": "2026-04-29T10:29:08.469Z",
   "refresh_summary": {
     "changed_sources": [],
     "source_reviews_created": 0,
@@ -81,15 +82,15 @@
   },
   "status_summary": {
     "total_items": 28,
-    "last_refresh_at": "2026-04-29T10:15:03.244Z",
-    "defined_count": 1,
-    "intaken_count": 0,
+    "last_refresh_at": "2026-04-29T10:29:08.469Z",
+    "defined_count": 0,
+    "intaken_count": 1,
     "specified_count": 0,
     "planned_count": 0,
     "implemented_count": 27,
     "gaps_count": 0,
     "needs_attention_count": 0,
-    "ready_for_next_step_count": 1,
+    "ready_for_next_step_count": 0,
     "open_todo_count": 0,
     "artifact_integrity": {
       "applied_canonical_paths_exist": true,
@@ -111,20 +112,9 @@
   },
   "attention_summary": [],
   "queue_summary": {
-    "data": [
-      {
-        "root_item_key": "CF-026",
-        "items": [
-          "CF-026"
-        ],
-        "ordering_rule": [
-          "depth",
-          "downstream_dependency_count",
-          "item_key"
-        ]
-      }
-    ],
+    "data": [],
     "warnings": [
+      "Intaken backlog items continue via dossier-local spec-compact: CF-026",
       "Post-close backlog hygiene stale for implementation features: F-0026, F-0027"
     ]
   },
