@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T13:38:08.459Z",
+  "audit_class": "spec-conformance-reviewer",
+  "artifact_role": "immutable_attempt",
+  "review_mode": "external",
+  "reviewer": "spec-conformance-reviewer-r07",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": "019dd972-f649-7350-809f-21c1088ad8bf",
+  "reviewer_thread_id": "019dd972-f649-7350-809f-21c1088ad8bf",
+  "review_attempt_id": "implementation--spec-conformance-reviewer--r07",
+  "review_round_id": "r07",
+  "review_round_number": 7,
+  "latest_copy_path": ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--latest.json",
+  "step": "implementation",
+  "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
+  "feature_id": "F-0028",
+  "event_commit": "4cff15bbe24c9941c19b6c744ee34e21a812694c",
+  "implementation_scope": "code-bearing",
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "FAIL",
+  "findings": {
+    "must_fix": [
+      "Provide fresh managed implementation verification evidence at trace commit 4cff15bbe24c9941c19b6c744ee34e21a812694c that includes the AC-F0028-15 gates required for protected operator route/side-effect changes: pnpm format, pnpm typecheck, pnpm lint, focused support tests, pnpm test, and pnpm smoke:cell."
+    ],
+    "should_fix": [],
+    "evidence": [
+      "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md:139 requires root quality gates and pnpm smoke:cell when implementation changes public operator routes or protected side-effect paths; apps/core/src/platform/operator-api.ts:679 and apps/core/src/platform/operator-api.ts:734 expose protected support routes and support incident writes; .dossier/verification/F-0028/implementation-4cff15bbe24c.json records only index-refresh, lint-dossiers, coverage-audit, debt-audit, and git diff --check."
+    ]
+  },
+  "notes": "FAIL: Spec-conformance implementation audit at 4cff15bbe24c found implementation behavior largely aligned with F-0028, but closure evidence is insufficient for AC-F0028-15. The material adds protected support operator routes and support incident write/update side effects, so the spec requires root quality gates plus pnpm smoke:cell in implementation closure evidence. The supplied final verification artifact only records dossier/index/coverage/debt/git-diff checks and does not durably record pnpm format, pnpm typecheck, pnpm lint, focused tests, pnpm test, or pnpm smoke:cell for 4cff15bbe24c."
+}

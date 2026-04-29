@@ -11,7 +11,7 @@ phase_scope: implementation для F-0028 support/operability contract и incide
 stage_state: ready_for_close
 start_ts: 2026-04-29T10:55:00.903Z
 entered_ts: 2026-04-29T10:55:00.903Z
-ready_for_close_ts: 2026-04-29T13:31:38.471Z
+ready_for_close_ts: 2026-04-29T14:18:00.267Z
 transition_events:
   - kind: entered
     at: 2026-04-29T10:55:00.903Z
@@ -53,6 +53,14 @@ transition_events:
     at: 2026-04-29T13:18:27.509Z
   - kind: ready_for_close
     at: 2026-04-29T13:31:38.471Z
+  - kind: ready_for_close
+    at: 2026-04-29T13:32:50.772Z
+  - kind: ready_for_close
+    at: 2026-04-29T13:49:14.421Z
+  - kind: blocked
+    at: 2026-04-29T14:09:25.913Z
+  - kind: ready_for_close
+    at: 2026-04-29T14:18:00.267Z
 backlog_followup_required: false
 backlog_followup_kind: null
 backlog_followup_resolved: false
@@ -142,10 +150,25 @@ process_misses:
       idempotency-first, mapping canonical reader failures to unavailable
       states, and persisting requested action records before owner action
       routing
+  - id: implementation-audit-fail-round7
+    category: review
+    severity: high
+    resolved: true
+    summary: round7 spec audit blocker fixed by replacing the managed implementation
+      verification artifact for trace commit 4cff15bbe24c with fresh root
+      quality gates, focused support tests, full pnpm test and pnpm smoke:cell
+      evidence
+  - id: implementation-audit-fail-round8-code-terminal-reopen
+    category: review
+    severity: high
+    resolved: true
+    summary: round8 code audit blocker fixed by preserving terminal support closure
+      status and closedAt across later explicit reopen updates, with regression
+      coverage in support-store integration tests
 session_id: 350b48a7-b180-4582-ae1d-ccb8e70b9a6b
 trace_runtime: codex
 trace_locator_kind: session_id
-final_delivery_commit: 34542430341bff797aecb4efba73ddffe4a6a417
+final_delivery_commit: 4cff15bbe24c9941c19b6c744ee34e21a812694c
 final_closure_commit: null
 implementation_review_scope: code-bearing
 stage_entry_commit: 616e09befd1f1a86b904a4ce7a149f7c99c8aebf
@@ -195,7 +218,7 @@ pre_review_checklists:
       - apps/core/test/support/support-usage-audit.contract.test.ts
 pre_review_checklist_status: complete
 pre_review_checklist_blockers: []
-local_gates_green_ts: 2026-04-29T13:31:38.471Z
+local_gates_green_ts: 2026-04-29T14:18:00.267Z
 step_artifact: null
 closure_bundle_id: null
 closure_bundle_round: null
@@ -280,6 +303,8 @@ post_close_backlog_hygiene_blockers: []
 - implementation-audit-fail-round4 [high/review, resolved] round4 code audit blocker fixed by returning 503 for first support runtime service failures after payload validation and adding operator support route regression coverage
 - implementation-audit-fail-round5 [high/review, resolved] round5 code audit blocker fixed by checking the internal action-routing request state on support open replay and covering successful plus failed open action replay
 - implementation-audit-fail-round6 [high/review, resolved] round6 code audit blockers fixed by making support open replay idempotency-first, mapping canonical reader failures to unavailable states, and persisting requested action records before owner action routing
+- implementation-audit-fail-round7 [high/review, resolved] round7 spec audit blocker fixed by replacing the managed implementation verification artifact for trace commit 4cff15bbe24c with fresh root quality gates, focused support tests, full pnpm test and pnpm smoke:cell evidence
+- implementation-audit-fail-round8-code-terminal-reopen [high/review, resolved] round8 code audit blocker fixed by preserving terminal support closure status and closedAt across later explicit reopen updates, with regression coverage in support-store integration tests
 
 ## Transition events
 
@@ -303,6 +328,10 @@ post_close_backlog_hygiene_blockers: []
 - 2026-04-29T13:13:24.982Z: ready_for_close
 - 2026-04-29T13:18:27.509Z: blocked
 - 2026-04-29T13:31:38.471Z: ready_for_close
+- 2026-04-29T13:32:50.772Z: ready_for_close
+- 2026-04-29T13:49:14.421Z: ready_for_close
+- 2026-04-29T14:09:25.913Z: blocked
+- 2026-04-29T14:18:00.267Z: ready_for_close
 
 ## Close-out
 

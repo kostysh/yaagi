@@ -106,7 +106,7 @@
   "stage_state": "ready_for_close",
   "start_ts": "2026-04-29T10:55:00.903Z",
   "entered_ts": "2026-04-29T10:55:00.903Z",
-  "ready_for_close_ts": "2026-04-29T13:31:38.471Z",
+  "ready_for_close_ts": "2026-04-29T14:18:00.267Z",
   "transition_events": [
     {
       "kind": "entered",
@@ -187,6 +187,22 @@
     {
       "kind": "ready_for_close",
       "at": "2026-04-29T13:31:38.471Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-29T13:32:50.772Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-29T13:49:14.421Z"
+    },
+    {
+      "kind": "blocked",
+      "at": "2026-04-29T14:09:25.913Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-29T14:18:00.267Z"
     }
   ],
   "required_audit_classes": [
@@ -271,13 +287,27 @@
       "severity": "high",
       "resolved": true,
       "summary": "round6 code audit blockers fixed by making support open replay idempotency-first, mapping canonical reader failures to unavailable states, and persisting requested action records before owner action routing"
+    },
+    {
+      "id": "implementation-audit-fail-round7",
+      "category": "review",
+      "severity": "high",
+      "resolved": true,
+      "summary": "round7 spec audit blocker fixed by replacing the managed implementation verification artifact for trace commit 4cff15bbe24c with fresh root quality gates, focused support tests, full pnpm test and pnpm smoke:cell evidence"
+    },
+    {
+      "id": "implementation-audit-fail-round8-code-terminal-reopen",
+      "category": "review",
+      "severity": "high",
+      "resolved": true,
+      "summary": "round8 code audit blocker fixed by preserving terminal support closure status and closedAt across later explicit reopen updates, with regression coverage in support-store integration tests"
     }
   ],
   "session_id": "350b48a7-b180-4582-ae1d-ccb8e70b9a6b",
   "trace_runtime": "codex",
   "trace_locator_kind": "session_id",
   "stage_entry_commit": "616e09befd1f1a86b904a4ce7a149f7c99c8aebf",
-  "final_delivery_commit": "34542430341bff797aecb4efba73ddffe4a6a417",
+  "final_delivery_commit": "4cff15bbe24c9941c19b6c744ee34e21a812694c",
   "final_closure_commit": null,
   "implementation_review_scope": "code-bearing",
   "required_security_review": true,
@@ -286,7 +316,7 @@
   "step_artifact": null,
   "process_complete_ts": null,
   "intake_process_complete_ts": null,
-  "local_gates_green_ts": "2026-04-29T13:31:38.471Z",
+  "local_gates_green_ts": "2026-04-29T14:18:00.267Z",
   "first_review_agent_started_ts": null,
   "final_pass_ts": null
 }

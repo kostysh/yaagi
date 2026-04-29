@@ -1,21 +1,21 @@
 {
   "version": 1,
-  "created_at": "2026-04-29T13:18:07.182Z",
+  "created_at": "2026-04-29T14:08:43.201Z",
   "audit_class": "code-reviewer",
   "artifact_role": "latest_copy",
   "review_mode": "external",
-  "reviewer": "r06-code-reviewer",
+  "reviewer": "code-reviewer-r08",
   "reviewer_skill": "code-reviewer",
-  "reviewer_agent_id": null,
-  "reviewer_thread_id": "019dd95f-f8db-7f12-88cf-d85c6238f05a",
-  "review_attempt_id": "implementation--code-reviewer--r06",
-  "review_round_id": "r06",
-  "review_round_number": 6,
+  "reviewer_agent_id": "019dd98f-7852-7983-b128-8938a8569d3a",
+  "reviewer_thread_id": "019dd98f-7852-7983-b128-8938a8569d3a",
+  "review_attempt_id": "implementation--code-reviewer--r07",
+  "review_round_id": "r07",
+  "review_round_number": 7,
   "latest_copy_path": ".dossier/reviews/F-0028/implementation-code-review.json",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
   "feature_id": "F-0028",
-  "event_commit": "34542430341bff797aecb4efba73ddffe4a6a417",
+  "event_commit": "4cff15bbe24c9941c19b6c744ee34e21a812694c",
   "implementation_scope": "code-bearing",
   "security_trigger_reason": null,
   "invalidated": false,
@@ -24,13 +24,13 @@
   "verdict": "FAIL",
   "findings": {
     "must_fix": [
-      "apps/core/src/support/support-evidence.ts:401: openIncident resolves canonical evidence before input.store.openIncident, so an already accepted POST /support/incidents replay with report/release/auth refs can fail with reader/service unavailability before the store can return the existing accepted/deduplicated result. Move replay/conflict resolution ahead of volatile canonical reader calls or otherwise make open replay independent of reader availability. apps/core/src/support/support-evidence.ts:503 and apps/core/src/support/support-evidence.ts:539: update action routing executes owner seams before the support bundle update is durably applied; if one seam throws after another succeeds, canonical evidence resolution throws, or updateIncident fails, rejectClaimedIncidentUpdate marks the request failed and future replay refuses it while the successful owner-routed action is not recorded in support evidence. Persist attempted/succeeded action evidence durably or provide a compensating/recoverable state before refusing replay."
+      "Prevent non-terminal closureStatus updates from overwriting an already resolved/transferred support incident; preserve terminal closure state and closedAt unless an explicit, audited terminal-to-terminal transition is intended."
     ],
     "should_fix": [],
     "evidence": [
-      "Open path: apps/core/src/support/support-evidence.ts:401-412 resolves readers before store.openIncident; operator API injects support evidence refs at apps/core/src/platform/operator-api.ts:764-768; runtime wires reporting/release/auth readers at apps/core/src/runtime/runtime-lifecycle.ts:1893-1900. Post-claim action gap: routeActionRequests uses Promise.all at apps/core/src/support/support-evidence.ts:321-333, update routes before persistence at apps/core/src/support/support-evidence.ts:503-550, and catch rejects the claim at apps/core/src/support/support-evidence.ts:551-559; replay then returns the rejected request through packages/db/src/support.ts:714-722 and packages/db/src/support.ts:735-763. Tests cover successful/failed single-action replay but not reader-down open replay or partial multi-action/post-route persistence failure."
+      "packages/db/src/support.ts:297 applies next.closureStatus whenever scalarFieldUpdates.closureStatus is true and sets closedAt to null for non-terminal values; apps/core/src/support/support-evidence.ts:546-580 forwards any parsed closureStatus from PATCH into that scalar update path; current support tests only cover stale evidence preserving terminal state when closureStatus is omitted, not explicit reopen."
     ]
   },
-  "notes": "Independent r06 code review at 34542430341b. Reviewed support open/update replay state, post-claim handling, store transaction/replay behavior, runtime support wiring, operator API status mapping, and regression coverage. Verdict FAIL due open replay consulting volatile canonical readers before idempotency resolution, plus owner action execution can be lost from support evidence after post-claim failures.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--code-reviewer--r06--fail--34542430341b.json"
+  "notes": "FAIL: terminal support incidents can be reopened by a later update, clearing closedAt and weakening closure evidence.",
+  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--code-reviewer--r07--fail--4cff15bbe24c.json"
 }

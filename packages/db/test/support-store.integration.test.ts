@@ -581,6 +581,48 @@ void test('AC-F0028-08 preserves current scalar state when a stale update only a
   ]);
 });
 
+void test('AC-F0028-11 keeps terminal closure immutable against explicit reopen update', async () => {
+  const harness = createHarness();
+  const store = createSupportStore(harness.db);
+  await store.openIncident({
+    ...baseIncident(),
+    requestId: 'support-request-terminal-reopen-open',
+    normalizedRequestHash: 'hash-terminal-reopen-open',
+  });
+  const closed = await store.updateIncident({
+    ...baseIncident({
+      closureStatus: SUPPORT_CLOSURE_STATUS.RESOLVED,
+      residualRisk: 'accepted by owner',
+      nextOwnerRef: 'F-0013',
+      closedAt: now,
+    }),
+    requestId: 'support-request-terminal-reopen-close',
+    normalizedRequestHash: 'hash-terminal-reopen-close',
+    scalarFieldUpdates: { closureStatus: true, residualRisk: true, nextOwnerRef: true },
+  });
+  assert.equal(closed.accepted, true);
+
+  const explicitReopen = await store.updateIncident({
+    ...baseIncident({
+      closureStatus: SUPPORT_CLOSURE_STATUS.OPEN,
+      sourceRefs: ['operator-route:/health', 'support-source:late-reopen'],
+      closedAt: null,
+    }),
+    requestId: 'support-request-terminal-reopen-update',
+    normalizedRequestHash: 'hash-terminal-reopen-update',
+    scalarFieldUpdates: { closureStatus: true },
+  });
+
+  assert.equal(explicitReopen.accepted, true);
+  if (!explicitReopen.accepted) return;
+  assert.equal(explicitReopen.incident.closureStatus, SUPPORT_CLOSURE_STATUS.RESOLVED);
+  assert.equal(explicitReopen.incident.closedAt, now);
+  assert.deepEqual(explicitReopen.incident.sourceRefs, [
+    'operator-route:/health',
+    'support-source:late-reopen',
+  ]);
+});
+
 void test('AC-F0028-13 rejects foreign owner writes without mutating support rows', async () => {
   const harness = createHarness();
   const store = createSupportStore(harness.db);

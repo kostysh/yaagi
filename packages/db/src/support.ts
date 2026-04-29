@@ -294,16 +294,22 @@ const mergeIncidentBundle = (
   next: SupportEvidenceBundle,
   scalarFieldUpdates: UpdateSupportIncidentInput['scalarFieldUpdates'] = {},
 ): SupportEvidenceBundle => {
-  const closureStatus = scalarFieldUpdates.closureStatus
-    ? next.closureStatus
-    : current.closureStatus;
+  const preserveTerminalClosure =
+    scalarFieldUpdates.closureStatus && isSupportTerminalClosureStatus(current.closureStatus);
+  const closureStatus = preserveTerminalClosure
+    ? current.closureStatus
+    : scalarFieldUpdates.closureStatus
+      ? next.closureStatus
+      : current.closureStatus;
   const residualRisk = scalarFieldUpdates.residualRisk ? next.residualRisk : current.residualRisk;
   const nextOwnerRef = scalarFieldUpdates.nextOwnerRef ? next.nextOwnerRef : current.nextOwnerRef;
-  const closedAt = scalarFieldUpdates.closureStatus
-    ? isSupportTerminalClosureStatus(closureStatus)
-      ? (current.closedAt ?? next.updatedAt)
-      : null
-    : current.closedAt;
+  const closedAt = preserveTerminalClosure
+    ? current.closedAt
+    : scalarFieldUpdates.closureStatus
+      ? isSupportTerminalClosureStatus(closureStatus)
+        ? (current.closedAt ?? next.updatedAt)
+        : null
+      : current.closedAt;
 
   return supportEvidenceBundleSchema.parse({
     ...next,
