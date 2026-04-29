@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-29T10:29:08.469Z",
+  "updated_at": "2026-04-29T10:36:12.649Z",
   "last_refresh_at": "2026-04-29T10:29:08.469Z",
   "context": {
     "glossary": [
@@ -1207,7 +1207,7 @@
       "item_key": "CF-026",
       "title": "Support / operability contract и incident discipline",
       "type": "feature",
-      "delivery_state": "intaken",
+      "delivery_state": "specified",
       "gaps": [],
       "depends_on_keys": [
         "CF-009",
@@ -1239,7 +1239,7 @@
       "needs_attention": false,
       "attention_reason_codes": [],
       "attention_reasons": [],
-      "ready_for_next_step": false
+      "ready_for_next_step": true
     },
     {
       "item_key": "CF-027",
