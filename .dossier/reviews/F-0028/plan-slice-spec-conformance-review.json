@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "created_at": "2026-04-29T10:50:03.502Z",
+  "audit_class": "spec-conformance-reviewer",
+  "artifact_role": "latest_copy",
+  "review_mode": "external",
+  "reviewer": "external-agent-codex",
+  "reviewer_skill": "spec-conformance-reviewer",
+  "reviewer_agent_id": null,
+  "reviewer_thread_id": "019dd8da-e05a-79e0-ae65-c2e5dcb8a8a1",
+  "review_attempt_id": "plan-slice--spec-conformance-reviewer--r01",
+  "review_round_id": "r01",
+  "review_round_number": 1,
+  "latest_copy_path": ".dossier/reviews/F-0028/plan-slice-spec-conformance-review.json",
+  "step": "plan-slice",
+  "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
+  "feature_id": "F-0028",
+  "event_commit": "d8a1f6051c3e49370ab524bdf222ce18fc36c754",
+  "implementation_scope": null,
+  "security_trigger_reason": null,
+  "invalidated": false,
+  "rerun_reason": null,
+  "allowed_by_policy": true,
+  "verdict": "PASS",
+  "findings": {
+    "must_fix": [],
+    "should_fix": [],
+    "evidence": [
+      "commit d8a1f6051c3e49370ab524bdf222ce18fc36c754",
+      "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md plan-slice decisions, slices, task list and coverage map",
+      ".dossier/backlog/patches/9566c639ed46--2026-04-29-061-f0028-plan-slice-actualization.patch.json actualizes CF-026 to planned"
+    ]
+  },
+  "notes": "PASS: plan-slice is semantically conformant with F-0028/CF-026. It preserves F-0028 as support/operability owner without shadow control plane, routes release concerns through F-0026, declares applicable policy/admission families admission,replay,evidence,runtime-gating, and includes adequate negative coverage rows. Non-blocking note: committed stage metadata leaves backlog_actualization_artifacts empty even though applied backlog state and canonical patch prove specified-to-planned actualization.",
+  "immutable_artifact_path": ".dossier/reviews/F-0028/plan-slice--spec-conformance-reviewer--r01--pass--d8a1f6051c3e.json"
+}

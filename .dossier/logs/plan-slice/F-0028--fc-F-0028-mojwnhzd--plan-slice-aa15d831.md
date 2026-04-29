@@ -23,18 +23,45 @@ backlog_followup_resolved: false
 backlog_lifecycle_target: planned
 backlog_lifecycle_current: planned
 backlog_lifecycle_reconciled: true
-backlog_actualization_artifacts: []
-backlog_actualization_verdict: current_state_satisfies_target
-review_artifacts: []
-verification_artifacts: []
+backlog_actualization_artifacts:
+  - .dossier/backlog/patches/9566c639ed46--2026-04-29-061-f0028-plan-slice-actualization.patch.json
+backlog_actualization_verdict: actualized_by_backlog_artifact
+review_artifacts:
+  - .dossier/reviews/F-0028/plan-slice--spec-conformance-reviewer--r01--pass--d8a1f6051c3e.json
+verification_artifacts:
+  - .dossier/verification/F-0028/plan-slice-d8a1f6051c3e.json
 required_audit_classes:
   - spec-conformance-reviewer
-executed_audit_classes: []
-required_external_review_pending: true
-review_events: []
-reviewer_skills: []
+executed_audit_classes:
+  - spec-conformance-reviewer
+required_external_review_pending: false
+review_events:
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0028/plan-slice--spec-conformance-reviewer--r01--pass--d8a1f6051c3e.json
+    audit_class: spec-conformance-reviewer
+    evidence_count: 3
+    event_commit: d8a1f6051c3e49370ab524bdf222ce18fc36c754
+    implementation_scope: null
+    invalidated: false
+    latest_copy_path: .dossier/reviews/F-0028/plan-slice--spec-conformance-reviewer--latest.json
+    must_fix_count: 0
+    recorded_at: 2026-04-29T10:50:03.513Z
+    review_mode: external
+    review_attempt_id: plan-slice--spec-conformance-reviewer--r01
+    review_round_id: r01
+    review_round_number: 1
+    reviewer: external-agent-codex
+    reviewer_agent_id: null
+    reviewer_skill: spec-conformance-reviewer
+    reviewer_thread_id: 019dd8da-e05a-79e0-ae65-c2e5dcb8a8a1
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
+reviewer_skills:
+  - spec-conformance-reviewer
 reviewer_agent_ids: []
-review_trace_commits: []
+review_trace_commits:
+  - d8a1f6051c3e49370ab524bdf222ce18fc36c754
 degraded_review_present: false
 invalidated_review_present: false
 stale_review_present: false
@@ -47,7 +74,7 @@ session_id: 7f14e92d-039b-4291-a402-c68f7060420b
 trace_runtime: codex
 trace_locator_kind: session_id
 final_delivery_commit: 785b4827022b28c82b5b85e12197b9d969b4db51
-final_closure_commit: null
+final_closure_commit: d8a1f6051c3e49370ab524bdf222ce18fc36c754
 policy_admission_risk_profile: applicable
 policy_admission_risk_rationale: F-0028 implementation will admit support
   evidence writes and optional support operator routes, replay incident/evidence
@@ -91,17 +118,52 @@ policy_admission_negative_matrix:
     evidence: apps/core/test/support/support-canonical-refs.integration.test.ts
 policy_admission_matrix_status: complete
 policy_admission_matrix_blockers: []
-step_artifact: null
-closure_bundle_id: null
-closure_bundle_round: null
-closure_bundle_rounds_by_audit_class: {}
-selected_review_artifacts: []
-selected_verification_artifact: null
-selected_step_artifact: null
-selected_closure_ts: null
-rpa_source_identity: null
-rpa_source_quality: null
+step_artifact: .dossier/steps/F-0028/plan-slice.json
+closure_bundle_id: plan-slice--bundle-a9fcda324f33--r01--d8a1f6051c3e
+closure_bundle_round: 1
+closure_bundle_rounds_by_audit_class:
+  spec-conformance-reviewer: 1
+selected_review_artifacts:
+  - .dossier/reviews/F-0028/plan-slice--spec-conformance-reviewer--r01--pass--d8a1f6051c3e.json
+selected_verification_artifact: .dossier/verification/F-0028/plan-slice-d8a1f6051c3e.json
+selected_step_artifact: .dossier/steps/F-0028/plan-slice.json
+selected_closure_ts: 2026-04-29T10:51:03.012Z
+rpa_source_identity:
+  schema_version: 1
+  feature_id: F-0028
+  backlog_item_key: CF-026
+  feature_cycle_id: fc-F-0028-mojwnhzd
+  cycle_id: plan-slice-aa15d831
+  stage: plan-slice
+  dossier: docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md
+  stage_log: .dossier/logs/plan-slice/F-0028--fc-F-0028-mojwnhzd--plan-slice-aa15d831.md
+  stage_state_path: .dossier/stages/F-0028/plan-slice.json
+  step_artifact: .dossier/steps/F-0028/plan-slice.json
+  event_commit: d8a1f6051c3e49370ab524bdf222ce18fc36c754
+  session_id: 7f14e92d-039b-4291-a402-c68f7060420b
+  trace_runtime: codex
+rpa_source_quality:
+  schema_version: 1
+  review_history_quality: complete
+  selected_bundle_quality: complete
+  missing_fail_artifact_count: 0
+  trace_only_fail_count: 0
+  same_thread_rejected_count: 0
+  invalid_launch_mode_process_miss_count: 0
+  unrecoverable_historical_fail_present: false
+  limitations: []
 non_pass_review_events: []
+stage_entry_commit: null
+implementation_review_scope: null
+required_security_review: false
+security_trigger_reasons: []
+step_close_ts: 2026-04-29T10:51:03.033Z
+process_complete_ts: 2026-04-29T10:51:03.033Z
+intake_process_complete_ts: null
+local_gates_green_ts: null
+first_review_agent_started_ts: 2026-04-29T10:50:03.513Z
+final_pass_ts: 2026-04-29T10:50:03.513Z
+verification_trace_commit: d8a1f6051c3e49370ab524bdf222ce18fc36c754
 ---
 
 ## Scope
