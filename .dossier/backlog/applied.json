@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "created_at": "2026-04-09T23:44:11.048Z",
-  "updated_at": "2026-04-29T15:07:32.960Z",
-  "next_apply_index": 66,
+  "updated_at": "2026-04-29T16:40:17.053Z",
+  "next_apply_index": 67,
   "packets": [
     {
       "packet_id": "f0947cdd-67be-4f98-9cbd-bec31fce4589",
@@ -849,6 +849,18 @@
       "content_hash": "90b55ab96fcefe64586a3c208514b2d26ec86b3248a85768133c4d9c0c2af404",
       "sequence": 64,
       "applied_at": "2026-04-29T15:07:32.960Z",
+      "kind": "patch-item",
+      "target_item_keys": [
+        "CF-029"
+      ]
+    },
+    {
+      "patch_id": "2026-04-29-065-f0029-spec-compact-actualization",
+      "apply_index": 66,
+      "canonical_path": ".dossier/backlog/patches/0ed2c174fe29--2026-04-29-065-f0029-spec-compact-actualization.patch.json",
+      "content_hash": "0ed2c174fe298c686d1ea18c5c5021214e447c4f0cfbb3da46c370a1825c3e94",
+      "sequence": 65,
+      "applied_at": "2026-04-29T16:40:17.053Z",
       "kind": "patch-item",
       "target_item_keys": [
         "CF-029"

@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "patch_id": "2026-04-29-065-f0029-spec-compact-actualization",
+    "created_at": "2026-04-29T16:40:00.000Z",
+    "sequence": 65,
+    "target_item_keys": [
+      "CF-029"
+    ]
+  },
+  "operations": [
+    {
+      "item_key": "CF-029",
+      "action": "replace_fields",
+      "fields": {
+        "delivery_state": "specified"
+      }
+    }
+  ]
+}
