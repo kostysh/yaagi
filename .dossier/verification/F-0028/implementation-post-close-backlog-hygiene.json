@@ -1,13 +1,13 @@
 {
   "version": 2,
   "schema_version": 2,
-  "created_at": "2026-04-29T19:46:22.953Z",
+  "created_at": "2026-04-29T20:54:41.387Z",
   "feature_id": "F-0028",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
   "implementation_step_artifact": ".dossier/steps/F-0028/implementation.json",
   "implementation_process_complete_ts": "2026-04-29T14:52:58.422Z",
-  "global_refresh_artifact": ".dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T19-46-22-382Z.json",
+  "global_refresh_artifact": ".dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T20-54-40-816Z.json",
   "affected_feature_ids": [
     "F-0026",
     "F-0027",
@@ -16,7 +16,7 @@
   ],
   "pre_status_summary": {
     "total_items": 29,
-    "last_refresh_at": "2026-04-29T17:30:46.784Z",
+    "last_refresh_at": "2026-04-29T19:46:22.640Z",
     "defined_count": 0,
     "intaken_count": 0,
     "specified_count": 0,
@@ -34,22 +34,21 @@
     "source_review_blocked_item_count": 0,
     "lifecycle_reconciliation_drift_count": 0,
     "lifecycle_reconciliation_drifts": [],
-    "post_close_hygiene_missing_count": 1,
-    "post_close_hygiene_stale_count": 3,
-    "post_close_hygiene_blocked_count": 0,
-    "post_close_hygiene_missing_feature_ids": [
-      "F-0029"
-    ],
-    "post_close_hygiene_stale_feature_ids": [
+    "post_close_hygiene_missing_count": 0,
+    "post_close_hygiene_stale_count": 0,
+    "post_close_hygiene_blocked_count": 4,
+    "post_close_hygiene_missing_feature_ids": [],
+    "post_close_hygiene_stale_feature_ids": [],
+    "post_close_hygiene_blocked_feature_ids": [
       "F-0026",
       "F-0027",
-      "F-0028"
-    ],
-    "post_close_hygiene_blocked_feature_ids": []
+      "F-0028",
+      "F-0029"
+    ]
   },
   "post_status_summary": {
     "total_items": 29,
-    "last_refresh_at": "2026-04-29T19:46:22.640Z",
+    "last_refresh_at": "2026-04-29T20:54:41.091Z",
     "defined_count": 0,
     "intaken_count": 0,
     "specified_count": 0,
@@ -63,46 +62,33 @@
       "applied_canonical_paths_exist": true,
       "missing_canonical_paths": []
     },
-    "open_source_review_count": 2,
-    "source_review_blocked_item_count": 29,
+    "open_source_review_count": 0,
+    "source_review_blocked_item_count": 0,
     "lifecycle_reconciliation_drift_count": 0,
     "lifecycle_reconciliation_drifts": [],
-    "post_close_hygiene_missing_count": 1,
-    "post_close_hygiene_stale_count": 3,
+    "post_close_hygiene_missing_count": 0,
+    "post_close_hygiene_stale_count": 4,
     "post_close_hygiene_blocked_count": 0,
-    "post_close_hygiene_missing_feature_ids": [
-      "F-0029"
-    ],
+    "post_close_hygiene_missing_feature_ids": [],
     "post_close_hygiene_stale_feature_ids": [
       "F-0026",
       "F-0027",
-      "F-0028"
+      "F-0028",
+      "F-0029"
     ],
     "post_close_hygiene_blocked_feature_ids": []
   },
-  "refresh_ran_at": "2026-04-29T19:46:22.640Z",
-  "backlog_last_refresh_at": "2026-04-29T19:46:22.640Z",
+  "refresh_ran_at": "2026-04-29T20:54:41.091Z",
+  "backlog_last_refresh_at": "2026-04-29T20:54:41.091Z",
   "refresh_summary": {
-    "changed_sources": [
-      {
-        "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
-        "source_label": "docs/architecture/system.md"
-      },
-      {
-        "source_id": "5b9f63ff-21ce-440c-a3a3-7416945dde4f",
-        "source_label": "README.md"
-      }
-    ],
+    "changed_sources": [],
     "source_reviews_created": 0,
-    "source_reviews_updated": 2,
-    "source_review_ids": [
-      "sr-5aadc3ce-b323-4a75-a0f0-fcd540516f87",
-      "sr-5b9f63ff-21ce-440c-a3a3-7416945dde4f"
-    ]
+    "source_reviews_updated": 0,
+    "source_review_ids": []
   },
   "status_summary": {
     "total_items": 29,
-    "last_refresh_at": "2026-04-29T19:46:22.640Z",
+    "last_refresh_at": "2026-04-29T20:54:41.091Z",
     "defined_count": 0,
     "intaken_count": 0,
     "specified_count": 0,
@@ -116,100 +102,34 @@
       "applied_canonical_paths_exist": true,
       "missing_canonical_paths": []
     },
-    "open_source_review_count": 2,
-    "source_review_blocked_item_count": 29,
+    "open_source_review_count": 0,
+    "source_review_blocked_item_count": 0,
     "lifecycle_reconciliation_drift_count": 0,
     "lifecycle_reconciliation_drifts": [],
-    "post_close_hygiene_missing_count": 1,
-    "post_close_hygiene_stale_count": 3,
+    "post_close_hygiene_missing_count": 0,
+    "post_close_hygiene_stale_count": 4,
     "post_close_hygiene_blocked_count": 0,
-    "post_close_hygiene_missing_feature_ids": [
-      "F-0029"
-    ],
+    "post_close_hygiene_missing_feature_ids": [],
     "post_close_hygiene_stale_feature_ids": [
       "F-0026",
       "F-0027",
-      "F-0028"
+      "F-0028",
+      "F-0029"
     ],
     "post_close_hygiene_blocked_feature_ids": []
   },
-  "attention_summary": [
-    {
-      "entry_kind": "source_review",
-      "source_review_id": "sr-5aadc3ce-b323-4a75-a0f0-fcd540516f87",
-      "source_id": "5aadc3ce-b323-4a75-a0f0-fcd540516f87",
-      "source_label": "docs/architecture/system.md",
-      "linked_item_keys": [
-        "CF-001",
-        "CF-002",
-        "CF-003",
-        "CF-004",
-        "CF-005",
-        "CF-006",
-        "CF-007",
-        "CF-008",
-        "CF-009",
-        "CF-010",
-        "CF-011",
-        "CF-012",
-        "CF-013",
-        "CF-014",
-        "CF-015",
-        "CF-016",
-        "CF-017",
-        "CF-018",
-        "CF-019",
-        "CF-020",
-        "CF-021",
-        "CF-022",
-        "CF-023",
-        "CF-024",
-        "CF-025",
-        "CF-026",
-        "CF-027",
-        "CF-028",
-        "CF-029"
-      ],
-      "linked_item_count": 29,
-      "status": "open",
-      "next_commands": [
-        "dossier-engineer attention",
-        "dossier-engineer items --item-keys CF-001,CF-002,CF-003,CF-004,CF-005,CF-006,CF-007,CF-008,CF-009,CF-010,CF-011,CF-012,CF-013,CF-014,CF-015,CF-016,CF-017,CF-018,CF-019,CF-020,CF-021,CF-022,CF-023,CF-024,CF-025,CF-026,CF-027,CF-028,CF-029",
-        "dossier-engineer ack-source-review --source-review-id sr-5aadc3ce-b323-4a75-a0f0-fcd540516f87"
-      ]
-    },
-    {
-      "entry_kind": "source_review",
-      "source_review_id": "sr-5b9f63ff-21ce-440c-a3a3-7416945dde4f",
-      "source_id": "5b9f63ff-21ce-440c-a3a3-7416945dde4f",
-      "source_label": "README.md",
-      "linked_item_keys": [
-        "CF-029"
-      ],
-      "linked_item_count": 1,
-      "status": "open",
-      "next_commands": [
-        "dossier-engineer attention",
-        "dossier-engineer items --item-keys CF-029",
-        "dossier-engineer ack-source-review --source-review-id sr-5b9f63ff-21ce-440c-a3a3-7416945dde4f"
-      ]
-    }
-  ],
+  "attention_summary": [],
   "queue_summary": {
     "data": [],
     "warnings": [
-      "Post-close backlog hygiene missing for implementation features: F-0029",
-      "Post-close backlog hygiene stale for implementation features: F-0026, F-0027, F-0028"
+      "Post-close backlog hygiene stale for implementation features: F-0026, F-0027, F-0028, F-0029"
     ]
   },
-  "open_source_review_count": 2,
-  "source_review_blocked_item_count": 29,
+  "open_source_review_count": 0,
+  "source_review_blocked_item_count": 0,
   "lifecycle_reconciliation_drift_count": 0,
-  "unresolved_attention_present": true,
-  "backlog_clean": false,
-  "result": "blocked",
-  "blockers": [
-    "Open source reviews remain after refresh: 2.",
-    "Source-review blocked backlog items remain: 29."
-  ]
+  "unresolved_attention_present": false,
+  "backlog_clean": true,
+  "result": "clean",
+  "blockers": []
 }

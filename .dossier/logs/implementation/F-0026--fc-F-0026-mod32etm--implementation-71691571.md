@@ -370,17 +370,15 @@ pre_review_checklist_blockers: []
 local_gates_green_ts: 2026-04-24T23:06:15.499Z
 step_artifact: .dossier/steps/F-0026/implementation.json
 post_close_backlog_hygiene_required: true
-post_close_backlog_hygiene_status: blocked
+post_close_backlog_hygiene_status: clean
 post_close_backlog_hygiene_artifact: .dossier/verification/F-0026/implementation-post-close-backlog-hygiene.json
-post_close_backlog_hygiene_checked_at: 2026-04-29T19:46:22.953Z
-post_close_backlog_hygiene_refresh_at: 2026-04-29T19:46:22.640Z
-post_close_open_source_review_count: 2
-post_close_source_review_blocked_item_count: 29
+post_close_backlog_hygiene_checked_at: 2026-04-29T20:54:41.387Z
+post_close_backlog_hygiene_refresh_at: 2026-04-29T20:54:41.091Z
+post_close_open_source_review_count: 0
+post_close_source_review_blocked_item_count: 0
 post_close_lifecycle_reconciliation_drift_count: 0
-post_close_unresolved_attention_present: true
-post_close_backlog_hygiene_blockers:
-  - "Open source reviews remain after refresh: 2."
-  - "Source-review blocked backlog items remain: 29."
+post_close_unresolved_attention_present: false
+post_close_backlog_hygiene_blockers: []
 step_close_ts: 2026-04-24T23:07:27.566Z
 process_complete_ts: 2026-04-24T23:07:27.566Z
 intake_process_complete_ts: null
@@ -397,7 +395,7 @@ selected_closure_ts: null
 rpa_source_identity: null
 rpa_source_quality: null
 non_pass_review_events: []
-post_close_backlog_hygiene_global_refresh_artifact: .dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T19-46-22-382Z.json
+post_close_backlog_hygiene_global_refresh_artifact: .dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T20-54-40-816Z.json
 post_close_affected_feature_ids:
   - F-0026
   - F-0027
@@ -405,7 +403,7 @@ post_close_affected_feature_ids:
   - F-0029
 post_close_pre_status_summary:
   total_items: 29
-  last_refresh_at: 2026-04-29T17:30:46.784Z
+  last_refresh_at: 2026-04-29T19:46:22.640Z
   defined_count: 0
   intaken_count: 0
   specified_count: 0
@@ -422,19 +420,19 @@ post_close_pre_status_summary:
   source_review_blocked_item_count: 0
   lifecycle_reconciliation_drift_count: 0
   lifecycle_reconciliation_drifts: []
-  post_close_hygiene_missing_count: 1
-  post_close_hygiene_stale_count: 3
-  post_close_hygiene_blocked_count: 0
-  post_close_hygiene_missing_feature_ids:
-    - F-0029
-  post_close_hygiene_stale_feature_ids:
+  post_close_hygiene_missing_count: 0
+  post_close_hygiene_stale_count: 0
+  post_close_hygiene_blocked_count: 4
+  post_close_hygiene_missing_feature_ids: []
+  post_close_hygiene_stale_feature_ids: []
+  post_close_hygiene_blocked_feature_ids:
     - F-0026
     - F-0027
     - F-0028
-  post_close_hygiene_blocked_feature_ids: []
+    - F-0029
 post_close_post_status_summary:
   total_items: 29
-  last_refresh_at: 2026-04-29T19:46:22.640Z
+  last_refresh_at: 2026-04-29T20:54:41.091Z
   defined_count: 0
   intaken_count: 0
   specified_count: 0
@@ -447,19 +445,19 @@ post_close_post_status_summary:
   artifact_integrity:
     applied_canonical_paths_exist: true
     missing_canonical_paths: []
-  open_source_review_count: 2
-  source_review_blocked_item_count: 29
+  open_source_review_count: 0
+  source_review_blocked_item_count: 0
   lifecycle_reconciliation_drift_count: 0
   lifecycle_reconciliation_drifts: []
-  post_close_hygiene_missing_count: 1
-  post_close_hygiene_stale_count: 3
+  post_close_hygiene_missing_count: 0
+  post_close_hygiene_stale_count: 4
   post_close_hygiene_blocked_count: 0
-  post_close_hygiene_missing_feature_ids:
-    - F-0029
+  post_close_hygiene_missing_feature_ids: []
   post_close_hygiene_stale_feature_ids:
     - F-0026
     - F-0027
     - F-0028
+    - F-0029
   post_close_hygiene_blocked_feature_ids: []
 post_close_hygiene_schema_version: 2
 ---

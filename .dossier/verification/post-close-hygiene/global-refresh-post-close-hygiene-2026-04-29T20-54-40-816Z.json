@@ -1,19 +1,14 @@
 {
   "version": 2,
   "schema_version": 2,
+  "run_id": "post-close-hygiene-2026-04-29T20-54-40-816Z",
   "created_at": "2026-04-29T20:54:41.387Z",
-  "feature_id": "F-0029",
+  "updated_at": "2026-04-29T20:54:41.484Z",
   "step": "implementation",
-  "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
-  "implementation_step_artifact": ".dossier/steps/F-0029/implementation.json",
-  "implementation_process_complete_ts": "2026-04-29T19:46:02.265Z",
-  "global_refresh_artifact": ".dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T20-54-40-816Z.json",
-  "affected_feature_ids": [
-    "F-0026",
-    "F-0027",
-    "F-0028",
-    "F-0029"
-  ],
+  "command": "post-close-hygiene",
+  "result": "complete",
+  "durability_status": "final",
+  "global_refresh_ran_at": "2026-04-29T20:54:41.091Z",
   "pre_status_summary": {
     "total_items": 29,
     "last_refresh_at": "2026-04-29T19:46:22.640Z",
@@ -45,6 +40,12 @@
       "F-0028",
       "F-0029"
     ]
+  },
+  "refresh_summary": {
+    "changed_sources": [],
+    "source_reviews_created": 0,
+    "source_reviews_updated": 0,
+    "source_review_ids": []
   },
   "post_status_summary": {
     "total_items": 29,
@@ -78,58 +79,34 @@
     ],
     "post_close_hygiene_blocked_feature_ids": []
   },
-  "refresh_ran_at": "2026-04-29T20:54:41.091Z",
-  "backlog_last_refresh_at": "2026-04-29T20:54:41.091Z",
-  "refresh_summary": {
-    "changed_sources": [],
-    "source_reviews_created": 0,
-    "source_reviews_updated": 0,
-    "source_review_ids": []
-  },
-  "status_summary": {
-    "total_items": 29,
-    "last_refresh_at": "2026-04-29T20:54:41.091Z",
-    "defined_count": 0,
-    "intaken_count": 0,
-    "specified_count": 0,
-    "planned_count": 0,
-    "implemented_count": 29,
-    "gaps_count": 0,
-    "needs_attention_count": 0,
-    "ready_for_next_step_count": 0,
-    "open_todo_count": 0,
-    "artifact_integrity": {
-      "applied_canonical_paths_exist": true,
-      "missing_canonical_paths": []
+  "affected_feature_ids": [
+    "F-0026",
+    "F-0027",
+    "F-0028",
+    "F-0029"
+  ],
+  "failed_feature_ids": [],
+  "per_feature_results": [
+    {
+      "artifact_path": ".dossier/verification/F-0026/implementation-post-close-backlog-hygiene.json",
+      "feature_id": "F-0026",
+      "result": "clean"
     },
-    "open_source_review_count": 0,
-    "source_review_blocked_item_count": 0,
-    "lifecycle_reconciliation_drift_count": 0,
-    "lifecycle_reconciliation_drifts": [],
-    "post_close_hygiene_missing_count": 0,
-    "post_close_hygiene_stale_count": 4,
-    "post_close_hygiene_blocked_count": 0,
-    "post_close_hygiene_missing_feature_ids": [],
-    "post_close_hygiene_stale_feature_ids": [
-      "F-0026",
-      "F-0027",
-      "F-0028",
-      "F-0029"
-    ],
-    "post_close_hygiene_blocked_feature_ids": []
-  },
-  "attention_summary": [],
-  "queue_summary": {
-    "data": [],
-    "warnings": [
-      "Post-close backlog hygiene stale for implementation features: F-0026, F-0027, F-0028, F-0029"
-    ]
-  },
-  "open_source_review_count": 0,
-  "source_review_blocked_item_count": 0,
-  "lifecycle_reconciliation_drift_count": 0,
-  "unresolved_attention_present": false,
-  "backlog_clean": true,
-  "result": "clean",
-  "blockers": []
+    {
+      "artifact_path": ".dossier/verification/F-0027/implementation-post-close-backlog-hygiene.json",
+      "feature_id": "F-0027",
+      "result": "clean"
+    },
+    {
+      "artifact_path": ".dossier/verification/F-0028/implementation-post-close-backlog-hygiene.json",
+      "feature_id": "F-0028",
+      "result": "clean"
+    },
+    {
+      "artifact_path": ".dossier/verification/F-0029/implementation-post-close-backlog-hygiene.json",
+      "feature_id": "F-0029",
+      "result": "clean"
+    }
+  ],
+  "retry_command": null
 }
