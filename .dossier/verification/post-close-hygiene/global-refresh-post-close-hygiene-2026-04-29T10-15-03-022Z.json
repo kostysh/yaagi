@@ -1,0 +1,95 @@
+{
+  "version": 2,
+  "schema_version": 2,
+  "run_id": "post-close-hygiene-2026-04-29T10-15-03-022Z",
+  "created_at": "2026-04-29T10:15:03.483Z",
+  "updated_at": "2026-04-29T10:15:03.525Z",
+  "step": "implementation",
+  "command": "post-close-hygiene",
+  "result": "complete",
+  "durability_status": "final",
+  "global_refresh_ran_at": "2026-04-29T10:15:03.244Z",
+  "pre_status_summary": {
+    "total_items": 28,
+    "last_refresh_at": "2026-04-28T14:03:56.833Z",
+    "defined_count": 1,
+    "intaken_count": 0,
+    "specified_count": 0,
+    "planned_count": 0,
+    "implemented_count": 27,
+    "gaps_count": 0,
+    "needs_attention_count": 0,
+    "ready_for_next_step_count": 1,
+    "open_todo_count": 0,
+    "artifact_integrity": {
+      "applied_canonical_paths_exist": true,
+      "missing_canonical_paths": []
+    },
+    "open_source_review_count": 0,
+    "source_review_blocked_item_count": 0,
+    "lifecycle_reconciliation_drift_count": 0,
+    "lifecycle_reconciliation_drifts": [],
+    "post_close_hygiene_missing_count": 0,
+    "post_close_hygiene_stale_count": 1,
+    "post_close_hygiene_blocked_count": 0,
+    "post_close_hygiene_missing_feature_ids": [],
+    "post_close_hygiene_stale_feature_ids": [
+      "F-0026"
+    ],
+    "post_close_hygiene_blocked_feature_ids": []
+  },
+  "refresh_summary": {
+    "changed_sources": [],
+    "source_reviews_created": 0,
+    "source_reviews_updated": 0,
+    "source_review_ids": []
+  },
+  "post_status_summary": {
+    "total_items": 28,
+    "last_refresh_at": "2026-04-29T10:15:03.244Z",
+    "defined_count": 1,
+    "intaken_count": 0,
+    "specified_count": 0,
+    "planned_count": 0,
+    "implemented_count": 27,
+    "gaps_count": 0,
+    "needs_attention_count": 0,
+    "ready_for_next_step_count": 1,
+    "open_todo_count": 0,
+    "artifact_integrity": {
+      "applied_canonical_paths_exist": true,
+      "missing_canonical_paths": []
+    },
+    "open_source_review_count": 0,
+    "source_review_blocked_item_count": 0,
+    "lifecycle_reconciliation_drift_count": 0,
+    "lifecycle_reconciliation_drifts": [],
+    "post_close_hygiene_missing_count": 0,
+    "post_close_hygiene_stale_count": 2,
+    "post_close_hygiene_blocked_count": 0,
+    "post_close_hygiene_missing_feature_ids": [],
+    "post_close_hygiene_stale_feature_ids": [
+      "F-0026",
+      "F-0027"
+    ],
+    "post_close_hygiene_blocked_feature_ids": []
+  },
+  "affected_feature_ids": [
+    "F-0026",
+    "F-0027"
+  ],
+  "failed_feature_ids": [],
+  "per_feature_results": [
+    {
+      "artifact_path": ".dossier/verification/F-0026/implementation-post-close-backlog-hygiene.json",
+      "feature_id": "F-0026",
+      "result": "clean"
+    },
+    {
+      "artifact_path": ".dossier/verification/F-0027/implementation-post-close-backlog-hygiene.json",
+      "feature_id": "F-0027",
+      "result": "clean"
+    }
+  ],
+  "retry_command": null
+}

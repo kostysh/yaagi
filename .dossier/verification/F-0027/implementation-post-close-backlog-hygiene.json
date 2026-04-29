@@ -1,13 +1,78 @@
 {
-  "version": 1,
-  "created_at": "2026-04-28T14:03:57.140Z",
+  "version": 2,
+  "schema_version": 2,
+  "created_at": "2026-04-29T10:15:03.483Z",
   "feature_id": "F-0027",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0027-specialist-organs-rollout-retirement-policy.md",
   "implementation_step_artifact": ".dossier/steps/F-0027/implementation.json",
   "implementation_process_complete_ts": "2026-04-28T14:00:31.377Z",
-  "refresh_ran_at": "2026-04-28T14:03:56.833Z",
-  "backlog_last_refresh_at": "2026-04-28T14:03:56.833Z",
+  "global_refresh_artifact": ".dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T10-15-03-022Z.json",
+  "affected_feature_ids": [
+    "F-0026",
+    "F-0027"
+  ],
+  "pre_status_summary": {
+    "total_items": 28,
+    "last_refresh_at": "2026-04-28T14:03:56.833Z",
+    "defined_count": 1,
+    "intaken_count": 0,
+    "specified_count": 0,
+    "planned_count": 0,
+    "implemented_count": 27,
+    "gaps_count": 0,
+    "needs_attention_count": 0,
+    "ready_for_next_step_count": 1,
+    "open_todo_count": 0,
+    "artifact_integrity": {
+      "applied_canonical_paths_exist": true,
+      "missing_canonical_paths": []
+    },
+    "open_source_review_count": 0,
+    "source_review_blocked_item_count": 0,
+    "lifecycle_reconciliation_drift_count": 0,
+    "lifecycle_reconciliation_drifts": [],
+    "post_close_hygiene_missing_count": 0,
+    "post_close_hygiene_stale_count": 1,
+    "post_close_hygiene_blocked_count": 0,
+    "post_close_hygiene_missing_feature_ids": [],
+    "post_close_hygiene_stale_feature_ids": [
+      "F-0026"
+    ],
+    "post_close_hygiene_blocked_feature_ids": []
+  },
+  "post_status_summary": {
+    "total_items": 28,
+    "last_refresh_at": "2026-04-29T10:15:03.244Z",
+    "defined_count": 1,
+    "intaken_count": 0,
+    "specified_count": 0,
+    "planned_count": 0,
+    "implemented_count": 27,
+    "gaps_count": 0,
+    "needs_attention_count": 0,
+    "ready_for_next_step_count": 1,
+    "open_todo_count": 0,
+    "artifact_integrity": {
+      "applied_canonical_paths_exist": true,
+      "missing_canonical_paths": []
+    },
+    "open_source_review_count": 0,
+    "source_review_blocked_item_count": 0,
+    "lifecycle_reconciliation_drift_count": 0,
+    "lifecycle_reconciliation_drifts": [],
+    "post_close_hygiene_missing_count": 0,
+    "post_close_hygiene_stale_count": 2,
+    "post_close_hygiene_blocked_count": 0,
+    "post_close_hygiene_missing_feature_ids": [],
+    "post_close_hygiene_stale_feature_ids": [
+      "F-0026",
+      "F-0027"
+    ],
+    "post_close_hygiene_blocked_feature_ids": []
+  },
+  "refresh_ran_at": "2026-04-29T10:15:03.244Z",
+  "backlog_last_refresh_at": "2026-04-29T10:15:03.244Z",
   "refresh_summary": {
     "changed_sources": [],
     "source_reviews_created": 0,
@@ -16,7 +81,7 @@
   },
   "status_summary": {
     "total_items": 28,
-    "last_refresh_at": "2026-04-28T14:03:56.833Z",
+    "last_refresh_at": "2026-04-29T10:15:03.244Z",
     "defined_count": 1,
     "intaken_count": 0,
     "specified_count": 0,
@@ -68,5 +133,6 @@
   "lifecycle_reconciliation_drift_count": 0,
   "unresolved_attention_present": false,
   "backlog_clean": true,
+  "result": "clean",
   "blockers": []
 }

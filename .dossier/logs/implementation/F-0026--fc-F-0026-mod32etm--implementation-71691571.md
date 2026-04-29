@@ -70,6 +70,7 @@ review_events:
   - allowed_by_policy: true
     artifact_path: .dossier/reviews/F-0026/implementation--spec-conformance-reviewer--r01--pass--9cd511f75991.json
     audit_class: spec-conformance-reviewer
+    evidence_count: null
     event_commit: 9cd511f75991d3a5d9918fe66e307f9d50f38709
     implementation_scope: code-bearing
     invalidated: false
@@ -90,6 +91,7 @@ review_events:
   - allowed_by_policy: true
     artifact_path: .dossier/reviews/F-0026/implementation--code-reviewer--r01--pass--9cd511f75991.json
     audit_class: code-reviewer
+    evidence_count: null
     event_commit: 9cd511f75991d3a5d9918fe66e307f9d50f38709
     implementation_scope: code-bearing
     invalidated: false
@@ -110,6 +112,7 @@ review_events:
   - allowed_by_policy: true
     artifact_path: .dossier/reviews/F-0026/implementation--spec-conformance-reviewer--r02--pass--9cd511f75991.json
     audit_class: spec-conformance-reviewer
+    evidence_count: null
     event_commit: 9cd511f75991d3a5d9918fe66e307f9d50f38709
     implementation_scope: code-bearing
     invalidated: false
@@ -130,6 +133,7 @@ review_events:
   - allowed_by_policy: true
     artifact_path: .dossier/reviews/F-0026/implementation--code-reviewer--r02--pass--9cd511f75991.json
     audit_class: code-reviewer
+    evidence_count: null
     event_commit: 9cd511f75991d3a5d9918fe66e307f9d50f38709
     implementation_scope: code-bearing
     invalidated: false
@@ -150,6 +154,7 @@ review_events:
   - allowed_by_policy: true
     artifact_path: .dossier/reviews/F-0026/implementation--security-reviewer--r01--pass--9cd511f75991.json
     audit_class: security-reviewer
+    evidence_count: null
     event_commit: 9cd511f75991d3a5d9918fe66e307f9d50f38709
     implementation_scope: code-bearing
     invalidated: false
@@ -172,6 +177,7 @@ review_events:
   - allowed_by_policy: true
     artifact_path: .dossier/reviews/F-0026/implementation--spec-conformance-reviewer--r03--pass--9cd511f75991.json
     audit_class: spec-conformance-reviewer
+    evidence_count: null
     event_commit: 9cd511f75991d3a5d9918fe66e307f9d50f38709
     implementation_scope: code-bearing
     invalidated: false
@@ -192,6 +198,7 @@ review_events:
   - allowed_by_policy: true
     artifact_path: .dossier/reviews/F-0026/implementation--code-reviewer--r03--pass--9cd511f75991.json
     audit_class: code-reviewer
+    evidence_count: null
     event_commit: 9cd511f75991d3a5d9918fe66e307f9d50f38709
     implementation_scope: code-bearing
     invalidated: false
@@ -212,6 +219,7 @@ review_events:
   - allowed_by_policy: true
     artifact_path: .dossier/reviews/F-0026/implementation--security-reviewer--r02--pass--9cd511f75991.json
     audit_class: security-reviewer
+    evidence_count: null
     event_commit: 9cd511f75991d3a5d9918fe66e307f9d50f38709
     implementation_scope: code-bearing
     invalidated: false
@@ -234,6 +242,7 @@ review_events:
   - allowed_by_policy: true
     artifact_path: .dossier/reviews/F-0026/implementation--spec-conformance-reviewer--r04--pass--a3f5ce9bad4d.json
     audit_class: spec-conformance-reviewer
+    evidence_count: null
     event_commit: a3f5ce9bad4da4383346f6de9b50756e23703119
     implementation_scope: code-bearing
     invalidated: false
@@ -254,6 +263,7 @@ review_events:
   - allowed_by_policy: true
     artifact_path: .dossier/reviews/F-0026/implementation--code-reviewer--r04--pass--a3f5ce9bad4d.json
     audit_class: code-reviewer
+    evidence_count: null
     event_commit: a3f5ce9bad4da4383346f6de9b50756e23703119
     implementation_scope: code-bearing
     invalidated: false
@@ -274,6 +284,7 @@ review_events:
   - allowed_by_policy: true
     artifact_path: .dossier/reviews/F-0026/implementation--security-reviewer--r03--pass--a3f5ce9bad4d.json
     audit_class: security-reviewer
+    evidence_count: null
     event_commit: a3f5ce9bad4da4383346f6de9b50756e23703119
     implementation_scope: code-bearing
     invalidated: false
@@ -339,8 +350,8 @@ step_artifact: .dossier/steps/F-0026/implementation.json
 post_close_backlog_hygiene_required: true
 post_close_backlog_hygiene_status: clean
 post_close_backlog_hygiene_artifact: .dossier/verification/F-0026/implementation-post-close-backlog-hygiene.json
-post_close_backlog_hygiene_checked_at: 2026-04-28T14:01:13.570Z
-post_close_backlog_hygiene_refresh_at: 2026-04-28T14:01:13.235Z
+post_close_backlog_hygiene_checked_at: 2026-04-29T10:15:03.483Z
+post_close_backlog_hygiene_refresh_at: 2026-04-29T10:15:03.244Z
 post_close_open_source_review_count: 0
 post_close_source_review_blocked_item_count: 0
 post_close_lifecycle_reconciliation_drift_count: 0
@@ -352,6 +363,74 @@ intake_process_complete_ts: null
 first_review_agent_started_ts: 2026-04-24T23:06:39.696Z
 final_pass_ts: 2026-04-24T23:07:16.427Z
 verification_trace_commit: a3f5ce9bad4da4383346f6de9b50756e23703119
+closure_bundle_id: null
+closure_bundle_round: null
+closure_bundle_rounds_by_audit_class: {}
+selected_review_artifacts: []
+selected_verification_artifact: null
+selected_step_artifact: null
+selected_closure_ts: null
+rpa_source_identity: null
+rpa_source_quality: null
+non_pass_review_events: []
+post_close_backlog_hygiene_global_refresh_artifact: .dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T10-15-03-022Z.json
+post_close_affected_feature_ids:
+  - F-0026
+  - F-0027
+post_close_pre_status_summary:
+  total_items: 28
+  last_refresh_at: 2026-04-28T14:03:56.833Z
+  defined_count: 1
+  intaken_count: 0
+  specified_count: 0
+  planned_count: 0
+  implemented_count: 27
+  gaps_count: 0
+  needs_attention_count: 0
+  ready_for_next_step_count: 1
+  open_todo_count: 0
+  artifact_integrity:
+    applied_canonical_paths_exist: true
+    missing_canonical_paths: []
+  open_source_review_count: 0
+  source_review_blocked_item_count: 0
+  lifecycle_reconciliation_drift_count: 0
+  lifecycle_reconciliation_drifts: []
+  post_close_hygiene_missing_count: 0
+  post_close_hygiene_stale_count: 1
+  post_close_hygiene_blocked_count: 0
+  post_close_hygiene_missing_feature_ids: []
+  post_close_hygiene_stale_feature_ids:
+    - F-0026
+  post_close_hygiene_blocked_feature_ids: []
+post_close_post_status_summary:
+  total_items: 28
+  last_refresh_at: 2026-04-29T10:15:03.244Z
+  defined_count: 1
+  intaken_count: 0
+  specified_count: 0
+  planned_count: 0
+  implemented_count: 27
+  gaps_count: 0
+  needs_attention_count: 0
+  ready_for_next_step_count: 1
+  open_todo_count: 0
+  artifact_integrity:
+    applied_canonical_paths_exist: true
+    missing_canonical_paths: []
+  open_source_review_count: 0
+  source_review_blocked_item_count: 0
+  lifecycle_reconciliation_drift_count: 0
+  lifecycle_reconciliation_drifts: []
+  post_close_hygiene_missing_count: 0
+  post_close_hygiene_stale_count: 2
+  post_close_hygiene_blocked_count: 0
+  post_close_hygiene_missing_feature_ids: []
+  post_close_hygiene_stale_feature_ids:
+    - F-0026
+    - F-0027
+  post_close_hygiene_blocked_feature_ids: []
+post_close_hygiene_schema_version: 2
 ---
 
 ## Scope
