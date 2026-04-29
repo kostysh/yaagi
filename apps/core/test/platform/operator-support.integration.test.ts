@@ -154,3 +154,58 @@ void test('AC-F0028-05 AC-F0028-08 admits support incident writes only after F-0
     await cleanup();
   }
 });
+
+void test('AC-F0028-02 returns service unavailable on first support post-claim service failure', async () => {
+  const { runtime, cleanup } = await createPlatformTestRuntime({
+    dependencies: {
+      createRuntimeLifecycle: () => ({
+        start: () => Promise.resolve(),
+        stop: () => Promise.resolve(),
+        openSupportIncident: () => Promise.reject(new Error('support owner down')),
+        updateSupportIncident: () => Promise.reject(new Error('support owner down')),
+      }),
+    },
+  });
+
+  try {
+    const openFailure = await runtime.fetch(
+      new Request('http://yaagi/support/incidents', {
+        method: 'POST',
+        headers: createOperatorAuthHeaders('support', {
+          'content-type': 'application/json',
+        }),
+        body: JSON.stringify({
+          requestId: 'support-request-open-service-failure',
+          incidentClass: SUPPORT_INCIDENT_CLASS.RUNTIME_AVAILABILITY,
+          severity: SUPPORT_SEVERITY.WARNING,
+          sourceRefs: ['operator-route:/health'],
+        }),
+      }),
+    );
+    const updateFailure = await runtime.fetch(
+      new Request('http://yaagi/support/incidents/support-incident:service-failure', {
+        method: 'PATCH',
+        headers: createOperatorAuthHeaders('support', {
+          'content-type': 'application/json',
+        }),
+        body: JSON.stringify({
+          requestId: 'support-request-update-service-failure',
+          addSourceRefs: ['operator-route:/state'],
+        }),
+      }),
+    );
+
+    assert.equal(openFailure.status, 503);
+    assert.equal(updateFailure.status, 503);
+    assert.deepEqual(await openFailure.json(), {
+      accepted: false,
+      error: 'support owner down',
+    });
+    assert.deepEqual(await updateFailure.json(), {
+      accepted: false,
+      error: 'support owner down',
+    });
+  } finally {
+    await cleanup();
+  }
+});

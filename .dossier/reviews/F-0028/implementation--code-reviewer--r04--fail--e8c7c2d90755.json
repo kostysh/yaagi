@@ -2,7 +2,7 @@
   "version": 1,
   "created_at": "2026-04-29T12:52:18.163Z",
   "audit_class": "code-reviewer",
-  "artifact_role": "latest_copy",
+  "artifact_role": "immutable_attempt",
   "review_mode": "external",
   "reviewer": "r04-code-reviewer",
   "reviewer_skill": "code-reviewer",
@@ -31,6 +31,5 @@
       "Reviewed changed code files: apps/core/src/support/support-evidence.ts, apps/core/src/platform/operator-api.ts, apps/core/src/runtime/runtime-lifecycle.ts, packages/db/src/support.ts, packages/db/src/operator-auth.ts, packages/db/src/index.ts, and changed support/operator-auth tests. Ran node --experimental-strip-types --test apps/core/test/support/support-evidence.contract.test.ts apps/core/test/support/support-usage-audit.contract.test.ts apps/core/test/platform/operator-support.integration.test.ts packages/db/test/operator-auth-store.integration.test.ts packages/db/test/support-store.integration.test.ts: pass. Additional route probe with injected updateSupportIncident rejection returned HTTP 400 body {accepted:false,error:\"support owner down\"}, confirming operator-api.ts catch bypasses supportFailureStatus(request_failed)."
     ]
   },
-  "notes": "Independent r04 code review of e8c7c2d90755 found one blocking API status mapping defect. The replay/idempotency store path now records post-claim failures as rejected request_failed and DB/service tests cover owner seam and canonical reader replay behavior, and runtime auth evidence wiring now goes through createOperatorAuthStore().hasAllowedAuthEvidence(). However, the support HTTP POST/PATCH routes still catch thrown post-claim owner/canonical failures and return 400 before callers can observe the new request_failed status mapping; only a later replay maps request_failed to 503. This misclassifies downstream/runtime failures as client validation errors on the first attempt and makes the new API mapping incomplete.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--code-reviewer--r04--fail--e8c7c2d90755.json"
+  "notes": "Independent r04 code review of e8c7c2d90755 found one blocking API status mapping defect. The replay/idempotency store path now records post-claim failures as rejected request_failed and DB/service tests cover owner seam and canonical reader replay behavior, and runtime auth evidence wiring now goes through createOperatorAuthStore().hasAllowedAuthEvidence(). However, the support HTTP POST/PATCH routes still catch thrown post-claim owner/canonical failures and return 400 before callers can observe the new request_failed status mapping; only a later replay maps request_failed to 503. This misclassifies downstream/runtime failures as client validation errors on the first attempt and makes the new API mapping incomplete."
 }

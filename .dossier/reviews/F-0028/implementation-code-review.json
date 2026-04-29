@@ -1,21 +1,21 @@
 {
   "version": 1,
-  "created_at": "2026-04-29T12:32:03.604Z",
+  "created_at": "2026-04-29T12:52:18.163Z",
   "audit_class": "code-reviewer",
   "artifact_role": "latest_copy",
   "review_mode": "external",
-  "reviewer": "external-agent-r03-code",
+  "reviewer": "r04-code-reviewer",
   "reviewer_skill": "code-reviewer",
-  "reviewer_agent_id": "019dd920-r03-code",
-  "reviewer_thread_id": "019dd936-4364-74d2-9a70-1dc5f462e701",
-  "review_attempt_id": "implementation--code-reviewer--r03",
-  "review_round_id": "r03",
-  "review_round_number": 3,
+  "reviewer_agent_id": null,
+  "reviewer_thread_id": "019dd947-f90e-7233-8bee-7ea3edf1801e",
+  "review_attempt_id": "implementation--code-reviewer--r04",
+  "review_round_id": "r04",
+  "review_round_number": 4,
   "latest_copy_path": ".dossier/reviews/F-0028/implementation-code-review.json",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
   "feature_id": "F-0028",
-  "event_commit": "d733b7d87be043864fd006e6ef3b810baf88b115",
+  "event_commit": "e8c7c2d9075516fb0113a0b6410a7ed1ab2bf7b4",
   "implementation_scope": "code-bearing",
   "security_trigger_reason": null,
   "invalidated": false,
@@ -24,15 +24,13 @@
   "verdict": "FAIL",
   "findings": {
     "must_fix": [
-      "Complete or reject claimed support incident update requests when owner routing/canonical-ref resolution throws, or make replay safely resume the claimed request instead of returning permanent request_in_progress.",
-      "Replace runtime-lifecycle support auth evidence validation raw reads of polyphony_runtime.operator_auth_audit_events with a bounded F-0024 owner/read contract, and make the usage audit cover the actual deployed path."
+      "apps/core/src/platform/operator-api.ts:763 and apps/core/src/platform/operator-api.ts:806 must map service-thrown post-claim support failures to the same downstream failure contract as request_failed, or the service must return an accepted:false request_failed result instead of throwing after rejectIncidentUpdate. Add route-level coverage proving first-attempt owner seam/canonical reader failures return 503, not 400, for POST/PATCH support incident paths."
     ],
     "should_fix": [],
     "evidence": [
-      "apps/core/src/support/support-evidence.ts:408 claims action-routing update before routeActionRequests at line 418; apps/core/src/support/support-evidence.ts:452 claims PATCH update before routeActionRequests at line 475; packages/db/src/support.ts:420 returns request_in_progress for pending claims.",
-      "apps/core/src/runtime/runtime-lifecycle.ts:1897 queries polyphony_runtime.operator_auth_audit_events directly; docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md AC-F0028-05/13/14 require bounded owner-surface consumption and no raw foreign reads."
+      "Reviewed changed code files: apps/core/src/support/support-evidence.ts, apps/core/src/platform/operator-api.ts, apps/core/src/runtime/runtime-lifecycle.ts, packages/db/src/support.ts, packages/db/src/operator-auth.ts, packages/db/src/index.ts, and changed support/operator-auth tests. Ran node --experimental-strip-types --test apps/core/test/support/support-evidence.contract.test.ts apps/core/test/support/support-usage-audit.contract.test.ts apps/core/test/platform/operator-support.integration.test.ts packages/db/test/operator-auth-store.integration.test.ts packages/db/test/support-store.integration.test.ts: pass. Additional route probe with injected updateSupportIncident rejection returned HTTP 400 body {accepted:false,error:\"support owner down\"}, confirming operator-api.ts catch bypasses supportFailureStatus(request_failed)."
     ]
   },
-  "notes": "Round 3 FAIL: remaining idempotency status-machine wedge after claim-before-route failures, plus support auth canonical-ref validation uses a raw F-0024 table read despite the F-0028 owner-boundary contract.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--code-reviewer--r03--fail--d733b7d87be0.json"
+  "notes": "Independent r04 code review of e8c7c2d90755 found one blocking API status mapping defect. The replay/idempotency store path now records post-claim failures as rejected request_failed and DB/service tests cover owner seam and canonical reader replay behavior, and runtime auth evidence wiring now goes through createOperatorAuthStore().hasAllowedAuthEvidence(). However, the support HTTP POST/PATCH routes still catch thrown post-claim owner/canonical failures and return 400 before callers can observe the new request_failed status mapping; only a later replay maps request_failed to 503. This misclassifies downstream/runtime failures as client validation errors on the first attempt and makes the new API mapping incomplete.",
+  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--code-reviewer--r04--fail--e8c7c2d90755.json"
 }

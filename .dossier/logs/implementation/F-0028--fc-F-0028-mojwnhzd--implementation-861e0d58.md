@@ -11,7 +11,7 @@ phase_scope: implementation для F-0028 support/operability contract и incide
 stage_state: ready_for_close
 start_ts: 2026-04-29T10:55:00.903Z
 entered_ts: 2026-04-29T10:55:00.903Z
-ready_for_close_ts: 2026-04-29T12:46:09.175Z
+ready_for_close_ts: 2026-04-29T12:59:36.347Z
 transition_events:
   - kind: entered
     at: 2026-04-29T10:55:00.903Z
@@ -35,6 +35,12 @@ transition_events:
     at: 2026-04-29T12:32:59.774Z
   - kind: ready_for_close
     at: 2026-04-29T12:46:09.175Z
+  - kind: ready_for_close
+    at: 2026-04-29T12:46:58.988Z
+  - kind: blocked
+    at: 2026-04-29T12:53:07.160Z
+  - kind: ready_for_close
+    at: 2026-04-29T12:59:36.347Z
 backlog_followup_required: false
 backlog_followup_kind: null
 backlog_followup_resolved: false
@@ -45,7 +51,7 @@ backlog_actualization_artifacts: []
 backlog_actualization_verdict: current_state_satisfies_target
 review_artifacts: []
 verification_artifacts:
-  - .dossier/verification/F-0028/implementation-d733b7d87be0.json
+  - .dossier/verification/F-0028/implementation-e8c7c2d90755.json
 required_audit_classes:
   - spec-conformance-reviewer
   - code-reviewer
@@ -103,10 +109,17 @@ process_misses:
     summary: round3 code audit blockers fixed with rejected post-claim failure
       replay handling, owner seam and canonical reader regression coverage, and
       F-0024 auth evidence validation through OperatorAuthStore seam
+  - id: implementation-audit-fail-round4
+    category: review
+    severity: high
+    resolved: true
+    summary: round4 code audit blocker fixed by returning 503 for first support
+      runtime service failures after payload validation and adding operator
+      support route regression coverage
 session_id: 350b48a7-b180-4582-ae1d-ccb8e70b9a6b
 trace_runtime: codex
 trace_locator_kind: session_id
-final_delivery_commit: d733b7d87be043864fd006e6ef3b810baf88b115
+final_delivery_commit: e8c7c2d9075516fb0113a0b6410a7ed1ab2bf7b4
 final_closure_commit: null
 implementation_review_scope: code-bearing
 stage_entry_commit: 616e09befd1f1a86b904a4ce7a149f7c99c8aebf
@@ -156,7 +169,7 @@ pre_review_checklists:
       - apps/core/test/support/support-usage-audit.contract.test.ts
 pre_review_checklist_status: complete
 pre_review_checklist_blockers: []
-local_gates_green_ts: 2026-04-29T12:46:09.175Z
+local_gates_green_ts: 2026-04-29T12:59:36.347Z
 step_artifact: null
 closure_bundle_id: null
 closure_bundle_round: null
@@ -188,7 +201,7 @@ process_complete_ts: null
 intake_process_complete_ts: null
 first_review_agent_started_ts: null
 final_pass_ts: null
-verification_trace_commit: d733b7d87be043864fd006e6ef3b810baf88b115
+verification_trace_commit: e8c7c2d9075516fb0113a0b6410a7ed1ab2bf7b4
 ---
 
 ## Scope
@@ -244,6 +257,7 @@ verification_trace_commit: d733b7d87be043864fd006e6ef3b810baf88b115
 - implementation-audit-fail-round1 [high/review, resolved] round1 audit blockers fixed with server-side action routing, update idempotency, release ref validation, degraded closure persistence and redaction regressions
 - implementation-audit-fail-round2 [high/review, resolved] round2 audit blockers fixed with pre-side-effect update claim, target-bound replay identity, patch-safe scalar merge, F-0024 auth evidence validation, release failed-state freshness and full support free-text redaction
 - implementation-audit-fail-round3 [high/review, resolved] round3 code audit blockers fixed with rejected post-claim failure replay handling, owner seam and canonical reader regression coverage, and F-0024 auth evidence validation through OperatorAuthStore seam
+- implementation-audit-fail-round4 [high/review, resolved] round4 code audit blocker fixed by returning 503 for first support runtime service failures after payload validation and adding operator support route regression coverage
 
 ## Transition events
 
@@ -258,6 +272,9 @@ verification_trace_commit: d733b7d87be043864fd006e6ef3b810baf88b115
 - 2026-04-29T12:26:51.835Z: ready_for_close
 - 2026-04-29T12:32:59.774Z: blocked
 - 2026-04-29T12:46:09.175Z: ready_for_close
+- 2026-04-29T12:46:58.988Z: ready_for_close
+- 2026-04-29T12:53:07.160Z: blocked
+- 2026-04-29T12:59:36.347Z: ready_for_close
 
 ## Close-out
 

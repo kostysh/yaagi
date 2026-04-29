@@ -1,23 +1,23 @@
 {
   "version": 1,
-  "created_at": "2026-04-29T12:31:28.878Z",
+  "created_at": "2026-04-29T12:51:21.289Z",
   "audit_class": "security-reviewer",
   "artifact_role": "latest_copy",
   "review_mode": "external",
-  "reviewer": "external-agent-r03-security",
+  "reviewer": "r04-security-reviewer",
   "reviewer_skill": "security-reviewer",
-  "reviewer_agent_id": "019dd920-r03-security",
-  "reviewer_thread_id": "019dd936-759d-7ae1-af6c-4bb842bbb29c",
-  "review_attempt_id": "implementation--security-reviewer--r03",
-  "review_round_id": "r03",
-  "review_round_number": 3,
+  "reviewer_agent_id": null,
+  "reviewer_thread_id": "019dd948-27e7-7432-a72d-687416344b91",
+  "review_attempt_id": "implementation--security-reviewer--r04",
+  "review_round_id": "r04",
+  "review_round_number": 4,
   "latest_copy_path": ".dossier/reviews/F-0028/implementation--security-reviewer--latest.json",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
   "feature_id": "F-0028",
-  "event_commit": "d733b7d87be043864fd006e6ef3b810baf88b115",
+  "event_commit": "e8c7c2d9075516fb0113a0b6410a7ed1ab2bf7b4",
   "implementation_scope": "code-bearing",
-  "security_trigger_reason": "implementation touches support RBAC, evidence persistence, replay/idempotency and secret redaction boundaries",
+  "security_trigger_reason": "implementation touches support RBAC, evidence trust boundary, owner-routed actions, replay/idempotency, and canonical auth/release evidence validation",
   "invalidated": false,
   "rerun_reason": null,
   "allowed_by_policy": true,
@@ -26,12 +26,12 @@
     "must_fix": [],
     "should_fix": [],
     "evidence": [
-      "apps/core/src/platform/operator-api.ts:677 support routes require operator admission; POST/PATCH use bounded body parse before admission and pass F-0024 provenance to service",
-      "apps/core/src/support/support-evidence.ts:199 redacts support refs, action fields, closure criteria, residual risk and notes before normalizedRequestHash and persistence",
-      "packages/db/src/support.ts:467 update claims and row locks enforce replay/conflict handling before incident mutation; packages/db/src/support.ts:724 preserves idempotent update state",
-      "apps/core/src/support/support-canonical-refs.ts:234 release refs require F-0026 inspection and failed evidence maps degraded/missing; apps/core/src/runtime/runtime-lifecycle.ts:1894 validates F-0024 auth evidence from audit rows"
+      "apps/core/src/platform/operator-api.ts:679 and :702-815 require F-0024 operator admission on support routes; POST/PATCH bodies are capped by readBoundedJson before admission and writes require SUPPORT_OPERATION RBAC.",
+      "apps/core/src/support/support-evidence.ts:199-230 and :361-543 redact support refs/actions/notes/residual-risk before normalized request hash and persistence, append server-side admission evidence, and validate canonical refs before store update.",
+      "packages/db/src/support.ts:261-270, :414-464, :735-768, and :770-943 constrain writes to support-owned surfaces, preserve idempotent replay, and turn post-claim failures into rejected request_failed replays rather than permanent request_in_progress.",
+      "apps/core/src/support/support-actions.ts:37-85 routes owner_routed actions only through owner seams and records human_only actions as documented; apps/core/src/support/support-canonical-refs.ts:192-279 validates report/release/auth evidence through bounded readers, with runtime wiring through createOperatorAuthStore.hasAllowedAuthEvidence at apps/core/src/runtime/runtime-lifecycle.ts:1894-1901."
     ]
   },
-  "notes": "PASS: d733b7d redacts support evidence refs/actions/closure text before hash and persistence, keeps support write routes behind F-0024 admission, claims update/action-routing idempotency before owner routing, validates auth/release evidence through owner readers, and exposes support incidents only through admitted operator reads. No high-confidence exploitable findings.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--security-reviewer--r03--pass--d733b7d87be0.json"
+  "notes": "PASS: security audit of e8c7c2d90755 found no high-confidence exploitable issue in support route RBAC/admission, client-supplied evidence validation, owner action routing, idempotent replay, post-claim failure rejection, redaction before persistence/hash for support evidence fields, incident listing admission, or bounded F-0024/F-0026 validation.",
+  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--security-reviewer--r04--pass--e8c7c2d90755.json"
 }

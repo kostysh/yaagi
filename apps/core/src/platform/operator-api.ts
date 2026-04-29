@@ -770,7 +770,7 @@ export function registerOperatorApiRoutes(
 
       return context.json(result, result.accepted ? 202 : supportFailureStatus(result));
     } catch (error) {
-      return context.json({ accepted: false, error: toValidationError(error) }, 400);
+      return context.json({ accepted: false, error: toValidationError(error) }, 503);
     }
   });
 
@@ -814,7 +814,7 @@ export function registerOperatorApiRoutes(
 
       return context.json(result, result.accepted ? 200 : supportFailureStatus(result));
     } catch (error) {
-      return context.json({ accepted: false, error: toValidationError(error) }, 400);
+      return context.json({ accepted: false, error: toValidationError(error) }, 503);
     }
   });
 

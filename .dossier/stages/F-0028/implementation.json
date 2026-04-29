@@ -106,7 +106,7 @@
   "stage_state": "ready_for_close",
   "start_ts": "2026-04-29T10:55:00.903Z",
   "entered_ts": "2026-04-29T10:55:00.903Z",
-  "ready_for_close_ts": "2026-04-29T12:46:09.175Z",
+  "ready_for_close_ts": "2026-04-29T12:59:36.347Z",
   "transition_events": [
     {
       "kind": "entered",
@@ -151,6 +151,18 @@
     {
       "kind": "ready_for_close",
       "at": "2026-04-29T12:46:09.175Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-29T12:46:58.988Z"
+    },
+    {
+      "kind": "blocked",
+      "at": "2026-04-29T12:53:07.160Z"
+    },
+    {
+      "kind": "ready_for_close",
+      "at": "2026-04-29T12:59:36.347Z"
     }
   ],
   "required_audit_classes": [
@@ -162,7 +174,7 @@
   "required_external_review_pending": true,
   "review_artifacts": [],
   "verification_artifacts": [
-    ".dossier/verification/F-0028/implementation-d733b7d87be0.json"
+    ".dossier/verification/F-0028/implementation-e8c7c2d90755.json"
   ],
   "review_events": [],
   "reviewer_skills": [],
@@ -216,13 +228,20 @@
       "severity": "high",
       "resolved": true,
       "summary": "round3 code audit blockers fixed with rejected post-claim failure replay handling, owner seam and canonical reader regression coverage, and F-0024 auth evidence validation through OperatorAuthStore seam"
+    },
+    {
+      "id": "implementation-audit-fail-round4",
+      "category": "review",
+      "severity": "high",
+      "resolved": true,
+      "summary": "round4 code audit blocker fixed by returning 503 for first support runtime service failures after payload validation and adding operator support route regression coverage"
     }
   ],
   "session_id": "350b48a7-b180-4582-ae1d-ccb8e70b9a6b",
   "trace_runtime": "codex",
   "trace_locator_kind": "session_id",
   "stage_entry_commit": "616e09befd1f1a86b904a4ce7a149f7c99c8aebf",
-  "final_delivery_commit": "d733b7d87be043864fd006e6ef3b810baf88b115",
+  "final_delivery_commit": "e8c7c2d9075516fb0113a0b6410a7ed1ab2bf7b4",
   "final_closure_commit": null,
   "implementation_review_scope": "code-bearing",
   "required_security_review": true,
@@ -231,7 +250,7 @@
   "step_artifact": null,
   "process_complete_ts": null,
   "intake_process_complete_ts": null,
-  "local_gates_green_ts": "2026-04-29T12:46:09.175Z",
+  "local_gates_green_ts": "2026-04-29T12:59:36.347Z",
   "first_review_agent_started_ts": null,
   "final_pass_ts": null
 }

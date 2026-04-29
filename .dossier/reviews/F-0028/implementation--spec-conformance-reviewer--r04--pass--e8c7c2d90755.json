@@ -2,7 +2,7 @@
   "version": 1,
   "created_at": "2026-04-29T12:52:25.207Z",
   "audit_class": "spec-conformance-reviewer",
-  "artifact_role": "latest_copy",
+  "artifact_role": "immutable_attempt",
   "review_mode": "external",
   "reviewer": "r04-spec-conformance-reviewer",
   "reviewer_skill": "spec-conformance-reviewer",
@@ -29,6 +29,5 @@
       "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md AC-F0028-01..15; apps/core/src/support/support-evidence.ts:336,424,448,479,539,551; packages/db/src/support.ts:105,414,431,735,810,870,925; packages/db/src/operator-auth.ts:95,104; apps/core/src/runtime/runtime-lifecycle.ts:1894; apps/core/test/support/support-evidence.contract.test.ts:318,365; packages/db/test/support-store.integration.test.ts:369; apps/core/test/support/support-usage-audit.contract.test.ts:41; packages/db/test/operator-auth-store.integration.test.ts:123; focused node --test support/auth suite passed (8/8)."
     ]
   },
-  "notes": "PASS: e8c7c2d90755 satisfies F-0028 implementation spec obligations and the r03 blocker fixes. Support update claims that fail after owner/canonical work are completed as request_failed and replay returns rejected rather than wedging request_in_progress; auth evidence validation is wired through OperatorAuthStore.hasAllowedAuthEvidence instead of raw runtime support SQL; canonical report/release/auth evidence remains read-only with blocked/degraded closure semantics; owner-routed actions require owner seam evidence; critical closure and redaction contracts remain covered.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--spec-conformance-reviewer--r04--pass--e8c7c2d90755.json"
+  "notes": "PASS: e8c7c2d90755 satisfies F-0028 implementation spec obligations and the r03 blocker fixes. Support update claims that fail after owner/canonical work are completed as request_failed and replay returns rejected rather than wedging request_in_progress; auth evidence validation is wired through OperatorAuthStore.hasAllowedAuthEvidence instead of raw runtime support SQL; canonical report/release/auth evidence remains read-only with blocked/degraded closure semantics; owner-routed actions require owner seam evidence; critical closure and redaction contracts remain covered."
 }

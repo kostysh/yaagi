@@ -2,7 +2,7 @@
   "version": 1,
   "created_at": "2026-04-29T12:51:21.289Z",
   "audit_class": "security-reviewer",
-  "artifact_role": "latest_copy",
+  "artifact_role": "immutable_attempt",
   "review_mode": "external",
   "reviewer": "r04-security-reviewer",
   "reviewer_skill": "security-reviewer",
@@ -11,7 +11,7 @@
   "review_attempt_id": "implementation--security-reviewer--r04",
   "review_round_id": "r04",
   "review_round_number": 4,
-  "latest_copy_path": ".dossier/reviews/F-0028/implementation-security-review.json",
+  "latest_copy_path": ".dossier/reviews/F-0028/implementation--security-reviewer--latest.json",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0028-support-operability-contract-incident-discipline.md",
   "feature_id": "F-0028",
@@ -32,6 +32,5 @@
       "apps/core/src/support/support-actions.ts:37-85 routes owner_routed actions only through owner seams and records human_only actions as documented; apps/core/src/support/support-canonical-refs.ts:192-279 validates report/release/auth evidence through bounded readers, with runtime wiring through createOperatorAuthStore.hasAllowedAuthEvidence at apps/core/src/runtime/runtime-lifecycle.ts:1894-1901."
     ]
   },
-  "notes": "PASS: security audit of e8c7c2d90755 found no high-confidence exploitable issue in support route RBAC/admission, client-supplied evidence validation, owner action routing, idempotent replay, post-claim failure rejection, redaction before persistence/hash for support evidence fields, incident listing admission, or bounded F-0024/F-0026 validation.",
-  "immutable_artifact_path": ".dossier/reviews/F-0028/implementation--security-reviewer--r04--pass--e8c7c2d90755.json"
+  "notes": "PASS: security audit of e8c7c2d90755 found no high-confidence exploitable issue in support route RBAC/admission, client-supplied evidence validation, owner action routing, idempotent replay, post-claim failure rejection, redaction before persistence/hash for support evidence fields, incident listing admission, or bounded F-0024/F-0026 validation."
 }
