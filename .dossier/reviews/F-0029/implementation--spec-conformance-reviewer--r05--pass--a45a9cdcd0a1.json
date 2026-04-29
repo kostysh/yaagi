@@ -2,7 +2,7 @@
   "version": 1,
   "created_at": "2026-04-29T19:38:44.564Z",
   "audit_class": "spec-conformance-reviewer",
-  "artifact_role": "latest_copy",
+  "artifact_role": "immutable_attempt",
   "review_mode": "external",
   "reviewer": "codex-spec-conformance-reviewer",
   "reviewer_skill": "spec-conformance-reviewer",
@@ -33,6 +33,5 @@
       "Focused verification passed: node --experimental-strip-types --experimental-test-module-mocks --test packages/contracts/test/telegram-egress.contract.test.ts apps/core/test/actions/telegram-egress-tool.contract.test.ts apps/core/test/runtime/telegram-egress-retry.contract.test.ts packages/db/test/telegram-egress-store.integration.test.ts"
     ]
   },
-  "notes": "PASS: reviewed committed F-0029 HEAD a45a9cd against the F-0029 SSoT and current verification artifact .dossier/verification/F-0029/implementation-a45a9cdcd0a1.json, focused on operator-only Telegram egress, durable outbox text authority, terminal timeout failure for ambiguous transport outcome, exclusive send claim, and no automatic resend of ambiguous sending rows. No blocking spec-conformance findings.",
-  "immutable_artifact_path": ".dossier/reviews/F-0029/implementation--spec-conformance-reviewer--r05--pass--a45a9cdcd0a1.json"
+  "notes": "PASS: reviewed committed F-0029 HEAD a45a9cd against the F-0029 SSoT and current verification artifact .dossier/verification/F-0029/implementation-a45a9cdcd0a1.json, focused on operator-only Telegram egress, durable outbox text authority, terminal timeout failure for ambiguous transport outcome, exclusive send claim, and no automatic resend of ambiguous sending rows. No blocking spec-conformance findings."
 }

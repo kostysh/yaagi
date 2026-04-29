@@ -3,14 +3,16 @@
   "source_id": "5b9f63ff-21ce-440c-a3a3-7416945dde4f",
   "source_label": "README.md",
   "previous_hash": "08d8ced6fb08a4adb92b5ea48b7792ffb5c2b62e2256d916bea46c89e01d7a56",
-  "current_hash": "ba2d40af5a85ab189c7d86bd2dd089bafa68c37193b2518dc4022e0b87d7633c",
-  "status": "closed",
-  "linked_item_keys": [],
-  "linked_item_count": 0,
+  "current_hash": "9e02834bb30a8c2aa5351c0a707c3e5bbc2f743a6f75b39421f170ac92baaf9a",
+  "status": "open",
+  "linked_item_keys": [
+    "CF-029"
+  ],
+  "linked_item_count": 1,
   "opened_at": "2026-04-21T14:54:31.041Z",
-  "closed_at": "2026-04-29T14:54:05.081Z",
-  "resolved_at": "2026-04-29T14:54:05.081Z",
-  "outcome": "no_backlog_change",
-  "resolution_kind": "ack",
-  "resolution_ref": "ack-source-review"
+  "closed_at": null,
+  "resolved_at": null,
+  "outcome": "pending",
+  "resolution_kind": null,
+  "resolution_ref": null
 }

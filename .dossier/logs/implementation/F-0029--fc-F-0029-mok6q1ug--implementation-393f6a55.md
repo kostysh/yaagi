@@ -40,8 +40,12 @@ review_artifacts:
   - .dossier/reviews/F-0029/implementation--spec-conformance-reviewer--r04--pass--45497bcf0b57.json
   - .dossier/reviews/F-0029/implementation--code-reviewer--r05--pass--45497bcf0b57.json
   - .dossier/reviews/F-0029/implementation--security-reviewer--r04--pass--45497bcf0b57.json
+  - .dossier/reviews/F-0029/implementation--spec-conformance-reviewer--r05--pass--a45a9cdcd0a1.json
+  - .dossier/reviews/F-0029/implementation--code-reviewer--r06--pass--a45a9cdcd0a1.json
+  - .dossier/reviews/F-0029/implementation--security-reviewer--r05--pass--a45a9cdcd0a1.json
 verification_artifacts:
   - .dossier/verification/F-0029/implementation-45497bcf0b57.json
+  - .dossier/verification/F-0029/implementation-a45a9cdcd0a1.json
 required_audit_classes:
   - spec-conformance-reviewer
   - code-reviewer
@@ -50,7 +54,7 @@ executed_audit_classes:
   - spec-conformance-reviewer
   - code-reviewer
   - security-reviewer
-required_external_review_pending: true
+required_external_review_pending: false
 review_events:
   - allowed_by_policy: true
     artifact_path: .dossier/reviews/F-0029/implementation--spec-conformance-reviewer--r01--pass--45497bcf0b57.json
@@ -362,19 +366,90 @@ review_events:
       smoke surfaces.
     stale: false
     verdict: PASS
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0029/implementation--spec-conformance-reviewer--r05--pass--a45a9cdcd0a1.json
+    audit_class: spec-conformance-reviewer
+    evidence_count: 5
+    event_commit: a45a9cdcd0a14d3e8ded7239044ee06562402103
+    implementation_scope: code-bearing
+    invalidated: false
+    latest_copy_path: .dossier/reviews/F-0029/implementation--spec-conformance-reviewer--latest.json
+    must_fix_count: 0
+    recorded_at: 2026-04-29T19:38:44.589Z
+    review_mode: external
+    review_attempt_id: implementation--spec-conformance-reviewer--r05
+    review_round_id: r05
+    review_round_number: 5
+    reviewer: codex-spec-conformance-reviewer
+    reviewer_agent_id: null
+    reviewer_skill: spec-conformance-reviewer
+    reviewer_thread_id: 019ddabd-902e-7560-b882-82a461f38188
+    repair_next_action: null
+    risk_families: []
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0029/implementation--code-reviewer--r06--pass--a45a9cdcd0a1.json
+    audit_class: code-reviewer
+    evidence_count: 5
+    event_commit: a45a9cdcd0a14d3e8ded7239044ee06562402103
+    implementation_scope: code-bearing
+    invalidated: false
+    latest_copy_path: .dossier/reviews/F-0029/implementation--code-reviewer--latest.json
+    must_fix_count: 0
+    recorded_at: 2026-04-29T19:43:03.400Z
+    review_mode: external
+    review_attempt_id: implementation--code-reviewer--r06
+    review_round_id: r06
+    review_round_number: 6
+    reviewer: codex-gpt5-code-reviewer
+    reviewer_agent_id: codex-gpt5-independent-review-f0029-a45a9cd-20260429
+    reviewer_skill: code-reviewer
+    reviewer_thread_id: 019ddac0-fbc3-7303-9009-4439cf043204
+    repair_next_action: null
+    risk_families: []
+    security_trigger_reason: null
+    stale: false
+    verdict: PASS
+  - allowed_by_policy: true
+    artifact_path: .dossier/reviews/F-0029/implementation--security-reviewer--r05--pass--a45a9cdcd0a1.json
+    audit_class: security-reviewer
+    evidence_count: 9
+    event_commit: a45a9cdcd0a14d3e8ded7239044ee06562402103
+    implementation_scope: code-bearing
+    invalidated: false
+    latest_copy_path: .dossier/reviews/F-0029/implementation--security-reviewer--latest.json
+    must_fix_count: 0
+    recorded_at: 2026-04-29T19:45:36.668Z
+    review_mode: external
+    review_attempt_id: implementation--security-reviewer--r05
+    review_round_id: r05
+    review_round_number: 5
+    reviewer: codex-security-reviewer
+    reviewer_agent_id: codex-gpt5-security-reviewer-f0029-a45a9cd-20260429
+    reviewer_skill: security-reviewer
+    reviewer_thread_id: 019ddac4-8eaa-7b12-b7da-6d60e1418ade
+    repair_next_action: null
+    risk_families: []
+    security_trigger_reason: F-0029 implements Telegram egress with operator-only
+      recipient admission, no caller-supplied recipient, bot token handling,
+      durable outbox text authority, terminal timeout behavior, no automatic
+      resend of ambiguous sending rows, and fake Bot API smoke surfaces.
+    stale: false
+    verdict: PASS
 reviewer_skills:
   - spec-conformance-reviewer
   - code-reviewer
   - security-reviewer
 reviewer_agent_ids:
-  - codex-gpt5-f0029-final-spec-review-20260429
-  - codex-gpt5-f0029-final-idempotency-review-20260429
-  - codex-gpt5-security-reviewer-f0029-final-retry-idempotency-20260429
+  - codex-gpt5-independent-review-f0029-a45a9cd-20260429
+  - codex-gpt5-security-reviewer-f0029-a45a9cd-20260429
 review_trace_commits:
-  - 45497bcf0b57b7212624a2ec10e14393d76b20c1
+  - a45a9cdcd0a14d3e8ded7239044ee06562402103
 degraded_review_present: false
 invalidated_review_present: false
-stale_review_present: true
+stale_review_present: false
 skills_used:
   - unified-dossier-engineer
   - implementation-discipline
@@ -387,34 +462,34 @@ session_id: 56d23d4d-e175-4a94-84a2-061a0036a352
 trace_runtime: codex
 trace_locator_kind: session_id
 final_delivery_commit: 45497bcf0b57b7212624a2ec10e14393d76b20c1
-final_closure_commit: 45497bcf0b57b7212624a2ec10e14393d76b20c1
+final_closure_commit: a45a9cdcd0a14d3e8ded7239044ee06562402103
 implementation_review_scope: code-bearing
 stage_entry_commit: 45497bcf0b57b7212624a2ec10e14393d76b20c1
 required_security_review: true
 security_trigger_reasons:
-  - F-0029 implements Telegram egress with bot token handling, operator-only
-    recipient admission, outbound Bot API transport, durable DB evidence,
-    retry/idempotency behavior, terminal timeout behavior, no automatic resend
-    of ambiguous sending rows, and fake Bot API smoke surfaces.
+  - F-0029 implements Telegram egress with operator-only recipient admission, no
+    caller-supplied recipient, bot token handling, durable outbox text
+    authority, terminal timeout behavior, no automatic resend of ambiguous
+    sending rows, and fake Bot API smoke surfaces.
 pre_review_risk_families: []
 pre_review_checklists: []
 pre_review_checklist_status: not_required
 pre_review_checklist_blockers: []
 local_gates_green_ts: 2026-04-29T18:50:42.915Z
 step_artifact: .dossier/steps/F-0029/implementation.json
-closure_bundle_id: implementation--bundle-39e5e21b5b59--r05--45497bcf0b57
-closure_bundle_round: 5
+closure_bundle_id: implementation--bundle-c3aad48250b2--r06--a45a9cdcd0a1
+closure_bundle_round: 6
 closure_bundle_rounds_by_audit_class:
-  spec-conformance-reviewer: 4
-  code-reviewer: 5
-  security-reviewer: 4
+  spec-conformance-reviewer: 5
+  code-reviewer: 6
+  security-reviewer: 5
 selected_review_artifacts:
-  - .dossier/reviews/F-0029/implementation--spec-conformance-reviewer--r04--pass--45497bcf0b57.json
-  - .dossier/reviews/F-0029/implementation--code-reviewer--r05--pass--45497bcf0b57.json
-  - .dossier/reviews/F-0029/implementation--security-reviewer--r04--pass--45497bcf0b57.json
-selected_verification_artifact: .dossier/verification/F-0029/implementation-45497bcf0b57.json
+  - .dossier/reviews/F-0029/implementation--spec-conformance-reviewer--r05--pass--a45a9cdcd0a1.json
+  - .dossier/reviews/F-0029/implementation--code-reviewer--r06--pass--a45a9cdcd0a1.json
+  - .dossier/reviews/F-0029/implementation--security-reviewer--r05--pass--a45a9cdcd0a1.json
+selected_verification_artifact: .dossier/verification/F-0029/implementation-a45a9cdcd0a1.json
 selected_step_artifact: .dossier/steps/F-0029/implementation.json
-selected_closure_ts: 2026-04-29T19:34:17.754Z
+selected_closure_ts: 2026-04-29T19:46:02.230Z
 rpa_source_identity:
   schema_version: 1
   feature_id: F-0029
@@ -426,13 +501,13 @@ rpa_source_identity:
   stage_log: .dossier/logs/implementation/F-0029--fc-F-0029-mok6q1ug--implementation-393f6a55.md
   stage_state_path: .dossier/stages/F-0029/implementation.json
   step_artifact: .dossier/steps/F-0029/implementation.json
-  event_commit: 45497bcf0b57b7212624a2ec10e14393d76b20c1
+  event_commit: a45a9cdcd0a14d3e8ded7239044ee06562402103
   session_id: 56d23d4d-e175-4a94-84a2-061a0036a352
   trace_runtime: codex
 rpa_source_quality:
   schema_version: 1
   review_history_quality: complete
-  selected_bundle_quality: stale
+  selected_bundle_quality: complete
   missing_fail_artifact_count: 0
   trace_only_fail_count: 0
   same_thread_rejected_count: 0
@@ -516,27 +591,89 @@ non_pass_review_events:
     invalidated: false
     must_fix_count: 1
     evidence_count: 4
-post_close_backlog_hygiene_required: false
-post_close_backlog_hygiene_status: not_required
-post_close_backlog_hygiene_artifact: null
-post_close_backlog_hygiene_global_refresh_artifact: null
-post_close_affected_feature_ids: []
-post_close_pre_status_summary: null
-post_close_post_status_summary: null
-post_close_hygiene_schema_version: null
-post_close_backlog_hygiene_checked_at: null
-post_close_backlog_hygiene_refresh_at: null
-post_close_open_source_review_count: null
-post_close_source_review_blocked_item_count: null
-post_close_lifecycle_reconciliation_drift_count: null
-post_close_unresolved_attention_present: null
-post_close_backlog_hygiene_blockers: []
-step_close_ts: 2026-04-29T19:34:17.791Z
-process_complete_ts: null
+post_close_backlog_hygiene_required: true
+post_close_backlog_hygiene_status: blocked
+post_close_backlog_hygiene_artifact: .dossier/verification/F-0029/implementation-post-close-backlog-hygiene.json
+post_close_backlog_hygiene_global_refresh_artifact: .dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T19-46-22-382Z.json
+post_close_affected_feature_ids:
+  - F-0026
+  - F-0027
+  - F-0028
+  - F-0029
+post_close_pre_status_summary:
+  total_items: 29
+  last_refresh_at: 2026-04-29T17:30:46.784Z
+  defined_count: 0
+  intaken_count: 0
+  specified_count: 0
+  planned_count: 0
+  implemented_count: 29
+  gaps_count: 0
+  needs_attention_count: 0
+  ready_for_next_step_count: 0
+  open_todo_count: 0
+  artifact_integrity:
+    applied_canonical_paths_exist: true
+    missing_canonical_paths: []
+  open_source_review_count: 0
+  source_review_blocked_item_count: 0
+  lifecycle_reconciliation_drift_count: 0
+  lifecycle_reconciliation_drifts: []
+  post_close_hygiene_missing_count: 1
+  post_close_hygiene_stale_count: 3
+  post_close_hygiene_blocked_count: 0
+  post_close_hygiene_missing_feature_ids:
+    - F-0029
+  post_close_hygiene_stale_feature_ids:
+    - F-0026
+    - F-0027
+    - F-0028
+  post_close_hygiene_blocked_feature_ids: []
+post_close_post_status_summary:
+  total_items: 29
+  last_refresh_at: 2026-04-29T19:46:22.640Z
+  defined_count: 0
+  intaken_count: 0
+  specified_count: 0
+  planned_count: 0
+  implemented_count: 29
+  gaps_count: 0
+  needs_attention_count: 0
+  ready_for_next_step_count: 0
+  open_todo_count: 0
+  artifact_integrity:
+    applied_canonical_paths_exist: true
+    missing_canonical_paths: []
+  open_source_review_count: 2
+  source_review_blocked_item_count: 29
+  lifecycle_reconciliation_drift_count: 0
+  lifecycle_reconciliation_drifts: []
+  post_close_hygiene_missing_count: 1
+  post_close_hygiene_stale_count: 3
+  post_close_hygiene_blocked_count: 0
+  post_close_hygiene_missing_feature_ids:
+    - F-0029
+  post_close_hygiene_stale_feature_ids:
+    - F-0026
+    - F-0027
+    - F-0028
+  post_close_hygiene_blocked_feature_ids: []
+post_close_hygiene_schema_version: 2
+post_close_backlog_hygiene_checked_at: 2026-04-29T19:46:22.953Z
+post_close_backlog_hygiene_refresh_at: 2026-04-29T19:46:22.640Z
+post_close_open_source_review_count: 2
+post_close_source_review_blocked_item_count: 29
+post_close_lifecycle_reconciliation_drift_count: 0
+post_close_unresolved_attention_present: true
+post_close_backlog_hygiene_blockers:
+  - "Open source reviews remain after refresh: 2."
+  - "Source-review blocked backlog items remain: 29."
+step_close_ts: 2026-04-29T19:46:02.265Z
+process_complete_ts: 2026-04-29T19:46:02.265Z
 intake_process_complete_ts: null
 first_review_agent_started_ts: 2026-04-29T18:50:55.331Z
-final_pass_ts: 2026-04-29T19:33:42.111Z
-verification_trace_commit: 45497bcf0b57b7212624a2ec10e14393d76b20c1
+final_pass_ts: 2026-04-29T19:45:36.668Z
+verification_trace_commit: a45a9cdcd0a14d3e8ded7239044ee06562402103
 ---
 
 ## Scope

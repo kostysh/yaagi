@@ -2,7 +2,7 @@
   "version": 1,
   "created_at": "2026-04-29T19:45:36.642Z",
   "audit_class": "security-reviewer",
-  "artifact_role": "latest_copy",
+  "artifact_role": "immutable_attempt",
   "review_mode": "external",
   "reviewer": "codex-security-reviewer",
   "reviewer_skill": "security-reviewer",
@@ -11,7 +11,7 @@
   "review_attempt_id": "implementation--security-reviewer--r05",
   "review_round_id": "r05",
   "review_round_number": 5,
-  "latest_copy_path": ".dossier/reviews/F-0029/implementation-security-review.json",
+  "latest_copy_path": ".dossier/reviews/F-0029/implementation--security-reviewer--latest.json",
   "step": "implementation",
   "dossier": "docs/ssot/features/F-0029-operator-only-telegram-conversational-egress-reply-loop.md",
   "feature_id": "F-0029",
@@ -37,6 +37,5 @@
       ".dossier/verification/F-0029/implementation-a45a9cdcd0a1.json"
     ]
   },
-  "notes": "PASS on current HEAD a45a9cdcd0a1. No high-confidence security findings in operator-only enforcement, no caller-supplied recipient, token leakage controls, durable outbox text authority, terminal timeout failure behavior, no automatic resend of ambiguous sending rows, or fake Bot API smoke surfaces. Review used the supplied verification artifact; no tests were rerun in this reviewer session.",
-  "immutable_artifact_path": ".dossier/reviews/F-0029/implementation--security-reviewer--r05--pass--a45a9cdcd0a1.json"
+  "notes": "PASS on current HEAD a45a9cdcd0a1. No high-confidence security findings in operator-only enforcement, no caller-supplied recipient, token leakage controls, durable outbox text authority, terminal timeout failure behavior, no automatic resend of ambiguous sending rows, or fake Bot API smoke surfaces. Review used the supplied verification artifact; no tests were rerun in this reviewer session."
 }

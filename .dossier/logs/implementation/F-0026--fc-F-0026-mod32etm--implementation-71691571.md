@@ -85,6 +85,8 @@ review_events:
     reviewer_agent_id: 019dc147-72e1-7e22-92ef-1786f111bdae
     reviewer_skill: spec-conformance-reviewer
     reviewer_thread_id: 019dc028-2688-7791-a888-53c3018aa4d8
+    repair_next_action: null
+    risk_families: []
     security_trigger_reason: null
     stale: false
     verdict: PASS
@@ -106,6 +108,8 @@ review_events:
     reviewer_agent_id: 019dc147-7377-7e81-8b6b-ab191e7ef4c0
     reviewer_skill: code-reviewer
     reviewer_thread_id: 019dc028-2688-7791-a888-53c3018aa4d8
+    repair_next_action: null
+    risk_families: []
     security_trigger_reason: null
     stale: false
     verdict: PASS
@@ -127,6 +131,8 @@ review_events:
     reviewer_agent_id: 019dc1b6-44a8-70e2-8489-40786f404c65
     reviewer_skill: spec-conformance-reviewer
     reviewer_thread_id: 019dc028-2688-7791-a888-53c3018aa4d8
+    repair_next_action: null
+    risk_families: []
     security_trigger_reason: null
     stale: false
     verdict: PASS
@@ -148,6 +154,8 @@ review_events:
     reviewer_agent_id: 019dc1b6-6ad2-7752-ba64-7dfc8739e571
     reviewer_skill: code-reviewer
     reviewer_thread_id: 019dc028-2688-7791-a888-53c3018aa4d8
+    repair_next_action: null
+    risk_families: []
     security_trigger_reason: null
     stale: false
     verdict: PASS
@@ -169,6 +177,8 @@ review_events:
     reviewer_agent_id: 019dc1b6-94c7-7bc1-9a80-789615756a33
     reviewer_skill: security-reviewer
     reviewer_thread_id: 019dc028-2688-7791-a888-53c3018aa4d8
+    repair_next_action: null
+    risk_families: []
     security_trigger_reason: implementation changes protected release-control
       Operator API, RBAC route class, host executor boundary, release/rollback
       persistence and deployment automation
@@ -192,6 +202,8 @@ review_events:
     reviewer_agent_id: 019dc1b6-44a8-70e2-8489-40786f404c65
     reviewer_skill: spec-conformance-reviewer
     reviewer_thread_id: 019dc1b6-44a8-70e2-8489-40786f404c65
+    repair_next_action: null
+    risk_families: []
     security_trigger_reason: null
     stale: false
     verdict: PASS
@@ -213,6 +225,8 @@ review_events:
     reviewer_agent_id: 019dc1b6-6ad2-7752-ba64-7dfc8739e571
     reviewer_skill: code-reviewer
     reviewer_thread_id: 019dc1b6-6ad2-7752-ba64-7dfc8739e571
+    repair_next_action: null
+    risk_families: []
     security_trigger_reason: null
     stale: false
     verdict: PASS
@@ -234,6 +248,8 @@ review_events:
     reviewer_agent_id: 019dc1b6-94c7-7bc1-9a80-789615756a33
     reviewer_skill: security-reviewer
     reviewer_thread_id: 019dc1b6-94c7-7bc1-9a80-789615756a33
+    repair_next_action: null
+    risk_families: []
     security_trigger_reason: implementation changes protected release-control
       Operator API, RBAC route class, host executor boundary, release/rollback
       persistence and deployment automation
@@ -257,6 +273,8 @@ review_events:
     reviewer_agent_id: 019dc1b6-44a8-70e2-8489-40786f404c65
     reviewer_skill: spec-conformance-reviewer
     reviewer_thread_id: 019dc1b6-44a8-70e2-8489-40786f404c65
+    repair_next_action: null
+    risk_families: []
     security_trigger_reason: null
     stale: false
     verdict: PASS
@@ -278,6 +296,8 @@ review_events:
     reviewer_agent_id: 019dc1b6-6ad2-7752-ba64-7dfc8739e571
     reviewer_skill: code-reviewer
     reviewer_thread_id: 019dc1b6-6ad2-7752-ba64-7dfc8739e571
+    repair_next_action: null
+    risk_families: []
     security_trigger_reason: null
     stale: false
     verdict: PASS
@@ -299,6 +319,8 @@ review_events:
     reviewer_agent_id: 019dc1b6-94c7-7bc1-9a80-789615756a33
     reviewer_skill: security-reviewer
     reviewer_thread_id: 019dc1b6-94c7-7bc1-9a80-789615756a33
+    repair_next_action: null
+    risk_families: []
     security_trigger_reason: implementation changes protected release-control
       Operator API, RBAC route class, host executor boundary, release/rollback
       persistence and deployment automation
@@ -348,15 +370,17 @@ pre_review_checklist_blockers: []
 local_gates_green_ts: 2026-04-24T23:06:15.499Z
 step_artifact: .dossier/steps/F-0026/implementation.json
 post_close_backlog_hygiene_required: true
-post_close_backlog_hygiene_status: clean
+post_close_backlog_hygiene_status: blocked
 post_close_backlog_hygiene_artifact: .dossier/verification/F-0026/implementation-post-close-backlog-hygiene.json
-post_close_backlog_hygiene_checked_at: 2026-04-29T17:30:47.036Z
-post_close_backlog_hygiene_refresh_at: 2026-04-29T17:30:46.784Z
-post_close_open_source_review_count: 0
-post_close_source_review_blocked_item_count: 0
+post_close_backlog_hygiene_checked_at: 2026-04-29T19:46:22.953Z
+post_close_backlog_hygiene_refresh_at: 2026-04-29T19:46:22.640Z
+post_close_open_source_review_count: 2
+post_close_source_review_blocked_item_count: 29
 post_close_lifecycle_reconciliation_drift_count: 0
-post_close_unresolved_attention_present: false
-post_close_backlog_hygiene_blockers: []
+post_close_unresolved_attention_present: true
+post_close_backlog_hygiene_blockers:
+  - "Open source reviews remain after refresh: 2."
+  - "Source-review blocked backlog items remain: 29."
 step_close_ts: 2026-04-24T23:07:27.566Z
 process_complete_ts: 2026-04-24T23:07:27.566Z
 intake_process_complete_ts: null
@@ -373,22 +397,23 @@ selected_closure_ts: null
 rpa_source_identity: null
 rpa_source_quality: null
 non_pass_review_events: []
-post_close_backlog_hygiene_global_refresh_artifact: .dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T17-30-46-524Z.json
+post_close_backlog_hygiene_global_refresh_artifact: .dossier/verification/post-close-hygiene/global-refresh-post-close-hygiene-2026-04-29T19-46-22-382Z.json
 post_close_affected_feature_ids:
   - F-0026
   - F-0027
   - F-0028
+  - F-0029
 post_close_pre_status_summary:
   total_items: 29
-  last_refresh_at: 2026-04-29T16:41:23.948Z
+  last_refresh_at: 2026-04-29T17:30:46.784Z
   defined_count: 0
   intaken_count: 0
   specified_count: 0
-  planned_count: 1
-  implemented_count: 28
+  planned_count: 0
+  implemented_count: 29
   gaps_count: 0
   needs_attention_count: 0
-  ready_for_next_step_count: 1
+  ready_for_next_step_count: 0
   open_todo_count: 0
   artifact_integrity:
     applied_canonical_paths_exist: true
@@ -397,10 +422,11 @@ post_close_pre_status_summary:
   source_review_blocked_item_count: 0
   lifecycle_reconciliation_drift_count: 0
   lifecycle_reconciliation_drifts: []
-  post_close_hygiene_missing_count: 0
+  post_close_hygiene_missing_count: 1
   post_close_hygiene_stale_count: 3
   post_close_hygiene_blocked_count: 0
-  post_close_hygiene_missing_feature_ids: []
+  post_close_hygiene_missing_feature_ids:
+    - F-0029
   post_close_hygiene_stale_feature_ids:
     - F-0026
     - F-0027
@@ -408,27 +434,28 @@ post_close_pre_status_summary:
   post_close_hygiene_blocked_feature_ids: []
 post_close_post_status_summary:
   total_items: 29
-  last_refresh_at: 2026-04-29T17:30:46.784Z
+  last_refresh_at: 2026-04-29T19:46:22.640Z
   defined_count: 0
   intaken_count: 0
   specified_count: 0
-  planned_count: 1
-  implemented_count: 28
+  planned_count: 0
+  implemented_count: 29
   gaps_count: 0
   needs_attention_count: 0
-  ready_for_next_step_count: 1
+  ready_for_next_step_count: 0
   open_todo_count: 0
   artifact_integrity:
     applied_canonical_paths_exist: true
     missing_canonical_paths: []
-  open_source_review_count: 0
-  source_review_blocked_item_count: 0
+  open_source_review_count: 2
+  source_review_blocked_item_count: 29
   lifecycle_reconciliation_drift_count: 0
   lifecycle_reconciliation_drifts: []
-  post_close_hygiene_missing_count: 0
+  post_close_hygiene_missing_count: 1
   post_close_hygiene_stale_count: 3
   post_close_hygiene_blocked_count: 0
-  post_close_hygiene_missing_feature_ids: []
+  post_close_hygiene_missing_feature_ids:
+    - F-0029
   post_close_hygiene_stale_feature_ids:
     - F-0026
     - F-0027
