@@ -1,3 +1,0 @@
-- validator sees the package as valid
-- workspace copy matches the canonical seed package
-- loader can read the entry markdown and support files
