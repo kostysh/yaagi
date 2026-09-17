@@ -1,5 +1,6 @@
-# ADR-NNN: Название решения
+# ADR-NNNN: Название решения
 
+- Document ID: `project.adr.<NNNN>`
 - Статус: proposed | accepted | superseded
 - Дата:
 - Связанные документы:

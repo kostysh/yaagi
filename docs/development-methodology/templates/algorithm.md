@@ -1,6 +1,8 @@
 # Алгоритм: <название>
 
-- Модуль:
+- Document ID: `<module-id>.algorithm.<algorithm-id>`
+- Module ID: `<module-id>`
+- Algorithm ID: `<algorithm-id>`
 - Требование или сценарий:
 - Почему отдельное описание необходимо:
 

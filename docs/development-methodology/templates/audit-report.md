@@ -5,6 +5,11 @@
 ## Паспорт
 
 - **Дата:** YYYY-MM-DD
+- **Document ID:** `<module-id>.validation.<task-id>.<scope-id>.<N>`
+- **Module ID:** `<module-id; для общепроектного документа — project>`
+- **Task ID:** `gh-<issue-number>`
+- **Scope ID:** `<artifact-scope>-<audit-kind>`
+- **Путь отчёта:** `docs/validation/<module-id>/<task-id>.<scope-id>.<N>.md`
 - **Объект:** `<путь или иной точный идентификатор>`
 - **Audit commit:** `<полный hash проверенного commit; обязательное поле>`
 - **Вид аудита / skill:** `<Concept Conformance | Spec Conformance | Security | другое>`

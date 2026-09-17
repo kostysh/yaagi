@@ -1,5 +1,7 @@
 # Спецификация модуля: <название>
 
+- Document ID: `<module-id>.spec`
+- Module ID: `<module-id>`
 - Статус: draft | accepted
 - Концепция:
 - Архитектура:
