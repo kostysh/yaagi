@@ -1,5 +1,16 @@
 {
   "name": "yaagi",
+  "description": "An implementation path for Polyphony: a long-lived, identity-bearing AI agent with model-independent continuity.",
+  "keywords": [
+    "agi",
+    "ai-agent",
+    "autonomous-agent",
+    "digital-organism",
+    "long-lived-agent",
+    "local-ai",
+    "agent-memory",
+    "polyphony"
+  ],
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.2"
