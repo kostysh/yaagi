@@ -40,5 +40,6 @@ GitHub Issues и элементы GitHub Project не входят в эту и�
 - [Спецификация модуля](templates/module-specification.md)
 - [План имплементации модуля](templates/module-implementation-plan.md)
 - [Описание алгоритма](templates/algorithm.md)
+- [Отчёт об отрицательном результате аудита](templates/audit-report.md)
 
 После создания или значимого изменения проектный документ проходит [аудит](audits.md).
