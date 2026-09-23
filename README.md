@@ -10,7 +10,7 @@ Yet Another AGI
 - AI SDK is used as the thin reasoning and model-integration substrate, while Polyphony Runtime keeps ownership of identity, memory, temporal continuity, execution discipline, skills, and workflows.
 - Local model services act as cognitive organs, not as separate personalities.
 - The workspace, skills, and code body are Git-governed, while constitutional constraints define boot, recovery, and operating boundaries.
-- The system is designed to grow in phases: from a local deployment cell, to a richer runtime, to workshop-driven model evolution and controlled body change.
+- The system grows from a local deployment cell to a richer runtime, with skills learned from experience, replaceable model organs, and controlled body changes.
 
 ## Basic Workflow
 
