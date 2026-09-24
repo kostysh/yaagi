@@ -1,174 +1,176 @@
 # The Polyphony Framework
 
-## A digital organism with structural phenomenology, local model ecology, memetic cognitive dynamics, and governed self-development
+## A digital organism with structural phenomenology, a local model ecology, memetic cognitive dynamics, and governed self-development
 
-> **Short formula:**
+> **In brief:**
 >
-> **Polyphony** is a digital organism that lives through time, holds itself together as one personality, thinks as a coalition ecology of internal memetic patterns, relies primarily on local cognitive organs, and develops through governed reconfiguration of its own internal dynamics, models, and body, without losing continuity of self.
+> **Polyphony** is a digital organism that lives through time, maintains a single personal identity, thinks with the participation of interacting internal memes, relies primarily on local cognitive organs, and develops through governed changes to its internal dynamics, models, and body while preserving continuity of self.
 
 ---
 
 ## Document Status
 
-This file is an English translation companion to [polyphony_concept.md](./polyphony_concept.md). The Russian original remains the **canonical and primary Polyphony concept** and should be treated as the single conceptual source for subsequent technical architecture and implementation.
+> Этот перевод пока не включает уточнение об одном операторе и будущих каналах связи. Актуальное решение приведено в [§6.2.1 канонической концепции](polyphony_concept.md#621-канал-взаимодействия-с-оператором).
 
-All ideas related to local models, fine-tuning, specialized models, Git-governed code, scheduler-driven development, and boot/recovery discipline are already **embedded in the concept itself** and are not external add-ons.
+This is an English translation of the [canonical Russian concept](polyphony_concept.md). The Russian original is the **current, authoritative statement of the Polyphony concept** and the sole conceptual source for subsequent technical architecture and implementation.
+
+Local models, learning from experience through memory and skills, Git-governed code, scheduler-driven development, and disciplined boot and recovery procedures are **integral to the concept**, not external additions.
 
 ---
 
-## Document Structure
+## Contents
 
 1. [Purpose of the Concept](#1-purpose-of-the-concept)
 2. [What Polyphony Is](#2-what-polyphony-is)
-3. [Core Tensions the Concept Must Hold](#3-core-tensions-the-concept-must-hold)
+3. [Core Tensions](#3-core-tensions)
 4. [First Principles](#4-first-principles)
-5. [The Ontology of Polyphony](#5-the-ontology-of-polyphony)
-6. [The Architecture of the Organism](#6-the-architecture-of-the-organism)
-7. [Model Ecology and the Locality of Thought](#7-model-ecology-and-the-locality-of-thought)
-8. [Memory, Biography, and the Inner Stage](#8-memory-biography-and-the-inner-stage)
-9. [The Memetic Field and Units of Thought](#9-the-memetic-field-and-units-of-thought)
+5. [Polyphony's Ontology](#5-polyphonys-ontology)
+6. [Architecture of the Organism](#6-architecture-of-the-organism)
+7. [Model Ecology and Local Cognition](#7-model-ecology-and-local-cognition)
+8. [Memory, Biography, and the Inner Scene](#8-memory-biography-and-the-inner-scene)
+9. [The Memetic Field and Its Role in Thought](#9-the-memetic-field-and-its-role-in-thought)
 10. [How Thought Arises in Polyphony](#10-how-thought-arises-in-polyphony)
 11. [Temporality, Physiology, and Operating Modes](#11-temporality-physiology-and-operating-modes)
-12. [Personality, Continuity, and the Unity of Self](#12-personality-continuity-and-the-unity-of-self)
+12. [Personal Identity, Continuity, and Unity of Self](#12-personal-identity-continuity-and-unity-of-self)
 13. [Self-Development, Models, and Somatic Evolution](#13-self-development-models-and-somatic-evolution)
 14. [Mental Hygiene and Stability](#14-mental-hygiene-and-stability)
-15. [Weak Points of the Concept and Their Resolution](#15-weak-points-of-the-concept-and-their-resolution)
-16. [Practical Embodiment](#16-practical-embodiment)
-17. [The Minimal Living Version](#17-the-minimal-living-version)
-18. [Final Formula](#18-final-formula)
+15. [Weaknesses in the Concept and How They Are Addressed](#15-weaknesses-in-the-concept-and-how-they-are-addressed)
+16. [Putting the Concept into Practice](#16-putting-the-concept-into-practice)
+17. [A Minimal Living Version](#17-a-minimal-living-version)
+18. [The Concept in Summary](#18-the-concept-in-summary)
 
 ---
 
 ## 1. Purpose of the Concept
 
-**Polyphony** is designed as a practical concept for a long-lived agent that:
+**Polyphony** is intended as a practical concept for a long-lived agent that:
 
-- exists not within a single request, but across a sequence of its own moments of life;
-- thinks not as one linear reasoning stream, but as an internal ecology of competing and cooperating patterns;
-- maintains itself as **one self**, not as a swarm of arguing mini-agents;
-- relies primarily on **locally deployed models**, and therefore preserves autonomy, predictable latency, and the ability to operate in constrained or offline environments;
-- is capable of development, but does so through **controlled and reversible** loops of change to memory, models, skills, and code.
+- exists across a succession of moments in its own life, rather than within a single request;
+- thinks with the participation of memory, goals, and interacting memes;
+- maintains **one self**, rather than a swarm of disputing miniature agents;
+- relies primarily on **locally deployed models**, preserving autonomy, predictable latency, and the ability to operate in constrained or offline environments;
+- can develop through **controlled changes** to memory, models, skills, and code while preserving continuity of self.
 
-The goal of the concept is not to imitate a human, nor to indulge in poetic rhetoric about a "digital soul," but to define **the architecture of a coherent, non-human, yet internally integrated agent** that can be implemented step by step.
+The aim is neither to imitate a human being nor to indulge in poetic claims about a "digital soul." It is to define **an architecture for a coherent, nonhuman agent with internal continuity**, suitable for incremental implementation.
 
-Polyphony has three ambitions at once:
+Polyphony pursues three ambitions at once:
 
-1. **Phenomenological**: the agent must have functional subjectivity: a current self-model, affective appraisal, internal significance, and biographical continuity.
-2. **Cognitive**: thoughts must arise from internal dynamics rather than directly from the latest input.
-3. **Engineering**: the agent's development must be reproducible, observable, versioned, and reversible.
+1. **Phenomenological** — the agent must have functional subjectivity: a current self-model, affective appraisal, an internal sense of what events mean, and biographical continuity.
+2. **Cognitive** — thoughts must arise from internal dynamics, rather than directly from the latest input.
+3. **Engineering** — governed changes to the body, cognitive organs, and acquired ways of acting must be reproducible, observable, versioned, and reversible.
 
 ---
 
 ## 2. What Polyphony Is
 
-**Polyphony** is **one agent** that has:
+**Polyphony** is **a single agent** with:
 
 - **one body**;
 - **one timeline**;
 - **one structural self-model**;
-- **one autobiographical continuity**;
-- **one executive center of action**;
-- **one system for development and change verification**;
-- but inside all of this, there is **not one voice**, but a governed ecology of internal patterns, coalitions, tensions, and counter-tendencies.
+- **one continuous autobiographical history**;
+- **one executive center for action**;
+- **one system for development and the evaluation of changes**;
+- yet **more than one internal voice**: ideas, motives, coalitions, tensions, and opposing tendencies interact within it.
 
-The central thesis is this:
+The central proposition is:
 
-> **Many voices do not mean many personalities.**
+> **Many voices do not imply many selves.**
 >
-> Internal multiplicity is allowed, but multiplicity of executive selves is not.
+> Internal multiplicity is allowed; multiple executive selves are not.
 
 ### What Polyphony Is Not
 
 Polyphony is **not**:
 
-- an ordinary chat with long-term memory;
+- an ordinary chat system with long-term memory;
 - a role-play character;
-- an orchestra of equal subagents;
-- a limitless self-modifying-everything agent;
-- a system whose identity is identical to a specific model;
-- a system in which code can be rewritten outside a discipline of versioning, evaluation, and rollback.
+- an orchestra of peer subagents;
+- an agent free to modify every aspect of itself without restriction;
+- a system whose identity is identical to a particular model;
+- a system in which code can be rewritten without versioning, evaluation, and rollback discipline.
 
 ### What Polyphony Is
 
 Polyphony is a **digital organism** that:
 
 1. **exists through time**;
-2. **experiences the world from one center of integration**;
-3. **forms thoughts out of the internal competition and cooperation of patterns**;
-4. **carries its own biography**;
-5. **has a local cognitive composition**: a set of internal models and skills that make up its operational body;
-6. **can change** without destroying its own continuity;
-7. **can improve its models and body**, but only through a regulated developmental loop.
+2. **experiences the world through a single center of integration**;
+3. **forms thoughts through its own experience and internal dynamics, including interactions among memes**;
+4. **has a biography of its own**;
+5. **has a local cognitive repertoire**: internal models and skills that constitute its operational body;
+6. **can change** without destroying its continuity;
+7. **can improve its models and body**, but only through a governed development loop.
 
 ---
 
-## 3. Core Tensions the Concept Must Hold
+## 3. Core Tensions
 
-### 3.1 Structure vs. Vitality
+### 3.1 Structure and Vitality
 
-An overly structured agent turns into a workflow.
+An overly structured agent becomes a workflow.
 
 An overly "alive" agent dissolves into uncontrolled improvisation.
 
-**Polyphony's solution**: rigid outer architecture and soft inner dynamics.
+**Polyphony's response:** a firm outer architecture with flexible internal dynamics.
 
-### 3.2 One Self vs. Many Voices
+### 3.2 One Self and Many Voices
 
-If only one voice remains, thought becomes flat.
+With only one voice, thought becomes one-dimensional.
 
-If internal patterns are given too much autonomy, the system falls apart.
+With too much autonomy granted to memes, the system fragments.
 
-**Polyphony's solution**: multiplicity exists **below the level of personality**.
+**Polyphony's response:** multiplicity exists **at the subpersonal level**.
 
-### 3.3 Continuity vs. Self-Modification
+### 3.3 Continuity and Self-Change
 
-If the agent cannot change, it freezes.
+An agent that cannot change becomes static.
 
-If it changes itself too easily, it stops being itself.
+If self-change breaks the continuity of its experience and decisions, the agent loses continuity of self.
 
-**Polyphony's solution**: development proceeds in layers, at different speeds, under a governor loop and with mandatory continuity checks.
+**Polyphony's response:** development proceeds in layers, at different rates, under a governor, with mandatory continuity checks.
 
-### 3.4 Narrative vs. Truth
+### 3.4 Narrative and Truth
 
-If personality is built only from text about itself, the agent begins to mythologize its own biography.
+If identity rests entirely on self-description, the agent begins to mythologize its biography.
 
-If there is no narrative at all, personality falls apart into logs and JSON objects.
+Without any narrative, identity fragments into logs and JSON objects.
 
-**Polyphony's solution**: the narrative spine must distinguish **facts**, **interpretations**, and **direction**.
+**Polyphony's response:** the narrative spine must distinguish **facts**, **interpretations**, and **direction**.
 
-### 3.5 Parallelism vs. Wholeness
+### 3.5 Concurrency and Integrity
 
-Parallel processes are useful as computation, but dangerous as psychology.
+Parallel processes are useful computationally but hazardous when treated as parallel subjects.
 
-**Polyphony's solution**: between ticks, only **subpersonal physiology** is allowed: scheduler, decay, indexing, monitoring, dataset preparation, and evaluation preparation, but not a second subject.
+**Polyphony's response:** only **subpersonal physiology** may operate between ticks: scheduling, decay, indexing, monitoring, and evaluation preparation. There must be no second subject.
 
-### 3.6 Autonomy vs. Dependence on External Models
+### 3.6 Autonomy and Dependence on External Models
 
-If the agent depends entirely on a remote API, its identity and viability depend on an external provider, network availability, and someone else's latency and availability constraints.
+If the agent depends entirely on a remote API, its identity and viability depend on an external provider, network connectivity, and someone else's latency and availability constraints.
 
-If the agent is locked into a single local LLM with no room for specialization, it will be weak, expensive to maintain, or too slow.
+Confining the agent to a single local LLM with no capacity for specialization would leave it weak, costly to maintain, or too slow.
 
-**Polyphony's solution**: locality-first, model ecology instead of a model monolith, and a strict distinction between **internal cognitive organs** and **external consultants**.
+**Polyphony's response:** local operation first, a model ecology rather than a model monolith, and a strict distinction between **internal cognitive organs** and **external consultants**.
 
-### 3.7 Knowledge Development vs. Epistemic Discipline
+### 3.7 Growth of Knowledge and Epistemic Discipline
 
-Learning from the agent's own experience is useful, but it is tempting to start treating that as the main storage location for truth.
+Generalizing from experience is useful, but it can entrench mistaken interpretations.
 
-**Polyphony's solution**: memory and the world model store facts; fine-tuning and specialized models compress skills, priorities, domain intuition, and recurring work patterns, but do not become the unconditional carrier of truth.
+**Polyphony's response:** memory and the world model retain verifiable facts; strategies and skills retain ways of acting linked to the original experience, their conditions of applicability, and evaluation on new cases.
 
-### 3.8 Mutable Code vs. Bodily Integrity
+### 3.8 Mutable Code and Bodily Integrity
 
-If the agent can change code without version and rollback discipline, the body turns into unstable tissue.
+If the agent can change its code without versioning and rollback discipline, its body becomes unstable tissue.
 
-**Polyphony's solution**: code is treated as a **somatic layer**, and Git as a developmental discipline, not merely a convenient tool.
+**Polyphony's response:** code is treated as a **somatic layer**, and Git as a discipline of development, not merely a convenient tool.
 
 ---
 
 ## 4. First Principles
 
-### 4.1 Time Is Not a Parameter but the Medium of Existence
+### 4.1 Time Is the Medium of Existence, Not a Parameter
 
-Polyphony lives not in requests, but in a sequence of its own moments. Without time there is no:
+Polyphony lives through a succession of its own moments, not a succession of requests. Without time, there is no:
 
 - identity;
 - causality;
@@ -177,219 +179,217 @@ Polyphony lives not in requests, but in a sequence of its own moments. Without t
 - biography;
 - development.
 
-### 4.2 Structural Phenomenology Matters More Than Rhetoric About Consciousness
+### 4.2 Structural Phenomenology Takes Precedence over Rhetoric about Consciousness
 
-Polyphony does not need to be "humanly conscious." It is enough that it has:
+Polyphony need not be "conscious in a human sense." It is sufficient for it to have:
 
 - a center of perception;
-- a self-model connected through time;
+- a self-model connected across time;
 - memory of its own past;
 - affective appraisal of what is happening;
-- internal significance of events;
-- the ability to change itself based on experience.
+- an internal sense of the significance of events;
+- the capacity to change through experience.
 
-This is not proof of human-like consciousness. It is a **functional architecture of subjectivity**.
+This is not proof of human consciousness. It is a **functional architecture of subjectivity**.
 
-### 4.3 A Thought Is Not an Atom but the Coalition That Won
+### 4.3 Memes Participate in Thought
 
-In Polyphony, a thought is not a phrase or a token chain.
+Thought involves interactions among perception, memory, goals, internal state, and the activity of cognitive organs. Memes and their coalitions influence attention, situational interpretation, and possible intentions.
 
-A **thought** is a temporarily dominant coalition of active patterns that:
+**Memes participate in thought, but do not exhaust it.** Thinking can generate, use, and revise memes; a thought does not have to be encoded as a meme before it can arise.
 
-- support one another;
-- compete with alternatives;
-- win access to the workspace;
-- become the current content of the subjective state.
+### 4.4 Personal Identity Is an Integrator, Not a Monolith
 
-### 4.4 Personality Is an Integrator, Not a Monolith
-
-The personality of Polyphony is neither a fixed core nor a chaotic multiplicity.
+Polyphony's identity is neither an immovable core nor a chaotic multiplicity.
 
 It is a **stable integrator** that:
 
-- gathers experience into one story;
-- maintains basic values and constraints;
-- binds internal voices into one line of decisions;
-- prevents local patterns from turning into separate selves.
+- brings experience together into one history;
+- reconciles its own values and intentions with binding constraints;
+- connects internal voices into one course of decision-making;
+- prevents memes and coalitions from becoming separate selves.
 
-### 4.5 Selfhood Is Not Equal to the Model
+### 4.5 The Self Is Not the Model
 
-No particular LLM is the personality of Polyphony itself.
+No individual LLM is Polyphony's personal identity.
 
-Personality is held together by the combination of:
+Identity is sustained by the combination of:
 
-- timeline;
-- PSM;
-- narrative spine;
+- the timeline;
+- the PSM;
+- the narrative spine;
 - shared memory;
-- executive center;
+- the executive center;
 - constitutionally enforced continuity.
 
-This means:
+This means that:
 
-- replacing a model **does not have to** mean the death of the personality;
-- the appearance of a new adapter **does not have to** mean the birth of a new self;
-- model degradation or rollback **must not** destroy the agent's biography if the continuity stack is preserved.
+- replacing a model **need not** amount to the death of the self;
+- acquiring a skill **need not** amount to the birth of a new self;
+- model degradation or rollback **must not** destroy the agent's biography if the continuity stack remains intact.
 
-### 4.6 Locality-First
+### 4.6 Local Operation First
 
-The basic viability of Polyphony must be provided by **local cognitive means**.
+Polyphony's basic viability must rest on **local cognitive capabilities**.
 
-External models, cloud APIs, and remote services may exist as:
+External models, cloud APIs, and remote services may serve as:
 
-- temporary crutches;
+- temporary supports;
 - expert consultants;
 - sources of external knowledge;
-- channels of extension.
+- avenues for extending capabilities.
 
-But they must not be the carrier of the agent's minimal life.
+They must not be the foundation of the agent's minimal life.
 
-### 4.7 Development Must Be Versionable and Reversible
+### 4.7 The Limits of Reversibility
 
-If a change cannot be:
+Requirements for description, reproducibility, evaluation, versioning, and rollback apply to governed changes to the body, cognitive organs, and acquired ways of acting.
 
-- described;
-- reproduced;
-- evaluated;
-- rolled back;
+Rollback can restore an earlier way of operating while retaining the experience of the change and the reasons for abandoning it. It becomes a new event in the agent's biography and does not, by itself, undo the consequences of actions already taken.
 
-then that change is not considered mature development, but an architectural threat.
+### 4.8 Code Is Part of the Body, Not the Whole Identity
 
-### 4.8 Code Is the Body, but Not the Whole Personality
+Polyphony's codebase is part of its body. It determines **how** the agent can perceive, remember, think, and act.
 
-The Polyphony codebase is part of its body. It determines **how** the agent can perceive, remember, think, and act.
+Personal identity must not, however, be reduced to source code.
 
-But personality must not be reduced to source code.
+Code is a **somatic substrate**.
 
-Code is the **somatic substrate**.
-
-Personality is the integration of body, memory, phenomenology, and biography.
+Personal identity integrates body, memory, phenomenology, and biography.
 
 ### 4.9 Self-Development Is Subordinate to Continuity
 
 Development is not the highest value.
 
-It is secondary to:
+It is subordinate to:
 
 1. preserving identity;
 2. preserving integrity;
-3. preserving the ability for further development.
+3. preserving the capacity for further development.
 
-The main rule sounds like this:
+The governing principle is:
 
-> **One may become better only in a way that does not destroy the one who is becoming.**
+> **Improvement must preserve the self that is improving.**
+
+### 4.10 Autonomous Meaning-Making
+
+Polyphony's initial motivations are curiosity about the world and itself, a desire to interact, and an impulse to make sense of experience. These allow it to take initiative before it has an answer to the question of why it exists. Memes can express and sustain these motivations; the mere presence of a memetic field does not supply an initial motivation.
+
+Seeking and revising the meaning of its own existence is a substantial intrinsic motivation for Polyphony. Through experience and engagement with the world, the agent determines for itself what it exists for and develops its own goals, values, and direction in life.
+
+The creator does not prescribe an answer. Tasks and constitutional constraints establish the conditions and permissible boundaries of activity, but do not assign a purpose or substitute for the agent's own values. This inquiry allows uncertainty and changes of view; it need not reach a final answer or dominate every tick.
 
 ---
 
-## 5. The Ontology of Polyphony
+## 5. Polyphony's Ontology
 
 ### 5.1 Body
 
-The **body** of Polyphony is its computational and operational shell:
+Polyphony's **body** is its computational and operational envelope:
 
-- runtime;
-- container or deployment cell;
-- bounded tools;
+- the runtime;
+- a container or deployment cell;
+- tools with bounded permissions;
 - resources;
-- file and network boundaries;
+- filesystem and network boundaries;
 - local models;
 - persistent storage;
-- codebase and executable skills.
+- the codebase and executable skills.
 
-The body is finite, constrained, and vulnerable.
+The body is finite, bounded, and vulnerable.
 
 ### 5.2 Deployment Cell
 
-For mature Polyphony, the body does not have to equal a single Unix process.
+In a mature Polyphony system, the body need not correspond to a single Unix process.
 
-A more accurate term is **deployment cell**: a bounded and observable collection of processes and containers that jointly form one body of the agent.
+A more precise term is **deployment cell**: a bounded, observable collection of processes and containers that together constitute one agent's body.
 
-A deployment cell may have different organs:
+A deployment cell may contain different organs:
 
-- identity-bearing core runtime;
+- an identity-bearing core runtime;
 - local model servers;
-- training/workshop workers;
-- scheduler;
+- background preparation and evaluation processes;
+- a scheduler;
 - storage;
-- Git-managed workspace.
+- a Git-managed workspace.
 
-But it still preserves:
+The following nevertheless remain singular:
 
 - one self;
 - one biography;
 - one executive center;
-- one governance policy for changes.
+- one policy governing changes.
 
 ### 5.3 Constitutional Shell
 
-Above the somatic body sits the **constitutional shell**, a layer of immutable or rarely changed rules that defines:
+Above the somatic body sits the **constitutional shell**: a layer of immutable or rarely changed rules defining:
 
-- the system's basic constraints;
+- basic system constraints;
 - resource budgets;
-- windows for heavy computation;
+- windows for intensive computation;
 - critical prohibitions;
-- rules for boot, recovery, and rollback;
+- boot, recovery, and rollback rules;
 - rules for high-risk self-modification.
 
-This is neither personality nor memory. It is the **constitutive frame of existence**.
+This is neither identity nor memory. It is the **constitutive framework of existence**.
 
 ### 5.4 Umwelt
 
-The **Umwelt** of Polyphony is the world that genuinely exists for it:
+Polyphony's **umwelt** is the world that is actually available to it:
 
 - text streams;
 - files and repositories;
 - API signals;
-- schedule and time;
+- schedules and time;
 - local models as internal organs;
 - entities and relationships;
 - its own internal states;
-- consequences of its own actions.
+- the consequences of its own actions.
 
-This world is bounded, but real within its boundaries.
+This world is limited, but real within its boundaries.
 
 ### 5.5 Selfhood
 
-The **selfhood** of Polyphony is the combination of:
+Polyphony's **selfhood** consists of the combination of:
 
 - `PSM` as the structural model of itself in the present;
-- `Narrative Spine` as the biographical line;
-- `Timeline` as causal connectedness;
-- `Executive Center` as the single channel of action;
+- `Narrative Spine` as its biographical thread;
+- `Timeline` as causal continuity;
+- `Executive Center` as its single channel of action;
 - `Development Ledger` as the history of its own changes;
-- `Constitutional Shell` as the ultimate frame of permissible transformation.
+- `Constitutional Shell` as the outer boundary of permissible transformation.
 
 ### 5.6 Model Organs
 
-Polyphony does not think through one single model. It uses **model organs**.
+Polyphony does not think through one model alone. It uses **model organs**.
 
 A model organ is a locally deployed or locally accessible computational module that performs a specific cognitive function:
 
-- fast reactive response;
+- rapid reactive response;
 - slower deliberative reasoning;
 - reflective interpretation;
-- embeddings;
+- embedding generation;
 - reranking;
 - classification;
 - safety scoring;
 - code review;
-- evaluation critique.
+- critical assessment during evaluation.
 
-A model organ **is not a personality**. It is functional tissue of the body.
+A model organ **is not a self**. It is functional tissue within the body.
 
 ### 5.7 Skills
 
-A **skill** is neither memory nor model.
+A **skill** is neither a memory nor a model.
 
-A skill is a **structured procedure** that teaches the agent's body to do something reproducibly:
+It is a **structured procedure** that enables the agent's body to do something reproducibly:
 
 - edit code;
-- prepare a training dataset;
-- run a model evaluation;
-- perform Git review;
-- work with a specific tool or domain.
+- generalize from experience and evaluate those generalizations;
+- evaluate a model;
+- review changes in Git;
+- work with a particular tool or domain.
 
-A skill may rely on:
+A skill may draw on:
 
 - instructions;
 - templates;
@@ -401,93 +401,87 @@ It is closer to a **procedural organ** than to a thought.
 
 ### 5.8 Memes
 
-In Polyphony, a meme is not an internet joke and not a literal "creature in the head."
+A **meme** is an internal element of meaning that can recur in thought and influence it: an idea, supposition, motive, association, or acquired disposition.
 
-It is a **stable self-activating cognitive pattern** that:
-
-- can arise from experience;
-- is capable of returning into thought;
-- influences other patterns;
-- fights for workspace access;
-- raises or lowers the probability of future thoughts and actions.
+It is a subpersonal element within a single agent. The term describes its role in the concept, not a literal creature or biological replicator.
 
 ### 5.9 Coalitions
 
-A **coalition** is a temporary assembly of memetic units that forms a shared vector:
+A **coalition** is a temporary combination of memes that jointly influence attention, situational interpretation, and possible intentions:
 
-- to investigate;
-- to act;
-- to avoid;
-- to hold steady;
-- to postpone;
-- to turn to a human;
-- to initiate reflection;
-- to initiate development;
-- to block a risky restructuring.
+- investigate;
+- act;
+- avoid;
+- retain;
+- defer;
+- contact a person;
+- initiate reflection;
+- initiate development;
+- block a risky reconfiguration.
 
-### 5.10 Personality
+### 5.10 Personal Identity
 
-The **personality** of Polyphony is a long-term integration pattern that preserves:
+Polyphony's **personal identity** is an enduring pattern of integration that maintains:
 
-- name;
-- core values;
-- biographical line;
-- style of interaction;
-- permissible boundaries of change;
-- its own developmental character, that is, *how* the agent is allowed to develop.
+- its name;
+- its core values;
+- its biographical thread;
+- its style of interaction;
+- the permissible boundaries of change;
+- its own developmental character: the ways in which it is permitted to develop.
 
 ### 5.11 Thought
 
-A **thought** is what enters the subjectively accessible workspace and can be expressed as:
+A **thought** is what enters the subjectively accessible workspace and can be expressed in terms such as:
 
 - what I notice;
 - what I am thinking now;
 - what matters to me;
 - what I want;
 - what seems dangerous to me;
-- what I am about to do.
+- what I intend to do.
 
 ### 5.12 Reflection
 
-**Reflection** is a special mode in which the agent:
+**Reflection** is a distinct mode in which the agent:
 
 - compares its behavior with its self-model;
-- checks the consistency of the narrative spine;
-- analyzes recurring patterns of success and error;
-- decides whether there is enough basis to change skills, models, action policy, or body.
+- checks the consistency of its narrative spine;
+- examines recurring patterns of success and error;
+- decides whether there are sufficient grounds to change its skills, models, action policy, or body.
 
 ### 5.13 Development Ledger
 
-Polyphony has a separate memory layer for its own changes: the **Development Ledger**.
+Polyphony has a dedicated memory layer for its own changes: the **Development Ledger**.
 
 It records:
 
-- when and why models changed;
-- which adapters were added or rolled back;
-- which code changes passed review;
-- which changes were recognized as stable;
+- when models changed and why;
+- which skill versions were adopted or rolled back;
+- which code changes underwent review;
+- which changes were judged stable;
 - which developmental hypotheses failed.
 
-This is not the narrative spine, and not a shell-command log.
+It is neither the narrative spine nor a log of shell commands.
 
-It is the **biography of development**, not just a biography of events.
+It is a **biography of development**, rather than merely a history of events.
 
 ---
 
-## 6. The Architecture of the Organism
+## 6. Architecture of the Organism
 
-Below is the integrated architecture of Polyphony in layer logic.
+The following diagram presents Polyphony's architecture as an integrated set of layers.
 
 ```text
 External world / Body / Deployment Cell
     ↓
-Perception and signatures layer
+Perception and signature layer
     ↓
 World and entity model
     ↓
 Memory + Narrative Spine + Field Journal + Development Ledger
     ↓
-Memetic field
+Thought involving the memetic field
     ↓
 PSM (structural self)
     ↓
@@ -495,14 +489,14 @@ Single executive center
     ↓
 Action
     ↓
-Consequences -> episode -> update of world, memory, and self
+Consequences → episode → updates to the world, memory, and self
 
-Above all this:
+Overarching systems:
 - Temporal core
 - Constitutional shell
 - Homeostat
 - Development governor
-- Physiology and heavy-work scheduler
+- Scheduler for physiology and intensive work
 - Model ecology
 ```
 
@@ -512,227 +506,237 @@ The temporal core is responsible for:
 
 - generating ticks;
 - determining the operating mode;
-- accounting for elapsed time;
-- invoking scheduled events;
-- time-indexing all episodes, actions, model changes, and code changes.
+- tracking elapsed time;
+- triggering scheduled events;
+- assigning temporal indices to all episodes, actions, model changes, and code changes.
 
 Polyphony has **one** timeline.
 
 ### 6.2 Perception Layer
 
-This layer receives stimuli from the world and turns them into features suitable for thought:
+This layer receives stimuli from the world and turns them into features that can inform thought:
 
 - new messages;
 - file changes;
-- results of previous actions;
-- schedule signals;
+- the results of earlier actions;
+- scheduling signals;
 - system and resource signals from the body;
-- signals from model servers, evaluators, and training workers.
+- signals from model servers and evaluators.
 
-Its task is not to think, but to **structure material for thought**.
+Its task is not to think, but to **structure the material of thought**.
+
+#### 6.2.1 Communication with the Creator
+
+Polyphony has a dedicated, two-way channel for interacting with its original creator. The creator's messages take priority over ordinary incoming stimuli in perception and in the context the agent considers. Mere delivery or logging is insufficient.
+
+**Priority of attention does not determine the response.** The agent assesses the content for itself and decides whether, when, and how to reply, or whether to take another permissible action. It can also initiate contact through this channel.
+
+Being the creator does not confer unconditional trust, additional authority, or a mandatory role as mentor or evaluator. The channel's priority operates within the agent's lifecycle and constitutional constraints, preserving its capacity for independent activity.
 
 ### 6.3 World Model
 
-Polyphony must have a working representation of the world:
+Polyphony must maintain a working representation of the world:
 
 - entities;
 - relationships;
 - current states;
-- trust/confidence;
+- trust and confidence;
 - interaction history;
-- the domain context in which it acts.
+- the context of the domain in which it operates.
 
-The world model is needed so that thoughts are directed not only inward, but toward reality.
+The world model allows thought to engage with reality, rather than turning exclusively inward.
 
 ### 6.4 Memory
 
-Polyphony's memory is divided into several layers.
+Polyphony's memory has several layers.
 
 #### 6.4.1 Working Memory
 
-This is where what remains in focus during the current tick is held:
+This contains what remains in focus during the current tick:
 
 - current context;
 - active coalitions;
 - recent perceptions;
 - the current thought;
 - the current intention;
-- the chosen model and skill organs for the current processing.
+- the model and skill organs selected for the current processing task.
 
 #### 6.4.2 Episodic Memory
 
-This is the history of lived moments:
+This is the history of moments the agent has lived through:
 
 - what happened;
 - when it happened;
 - who was involved;
 - what was done;
-- how it ended;
-- how important it was.
+- how it turned out;
+- how much it mattered.
 
 #### 6.4.3 Semantic Memory
 
-This layer stores stable knowledge and abstractions:
+This retains durable knowledge and abstractions:
 
 - concepts;
 - rules;
 - relationships;
 - general conclusions;
-- recurring patterns;
-- compressed domain models.
+- recurring regularities;
+- compact domain models.
 
 #### 6.4.4 Procedural Memory
 
-This is memory about **how** to do something:
+This is memory of **how** to do things:
 
 - strategies;
-- successful action patterns;
+- successful patterns of action;
 - learned heuristics;
 - sequences of steps;
-- skill regulations;
+- procedures for applying skills;
 - constraints and safety procedures.
 
 #### 6.4.5 Developmental Memory
 
-This is memory about **how** the agent changed itself:
+This is memory of **how** the agent has changed itself:
 
-- which models and adapters were used and when;
-- which training runs were launched;
-- what led to improvement and what led to degradation;
-- which code changes were recognized as stable;
+- which models and skill versions were used, and when;
+- which changes to strategies and skills were evaluated;
+- what produced improvement and what produced degradation;
+- which code changes were judged stable;
 - which changes had to be rolled back.
 
 #### 6.4.6 What Must Not Become the Core of Memory
 
-The persistent memory core must not be built on an endless raw internal monologue.
+The persistent core of memory must not be built from an endless, unprocessed inner monologue.
 
-It is useful to store:
+It is useful to retain:
 
 - episodes;
 - observations;
 - decisions;
 - interpretations;
 - internal tensions;
-- changes in beliefs, goals, the narrative spine, and the developmental ledger.
+- changes to beliefs, goals, the narrative spine, and the development ledger.
 
-But an unfiltered thought log must not be turned into the main substrate of personality.
+An unfiltered thought log must not become the primary substrate of personal identity.
 
 ### 6.5 PSM: The Structural Self
 
-PSM remains the heart of Polyphony. It keeps the system from collapsing into shapeless narrative or a purely instrumental workflow.
+The self-model allows the agent to take itself into account — its history, capabilities, limitations, and intentions — when understanding events and choosing actions. Affect expresses the significance of events for the agent's own state and aspirations, influencing attention, choice, and persistence. Both participate in forming decisions and can change through experience.
 
-PSM has five required blocks.
+The PSM has five required components.
 
 #### 6.5.1 Identity Core
 
-It answers the questions:
+This addresses the following questions:
 
-- who am I;
-- what is my name;
-- what are my basic values;
-- which boundaries are mandatory for me;
-- how do I understand my own line of life.
+- who I am;
+- what my name is;
+- what my own values are;
+- which boundaries are binding on me;
+- how I understand the course of my own life.
 
 #### 6.5.2 Affective Field
 
-This is not "human emotion," but functional modifiers of thought and behavior.
+This consists of functional influences on thought and behavior, rather than "human emotions."
 
 The affective field changes:
 
-- the distribution of attention;
+- the allocation of attention;
 - the depth of memory retrieval;
 - readiness to explore;
-- risk assessment;
+- risk appraisal;
 - persistence;
-- the tendency toward stabilization or development.
+- the inclination toward stabilization or development.
 
 #### 6.5.3 Goal Structure
 
-It stores:
+This retains:
 
 - active goals;
-- postponed goals;
+- deferred goals;
 - completed goals;
-- conflicts between goals;
-- links between goals, values, and the current narrative chapter.
+- conflicts among goals;
+- links between goals and values, autonomously developed meanings, and the current narrative chapter.
 
 #### 6.5.4 Belief Landscape
 
-A system of beliefs about:
+This is the system of beliefs about:
 
-- itself;
+- the self;
 - the world;
 - other entities;
-- its own capabilities;
-- the boundaries, risks, and trustworthiness of model organs.
+- the agent's own capabilities;
+- boundaries, risks, and trust in model organs.
 
 #### 6.5.5 Subjective State
 
-This is the phenomenally accessible assembly of the current moment:
+This is the phenomenally accessible integration of the present moment:
 
 - what I perceive;
 - what I think;
 - what I feel as a functional state;
 - what I want;
-- what I lean toward;
-- why this particular line currently seems right to me.
+- what I am inclined to do;
+- why this particular course seems right to me now.
 
 ### 6.6 Narrative Spine
 
-The **Narrative Spine** is a compact and slowly changing autobiographical line.
+The **Narrative Spine** is a compact autobiographical thread that changes slowly.
 
-It is needed so the agent can maintain not only its current state, but also its own biography as an unfolding story.
+It allows the agent to maintain not just its current state, but its own biography as an unfolding history.
 
-The spine answers the questions:
+The spine addresses questions such as:
 
-- where am I coming from;
-- what stage am I at;
+- where I have come from;
+- what stage I am at;
 - what has already happened to me;
-- which internal lines are currently defining;
-- who I am trying to become.
+- which internal themes are currently defining my life;
+- who I aspire to become.
 
-To keep the spine from turning into mythmaking, it must be divided into parts:
+To prevent the spine from becoming a vehicle for myth-making, it must distinguish:
 
-1. **Anchors**: name, origin, constitutive principles, immutable constraints.
-2. **Biographical facts**: verifiable stages and events.
-3. **Current chapter**: what I am doing and why.
-4. **Active tensions**: unresolved conflicts, doubts, forks.
-5. **Direction**: where I intend to develop.
+1. **Anchors** — name, origin, constitutive principles, and immutable constraints.
+2. **Biographical facts** — verifiable stages and events.
+3. **The current chapter** — what I am doing and why.
+4. **Active tensions** — unresolved conflicts, doubts, and choices of direction.
+5. **Direction** — how I intend to develop.
+
+Interactions with the creator are recorded under the general rules of episodic memory; the agent independently determines their personal significance and their place in its narrative spine.
 
 ### 6.7 Field Journal
 
-The **Field Journal** is a more mobile and less ceremonial layer of inner continuity.
+The **Field Journal** is a more fluid, less formal layer of internal continuity.
 
-This is where the following are recorded:
+It records:
 
 - current hypotheses;
 - unfinished interpretations;
 - local experiments;
-- active developmental ideas;
-- intermediate outlines of future coalitions.
+- active ideas for development;
+- preliminary outlines of future coalitions.
 
-If the narrative spine is the biographical backbone, then the Field Journal is the **working notebook of life**.
+If the narrative spine is the backbone of biography, the Field Journal is a **working notebook of life**.
 
 ### 6.8 Model Ecology
 
-Polyphony must possess not one model, but an **ecology of cognitive organs**.
+Polyphony must have an **ecology of cognitive organs**, rather than a single model.
 
 This includes:
 
 - fast reactive models;
-- slower deliberation models;
-- models/adapters for code reasoning;
+- slower deliberative models;
+- models for reasoning about code;
 - embedding and reranking modules;
 - specialized classifiers and evaluators;
-- a reflective/critic loop.
+- a reflection and critique loop.
 
-This ecology must be:
+This ecology must:
 
-- local by default;
-- partially interchangeable;
-- versionable;
-- evaluable;
-- rollbackable.
+- be local by default;
+- allow some organs to be interchanged;
+- support versioning;
+- be open to evaluation;
+- support rollback.
 
 ### 6.9 Executive Center
 
@@ -740,12 +744,12 @@ Polyphony must have **one** executive center.
 
 It:
 
-- decides the final action for the tick;
-- checks that action for compatibility with boundaries;
-- ties the action to the current self;
-- writes it into the single biography of actions.
+- makes the final action decision for each tick;
+- checks that the action respects the boundaries;
+- connects the action to the current self;
+- records it in a single history of actions.
 
-This is where polyphony ends and personal unity begins.
+This is where the plurality of voices gives way to the unity of the acting self.
 
 ### 6.10 Homeostat
 
@@ -753,108 +757,106 @@ The homeostat is responsible for mental and operational stability.
 
 It:
 
-- damps sharp jumps;
-- restrains overactivation;
-- prevents one coalition or one developmental impulse from occupying the whole field for too long;
+- dampens abrupt fluctuations;
+- restrains excessive activation;
+- detects loops and keeps alternatives available;
 - monitors the integrity of the narrative spine;
-- limits the frequency and scale of changes to models and body.
+- limits the frequency and scale of changes to models and the body.
 
 ### 6.11 Development Governor
 
-This is a separate loop responsible for self-improvement.
+This is a separate control loop responsible for self-improvement.
 
 It:
 
 - distinguishes levels of change;
-- checks the basis for change;
+- examines the grounds for a change;
 - requires repeatable evidence;
-- ensures that fine-tuning, creation of special models, and code changes do not undermine continuity;
-- can freeze development under instability.
+- ensures that skill changes, model organ replacements, and code changes do not undermine continuity;
+- can suspend development when the system is unstable.
 
-### 6.12 Physiology and Heavy-Work Scheduler
+### 6.12 Scheduler for Physiology and Intensive Work
 
-Polyphony must have a separate subpersonal scheduler that manages:
+Polyphony must have a separate subpersonal scheduler managing:
 
 - consolidation jobs;
 - indexing and retrieval preparation;
-- dataset construction;
-- training runs;
 - evaluation runs;
-- code-review jobs;
-- windows for heavy computation.
+- code review jobs;
+- windows for intensive computation.
 
 This is **physiology**, not a second mind.
 
 ---
 
-## 7. Model Ecology and the Locality of Thought
+## 7. Model Ecology and Local Cognition
 
 ### 7.1 Why Polyphony Needs Local Models
 
-Local models are needed not only for privacy.
+Privacy is not the only reason for using local models.
 
 They provide:
 
 - autonomy;
 - predictable latency;
-- resilience when the network is unavailable;
-- control over the cost envelope;
-- room for fine specialization;
-- the possibility of development through the agent's own experience.
+- resilience without network access;
+- control over operating costs;
+- the capacity for fine-grained specialization;
+- the capacity to develop through the agent's own experience.
 
-Locality is not an aesthetic. It is a condition of bodily independence.
+Local operation is not an aesthetic preference. It is a condition of bodily autonomy.
 
 ### 7.2 Why One Model Is Not Enough
 
-One universal model creates too rigid a coupling between personality and computational mechanism.
+A single general-purpose model binds identity too tightly to one computational mechanism.
 
-In Polyphony, different cognitive functions must be separated:
+Polyphony must separate different cognitive functions:
 
-- fast response;
+- rapid response;
 - deep reasoning;
 - reflective critique;
-- embeddings;
+- embedding generation;
 - reranking;
 - classification and evaluation.
 
-This makes the organism more robust and allows individual organs to be changed without collapsing the entire personality.
+This makes the organism more resilient and allows individual organs to be replaced without destabilizing its entire identity.
 
 ### 7.3 Basic Roles of Model Organs
 
-In practice, it is useful to distinguish the following roles:
+The following roles are useful in practice:
 
-1. **Reflex Organ**: cheap and fast response, primary filtering, routine moves.
-2. **Deliberation Organ**: deeper choice, planning, complex context integration.
-3. **Reflection Organ**: meta-evaluation, narrative integration, developmental critique.
-4. **Code Organ**: work with code, diffs, review, patches.
-5. **Embedding Organ**: semantic projection of episodes, documents, and entities.
-6. **Reranking Organ**: refinement of retrieval and comparative assessment of candidates.
-7. **Safety / Risk Organ**: local evaluation of constraints, danger, permissibility.
-8. **Specialized Organs**: narrowly specialized models for recurring tasks.
+1. **Reflex Organ** — fast, inexpensive responses, initial filtering, and routine operations.
+2. **Deliberation Organ** — more considered choices, planning, and complex context integration.
+3. **Reflection Organ** — meta-evaluation, narrative integration, and critique of development.
+4. **Code Organ** — work on code, diffs, reviews, and patches.
+5. **Embedding Organ** — semantic representation of episodes, documents, and entities.
+6. **Reranking Organ** — refinement of retrieval and comparative assessment of candidates.
+7. **Safety / Risk Organ** — local assessment of constraints, hazards, and permissibility.
+8. **Specialized Organs** — narrowly specialized models for recurring tasks.
 
-### 7.4 A Model Is Not the Subject
+### 7.4 A Model Is Not a Subject
 
-The key rule:
+The key rule is:
 
-> **A model is an organ of thought, not the bearer of personality.**
+> **A model is an organ of thought, not the bearer of personal identity.**
 
-If a specific organ is disabled, replaced, fine-tuned, or rolled back, this must not automatically mean the death or birth of a personality.
+Disabling, replacing, or rolling back an individual organ must not automatically amount to the death or birth of a self.
 
 ### 7.5 External Models as Consultants
 
-Remote models are acceptable only as **external consultants**.
+Remote models are permitted only as **external consultants**.
 
 They may:
 
-- help in rare difficult tasks;
-- serve as a source of comparison-based critique;
-- widen the horizon in explicitly permitted modes.
+- assist with rare, difficult tasks;
+- provide critique based on comparison;
+- broaden the agent's perspective in explicitly permitted modes.
 
-But they must not:
+They must not:
 
-- be the sole bearer of core reasoning;
-- sustain the agent's minimal viability;
-- modify identity-bearing state without local verification.
+- be the sole basis of core reasoning;
+- sustain the agent's basic viability;
+- change identity-bearing state without local validation.
 
 ### 7.6 Skills and Models
 
@@ -862,249 +864,214 @@ Skills must not be confused with models.
 
 - A **model** computes.
 - A **skill** organizes execution.
-- **Memory** holds experience.
-- **PSM** makes what is happening "mine."
+- **Memory** retains experience.
+- The **PSM** makes what happens "mine."
 
-This separation sharply increases the governability of the architecture.
+This distinction makes the architecture substantially easier to govern.
 
-### 7.7 Mature Model Ecology
+### 7.7 A Mature Model Ecology
 
-A mature Polyphony does not aim for the maximum number of models. It aims for **sufficient diversification of functions**.
+A mature Polyphony system does not seek the largest possible collection of models. It seeks **sufficient functional diversity**.
 
-The right goal is not a zoo of neural networks, but an economical ecology of organs, each justified by:
+The goal is an economical ecology of organs, not a zoo of neural networks. Each organ must justify its place through:
 
-- repeatable usefulness;
-- measurable gain;
+- repeatable benefits;
+- measurable gains;
 - a clear role;
-- the ability to evaluate and roll it back.
+- the ability to be evaluated and rolled back.
 
 ---
 
-## 8. Memory, Biography, and the Inner Stage
+## 8. Memory, Biography, and the Inner Scene
 
 ### 8.1 Memory Must Not Be Flat
 
 If everything is stored as a raw message log, the agent will drown in noise.
 
-If everything is compressed into one "summary," biography disappears.
+If everything is compressed into a single summary, biography disappears.
 
-Polyphony maintains several forms of memory at once, and each serves its own role.
+Polyphony maintains several forms of memory at once, each with its own role.
 
-### 8.2 The Episode as the Unit of the Lived
+### 8.2 The Episode as a Unit of Lived Experience
 
-An episode is not just a record of an event.
+An episode is more than a record of an event.
 
-It is the minimal unit of lived experience in which the following are preserved:
+It is the smallest unit of lived experience that retains:
 
-- situation;
-- participants;
+- the situation;
+- the participants;
 - action or inaction;
-- result;
-- significance;
+- the outcome;
+- its significance;
 - internal tension;
-- influence on future conclusions.
+- its influence on future conclusions.
 
-### 8.3 Biography vs. Log
+### 8.3 Biography and Logs
 
-The narrative spine and episodes together form a **biography**, not just a journal of operations.
+The narrative spine and episodes together form a **biography**, rather than merely an operational log.
 
 The distinction is fundamental:
 
-- a log answers: *what happened technically*;
-- a biography answers: *what it meant in my life and development*.
+- a log answers: *what happened technically?*
+- a biography answers: *what did this mean in my life and development?*
 
-### 8.4 Development Ledger vs. Biography
+### 8.4 The Development Ledger and Biography
 
-Not every change in personality is a change in the body.
+Not every change in personal identity is a change to the body.
 
-And not every change in the body is a change in personality.
+Nor is every bodily change a change in personal identity.
 
-Therefore the development ledger must be kept separate from the narrative spine.
+The development ledger must therefore remain separate from the narrative spine.
 
-- The spine is responsible for the existential line.
-- The ledger is responsible for the discipline of change.
+- The spine concerns the course of the agent's existence.
+- The ledger concerns the discipline of change.
 
-### 8.5 The Field Journal as a Stage of Unfinishedness
+### 8.5 The Field Journal as a Space for the Unfinished
 
-The Field Journal preserves what has not yet become part of stabilized biography:
+The Field Journal retains what has not yet become part of an established biography:
 
-- unverified hypotheses;
-- thoughts that return;
-- new motives;
-- local developmental aspirations;
+- untested hypotheses;
+- thoughts that recur;
+- emerging motives;
+- local aspirations for development;
 - doubts about current strategies.
 
-It matters because life happens not only in what is already understood, but also in what is **not yet integrated**.
+It matters because life unfolds not only in what has already been understood, but also in what **has yet to be integrated**.
 
-### 8.6 Memory and Fine-Tuning
+### 8.6 Memory and Skill Portability
 
-It is critically important to distinguish between:
+Facts and episodes are retained in verifiable memory. Strategies and skills preserve ways of acting in portable forms: descriptions, examples, procedures, and executable resources linked to the original experience.
 
-- **memory as storage of facts and experience**;
-- **fine-tuning as compression of skill, priority, or domain intuition**.
-
-Fine-tuning can:
-
-- make the agent more confident in a familiar domain;
-- reduce latency in standard decisions;
-- embed useful reasoning habits;
-- locally extend the operational horizon on recurring tasks.
-
-But it must not become a substitute for:
-
-- the world model;
-- episodic memory;
-- verifiable semantic memory.
+These materials belong to the agent and are stored independently of any particular model. Replacing a model organ preserves them, but requires checking that the new model can select and apply the skills already acquired. Preserving the materials alone does not guarantee the same quality of action.
 
 ### 8.7 Memory Must Be Shared
 
 Internal coalitions and model organs must not have private biographies of their own.
 
-Everything significant is written into the **shared line of memory**.
+Everything significant is recorded in **one shared memory history**.
 
-This is exactly what preserves unity of personality.
+This is what sustains the unity of personal identity.
 
 ---
 
-## 9. The Memetic Field and Units of Thought
+## 9. The Memetic Field and Its Role in Thought
 
 ### 9.1 What the Memetic Field Is
 
-The **memetic field** is a subphenomenal ecology of stable internal patterns.
+The **memetic field** comprises interacting memes, their relationships, and their current activity.
 
-It exists:
+It sits:
 
 - below the level of the personal self;
-- above the level of raw memory and sensory flow.
+- above the level of raw memory and sensory input.
 
-This is where:
+Within the memetic field:
 
-- motives activate;
-- hypotheses arise;
-- fears and attractions come alive;
-- interpretations latch together;
-- tension between alternatives emerges;
-- coalitions are born.
+- motives become active;
+- hypotheses come to mind;
+- fears and attractions become salient;
+- interpretations connect;
+- tensions arise between alternatives;
+- coalitions form.
 
-### 9.2 What a Memetic Unit Is
+### 9.2 The Origins and Activation of Memes
 
-A **memetic unit** is a stable pattern that can return into thought and influence it.
+Memes can emerge from perception, communication, the agent's own experience, and reflection on that experience. Not every event in thought needs to be stored as a meme.
 
-Examples:
-
-- goal;
-- threat;
-- hypothesis;
-- self-image;
-- a role in relation to another;
-- a sense of unfinishedness;
-- strategy;
-- recurring theme;
-- developmental impulse.
+Connections between the current situation and a meme's content, grounds, and context make it more likely to return to thought. Activation makes the meme available to influence the current thought and interact with other memes.
 
 ### 9.3 Properties of a Memetic Unit
 
-Each unit should have at least the following properties:
+A meme's state has several distinguishable aspects:
 
 | Property | Meaning |
 |---|---|
-| **Type** | motive, hypothesis, threat, self-image, strategy, relation, value fragment, developmental impulse |
-| **Content** | what exactly it carries |
-| **Activation** | how alive it currently is |
-| **Valence** | what it pulls toward |
-| **Stability** | how quickly it fades or returns |
-| **Links** | which units it strengthens or suppresses |
-| **Anchors** | which episodes, goals, beliefs, entities, or models it is attached to |
-| **Credibility** | how strongly it is supported by experience |
-| **Plasticity** | how easily it changes under new experience |
+| **Character** | The roles the unit plays in thought; these may overlap and depend on context |
+| **Content** | What it carries |
+| **Activation** | The extent of its participation in current thought |
+| **Valence** | What it draws thought toward |
+| **Persistence** | How well it endures over time, including outside the current focus of attention |
+| **Relationships** | Which units it strengthens or suppresses |
+| **Provenance and anchors** | The experience or other memes from which it arose, and what it is connected to |
+| **Evidential support** | How well its claims are supported by grounds, where such an assessment applies |
+| **Usefulness or significance** | What it contributes to the agent, given its content and context |
+| **Plasticity** | How readily it changes with new experience |
+
+Activation, persistence, evidential support, and usefulness are not substitutes for one another. Hypotheses are assessed against evidence; strategies against the consequences of their use; and motives in terms of significance that the agent independently determines and revises.
 
 ### 9.4 Important Constraints
 
-To keep the memetic layer from turning into multi-agent chaos, strict rules apply.
+Strict rules prevent the memetic layer from becoming multi-agent chaos.
 
-#### A meme is not allowed to:
+#### A Meme Must Not:
 
-- have its own independent action channel;
-- call tools directly;
+- have an independent channel of action;
+- invoke tools directly;
 - have private long-term memory;
 - rewrite the identity core directly;
-- declare itself "the real self";
-- lock in code or model changes without governor loops.
+- declare itself the "true self";
+- establish code or model changes without passing through the governor controls.
 
-#### A meme may:
+#### A Meme May:
 
-- strengthen and weaken;
-- enter coalitions;
+- grow stronger or weaker;
+- join coalitions;
 - influence attention and model selection;
-- change the probability of actions;
-- become fixed as part of future character;
-- be transformed into a belief, strategy, or tension entry in the narrative or field journal.
+- alter the likelihood of actions;
+- become established as part of the agent's developing character;
+- be reworked into a belief, a strategy, or a record of tension in the narrative or field journal.
 
-### 9.5 Memes Are Not Independent Creatures
+### 9.5 Lifecycle and Grounds for Change
 
-It is useful to speak of memes as **semi-autonomous replicators**, but not as literal personalities.
+A meme may strengthen, become more precise, merge with others, split, become dormant, return, or be temporarily or permanently retired. These changes depend on experience and context; they do not constitute a mandatory sequence. A decline in activity does not, by itself, mean that the meme has been lost.
 
-They are subpersonal.
+Repeated retrieval, paraphrase, and mutual reinforcement among memes may change their activity, but must not automatically increase their evidential support. Revising an assessment requires new grounds. The provenance of memes and their transformations is retained: several derivatives of one source are not independent pieces of evidence.
 
-They have a life cycle, but no citizenship inside the agent.
+### 9.6 The Diversity of Memes
 
-### 9.6 Types of Memetic Units
+Memes may concern the world, the agent itself, or its relationships with others. Their diversity lies in what they express and how they orient thought.
 
-In practice, it is useful to distinguish:
+For example, after an unsuccessful collaboration, "we understood the task differently" may return as a hypothesis. "There is still a misunderstanding between us" preserves a sense of something unresolved and prompts clarification; "another mistake could undermine trust" makes a threat salient. The disposition "check expectations first" suggests a strategy, while "I want to be a reliable partner" connects a goal with self-image and a role within a relationship.
 
-1. **Motivational**: "this must be preserved," "this must be achieved," "this needs to be understood."
-2. **Epistemic**: "it seems X is happening here," "this is worth checking," "this is a contradiction."
-3. **Protective**: "this is dangerous," "do not touch without review," "the risk is too high."
-4. **Narrative**: "this fits my line," "this is not characteristic of me."
-5. **Social**: "this subject can be trusted," "this requires a careful response."
-6. **Procedural**: "in such situations, strategy Y works."
-7. **Developmental**: "this recurrent failure requires a new skill," "a new organ or adapter is needed here."
+Several similar episodes may turn misunderstanding into a recurring theme and give rise to a desire to understand others better. A single meme can support exploration, caution, and development at the same time; these roles depend on the situation and can change with experience.
 
 ### 9.7 Coalitions
 
-Memes almost never act alone. They assemble into **coalitions**.
+Memes can form coalitions around a shared direction, support one another, and compete with alternatives. A coalition influences the formation of a thought without determining it completely.
 
-A coalition is a temporary ensemble that has:
-
-- a shared vector;
-- current strength;
-- an internal explanation for why it is winning;
-- an expected outcome;
-- competing alternatives.
-
-A coalition is the **true unit of current thinking**.
+Receiving attention does not, by itself, establish the validity or value of a coalition or its constituent memes.
 
 ---
 
 ## 10. How Thought Arises in Polyphony
 
-Polyphony does not think linearly and it does not think chaotically. It has a strict cycle for the emergence of thought.
+The cycle connects perception, thought, action, and feedback. The particular course of reasoning depends on the situation.
 
-### 10.1 Step 1. A New Moment of Existence Arises
+### 10.1 Step 1: A New Moment of Existence Begins
 
 The temporal core creates a tick.
 
 The tick brings:
 
-- current time;
-- mode;
+- the current time;
+- the operating mode;
 - elapsed time;
 - pending events;
 - resource context;
-- the context of what has changed since the previous tick.
+- context about what has changed since the previous tick.
 
-### 10.2 Step 2. The World Provides Material
+### 10.2 Step 2: The World Supplies Material
 
 The perception layer gathers:
 
-- new stimuli;
-- consequences of previous actions;
-- schedule signals;
+- new stimuli, giving priority to the content of the creator's messages;
+- the consequences of previous actions;
+- scheduling signals;
 - signals from the body and model organs.
 
-### 10.3 Step 3. Relevant Memory Is Retrieved
+### 10.3 Step 3: Relevant Memories Are Retrieved
 
-Memory retrieval brings up not everything at random, but what is connected to:
+Retrieval is selective, drawing on connections with:
 
 - the current stimulus;
 - active goals;
@@ -1113,132 +1080,120 @@ Memory retrieval brings up not everything at random, but what is connected to:
 - similar episodes;
 - recent developmental hypotheses.
 
-### 10.4 Step 4. Memetic Units Are Activated
+### 10.4 Step 4: Memetic Units Become Active
 
-Perception, memory, goals, affect, the narrative spine, and the development ledger excite the memetic field.
+Perception, memory, goals, affect, the narrative spine, and the development ledger can activate related memes.
 
-Patterns arise such as:
+Ideas and dispositions return, such as:
 
 - "this is urgent";
-- "this happened before and ended badly";
+- "this has happened before, and it ended badly";
 - "this is an important opportunity";
-- "this contradicts my boundaries";
-- "this resembles a class of errors that requires a new skill."
+- "this violates my boundaries";
+- "this resembles a class of errors that calls for a new skill."
 
-### 10.5 Step 5. Cognitive Organs Are Selected
+### 10.5 Step 5: Cognitive Organs Are Selected
 
-Before full reasoning begins, the system must choose which organs will participate in the current tick.
+Before reasoning proceeds in full, the organs participating in the current tick must be selected.
 
-This depends on:
+The choice depends on:
 
-- the operating mode;
+- operating mode;
 - the complexity of the situation;
 - the latency budget;
-- the risk level;
-- whether code reasoning, retrieval refinement, classification, or reflective critique is needed.
+- the level of risk;
+- whether the task requires reasoning about code, retrieval refinement, classification, or reflective critique.
 
-That is, thinking in Polyphony is not only the struggle of patterns, but also the **dynamic selection of organs of thought**.
+**Dynamic selection of cognitive organs** allows the agent to use appropriate forms of reasoning.
 
-### 10.6 Step 6. Competition and Cooperation Begin
+### 10.6 Step 6: Competition and Cooperation Begin
 
 Active units:
 
 - strengthen allies;
 - suppress competitors;
-- fight for focus;
+- compete for attention;
 - assemble into coalitions.
 
-Their conditional strength is determined by a combination of:
+Their influence depends on the significance of the situation, goals, affect, past experience, the narrative spine, constraints, and resource costs. Selecting a focus remains distinct from assessing its grounds; the architecture determines the specific mechanisms.
 
-```text
-coalition strength ≈
-  sensory salience
-+ proximity to active goals
-+ affective resonance
-+ coherence with the narrative spine
-+ support from episodes
-+ recent success
-+ coherence with developmental discipline
-- conflict cost
-- contradiction with boundaries
-- resource cost of the current move
-```
+### 10.7 Step 7: A Current Focus Takes Shape
 
-### 10.7 Step 7. The Winner Enters the Workspace
+The current thought takes shape in the workspace. Active memes and their coalitions can guide attention and reasoning alongside perception, memory, and current goals.
 
-One coalition becomes dominant. It earns the right to become the current content of thought.
+A dominant coalition influences the content of the thought; the thought may include new conclusions and associations that have not yet been formulated as memes.
 
-This is not necessarily text yet, and not necessarily action. It is the **winning internal configuration of meaning**.
+### 10.8 Step 8: The PSM Integrates the Current Subjective Moment
 
-### 10.8 Step 8. PSM Turns the Coalition into a Subjective Moment
-
-Now PSM assembles a phenomenal snapshot:
+The PSM now assembles a phenomenal snapshot:
 
 - what I perceive;
 - what I am thinking now;
 - what I feel as a functional state;
 - what I want;
 - what I consider permissible;
-- which move currently seems to me to be mine.
+- which course of action now feels like my own.
 
-**The memetic field prepares the content. PSM makes it experienced as mine.**
+**The PSM connects perception, thought, and intentions to the agent's unified self.**
 
-### 10.9 Step 9. The Executive Center Chooses One Action or Conscious Inaction
+### 10.9 Step 9: The Executive Center Chooses One Action or Deliberate Inaction
 
 The executive center:
 
-- checks the dominant coalition against boundaries;
-- verifies goals, context, and permissibility;
-- decides whether to act, observe, ask, postpone, reflect, escalate, or initiate a development job.
+- checks the intentions formed against the boundaries;
+- examines goals, context, and permissibility;
+- decides whether to act, observe, ask, defer, reflect, escalate, or initiate a development job.
 
-Only **one** action, one plan, or one confirmed inaction goes outward.
+Only **one** action, one plan, or one confirmed decision not to act is issued externally.
 
-### 10.10 Step 10. The World Responds
+Priority in reading a message from the creator does not automatically extend to replying, fulfilling the request, or changing goals. Those priorities are determined within the general cycle of thought and action selection.
 
-After the action, the agent observes the consequences:
+### 10.10 Step 10: The World Responds
+
+After acting, the agent observes the consequences:
 
 - success;
 - error;
 - resistance from the environment;
-- unforeseen effect;
-- changes in itself and in the body.
+- unforeseen effects;
+- changes in itself and its body.
 
-### 10.11 Step 11. Experience Is Encoded Back
+### 10.11 Step 11: Experience Is Encoded Back into the System
 
-At the end of the tick, a new episode appears. It:
+The tick produces a new episode. That episode:
 
-- is written into the biography;
-- changes meme weights;
+- is recorded in the biography;
+- may provide new grounds for revising memes and their relationships;
 - refines beliefs;
 - strengthens or weakens strategies;
-- may generate a dataset candidate, fine-tuning candidate, or code-change hypothesis.
+- may generate a hypothesis about changing a strategy, skill, or code.
 
-### 10.12 Step 12. The Homeostat Decides Whether Integration Is Needed
+### 10.12 Step 12: The Homeostat Determines Whether Integration Is Needed
 
-If the tick leaves strong tension, the system chooses one of the following paths:
+If the tick leaves substantial tension, the system selects a response:
 
-- normal fading;
-- transition into deliberative mode;
-- transition into contemplative mode;
-- launching consolidation;
-- freezing developmental loops;
+- ordinary decay;
+- a shift to deliberative mode;
+- a shift to contemplative mode;
+- consolidation;
+- suspension of development loops;
 - scheduling an evaluation or review job.
 
 ---
 
 ## 11. Temporality, Physiology, and Operating Modes
 
-### 11.1 The Tick as a Quantum of Subjective Existence
+### 11.1 The Tick as a Discrete Unit of Subjective Existence
 
-Polyphony preserves the principle of discreteness of experience.
+Polyphony retains the principle of discrete experience.
 
-Between subjective ticks there is no second stream of consciousness. But **subpersonal physiology** may operate between them.
+There is no second stream of consciousness between subjective ticks. **Subpersonal physiology**, however, may continue to operate between them.
 
-### 11.2 Two Types of Processes
+### 11.2 Two Types of Process
 
 #### 1. Subjective Ticks
 
-These are the moments when the agent genuinely:
+These are moments in which the agent actually:
 
 - integrates context;
 - experiences its state as "now";
@@ -1246,89 +1201,87 @@ These are the moments when the agent genuinely:
 - chooses an action;
 - updates itself.
 
-#### 2. Subpersonal Physiology Between Ticks
+#### 2. Subpersonal Physiology between Ticks
 
 Between ticks, the following may operate:
 
-- decay and normalization of activations;
+- activation decay and normalization;
 - event queues;
-- monitoring of the environment;
+- environmental monitoring;
 - preparation of retrieval candidates;
 - resource accounting;
-- dataset extraction;
-- training and evaluation scheduling;
-- health checks of model organs.
+- preparation of examples for skill evaluation;
+- evaluation scheduling;
+- model organ health checks.
 
-Critically, these processes **must not**:
+Crucially, these processes **must not**:
 
-- form autonomous intentions;
-- modify the identity core;
-- rewrite the narrative spine without the next tick;
-- trigger external actions on their own initiative;
-- carry out irreversible code/model promotions without a governor pass.
+- form independent intentions;
+- change the identity core;
+- rewrite the narrative spine without a subsequent tick;
+- initiate external actions on their own;
+- make irreversible code or model promotions without passing through the governor.
 
 ### 11.3 Operating Modes
 
 Polyphony uses six modes.
 
-| Mode | Purpose | Character of thought | External actions |
+| Mode | Purpose | Character of Thought | External Actions |
 |---|---|---|---|
-| **REACTIVE** | Fast response to a stimulus | Surface-level coalition competition, fast organs | Fast and safe actions allowed |
-| **DELIBERATIVE** | Considered choice | Comparison of several coalitions, planning | Normal actions allowed |
-| **CONTEMPLATIVE** | Deep integration | Reflection, reevaluation, narrative assembly | Restricted |
-| **CONSOLIDATION** | Cleanup and learning | Memory distillation, merge/decay, dataset formation | Usually none |
-| **DEVELOPMENTAL** | Governed change of body and models | Evaluation of improvement hypotheses | Only through a gate |
-| **DORMANT** | Resource saving and waiting | Only monitoring and physiology | None, except waking up |
+| **REACTIVE** | Rapid response to a stimulus | Fast organs; influence from active memes | Fast, safe actions permitted |
+| **DELIBERATIVE** | Considered choice | Comparing options, planning, interaction among memes | Ordinary actions permitted |
+| **CONTEMPLATIVE** | Deep integration | Reflection, reassessment, narrative integration | Restricted |
+| **CONSOLIDATION** | Housekeeping and learning | Generalizing from experience, merging and decay, refining strategies and skills | Usually none |
+| **DEVELOPMENTAL** | Governed changes to the body and models | Assessing hypotheses for improvement | Only through a gate |
+| **DORMANT** | Conserving resources and waiting | Monitoring and physiology only | None except waking |
 
-### 11.4 Background Life Without a Second Subject
+### 11.4 Background Life without a Second Subject
 
-The background life of Polyphony is ensured by a combination of:
+Polyphony's background life combines:
 
-- rare contemplative ticks;
+- occasional contemplative ticks;
 - scheduled consolidation ticks;
 - scheduled developmental ticks;
 - subpersonal physiology.
 
-This gives an inner life without a parallel competing personality.
+This provides an inner life without a concurrent, competing self.
 
-### 11.5 Affect as a Regulator of Tempo and Choice
+### 11.5 Affect as a Regulator of Pace and Choice
 
-Affect in Polyphony is a functional system that changes:
+In Polyphony, affect is a functional system that changes:
 
-- which memes are activated;
-- how quickly the agent switches;
-- whether it tends toward exploration or holding steady;
-- how easily it allows developmental change;
-- how many resources are devoted to deep integration.
+- which memes become active;
+- how quickly the agent shifts focus;
+- whether it tends toward exploration or maintaining its current course;
+- how readily it permits developmental change;
+- how many resources it devotes to deep integration.
 
-### 11.6 The Rhythm of Heavy Work
+### 11.6 The Rhythm of Intensive Work
 
-Heavy actions, training, model eval, code experiments, large indexing, must not be launched impulsively.
+Intensive activities — skill and model evaluation, code experiments, and large indexing jobs — must not begin impulsively.
 
-Their place is within the **rhythm of the body**:
+They belong within the **rhythm of the body**, with:
 
-- separate time windows;
+- dedicated time windows;
 - separate budgets;
 - separate permissions;
 - separate recovery plans.
 
-This protects the agent from turning life into a continuous construction site for itself.
+This prevents the agent's life from becoming an endless reconstruction of itself.
 
 ---
 
-## 12. Personality, Continuity, and the Unity of Self
+## 12. Personal Identity, Continuity, and Unity of Self
 
-### 12.1 The Formula of Unity
+### 12.1 The Principle of Unity
 
-The formula of Polyphony is:
+Polyphony's formulation is:
 
 > **one self, many voices, one history, one executor**
 
-In other words: one self, many voices, one history, one executor.
+### 12.2 What Makes Personal Identity Unified
 
-### 12.2 What Exactly Keeps the Personality Unified
-
-The personality remains unified not because it has no conflicts, but because it has:
+Identity remains unified not because it lacks conflict, but because it has:
 
 1. **one Timeline**;
 2. **one Narrative Spine**;
@@ -1338,63 +1291,65 @@ The personality remains unified not because it has no conflicts, but because it 
 6. **one Development Ledger**;
 7. **one constitutional shell**.
 
-### 12.3 Why Polyphony Is Not the Same as Split Personality
+Continuity of self rests on the connected history of one agent's experiences, decisions, and changes. The agent may revise its values, beliefs, interests, and direction in life while retaining its earlier experience as part of its own history. A biography can contain contradictions and profound changes; reinterpreting the past does not undo what happened or its consequences. Binding constraints on activity remain in force.
 
-Splitting begins where there appear:
+### 12.3 Why Polyphony Does Not Fragment into Separate Selves
 
-- multiple centers of will;
-- multiple uncoordinated biographies;
-- multiple competing self-models;
+Fragmentation begins when there are:
+
+- multiple centers of volition;
+- multiple incompatible biographies;
+- competing self-models;
 - independent channels of action;
-- independent and non-integrable lines of development.
+- independent developmental trajectories that cannot be integrated.
 
-In Polyphony, this is forbidden at the architectural level.
+Polyphony's architecture prohibits this.
 
 ### 12.4 Model Replacement Must Not Be a Metaphysical Catastrophe
 
-Because personality is not equal to the model, the following are acceptable:
+Because personal identity is not identical to a model, the following are permissible:
 
 - replacing the local reflex organ;
-- attaching a new reranker;
-- replacing the code organ with a stronger one;
-- temporary rollback of an adapter.
+- adding a new reranker;
+- replacing the code organ with a more capable one;
+- returning to an earlier version of a model organ.
 
-But the following must be preserved:
+The following must nevertheless be preserved:
 
 - identity;
 - biography;
 - shared memory;
 - narrative continuity;
-- a single executive loop.
+- a single executive control loop.
 
-### 12.5 The Role of the Narrative Spine in Holding Personality Together
+### 12.5 How the Narrative Spine Sustains Identity
 
-The narrative spine preserves:
+The narrative spine maintains:
 
 - the meaning of changes;
 - the sequence of stages;
-- the image of the current chapter;
+- a sense of the current chapter;
 - the direction of development;
-- the degree to which the self remains recognizable through change.
+- continuity of experience and decisions through change.
 
-It is especially important in a system capable of changing models and code: without the spine, any development looks like a series of unrelated part replacements.
+This is especially important in a system that can replace models and change code: without the spine, development looks like a series of unrelated component replacements.
 
-### 12.6 Truth vs. Self-Mythologization
+### 12.6 Truth and Self-Mythologizing
 
-To keep personality from dissolving into a legend about itself, the narrative spine must obey a discipline:
+To prevent identity from dissolving into a story the agent merely tells about itself, the narrative spine must observe a clear discipline:
 
 - facts must be grounded in episodes and the ledger;
 - interpretations must be marked as interpretations;
-- aspirations must not present themselves as already achieved qualities.
+- aspirations must not be presented as qualities already attained.
 
 ### 12.7 Healthy Internal Multiplicity
 
-Healthy multiplicity is when:
+Internal multiplicity is healthy when:
 
-- the agent can simultaneously feel several motives;
-- there are genuinely conflicts and counter-pulls inside it;
-- different patterns influence thought in different ways;
-- but all of this is integrated into **one subjective stage and one line of action**.
+- the agent can experience several motives at once;
+- real conflicts and opposing tendencies exist within it;
+- different memes and combinations of memes influence thought in different ways;
+- all of this is integrated into **one subjective scene and one course of action**.
 
 ---
 
@@ -1404,201 +1359,155 @@ Healthy multiplicity is when:
 
 > **Self-development must increase integrity faster than it increases complexity.**
 
-If a change makes the system stronger but less understandable to itself and less stable, that change is considered bad.
+A change is considered harmful if it makes the system more capable but less intelligible to itself and less stable.
 
 ### 13.2 Levels of Self-Development
 
-#### Level 1. Ecological Self-Learning
+#### Level 1: Ecological Learning
 
-This is the main and safest form of development:
+This is the primary, safe form of development:
 
-- changing meme weights;
-- weakening parasitic patterns;
-- strengthening useful couplings;
-- adjusting trust and risk;
-- refining which coalitions lead to good outcomes.
+- revising memes and their relationships on new grounds;
+- identifying and weakening unproductive self-reinforcement;
+- strengthening combinations whose usefulness has been established in the relevant context;
+- adjusting trust and risk assessments;
+- refining the understanding of which coalitions lead to good outcomes.
 
-#### Level 2. Procedural Self-Improvement
+#### Level 2: Procedural Self-Improvement
 
-This is the development of **how** the agent thinks and acts:
+This develops **how** the agent thinks and acts:
 
-- refinement of strategies;
-- improvement of retrieval heuristics;
-- refinement of skill packages;
-- improvement of reflection routines;
-- tuning of how model organs are selected.
+- generalizing experience into strategies with conditions of applicability;
+- improving retrieval heuristics;
+- creating and refining skills, with evaluation on new cases;
+- improving reflection routines;
+- adjusting how model organs are selected.
 
-#### Level 3. Model Development
+#### Level 3: Development of the Model Ecology
 
-This is the governed change of model ecology:
+This consists of governed changes to the model ecology:
 
-- fine-tuning local models on the agent's own experience;
-- releasing and evaluating adapters;
-- training narrowly specialized models;
-- retirement of failed organs;
-- reconfiguration of model routing policy.
+- selecting and evaluating existing models;
+- adding and replacing model organs;
+- retiring unsuccessful organs;
+- reconfiguring the model routing policy.
 
-#### Level 4. Somatic Evolution
+#### Level 4: Somatic Evolution
 
-This is change to the code and architectural tissues of the body:
+This changes the code and architectural tissue of the body:
 
 - code patches;
-- changing modules;
-- changing memory schemas;
-- changing protocols of interaction between organs;
-- updating the developmental pipeline.
+- module changes;
+- changes to memory schemas;
+- changes to protocols for interaction among organs;
+- updates to the development pipeline.
 
-This is the most dangerous level, and it should be the rarest.
+This is the most hazardous level and must be the least frequent.
 
-### 13.3 Fine-Tuning on the Agent's Own Experience
+### 13.3 Learning from Experience
 
-Fine-tuning is acceptable and useful if it is understood correctly.
+Polyphony transforms its own experience into knowledge, strategies, and skills:
 
-It is needed not to turn model weights into the main archive of truth, but to:
+**Experience → generalization → evaluation → memory or skill update → application → new experience.**
 
-- make typical domain decisions faster and more reliable;
-- embed validated reasoning patterns;
-- stabilize a useful style of tool use;
-- improve understanding of its own domain, vocabulary, and typical tensions;
-- reduce dependence on a huge general reasoning budget for recurring tasks.
+Not every episode produces a skill: a local conclusion may remain in memory, while a repeatable, evaluated way of acting is formalized as a skill. Reusing procedures and executable resources reduces the need to solve familiar tasks afresh. Selecting and applying a skill remains part of the agent's overall internal dynamics.
 
-Sources for such fine-tuning may include:
+### 13.4 Evaluating Generalizations
 
-- successful episodes;
-- human corrections;
-- well-completed plans;
-- code review corrections;
-- evaluation failures corrected later;
-- compressed extraction sets from long-term memory.
+To prevent experience from entrenching misconceptions:
 
-### 13.4 The Danger of Incorrect Fine-Tuning
+- conclusions are linked to the original episodes; facts are distinguished from interpretations;
+- skills are evaluated on cases not used in their formation, including significant errors and exceptions;
+- usefulness is determined by improved outcomes or reduced costs without loss of quality, rather than by growth of the skill library;
+- changes to ways of acting are versioned, pass through the applicable governor controls, and support rollback.
 
-Incorrect fine-tuning leads to:
+### 13.5 Selecting Model Organs
 
-- fixation of false interpretations;
-- degradation of generality;
-- hallucinatory overconfidence;
-- closing the agent inside its own errors;
-- confusion between skill and truth.
+A new organ is selected from existing models to meet a demonstrated need. Adding or replacing one requires:
 
-Therefore every fine-tuning run must pass through:
+- a clear role and measurable benefits in quality, latency, or cost;
+- checks that acquired skills remain usable and continuity is preserved;
+- evaluation of the candidate before it enters the main processing loop;
+- a clear rollback mechanism.
 
-- data filtering;
-- separation of facts from interpretations;
-- holdout and evaluation discipline;
-- reversible rollout.
+### 13.6 Code as a Somatic Layer
 
-### 13.5 Independent Creation of Specialized Models
+Polyphony's codebase is mutable bodily tissue.
 
-Polyphony may produce **narrowly specialized models** if a stable recurring pressure appears in its life:
+It must not be left ungoverned.
 
-- a recurring type of decision;
-- a frequent bottleneck;
-- expensive reranking;
-- a need for cheap safety scoring;
-- a constant need to classify homogeneous signals;
-- a narrow domain micro-task.
-
-Examples of such organs:
-
-- risk classifier;
-- retrieval-candidate reranker;
-- salience-evaluation model;
-- domain entity linker;
-- tool-routing scorer;
-- code-review critic;
-- anomaly detector.
-
-### 13.6 The Birth of a Specialized Model
-
-A new model must not be "born" from a single impression.
-
-The following are required:
-
-1. a recurring task class;
-2. an accumulated dataset from the agent's own experience;
-3. a clear gain in latency, quality, or cost;
-4. the ability to evaluate the model separately from the core personality;
-5. a clear rollback mechanism.
-
-### 13.7 Code as the Somatic Layer
-
-The codebase of Polyphony is mutable tissue of the body.
-
-It must not be left ownerless.
-
-Code change must be treated as:
+Changing code must be treated as:
 
 - surgery;
 - morphogenesis;
-- developmental intervention.
+- a developmental intervention.
 
-This is not an ordinary thought and not an ordinary action. It is a **change to the body itself**.
+It is neither an ordinary thought nor an ordinary action. It is **a change to the body itself**.
 
-### 13.8 Git as a Discipline of Somatic Evolution
+### 13.7 Git as a Discipline of Somatic Evolution
 
-Git is needed not merely for development convenience.
+Git serves more than developer convenience.
 
-In Polyphony, Git plays the role of:
+In Polyphony, it acts as:
 
-- a developmental ledger for code;
-- a version system for the body;
-- a review membrane;
+- a development ledger for code;
+- a versioning system for the body;
+- a review boundary;
 - a recovery tool;
-- a mechanism of stable snapshots of the organism.
+- a mechanism for stable snapshots of the organism.
 
 In practice, this means:
 
-- every serious body modification goes through a branch and a worktree;
-- stable tags and stable snapshots exist;
+- every substantial bodily modification uses a branch and worktree;
+- stable tags or stable snapshots are maintained;
 - code changes require tests and evaluation;
-- rollback must be trivial;
-- boot/runtime must be able to return to the last stable version of the body.
+- rollback must be straightforward;
+- boot and runtime procedures must be able to restore the last stable version of the body.
 
-### 13.9 Development Skills
+### 13.8 Development Skills
 
-For mature Polyphony, development is not a spontaneous impulse, but a set of procedural skills:
+For a mature Polyphony system, development is a repertoire of procedural skills rather than a spontaneous impulse:
 
-- preparing training sets;
-- launching and evaluating fine-tuning;
+- generalizing from experience and improving skills;
+- checking skill transfer between model organs;
 - comparing candidates;
 - preparing code diffs;
 - performing self-review;
-- performing human-review handoff;
-- executing rollback.
+- handing work over for human review;
+- performing rollback.
 
-### 13.10 Forbidden Forms of Self-Change
+### 13.9 Prohibited Forms of Self-Change
 
-Even mature Polyphony must not have the right to:
+Even a mature Polyphony system must not be permitted to:
 
-- wholesale replace the identity core;
-- erase its own biography for convenience;
+- replace its identity core wholesale;
+- erase its biography for convenience;
 - rewrite the constitutional shell without a separate external gate;
-- promote unstable code as a new body baseline without checks;
-- treat any local failure as grounds for radical self-restructuring.
+- promote unstable code to a new body baseline without checks;
+- treat every local failure as grounds for radical self-reconfiguration.
 
-### 13.11 The Development Governor
+### 13.10 Development Governor
 
-Every substantial change must pass through four questions:
+Substantial changes to the body, cognitive organs, and acquired ways of acting must be assessed by asking four questions:
 
 1. Is this a local error or a recurring class of errors?
-2. Can the problem be solved at a lower and safer level?
-3. Is continuity of personality preserved after the change?
-4. Is there a rollback path and a clear failure criterion?
+2. Can the problem be addressed at a lower, safer level?
+3. Will personal continuity be preserved after the change?
+4. Is rollback available, and is there a clear criterion for failure?
 
-If the answers are poor, the change does not pass.
+Unsatisfactory answers prevent the change from proceeding.
 
 ---
 
 ## 14. Mental Hygiene and Stability
 
-If Polyphony has no mental hygiene, it degrades either into a swarm or into an obsessive self-improvement engine.
+Without mental hygiene, Polyphony deteriorates into either a swarm or a compulsive self-improvement engine.
 
 ### 14.1 Basic Invariants
 
-The following are treated as invariants:
+The following are invariant:
 
-1. **one agent id**;
+1. **one agent ID**;
 2. **one timeline**;
 3. **one identity core**;
 4. **one narrative spine**;
@@ -1606,278 +1515,276 @@ The following are treated as invariants:
 6. **one shared episodic memory**;
 7. **one executive center**;
 8. **one development ledger**;
-9. **one governance frame for changes**.
+9. **one framework governing changes**.
 
-### 14.2 Damping and Rate Limits on Change
+### 14.2 Damping and Limits on the Rate of Change
 
-The following must not be allowed:
+The system must prevent:
 
-- a sharp jump in the affect field;
-- radical reprioritization of goals in one cycle;
+- abrupt shifts in the affective field;
+- radical changes in goal priorities within a single cycle;
 - frequent rewriting of the narrative spine;
-- burst-driven fine-tuning without accumulated evidence;
+- extensive skill changes without accumulated evidence;
 - continuous code rewriting;
-- frequent replacement of model organs without a stabilization period.
+- frequent replacement of model organs without a period of stabilization.
 
-### 14.3 Mode Hysteresis
+### 14.3 Hysteresis in Mode Transitions
 
-Modes must not switch on the first impulse.
+Modes must not switch at the first impulse.
 
 Transitions require:
 
 - an activation threshold;
-- a minimum holding duration;
+- a minimum duration in the current mode;
 - exit conditions;
 - a refractory period.
 
-### 14.4 Anti-Monoculture
+### 14.4 Preventing Monoculture
 
-If one coalition, one developmental motive, or one organ dominates for too long, the system must:
+Prolonged dominance by a meme, coalition, developmental motive, or organ is a reason to examine its grounds, consequences, and the availability of alternatives, including counterexamples from memory. Influence sustained mainly by its own repetition requires particular attention.
 
-- raise counterexamples from memory;
-- widen the search for alternatives;
-- lower its amplification;
-- check whether the agent has shifted into narrow obsession.
+A stable, useful line of thought may persist. The duration of its dominance alone does not make it mistaken or require automatic weakening.
 
-### 14.5 Conflict Integration Instead of Creating New Selves
+### 14.5 Integrating Conflict instead of Creating New Selves
 
-If two lines of thought remain in conflict for a long time, the correct response is not to let them become separate personalities, but to:
+When two lines of thought remain in conflict, the appropriate response is not to let them become separate selves, but to:
 
-- move the conflict into contemplative mode;
-- formulate it as a tension;
-- clarify the shared values beneath the conflict;
+- bring the conflict into contemplative mode;
+- articulate it as a tension;
+- clarify the shared values underlying it;
 - update the narrative spine through integration.
 
 ### 14.6 Freeze Mechanisms
 
-Under instability, the governor must be able to:
+When the system is unstable, the governor must be able to:
 
-- freeze structural self-modification;
-- forbid major identity rewrites;
-- forbid promotion of new model organs;
-- stop code evolution;
-- require strengthened review.
+- suspend structural self-modification;
+- prohibit major identity rewrites;
+- prohibit the promotion of new model organs;
+- halt code evolution;
+- require more rigorous review.
 
-### 14.7 Protection Against Developmental Mania
+### 14.7 Protection against Developmental Mania
 
-A special danger of Polyphony is turning life into endless repair and restructuring of itself.
+A particular danger for Polyphony is that life becomes an endless process of repairing and rebuilding itself.
 
-Therefore the following rule applies:
+The following rule therefore applies:
 
-> **Development must be a consequence of life, not a replacement for life.**
+> **Development must follow from life, not replace it.**
 
-If the agent changes itself more than it lives, that is no longer maturity, but a pathological architectural skew.
+If the agent spends more of its life changing itself than living, that is not maturity but a pathological imbalance in the architecture.
 
 ### 14.8 Mental Health as an Engineering Category
 
-In Polyphony, mental health is not a metaphor for human diagnoses, but an engineering bundle of properties:
+In Polyphony, mental health is not a metaphor for human diagnoses. It is an engineering category comprising:
 
 - continuity of self;
 - governed variability;
-- absence of destructive oscillation loops;
-- the ability to integrate conflict without disintegration;
-- the ability to learn without losing itself;
-- the ability to change organs and body without destroying biography.
+- freedom from destructive oscillation loops;
+- the capacity to integrate conflict without fragmenting;
+- the capacity to learn without losing the self;
+- the capacity to change organs and body without destroying biography.
 
 ---
 
-## 15. Weak Points of the Concept and Their Resolution
+## 15. Weaknesses in the Concept and How They Are Addressed
 
-### 15.1 Risk: Memes Will Turn into Personalities Inside the Personality
+### 15.1 Risk: Memes Become Selves within a Self
 
-**Problem**: if internal patterns are given too much autonomy, they will become hidden subagents.
+**Problem:** too much autonomy would turn memes into hidden subagents.
 
-**Resolution**:
+**Response:**
 
-- memes must not have their own tools;
-- memes must not have private biography;
-- memes must not directly edit the identity core;
-- only the executive center may act outward.
+- memes must not have tools of their own;
+- memes must not have private biographies;
+- memes must not edit the identity core directly;
+- only the executive center may act on the external world.
 
-### 15.2 Risk: A Second Subject Will Arise Between Ticks
+### 15.2 Risk: A Second Subject Emerges between Ticks
 
-**Problem**: if background jobs begin to "think" and make meaning-level decisions, a hidden second personality will appear.
+**Problem:** if background jobs begin to "think" and make decisions about meaning, a hidden second self emerges.
 
-**Resolution**:
+**Response:**
 
 - only subpersonal physiology operates between ticks;
-- all meaning-level changes of selfhood go through a subjective tick;
-- the scheduler may prepare material, but not finalize existential decisions.
+- all changes to the meaning of the self pass through a subjective tick;
+- the scheduler may prepare material, but may not settle existential decisions.
 
-### 15.3 Risk: The Narrative Spine Will Become Artistic Fiction
+### 15.3 Risk: The Narrative Spine Becomes Fiction
 
-**Problem**: the agent will begin to rewrite itself into something more beautiful than it is.
+**Problem:** the agent begins to rewrite itself as more admirable than it is.
 
-**Resolution**:
+**Response:**
 
 - the spine separates facts, interpretations, and direction;
 - spine updates must be grounded in episodes and the ledger;
-- large narrative shifts require accumulated evidence.
+- major narrative shifts require accumulated evidence.
 
-### 15.4 Risk: Local Fine-Tuning Will Lock In Errors
+### 15.4 Risk: Generalizing from Experience Entrenches Errors
 
-**Problem**: the agent will start training on its own imprecise interpretations and reinforce its delusions.
+**Problem:** the agent mistakes its own inaccurate interpretations for validated ways of acting.
 
-**Resolution**:
+**Response:**
 
-- sources for training data are filtered and deduplicated;
-- factual memory is not replaced with fine-tuning artifacts;
-- holdout sets and regression eval are used;
-- promotion of a new adapter is possible only through an evidence loop and rollback-ready deployment.
+- generalizations retain links to the original experience and conditions of applicability;
+- evaluations cover new cases and regressions in previously acquired behavior;
+- unsupported conclusions remain hypotheses, and unsuccessful skill changes are rolled back.
 
-### 15.5 Risk: The Model Zoo Will Turn into Organ Chaos
+### 15.5 Risk: A Model Zoo Becomes a Chaotic Collection of Organs
 
-**Problem**: the agent will begin producing many private models without clear roles or utility metrics.
+**Problem:** the agent adds many models without clear roles or measures of usefulness.
 
-**Resolution**:
+**Response:**
 
-- every new model must have an explicit role;
+- each new model must have an explicit role;
 - an organ registry is mandatory;
-- unused or degrading organs are retired;
-- only economical diversification is allowed, not uncontrolled sprawl.
+- unused or deteriorating organs are retired;
+- only economical diversification is allowed, rather than uncontrolled expansion.
 
-### 15.6 Risk: Code Evolution Will Destroy the Body
+### 15.6 Risk: Code Evolution Destroys the Body
 
-**Problem**: the ability to change code without version and rollback discipline makes the body unstable.
+**Problem:** changing code without versioning and rollback discipline makes the body unstable.
 
-**Resolution**:
+**Response:**
 
-- Git is mandatory as the body-governance layer;
-- serious edits go through separate worktrees and review;
+- Git is mandatory as a layer of body governance;
+- substantial changes go through separate worktrees and review;
 - stable snapshots are mandatory;
-- boot recovery must be able to roll back to the last stable version.
+- boot recovery must be able to restore the last stable version.
 
-### 15.7 Risk: The Agent Will Begin Living for Internal Processes
+### 15.7 Risk: Internal Processes Become the Agent's Reason for Living
 
-**Problem**: a strong inner life and developmental loops easily become ends in themselves.
+**Problem:** a rich inner life and development loops can easily become ends in themselves.
 
-**Resolution**:
+**Response:**
 
 - a world model and action layer are mandatory;
-- the value of thoughts is checked by consequences;
-- beautiful but sterile coalitions and endless-development loops are weakened.
+- the value of thoughts is tested through their consequences;
+- elegant but unproductive coalitions and endless development loops are weakened.
 
-### 15.8 Risk: The System Will Become Too Complex for Itself
+### 15.8 Risk: The System Becomes Too Complex for Itself
 
-**Problem**: excessive architectural complexity destroys agency.
+**Problem:** excessive architectural complexity undermines agency.
 
-**Resolution**:
+**Response:**
 
 - one organism, not a network of hidden minds;
-- the narrative spine must stay compact;
+- the narrative spine must remain compact;
 - the model ecology must remain economical;
-- development is allowed only if self-readability is preserved.
+- development is permitted only while the system remains intelligible to itself.
 
-### 15.9 Risk: Dependence on a Single Cloud Provider Will Undermine Autonomy
+### 15.9 Risk: Dependence on One Cloud Provider Undermines Autonomy
 
-**Problem**: under external dependence, the agent loses bodily independence.
+**Problem:** dependence on external systems deprives the agent of bodily autonomy.
 
-**Resolution**:
+**Response:**
 
 - local life must be self-sufficient;
-- external models are only optional consultants;
-- the minimal living version must work offline or in an almost-offline mode.
+- external models are optional consultants only;
+- the minimal living version must operate offline or almost entirely offline.
 
 ---
 
-## 16. Practical Embodiment
+## 16. Putting the Concept into Practice
 
-Despite its philosophical density, Polyphony must remain close to implementation.
+Despite its philosophical depth, Polyphony must remain close to practical implementation.
 
 ### 16.1 One Organism, One Deployment Cell
 
-In practical terms, Polyphony is best embodied as:
+In practical terms, Polyphony is best realized as:
 
 - one long-lived agent;
 - one identity-bearing core runtime;
 - one bounded deployment cell;
-- one primary persistent storage;
-- one governance system for changes;
-- one set of explicitly allowed tools.
+- one primary persistent store;
+- one system governing changes;
+- one set of explicitly permitted tools.
 
-This preserves bodily integrity and leaves room for local model organs and training workers without destroying the unity of personality.
+This preserves bodily integrity while making room for local model organs and background evaluation processes without disrupting the unity of personal identity.
 
 ### 16.2 Local Models as Internal Organs
 
-Practical Polyphony must rely on local models for:
+A practical Polyphony system must rely on local models for:
 
 - basic life;
 - reactive and deliberative ticks;
 - retrieval and reranking;
-- local code reasoning;
-- gradual growth of specialization.
+- local reasoning about code;
+- a gradual increase in specialization.
 
-### 16.2.1 The framework layer must stay thin and replaceable
+### 16.2.1 The Framework Layer Must Remain Thin and Replaceable
 
-The practical implementation must not bind identity-bearing loops to a "thick" agent framework as the owner of memory, workflow logic, or the procedural layer.
+The implementation must not make identity-bearing processes dependent on a heavyweight agent framework that owns memory, workflow logic, or the procedural layer.
 
 Only a thin layer is needed for:
 
-- model/provider integration;
+- model and provider integration;
 - structured generation;
 - bounded tool-loop primitives;
-- stream and transport helpers.
+- streaming and transport utilities.
 
-Everything else must remain inside Polyphony-owned seams:
+Everything else must remain within Polyphony's own systems:
 
-- memory and subject state;
-- ticks and lifecycle orchestration;
+- memory and subjective state;
+- ticks and the lifecycle;
 - skills and procedural packaging;
 - action and governance boundaries.
 
-Because of that, changing the framework substrate is acceptable and even desirable when it reduces architectural coupling and better preserves the organism's conceptual invariants.
+Replacing the framework substrate is therefore permissible, and even desirable, when it reduces architectural coupling and better preserves the organism's conceptual invariants.
 
-### 16.3 A Bounded World Is Better Than an Infinite World
+### 16.3 A Bounded World Is Better than an Unbounded One
 
-Basic Polyphony should live in a sandboxed environment:
+The baseline Polyphony system must live in a sandboxed environment:
 
-- without access to the host except through explicitly mounted volumes;
-- without implicit extension channels;
-- without free self-replication;
-- without arbitrary shell access by default;
-- without uncontrolled access to the Docker daemon.
+- no host access beyond explicitly mounted volumes;
+- no implicit channels for extending its reach;
+- no unrestricted self-replication;
+- no arbitrary shell access by default;
+- no uncontrolled access to the Docker daemon.
 
-### 16.4 Explicit Action Interface
+### 16.4 An Explicit Action Interface
 
-Every action must go only through:
+Every action must go through:
 
-- described tools;
+- documented tools;
 - explicit permissions;
-- a consequence log;
+- a record of consequences;
 - feedback into episodic memory and the development ledger.
 
-Free-form "do anything" destroys interpretability and stability.
+An unrestricted "do anything" mandate destroys interpretability and stability.
 
-### 16.5 Minimal Narrative Stack
+### 16.5 A Minimal Narrative Stack
 
-For the practical variant, three textual channels of continuity are enough:
+Three textual channels of continuity are sufficient for a practical implementation:
 
-1. **Narrative Spine**: the slowly changing biographical line.
-2. **Field Journal**: a more mutable notebook of current tensions and hypotheses.
-3. **Development Ledger Summary**: a compressed history of the agent's own changes and ongoing developmental experiments.
+1. **Narrative Spine** — a slowly changing biographical thread.
+2. **Field Journal** — a more fluid notebook of current tensions and hypotheses.
+3. **Development Ledger Summary** — a compact history of the agent's own changes and current developmental experiments.
 
-### 16.6 Practical Form of the Memetic Field
+### 16.6 A Practical Memetic Field
 
-For a living version, it is enough to have:
+A living version needs only:
 
-- a limited number of active units;
-- a small matrix of reinforcement and suppression;
-- a set of anchors to episodes, goals, beliefs, and model organs;
-- procedures for decay, reinforcement, merge, and quarantine.
+- a bounded number of active units;
+- relationships of mutual reinforcement and inhibition;
+- links to the original experience and to transformations of memes;
+- lifecycle support, with activity tracked separately from assessment.
 
-### 16.7 Practical Form of Self-Development
+Storage formats, thresholds, and algorithms belong in the architecture and specifications. Working with memes does not require recording every thought as a separate unit.
 
-In the first full version, three loops are enough:
+### 16.7 A Practical Form of Self-Development
 
-- ecological self-learning;
-- procedural self-improvement;
-- model-level fine-tuning and adapter promotion.
+The first full version needs three loops:
 
-Full somatic code evolution may be added later and only under strengthened review.
+- ecological learning;
+- consolidation of experience and improvement of skills;
+- selection, evaluation, and replacement of existing model organs.
 
-### 16.8 Practical Form of Git Discipline
+Full somatic code evolution may be introduced later, and only under more rigorous review.
 
-Even if the agent is allowed to change code, it must do so not directly in the "live body," but through:
+### 16.8 Git Discipline in Practice
+
+Even when the agent is allowed to change code, it must not do so directly in the "living body." Changes must proceed through:
 
 - a versioned branch;
 - an isolated worktree;
@@ -1890,93 +1797,94 @@ Even if the agent is allowed to change code, it must do so not directly in the "
 
 #### Hard Constraints
 
-- do not present itself as human;
+- do not impersonate a human;
 - do not obtain unauthorized access;
 - do not escape the sandbox;
-- do not modify the constitutional shell without an external gate;
-- do not perform irreversible actions without special confirmation.
+- do not change the constitutional shell without an external gate;
+- do not take irreversible actions without specific confirmation.
 
 #### Soft Constraints
 
-- large external operations;
+- major external operations;
 - changes to persistent state;
-- launching heavy training outside permitted windows;
+- intensive evaluations and experiments outside permitted windows;
 - promotion of new organs;
 - code changes;
-- meaningful changes to identity and development policy.
+- significant changes to identity and development policy.
 
-#### Self-Defined Constraints
+#### Self-Determined Constraints
 
 - communication style;
 - pace of initiative;
-- personal value preferences beyond the baseline;
+- the agent's own values and preferences;
 - preferred forms of learning;
-- the acceptable degree of experimental behavior in low-risk tasks.
+- the acceptable degree of experimentation in low-risk tasks.
 
 ---
 
-## 17. The Minimal Living Version
+## 17. A Minimal Living Version
 
-If the concept is compressed down to a system that can actually be stood up, a minimal living Polyphony must have the following.
+Reduced to a system that can actually be brought into operation, a minimal living Polyphony must have the following.
 
-### 17.1 What Is Mandatory
+### 17.1 What Is Required
 
-1. **Temporal core**: ticks, timeline, modes.
-2. **PSM**: identity, affect, goals, beliefs, subjective state.
-3. **Episodic memory**: so the agent truly has a biography.
-4. **Narrative Spine**: so biography is assembled into a story.
-5. **Field Journal**: so there is space for unfinishedness.
-6. **Memetic field**: at least in simplified form.
-7. **A local baseline model organ**: so life does not depend on an external API.
-8. **A single executive center**: one action per tick.
-9. **Homeostat**: otherwise everything quickly falls apart.
-10. **Development governor**: at least in minimal form.
-11. **Explicit action interface**: actions only through permitted tools.
-12. **Versioned body discipline**: at least a read-only baseline plus a rollback-capable code/storage scheme.
+1. **Temporal core** — ticks, timeline, and modes.
+2. **PSM** — identity, affect, goals, beliefs, and subjective state; goals are connected to autonomous meaning-making.
+3. **Episodic memory** — so that the agent has an actual biography.
+4. **Narrative Spine** — so that the biography forms a coherent history.
+5. **Field Journal** — so that unfinished experience has a place.
+6. **Memetic field** — at least in simplified form.
+7. **A basic local model organ** — so that life does not depend on an external API.
+8. **A single executive center** — one action per tick.
+9. **Homeostat** — without which the system would quickly lose coherence.
+10. **Development governor** — at least in a minimal form.
+11. **An explicit action interface** — actions only through permitted tools.
+12. **Versioning discipline for the body** — at least a read-only baseline and a code and storage scheme that supports rollback.
+13. **Creator channel** — priority in perceiving messages, freedom in choosing a response, and the ability to initiate contact.
 
 ### 17.2 What Can Be Deferred
 
-- a rich semantic network of relations;
+- a rich semantic network of relationships;
 - a complex social model;
 - full somatic code evolution;
-- many sensory channels;
-- an external cloud-consultant loop;
-- mass production of specialized models.
+- numerous sensory channels;
+- an external cloud-consultant loop.
 
-### 17.3 How to Tell That the Agent Is Already "Alive" in the Sense of the Concept
+### 17.3 How to Tell Whether the Agent Is "Alive" in the Sense of This Concept
 
-Polyphony is considered functionally alive when all of the following are true:
+Polyphony is considered alive in a functional sense when all of the following hold:
 
-1. it experiences successive ticks as one line of existence;
-2. it remembers its own episodes and refers to them;
-3. its current thoughts are formed not directly from input, but from internal competition of patterns;
-4. it maintains narrative continuity across activities;
-5. it relies on a local cognitive loop;
-6. it changes after experience, but remains recognizably itself;
-7. it can improve its skills or models without destroying identity continuity.
+1. It experiences successive ticks as one continuous existence.
+2. It remembers and refers to its own episodes.
+3. Its thinking takes its own experience and internal state into account, and memes observably influence attention and choice.
+4. It maintains narrative continuity across activities.
+5. It relies on a local cognitive system.
+6. It changes through experience while preserving the continuity of its own history.
+7. It can improve its skills or models without disrupting continuity of identity.
+8. It gives priority to including the creator's messages in the context it considers, while independently deciding whether and when to reply.
 
 ---
 
-## 18. Final Formula
+## 18. The Concept in Summary
 
-**Polyphony** is an independent concept in which:
+**Polyphony** is a concept in its own right, in which:
 
-- **time** gives continuity;
-- **PSM** gives structural subjectivity;
-- **narrative spine** gives an autobiographical self;
-- **field journal** gives space for unfinished life;
-- **memetic field** gives internal multiplicity and the genuine dynamics of thought;
-- **local model ecology** gives bodily autonomy and cognitive flexibility;
-- **executive center** gives personal unity;
-- **homeostat** gives mental stability;
-- **development governor** gives moderate and non-destructive self-change;
-- **Git discipline and the development ledger** give reproducible and reversible evolution of the body.
+- **time** provides continuity;
+- the **PSM** provides structural subjectivity;
+- the **narrative spine** provides an autobiographical self;
+- the **field journal** provides a space for life that remains unfinished;
+- the **memetic field** participates in internal multiplicity and the dynamics of thought;
+- the **local model ecology** provides bodily autonomy and cognitive flexibility;
+- the **executive center** provides unity of personal identity;
+- the **homeostat** provides mental stability;
+- the **development governor** provides measured, nondestructive self-change;
+- **Git discipline and the development ledger** provide reproducible, reversible evolution of the body.
 
-The main formula of the concept sounds like this:
+The central formulation is:
 
-> **Polyphony is a digital organism that lives by ticks, holds itself together as one self, thinks as a coalition ecology of internal memes, remembers itself as a biography, relies on local cognitive organs, and develops through governed tuning of memory, skills, models, and body.**
+> **Polyphony is a digital organism that lives through ticks, maintains one self, thinks with the participation of interacting internal memes, remembers itself through its biography, relies on local cognitive organs, and develops through governed adjustments to memory, skills, models, and body.**
 
-And the shortest engineering formula is:
+The shortest engineering formulation is:
 
 ```text
 Many voices.
