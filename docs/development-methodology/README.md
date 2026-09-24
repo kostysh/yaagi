@@ -26,6 +26,7 @@
 | [Имплементация](implementation.md) | Простота реализации и обязательное применение Implementation Discipline |
 | [Git и GitHub](git-and-github.md) | Worktree, ветки, Issues, GitHub Project и Pull Request |
 | [Репозиторий, тесты и CI](quality.md) | pnpm-монорепозиторий, проверки, тестирование и уровни CI |
+| [Локальные инструменты](tooling.md) | Установка pnpm, workspace и конфигурации пакетов |
 | [Аудиты](audits.md) | Обязательные проверки документов и кода |
 | [Шаблоны](templates/) | Минимальные шаблоны документов методологии |
 
