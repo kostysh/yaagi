@@ -6,7 +6,7 @@ YAAGI (Yet Another AGI) is a project to build Polyphony: an autonomous agent wit
 
 The project is in the design stage. This repository currently contains the concept, modular architecture, architectural decision records, and development methodology. The agent runtime and modules have not been implemented yet.
 
-The next stage is to write module specifications and implementation plans, then develop the modules independently and integrate them. Startup and testing instructions will be added alongside the working implementation.
+The [implementation roadmap](docs/roadmap.md) orders modules, experiments, and integration checks. The next module is `core-types`: its specification and implementation plan will be written immediately before development. Other module specifications follow when their turn comes.
 
 ## Architectural foundations
 
@@ -22,6 +22,7 @@ The next stage is to write module specifications and implementation plans, then 
 | [Polyphony concept](docs/polyphony_concept.md) | Canonical principles, intended capabilities, and project boundaries |
 | [Modular architecture](docs/architecture.md) | Modules, dependencies, contracts, state ownership, integration, and recovery |
 | [Architecture decisions](docs/adr/) | Rationale and constraints behind significant decisions |
+| [Implementation roadmap](docs/roadmap.md) | Module order, experiments, dependencies, and integration evidence |
 | [Development methodology](docs/development-methodology/README.md) | Specifications, plans, verification, and delivery workflow |
 | [Contributing](CONTRIBUTING.md) | Entry point for repository work |
 
