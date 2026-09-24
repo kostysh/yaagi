@@ -10,7 +10,9 @@
 
 ## Document Status
 
-This is a complete English translation of the [canonical Russian concept](polyphony_concept.md). The Russian original is the **current, authoritative statement of the Polyphony concept** and the sole conceptual source for subsequent technical architecture and implementation.
+> Этот перевод пока не включает уточнение об одном операторе и будущих каналах связи. Актуальное решение приведено в [§6.2.1 канонической концепции](polyphony_concept.md#621-канал-взаимодействия-с-оператором).
+
+This is an English translation of the [canonical Russian concept](polyphony_concept.md). The Russian original is the **current, authoritative statement of the Polyphony concept** and the sole conceptual source for subsequent technical architecture and implementation.
 
 Local models, learning from experience through memory and skills, Git-governed code, scheduler-driven development, and disciplined boot and recovery procedures are **integral to the concept**, not external additions.
 
