@@ -1,7 +1,7 @@
 # ADR-003: Границы действия, моделей и развития
 
-- Статус: accepted — принято оператором 2026-09-24; граница queue/evaluator уточнена 2026-09-25; enforcement ещё не реализован.
-- Дата: 2026-09-25.
+- Статус: accepted — принято оператором 2026-09-24; граница локальных файлов/queue уточнена 2026-09-28; enforcement ещё не реализован.
+- Дата: 2026-09-28.
 - Основание: [концепция](../polyphony_concept.md), §§4.10, 6.2.1, 7.2–7.6, 9.4, 11.2, 13–16; уточнение оператора 2026-09-24 о негенеративных и аудиомоделях.
 - Связанный документ: [архитектура, §§2–4 и 6–10](../architecture.md).
 
@@ -23,9 +23,11 @@
 
 Scheduler/evaluator — субперсональные процессы: они подготавливают данные и технические evidence, не меняют PSM, narrative, цели или active bindings. Результаты, включая оценки модели, привязаны к входному snapshot/hash и проходят проверку. Semantic change проходит следующий тик и governor.
 
-В принятом 2026-09-25 варианте `queue` использует BullMQ + Redis. Подключённый consumer доверен и отделён от isolated evaluator/candidate code: последний получает только snapshot/scratch, без PostgreSQL/Redis credentials, operator socket или Docker socket. Queue payload не выбирает исполняемый код; handlers регистрирует доверенный потребитель. `physiology` проверяет admission, окно, бюджет, отмену и revision перед каждой попыткой и принимает результат по durable ID/hash. Повтор BullMQ не создаёт нового права действия, а `unknown` action остаётся в протоколе executive/reconcile.
+В варианте 2026-09-28 `queue` использует локальную SQLite и platform execution adapter. Consumer доверен и отделён от isolated evaluator/candidate code: последний получает только snapshot/scratch, без SQLite files/handles, WAL/SHM, backups и operator socket. Queue payload не выбирает исполняемый код; handlers регистрирует доверенный потребитель. `physiology` проверяет admission, окно, бюджет, отмену и revision перед каждой попыткой и принимает результат по durable ID/hash. Повтор очереди не создаёт нового права действия, а `unknown` action остаётся в протоколе executive/reconcile.
 
-`infrastructure` запускается доверенным host control и поднимает локальные PostgreSQL/Redis с аутентифицированным доступом. Модули получают только свои connection settings; секреты не попадают в Compose images, job payload, snapshots или логи. Сам факт запуска BullMQ worker в отдельном процессе не является sandbox.
+Серверных БД и обязательного Docker нет. Каталог cell, файлы state/queue, WAL/SHM, backup и lock доступны только доверенному principal и исключены из evaluator/workspace mounts. SQLite не требует серверного пароля и не шифрует данные автоматически. Native `sqlite-vec` загружает доверенный adapter из фиксированной поставки, без пути/бинарника из model/job input. Секреты не попадают в payload, snapshot или логи. Сам факт отдельного worker-процесса не является sandbox.
+
+Будущий Expo background callback даёт окно исполнения, но не authorization и не право нового subjective tick/внешнего эффекта. При возобновлении сохраняются проверки revision, admission и cancellation. Mobile lifecycle, sandbox и права ОС требуют отдельного решения и device evidence; текущая поставка остаётся desktop.
 
 Активируется только точная проверенная версия кандидата. Governor требует обоснования, проверки на новых случаях, continuity и rollback; freeze и policy перепроверяются перед применением. Смена базового органа и исполнимого навыка требует отдельного внешнего подтверждения. Стабильный body read-only; полноценная code evolution отложена, но её governance и recovery obligations сохранены.
 
@@ -53,7 +55,7 @@ L2–L3, D1, S1–S3 и H1: содержимое operator message действи
 
 Для локального provider проверить фактическое отсутствие облачного egress. Для workspace adapter — path/symlink escape и secret exposure; для candidate execution — реальные OS/process/network границы. Наличие policy JSON или mock не закрывает эти проверки.
 
-Для queue path S1 и R4 проверяют недоступность Redis/PostgreSQL credentials и Docker socket из evaluator, отказ неизвестному handler/conflicting payload, повторную проверку admission при retry и невозможность повтором job вызвать новый внешний effect. Retention и повтор результата проверяются вместе с owner receipt; Redis event не считается разрешением или каноническим доказательством выполнения.
+Для queue path S1 и R4 проверяют недоступность SQLite/WAL/SHM/backup/lock и operator socket из evaluator, запрет недоверенной загрузки extension, отказ неизвестному handler/conflicting payload, повторную проверку admission при retry и невозможность повтором job вызвать новый внешний effect. Retention и повтор результата проверяются вместе с owner receipt; Queue event не считается разрешением или каноническим доказательством выполнения.
 
 M2 проверяет typed capability/input/output, неподдерживаемую операцию и общий бюджет; для каждого включённого адаптера требуется реальный вызов. Дополнительно проверяется, что модельная оценка не выдаёт права, а медиа не открывают произвольный filesystem/network доступ или воспроизведение вне executive. Эти обязательства применяются при включении соответствующей операции; перечисление семейства не доказывает его работу.
 

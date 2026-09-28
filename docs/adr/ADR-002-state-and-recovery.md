@@ -1,58 +1,72 @@
 # ADR-002: Единая история, commit points и восстановление
 
-- Статус: accepted — принято оператором 2026-09-24; уточнение BullMQ + Redis и recovery принято 2026-09-25; протокол требует реального resilience evidence E3.
-- Дата: 2026-09-25.
-- Основание: [концепция](../polyphony_concept.md), §§4.5–4.9, 6.9, 8.7, 10–12, 13.7, 14.1, 16.8, 17; решение оператора 2026-09-25 о `state`, BullMQ + Redis и `infrastructure` с согласованными условиями сохранности.
-- Связанный документ: [архитектура, §§4–5, 9–10](../architecture.md).
+- Статус: accepted для SQLite, outbox и переносимого контракта очередей по решению оператора 2026-09-28; desktop backend Liteque — candidate до проверки §8 архитектуры. Recovery требует реального evidence E3.
+- Дата: 2026-09-28.
+- Основание: [концепция](../polyphony_concept.md), §§4.5–4.9, 6.9, 8.7, 10–12, 13.7, 14.1, 16.8, 17; решение оператора о локальной SQLite, векторном расширении, замене BullMQ и будущей совместимости с Expo без требования мобильного запуска.
+- Связанный документ: [архитектура, §§2–6 и 8–10](../architecture.md).
 
 ## Контекст
 
-Взаимно независимые пакеты совместно поддерживают одну биографию. Сбой между обновлением PSM, фиксацией действия и получением его результата не должен создавать вторую линию истории, частичное субъективное состояние или повторный необратимый эффект.
+Независимые пакеты поддерживают одну биографию. Сбой между обновлением PSM, фиксацией действия и результатом не должен создавать частичное субъективное состояние или повторный необратимый эффект. При этом два серверных хранилища и Docker из решения 2026-09-25 больше не соответствуют требуемой простоте локального deployment.
 
-Обычная DB-транзакция не включает внешний мир. Наличие action log, lock или mock-теста само по себе не доказывает выполнение этих требований.
+Обычная DB-транзакция не включает внешний мир. Наличие action log, lock или mock-теста само по себе не доказывает сохранность. Совместимость контракта с будущим mobile runtime не означает постоянного background worker на телефоне.
 
 ## Решение
 
-PostgreSQL является каноническим хранилищем состояния и истории организма; Redis хранит техническую очередь BullMQ. Owner schemas и adapters разделяют доменную ответственность; PostgreSQL adapter модуля `state` даёт единый transaction-scoped client для атомарного decision checkpoint. Полный протокол и ошибки нормативно заданы в §5 архитектуры. Уточнение заменяет прежнюю единственную PostgreSQL queue, сохраняя единство канонической истории.
+SQLite в `state` — каноническое хранилище состояния и истории; отдельная локальная SQLite БД `queue` хранит технические jobs. Доменные adapters участвуют в одном transaction-scoped handle `state`, таблицы и миграции принадлежат владельцам. PostgreSQL schemas/advisory locks не переносятся буквально: используются owner-prefix таблиц и отдельная lifecycle exclusivity. Две БД не имеют общего atomic commit, даже при одинаковом SQL engine. Полный протокол нормативно задан в §5 архитектуры.
 
-Разделить reserve, consistent read snapshot, reasoning вне DB-транзакции, decision commit, dispatch и outcome commit. В decision commit входит одна выбранная action/abstention и согласованные owner changes. Исходные факты history сохраняются, исправления добавляют новые факты/интерпретации. Проекции могут обновляться с revision checks. Full event sourcing и повторное воспроизведение LLM для восстановления не нужны.
+Desktop driver `state` — `better-sqlite3`; будущий Expo adapter использует `expo-sqlite`. Общий async порт и технические SQL-операции не содержат driver types; синхронный desktop API не становится требованием потребителя. Короткий consistent read snapshot закрывается до reasoning; decision и outcome сохраняются отдельными атомарными транзакциями с проверкой revisions. Факты истории не переписываются, full event sourcing и replay LLM не нужны.
 
-Перед внешним вызовом durable action переходит в `dispatching`. Crash после этой точки создаёт неопределённый исход, даже если вызов, возможно, ещё не успел уйти. Recovery использует конкретные receipts/idempotency semantics инструмента; без них сохраняет `unknown`. Повторное вычисление старого решения и слепой resend запрещены. Для operator transport отдельно различаются decision, outbox и доставка клиенту.
+`sqlite-vec` — выбранное расширение для хранения/поиска векторов. `state` отвечает за доверенную загрузку и совместимость, доменный владелец — за retrieval, актуальность индекса и provenance. Индексы восстанавливаемы из источников, связаны с revision и embedding model/version/dimension; embeddings производит `model-organs` при включении соответствующей способности. Векторная БД не является готовым RAG и не заменяет каноническую биографию. [SQLite-vec](https://alexgarcia.xyz/sqlite-vec/), [поддержка Expo](https://docs.expo.dev/versions/latest/sdk/sqlite/).
 
-Исполнитель единственен в локальной cell: lifecycle владеет эксклюзивной OS-блокировкой процесса, а DB session advisory lock привязан к agentId. Потеря DB session прекращает новые действия; replacement допускается только после подтверждённой остановки прежней process group. Одна session lock не fencing сетевых запросов; неопределённые in-flight effects требуют reconcile. Распределённый failover не входит в первую topology.
+Перед внешним вызовом durable action переходит в `dispatching`. Crash после этой точки создаёт `unknown`, даже если вызов ещё не успел уйти. Без конкретных receipt/idempotency semantics запрещены повтор старого решения и слепой resend. Operator outbox и доставка клиенту остаются отдельными от решения.
 
-Boot сверяет body/contract/schema/model/skill/constitution manifest. Стабильные версии тела read-only. Откат body/model/skill сохраняет накопленные episodes/actions/ledger и добавляет факт отката. Не вводить обычный rollback через восстановление старого DB snapshot, стирающее новый опыт.
+Один runtime/effect dispatcher удерживает OS lifecycle lock на canonical directory/agentId. SQLite writer lock сериализует записи, но не запрещает второму процессу внешний effect. При потере storage/exclusivity новые dispatch прекращаются; replacement ждёт подтверждённой остановки прежней process group. TTL/heartbeat/PID-файл не разрешают takeover; multi-host failover не входит в baseline. Будущий platform lifecycle adapter должен сохранить это условие.
 
-`queue` использует BullMQ + Redis по решению оператора. При связи задания с state commit владелец сохраняет intent/outbox в PostgreSQL той же транзакцией; доверенный relay публикует его после commit. Сбой между commit и enqueue восстанавливается из outbox; неоднозначный enqueue или сбой после него допускает повтор с прежним ID. Публикация не является завершением задания: незавершённый intent сохраняется до принятого receipt/отказа/отмены, recovery сверяет его с очередью. Протокол повторов, очистки и исчерпания бюджета нормативно задан в [§5.4 архитектуры](../architecture.md#54-устойчивая-очередь-и-согласование-с-состоянием).
+Когда job связана с state commit, владелец сохраняет intent/outbox в той же транзакции `state`; доверенный relay после commit публикует её через `queue` с устойчивым ID/hash. Rollback не публикуется, разрыв commit/enqueue закрывает outbox. `published` не закрывает intent: owner хранит его до принятого результата/отказа/отмены и восстанавливает по очереди и receipts. Самостоятельная техническая job может ставиться прямо в `queue`. [Протокол повторов и очистки](../architecture.md#54-устойчивая-очередь-и-согласование-с-состоянием).
 
-Очередь допускает at-least-once обработку; её dedupe не заменяет идемпотентность handler и атомарный приём результата владельцем. Canonical inbox, action log, operator outbox и история остаются в PostgreSQL. BullMQ retry не повторяет действие с `unknown` исходом и не выдаёт новое разрешение executive.
+Общий `queue` предоставляет durable enqueue/status/result, ограниченные retries/backoff, отмену и обработку в заданном execution window. At-least-once требует повторобезопасных handlers и атомарного приёма результата владельцем. Поздняя попытка не завершает новую lease; cleanup не удаляет непринятый результат и не сбрасывает бюджет. `notBefore` — самое раннее допустимое время, не обещание deadline запуска. Библиотечный retry никогда не разрешает повтор `unknown` action.
 
-`infrastructure` поднимает оба сервера с постоянными volumes, healthchecks и профилем Redis из §2.2 архитектуры. Коннекторы остаются в модулях. Обычная остановка сохраняет данные; restart/recovery и backup/restore проверяются отдельно. Установка библиотек и запуск серверов этим ADR не выполняются.
+Desktop использует постоянный consumer, пока работает host. Будущий Expo adapter — `expo-sqlite` и разрешённые ОС окна через `expo-background-task`/`expo-task-manager`. OS registration не заменяет сохранённую очередь; запуск/интервал не гарантированы, возможны suspension и force-quit. Постоянный daemon/точный cron не входят в общий контракт. Мобильная реализация и device tests сейчас отложены. [Expo BackgroundTask](https://docs.expo.dev/versions/latest/sdk/background-task/).
 
-## Рассмотренные варианты
+`infrastructure` исключён: локальные БД не требуют серверов/Compose. WAL + `synchronous=FULL`, короткие транзакции, ограниченное ожидание writer, сохранение файлов при остановке и backup/restore — обязанности соответствующих adapters и runtime по §2.2. Нельзя подменять аппаратный restart обычным закрытием connection в тесте.
 
-- **Транзакция на весь тик, включая LLM и tools:** удерживает блокировки во время долгих/неопределённых вызовов и всё равно не делает внешний эффект атомарным с БД.
-- **Независимый commit каждого владельца:** создаёт частичное субъективное состояние и требует отдельного сложного протокола компенсации.
-- **Event sourcing всего организма:** история нужна, но нет требования вычислять все состояния заново из событий; replay недетерминированной модели не является recovery.
-- **Exactly-once для любого инструмента:** недостижимый общий контракт без участия внешнего инструмента. Фиксируем реальные возможности adapter и известную неопределённость.
-- **Автоматический takeover по истечении heartbeat:** может допустить старого исполнителя с ещё действующим внешним запросом; выбран безопасный single-host stop-before-replace.
-- **Очередь на PostgreSQL / `pg-boss`:** позволяет обойтись одним сервером, но отклонена оператором 2026-09-25 в пользу BullMQ + Redis.
-- **Запись state, затем прямой enqueue без outbox:** crash между двумя операциями теряет задание; enqueue до commit может исполнить откатившееся намерение.
-- **Считать Redis jobId гарантией exactly-once:** после удаления записи ID может появиться вновь; сохранённые owner receipts и правила внешних действий остаются обязательными.
+## Desktop backend очереди: выбор кандидата
+
+Проверка 2026-09-28 ограничена manifests и исходниками; библиотеки не установлены и recovery не исполнен. Предпочтительный кандидат — **Liteque `0.9.1`**: TypeScript, SQLite через `better-sqlite3`, именованные очереди, retries/delay и idempotency key. При claim/finalize используется allocation token, что подходит для отклонения поздней попытки. Однако completed rows удаляются, default durability — `NORMAL`; нужны сохранённые result/status, сверка conflicting payload и bounded stop на уровне `queue`. [Manifest](https://registry.npmjs.org/liteque/0.9.1), [queue source, снимок `8ce63c8`](https://github.com/karakeep-app/liteque/blob/8ce63c873f83b759efcf05a6db0cf97695628670/src/queue.ts), [runner](https://github.com/karakeep-app/liteque/blob/8ce63c873f83b759efcf05a6db0cf97695628670/src/runner.ts), [настройки БД](https://github.com/karakeep-app/liteque/blob/8ce63c873f83b759efcf05a6db0cf97695628670/src/db.ts).
+
+| Вариант | Вывод для текущей локальной cell |
+| --- | --- |
+| Liteque | Узкая основа; кандидат до bounded probe из §8. Не обещаем весь контракт YAAGI как свойство библиотеки |
+| [Workmatic](https://github.com/litepacks/workmatic) | Активный SQLite-проект с retries, но [проверенный worker](https://github.com/litepacks/workmatic/blob/51355fb495a2d661b7e13ce47098f50a485ef845/src/worker.ts) завершает job по ID без generation check после истечения lease; для нашего stale-attempt контракта требуется дополнительное решение |
+| [Sidequest](https://github.com/sidequestjs/sidequest) | Более широкий Node job framework; сам проект не рекомендует свой SQLite backend для production. Для этого локального baseline не выбран |
+| [Plainjob](https://github.com/justplainstuff/plainjob) | Небольшая SQLite-очередь; опубликованный stable `0.0.14` датирован 2024-10-13 ([registry](https://registry.npmjs.org/plainjob)), свежий source не доказывает свойства поставляемого пакета. Не основной кандидат |
+| Собственная очередь целиком | Сейчас не выбирается: пришлось бы самостоятельно поддерживать claim/retry/recovery вместо узкой обёртки. Вернуться к сравнению, если кандидат не удерживает контракт без форка internals |
+
+До принятия backend `node-engineer` выполняет probe и возвращает `architecture-engineer` evidence: durable enqueue/reopen, kill после claim, bounded retries/stop, stale completion, ID/hash conflict, result до cleanup и эффективный `FULL`. Если нужен новый полноценный scheduler поверх Liteque, выбор пересматривается. Общий контракт не ослабляется ради библиотеки; `core-types` и `state` могут разрабатываться независимо. Точные версии SQLite engine/driver/extension/queue и security updates фиксируются при реализации, перед установкой.
+
+## Другие рассмотренные варианты
+
+- PostgreSQL + BullMQ/Redis: заменены текущим решением оператора; `pg-boss` не возвращается в baseline.
+- Одна DB-транзакция на весь тик, включая модель/tools: удерживает writer и всё равно не делает внешний effect атомарным.
+- Независимые owner commits: дают частичное субъективное состояние; сохраняется общий decision commit.
+- Прямой enqueue до/после state commit без outbox: исполняет откатившееся намерение либо теряет его при crash между операциями.
+- Exactly-once эффекты или takeover по истечению lease: queue lease не останавливает старый effect, необходимы owner receipts и executive/reconcile.
+- Единый Node worker API для desktop и Expo: требует недоступного постоянного фонового процесса; объединяем семантику, а не platform mechanics.
 
 ## Последствия, миграции и rollback
 
-Owner adapters обязаны участвовать в общем transaction handle. Изменения persisted контрактов имеют schemaVersion и release manifest; добавление совместимого поля предпочтительнее разрушающей миграции. Конкретная миграция допускается только со своей проверкой сохранности и readback.
+Серверы и их эксплуатация исчезают, но остаются локальные файлы, native extension и конкуренция за единственного SQLite writer. Короткие commit boundaries, WAL/checkpoint и нагрузка проверяются на реальном профиле; SQL storage adapters меняются, публичные доменные DTO сохраняются.
 
-Откатываемая версия тела обязана читать текущую схему. Если это невозможно, нужен отдельно проверенный recovery/forward-fix план; «вернуть старый binary» недостаточно. До появления данных проверяется backup/restore, а перед допуском действий — E3. Disaster recovery из backup явно называет возможную потерю данных и сверяет effects; не выдаётся за сохранение всей биографии.
+Persisted контракты имеют schemaVersion/release manifest. Rollback body/model/skill сохраняет новую биографию и требует совместимой схемы; восстановление старого DB snapshot — отдельный disaster recovery с явным интервалом потери и reconcile effects. Backup должен охватывать согласованное состояние обеих БД и принятые самостоятельные jobs. Реального PostgreSQL/Redis state ещё нет, поэтому перенос существующих данных сейчас не выполняется.
 
-Протокол может временно останавливать новые действия после сбоя, сохраняя честное состояние вместо неподтверждённого успеха. Это ожидаемая цена последовательного executor.
+Протокол вправе временно останавливать новые действия после отказа, сохраняя честное состояние. Мобильный запуск, UI, синхронизация устройств и перенос native DB-файлов между платформами не включаются этим решением.
 
 ## Проверка и пересмотр
 
-E3 и R1–R4 проверяют два запуска, kill до/после decision commit и после effect до receipt, потерю DB session, остановку старого процесса, несовместимую схему и restart с более новой биографией. Дополнительно: restart worker/Redis/хоста с сохранёнными volumes, rollback постановки, оба окна outbox, неоднозначный enqueue, потерю queue record/result, повтор после очистки, отмену/stale input и сохранение бюджета попыток. Проверять PostgreSQL state, Redis job **и** действительный effect/receipt. После model/skill swap проверить доступность и применение прежнего опыта.
+E3 и R1–R4: два процесса одной cell, недоступное storage/lost lifecycle lock, kill в commit/effect windows, worker/runtime/host restart, оба окна outbox, потерянная queue record/result, исчерпание попыток, cleanup, cancellation и stale input/attempt. Проверяются persisted state, техническая очередь **и** реальный effect/receipt. Vector probe в `state` проверяет load/insert/query/reopen; актуальность и качество retrieval — у владельца при его включении. Mobile port проверяется отдельно только после решения о поставке.
 
-Цена отдельного broker — эксплуатация второго хранилища и recovery на границе PostgreSQL/Redis. Решение пересматривается при multi-host topology, смене backend/профиля сохранности, новом неидемпотентном adapter, изменении data ownership или провале одного из этих сценариев. До evidence протокол является архитектурным обязательством, не проверенной отказоустойчивостью.
+Пересмотр: провал probe/E3, неподдерживаемая extension/ABI, недостаточная производительность writer, новый неидемпотентный adapter, изменение ownership или multi-host/mobile topology. До evidence это архитектурные обязательства, не испытанная отказоустойчивость.
 
 ## Аудит
 

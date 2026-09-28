@@ -11,8 +11,9 @@ The [implementation roadmap](docs/roadmap.md) orders modules, experiments, and i
 ## Architectural foundations
 
 - Independent packages with public contracts, assembled into one runtime with a single decision cycle and executor.
-- A local first deployment using TypeScript, Node.js, pnpm, PostgreSQL, and BullMQ with Redis. Detailed choices and versions belong in the architecture document.
-- Database-neutral contracts in `state`, a typed durable job API in `queue`, and a separate `infrastructure` workspace package for Docker Compose. Connectors stay in their modules; domain job intents and receipts stay with their owners. These packages are planned, not implemented.
+- A local first deployment using TypeScript, Node.js, pnpm, and embedded SQLite, with `sqlite-vec` for vector storage and search. Detailed choices and versions belong in the architecture document.
+- Database-neutral contracts in `state` and a durable job API in `queue`, with platform adapters. Liteque is the desktop queue candidate pending a recovery and lifecycle probe. Domain job intents and receipts stay with their owners; no database server, Redis, Docker Compose, or `infrastructure` package is required. These modules are planned, not implemented.
+- Shared contracts avoid Node-specific dependencies to leave room for future Expo adapters. Mobile execution, background scheduling, and a complete RAG pipeline are outside the current delivery scope.
 - Shared model access through `model-organs`, supporting language models, specialized classifiers, embeddings, and audio models as needed. The baseline local model and hardware profile still need to be selected and evaluated.
 - Exactly one operator, with a two-way CLI in the first version. Other communication channels may be added as the system develops.
 
@@ -29,7 +30,7 @@ pnpm install --frozen-lockfile
 
 Install pnpm with npm for the active Node installation. The project checks the exact Node/pnpm versions and does not download or switch package managers automatically. [pnpm workspace settings](https://pnpm.io/10.x/settings) control this behavior.
 
-Modules will live in `packages/`; it currently contains only `.gitkeep`. The shared TypeScript configuration targets emitted Node.js ESM and declarations with strict checking. Each code module will provide its own compiler/Biome configuration, scripts, and tests as it is implemented. The future `infrastructure` package will validate Compose and real service behavior; TypeScript checks apply only if it contains TypeScript code. Biome owns the current formatting/lint baseline.
+Modules will live in `packages/`; it currently contains only `.gitkeep`. The shared TypeScript configuration targets emitted Node.js ESM and declarations with strict checking. Each code module will provide its own compiler/Biome configuration, scripts, and tests as it is implemented. Biome owns the current formatting/lint baseline.
 
 ```bash
 pnpm format
@@ -42,7 +43,7 @@ pnpm test
 
 These commands delegate to workspace packages. With no modules present, they intentionally fail with “No projects matched the filters”; that is not a failed module test, and an empty workspace is not reported as a passing test suite. The bootstrap is verified with a temporary package that is removed afterward.
 
-PostgreSQL, Redis/BullMQ, containers, model services, AI SDK, CI, and experiments E1–E3 are not configured or run by this bootstrap. The next step is the `core-types` specification in the same task worktree. The shared root `.env` remains operator-owned; task worktrees use a symlink and must not modify it. See the [tooling guide](docs/development-methodology/tooling.md) for package configuration conventions.
+SQLite/queue adapters, vector retrieval, model services, AI SDK, CI, and experiments E1–E3 are not configured or run by this bootstrap. No Expo app or mobile adapter has been created. The next step is the `core-types` specification in the same task worktree. The shared root `.env` remains operator-owned; task worktrees use a symlink and must not modify it. See the [tooling guide](docs/development-methodology/tooling.md) for package configuration conventions.
 
 ## Documentation
 
