@@ -13,5 +13,21 @@
   ],
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.28.2"
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": "24.21.0",
+    "pnpm": "10.34.5"
+  },
+  "scripts": {
+    "format": "pnpm --filter './packages/*' --fail-if-no-match -r run format",
+    "format:check": "pnpm --filter './packages/*' --fail-if-no-match -r run format:check",
+    "lint": "pnpm --filter './packages/*' --fail-if-no-match -r run lint",
+    "typecheck": "pnpm --filter './packages/*' --fail-if-no-match -r run typecheck",
+    "build": "pnpm --filter './packages/*' --fail-if-no-match -r run build",
+    "test": "pnpm --filter './packages/*' --fail-if-no-match -r run test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14",
+    "typescript": "7.0.2"
+  }
 }
