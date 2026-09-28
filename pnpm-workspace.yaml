@@ -1,0 +1,7 @@
+packages:
+  - packages/*
+
+engineStrict: true
+packageManagerStrictVersion: true
+managePackageManagerVersions: false
+saveExact: true
