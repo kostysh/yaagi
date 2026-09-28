@@ -1,5 +1,6 @@
 # ADR-003: Границы действия, моделей и развития
 
+- Document ID: `project.adr.003`
 - Статус: accepted — принято оператором 2026-09-24; граница локальных файлов/queue уточнена 2026-09-28; enforcement ещё не реализован.
 - Дата: 2026-09-28.
 - Основание: [концепция](../polyphony_concept.md), §§4.10, 6.2.1, 7.2–7.6, 9.4, 11.2, 13–16; уточнение оператора 2026-09-24 о негенеративных и аудиомоделях.
@@ -25,7 +26,7 @@ Scheduler/evaluator — субперсональные процессы: они 
 
 В локальном baseline `queue` использует SQLite через адаптеры из [§2.4 архитектуры](../architecture.md#24-адаптеры-state-и-queue). Consumer доверен и отделён от isolated evaluator/candidate code: последний получает только snapshot/scratch, без SQLite files/handles, WAL/SHM, backups и operator socket. Queue payload не выбирает исполняемый код; handlers регистрирует доверенный потребитель. `physiology` проверяет admission, окно, бюджет, отмену и revision перед каждой попыткой и принимает результат по durable ID/hash. Повтор очереди не создаёт нового права действия, а `unknown` action остаётся в протоколе executive/reconcile. Смена адаптеров `state`/`queue` сохраняет эти границы доверия и не расширяет права consumer или evaluator.
 
-Серверных БД и обязательного Docker нет. Каталог cell, файлы state/queue, WAL/SHM, backup и lock доступны только доверенному principal и исключены из evaluator/workspace mounts. SQLite не требует серверного пароля и не шифрует данные автоматически. Native `sqlite-vec` загружает доверенный adapter из фиксированной поставки, без пути/бинарника из model/job input. Секреты не попадают в payload, snapshot или логи. Сам факт отдельного worker-процесса не является sandbox.
+Серверных БД и обязательного Docker нет. Каталог cell, файлы state/queue, WAL/SHM и backup доступны только доверенному principal и исключены из evaluator/workspace mounts. SQLite не требует серверного пароля и не шифрует данные автоматически. Native `sqlite-vec` загружает доверенный adapter из фиксированной поставки, без пути/бинарника из model/job input. Секреты не попадают в payload, snapshot или логи. Сам факт отдельного worker-процесса не является sandbox.
 
 Платформенный вызов обработчика, включая будущий Expo background callback, даёт окно исполнения, но не authorization и не право нового subjective tick/внешнего эффекта. При возобновлении сохраняются проверки revision, admission и cancellation. Mobile/cloud lifecycle и изоляция требуют отдельного решения и evidence в целевом окружении; текущая поставка остаётся desktop.
 
@@ -55,7 +56,7 @@ L2–L3, D1, S1–S3 и H1: содержимое operator message действи
 
 Для локального provider проверить фактическое отсутствие облачного egress. Для workspace adapter — path/symlink escape и secret exposure; для candidate execution — реальные OS/process/network границы. Наличие policy JSON или mock не закрывает эти проверки.
 
-Для queue path S1 и R4 проверяют недоступность SQLite/WAL/SHM/backup/lock и operator socket из evaluator, запрет недоверенной загрузки extension, отказ неизвестному handler/conflicting payload, повторную проверку admission при retry и невозможность повтором job вызвать новый внешний effect. Retention и повтор результата проверяются вместе с owner receipt; Queue event не считается разрешением или каноническим доказательством выполнения.
+Для queue path S1 и R4 проверяют недоступность SQLite/WAL/SHM/backup и operator socket из evaluator, запрет недоверенной загрузки extension, отказ неизвестному handler/conflicting payload, повторную проверку admission при retry и невозможность повтором job вызвать новый внешний effect. Retention и повтор результата проверяются вместе с owner receipt; Queue event не считается разрешением или каноническим доказательством выполнения.
 
 M2 проверяет typed capability/input/output, неподдерживаемую операцию и общий бюджет; для каждого включённого адаптера требуется реальный вызов. Дополнительно проверяется, что модельная оценка не выдаёт права, а медиа не открывают произвольный filesystem/network доступ или воспроизведение вне executive. Эти обязательства применяются при включении соответствующей операции; перечисление семейства не доказывает его работу.
 
