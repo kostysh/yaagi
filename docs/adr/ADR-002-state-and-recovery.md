@@ -2,7 +2,7 @@
 
 - Статус: accepted для SQLite, outbox и переносимого контракта очередей по решению оператора 2026-09-28; desktop backend Liteque — candidate до проверки §8 архитектуры. Recovery требует реального evidence E3.
 - Дата: 2026-09-28.
-- Основание: [концепция](../polyphony_concept.md), §§4.5–4.9, 6.9, 8.7, 10–12, 13.7, 14.1, 16.8, 17; решение оператора о локальной SQLite, векторном расширении, замене BullMQ и будущей совместимости с Expo без требования мобильного запуска.
+- Основание: [концепция](../polyphony_concept.md), §§4.5–4.9, 6.9, 8.7, 10–12, 13.7, 14.1, 16.8, 17; решения оператора о локальной SQLite, векторном расширении, замене BullMQ и сменных адаптерах `state`/`queue` без требования мобильной или облачной поставки.
 - Связанный документ: [архитектура, §§2–6 и 8–10](../architecture.md).
 
 ## Контекст
@@ -13,7 +13,9 @@
 
 ## Решение
 
-SQLite в `state` — каноническое хранилище состояния и истории; отдельная локальная SQLite БД `queue` хранит технические jobs. Доменные adapters участвуют в одном transaction-scoped handle `state`, таблицы и миграции принадлежат владельцам. PostgreSQL schemas/advisory locks не переносятся буквально: используются owner-prefix таблиц и отдельная lifecycle exclusivity. Две БД не имеют общего atomic commit, даже при одинаковом SQL engine. Полный протокол нормативно задан в §5 архитектуры.
+В локальном baseline SQLite adapter `state` предоставляет каноническое хранилище состояния и истории; отдельная локальная SQLite БД `queue` хранит технические jobs. Доменные adapters участвуют в одном transaction-scoped handle `state`, таблицы и миграции принадлежат владельцам. PostgreSQL schemas/advisory locks не переносятся буквально: используются owner-prefix таблиц и отдельная lifecycle exclusivity. Две БД не имеют общего atomic commit, даже при одинаковом SQL engine. Полный протокол нормативно задан в §5 архитектуры.
+
+Механизм сменных адаптеров закреплён в [§2.4 архитектуры](../architecture.md#24-адаптеры-state-и-queue). SQLite-профиль ниже — локальная реализация общих гарантий. Другой `state` adapter обязан сохранять atomic commit, consistent snapshot и эксклюзивность; другой `queue` adapter — durable учёт заданий и результатов, допустимые повторы и защиту от устаревших попыток. Замена адаптера не отменяет owner outbox/receipts и не объединяет commit состояния, доставку и внешний effect в одну транзакцию. Mobile/cloud реализация и выбор её хранилищ отложены.
 
 Desktop driver `state` — `better-sqlite3`; будущий Expo adapter использует `expo-sqlite`. Общий async порт и технические SQL-операции не содержат driver types; синхронный desktop API не становится требованием потребителя. Короткий consistent read snapshot закрывается до reasoning; decision и outcome сохраняются отдельными атомарными транзакциями с проверкой revisions. Факты истории не переписываются, full event sourcing и replay LLM не нужны.
 
@@ -21,7 +23,7 @@ Desktop driver `state` — `better-sqlite3`; будущий Expo adapter исп�
 
 Перед внешним вызовом durable action переходит в `dispatching`. Crash после этой точки создаёт `unknown`, даже если вызов ещё не успел уйти. Без конкретных receipt/idempotency semantics запрещены повтор старого решения и слепой resend. Operator outbox и доставка клиенту остаются отдельными от решения.
 
-Один runtime/effect dispatcher удерживает OS lifecycle lock на canonical directory/agentId. SQLite writer lock сериализует записи, но не запрещает второму процессу внешний effect. При потере storage/exclusivity новые dispatch прекращаются; replacement ждёт подтверждённой остановки прежней process group. TTL/heartbeat/PID-файл не разрешают takeover; multi-host failover не входит в baseline. Будущий platform lifecycle adapter должен сохранить это условие.
+В desktop baseline один runtime/effect dispatcher удерживает OS lifecycle lock на canonical directory/agentId. SQLite writer lock сериализует записи, но не запрещает второму процессу внешний effect. При потере storage/exclusivity новые dispatch прекращаются; replacement ждёт подтверждённой остановки прежней process group. TTL/heartbeat/PID-файл не разрешают takeover; multi-host failover не входит в baseline. Будущий platform lifecycle adapter должен сохранить гарантию единственного исполнителя и запрет небезопасного takeover.
 
 Когда job связана с state commit, владелец сохраняет intent/outbox в той же транзакции `state`; доверенный relay после commit публикует её через `queue` с устойчивым ID/hash. Rollback не публикуется, разрыв commit/enqueue закрывает outbox. `published` не закрывает intent: owner хранит его до принятого результата/отказа/отмены и восстанавливает по очереди и receipts. Самостоятельная техническая job может ставиться прямо в `queue`. [Протокол повторов и очистки](../architecture.md#54-устойчивая-очередь-и-согласование-с-состоянием).
 
