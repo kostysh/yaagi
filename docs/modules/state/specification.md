@@ -2,7 +2,7 @@
 
 - Document ID: `state.spec`
 - Module ID: `state`
-- Статус: draft; спайки и реализация остановлены оператором; production coding blocked до CP1.
+- Статус: draft production contract; S1/S2 разрешены оператором после применимых source-аудитов; production coding blocked до CP1.
 - Дата: 2026-09-29.
 - Источники: [концепция §§4.5–4.9, 12, 14.1, 16–17](../../polyphony_concept.md), [архитектура §§2–6, 7.3, 8–10](../../architecture.md), [ADR-001](../../adr/ADR-001-module-boundaries.md), [ADR-002](../../adr/ADR-002-state-and-recovery.md); принятый оператором `state-first-increment.v3` с последующим решением 2026-09-29: жизненный цикл и единственность инстанса агента принадлежат будущему `runtime`, не `state`.
 - Рамочная Issue: [#26](https://github.com/kostysh/yaagi/issues/26). [План](implementation-plan.md).
@@ -25,11 +25,13 @@ Capability — наблюдаемые гарантии хранения чере
 
 Обязательные операции общего async порта: `readSnapshot`, `transact`, `checkSchema`. Входы — доверенная конфигурация, ожидаемая schema, callbacks владельцев и ограничение операции отменой/deadline. Выходы — результаты callbacks владельцев и `Result<T,E>`; SQL/driver/native types в общий порт не входят. Владелец проверяет свою expectedRevision внутри общего commit; универсальный revision carrier или доменный протокол конфликтов в `state` не вводится.
 
-Exports: side-effect-free `./contracts`; отдельный технический `./sqlite` с нормализованными SQL/BLOB операциями для owners; отдельный Node entrypoint для `better-sqlite3` и локальных файлов БД. Точные signatures, error shape и migration unit намеренно draft до CP1. Ни один исполнитель production-кода не выбирает их самостоятельно.
+Exports: side-effect-free `./contracts`; отдельный технический `./sqlite` с нормализованными SQL/BLOB операциями для owners; отдельный Node entrypoint для встроенного `node:sqlite` (`DatabaseSync`) и локальных файлов БД. Замена `better-sqlite3` принята оператором 2026-09-29, это не сравнение кандидатов. Node API остаётся внутри адаптера. Точные signatures, error shape и migration unit намеренно draft до CP1. Ни один исполнитель production-кода не выбирает их самостоятельно.
 
-Drizzle принят оператором независимо от vector probe. Исследуется локальный `drizzle-orm/sqlite-proxy` callback без HTTP. Векторный raw SQL обходит только ORM, а не scope/connection/transaction. В `state` Zod 4 проверяет реально необходимые config/technical metadata; DTO и их Zod-валидация принадлежат владельцу, а не универсальному валидатору `state`. Таблица не является автоматически доменным DTO. Нужные общие примитивы добавляются в `core-types` только после согласования реального потребителя; сейчас используется существующий `Result`.
+Drizzle принят оператором независимо от vector probe. Способ подключения к `DatabaseSync` уточняет существующий S1; исходный механизм — локальный `drizzle-orm/sqlite-proxy` callback без HTTP. Векторный raw SQL обходит только ORM, а не scope/connection/transaction. В `state` Zod 4 проверяет реально необходимые config/technical metadata; DTO и их Zod-валидация принадлежат владельцу, а не универсальному валидатору `state`. Таблица не является автоматически доменным DTO. Нужные общие примитивы добавляются в `core-types` только после согласования реального потребителя; сейчас используется существующий `Result`.
 
 Первая платформа — Linux x64, Node 24.21.0, pnpm 10.34.5; CI Ubuntu 24.04. Точные зависимости/SQLite ABI закрепляются по S1/S2. Производные ошибки драйвера не выдаются в общем контракте; секреты, SQL payload и локальные данные не попадают в публичную диагностику.
+
+Оператор проверил наличие `node:sqlite` и SQLite `3.53.4`. `sqlite-vec` документирует поддержку этого драйвера; фактическая совместимость выбранного расширения с этой SQLite ещё не подтверждена. S1/S2 сохраняют все прежние oracle, включая BLOB, backup и reopen, без дополнительных спайков или framework. Блокирующая несовместимость возвращается на CP1 с конкретным результатом и вариантами, не разрешает молча вернуть `better-sqlite3`.
 
 ## Требования и проверка
 
@@ -59,7 +61,7 @@ Drizzle принят оператором независимо от vector probe
 
 R13 снят решением оператора: управление единственностью инстанса не входит в `state`; остальные ID сохранены. Порядок «получить DTO → завершить snapshot → выполнить model/external work» соблюдает потребитель/runtime. `state` не анализирует DTO и не контролирует чужие model/network calls.
 
-Отмена синхронного SQL не доказывается `Promise.race`. S2 измеряет проверяемую cooperative семантику; недостижимое требование возвращается на CP1, не превращается в скрытый worker/scheduler. Успех транзакции имеет одну точку commit; поздняя отмена не должна выдумывать rollback уже подтверждённого commit. Точный порядок и классификация ошибок фиксируются после evidence.
+`DatabaseSync` выполняет SQL синхронно; обёртка Promise этого не меняет. Отмена синхронного SQL не доказывается `Promise.race`. S2 измеряет проверяемую cooperative семантику; недостижимое требование возвращается на CP1, не превращается в скрытый worker/scheduler. Успех транзакции имеет одну точку commit; поздняя отмена не должна выдумывать rollback уже подтверждённого commit. Точный порядок и классификация ошибок фиксируются после evidence.
 
 ## Сценарии приёмки
 
@@ -94,6 +96,6 @@ R13 снят решением оператора: управление един�
 
 TypeScript 7 проверяет/собирает ESM и declarations; Biome форматирует, lint включает Biome + ESLint + package boundary. Package `test` вызывает `test:integration`; существующий root/CI остаётся рекурсивным. Временные спайки имеют собственные точные зависимости и воспроизводимые команды, но не входят в production exports.
 
-Сейчас выполняется только исправление документов: спайки и реализация остановлены оператором. Возобновление S1/S2 требует явной команды продолжить и применимых Concept/Spec/Security аудитов исправленного снимка. Факты спайков возвращаются в архитектуру и эту спецификацию. Открыты: точные signatures, migration unit/history verification, cancel/error semantics и ограниченный M1 contour. CP1 сохраняется: evidence, auditable proposal и явное approval оператора; production-код не начинается до этого.
+Оператор разрешил продолжить S1/S2, затем принял замену драйвера на `node:sqlite`. Применимые Concept/Spec/Security аудиты исправленного снимка сохраняются. Факты спайков возвращаются в архитектуру и эту спецификацию. Открыты: точные signatures, migration unit/history verification, cancel/error semantics и ограниченный M1 contour. CP1 сохраняется: evidence, auditable proposal и явное approval оператора; production-код не начинается до этого.
 
 Аудит: Concept Conformance для spec; Security для trust/data boundaries. Снимки и результаты фиксируются в плане/CP1 evidence; наличие этого документа не означает прохождения аудита или спайков.
