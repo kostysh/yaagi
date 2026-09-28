@@ -49,6 +49,9 @@ Follow the [Git workflow](docs/development-methodology/git-and-github.md).
 Never push directly or force-push to either branch. Task worktrees live under
 `.worktree/` in the main checkout. One task owns one branch and worktree.
 
+Create, publish, move, or delete Git tags only on the operator's direct request.
+A merge or stable baseline decision does not authorize creating or publishing a tag.
+
 Each worktree uses an ignored `.env` symlink to the main checkout's `.env`.
 Treat the target as operator-owned and read-only. Do not copy, print, or commit
 its contents. Inspect only symlink metadata when verifying setup.
