@@ -4,9 +4,9 @@ YAAGI (Yet Another AGI) is a project to build Polyphony: an autonomous agent wit
 
 ## Project status
 
-The repository contains the concept, modular architecture, architectural decision records, implementation roadmap, development methodology, and a minimal TypeScript workspace. The agent runtime and modules have not been implemented yet.
+The repository contains the concept, modular architecture, architectural decision records, implementation roadmap, development methodology, and a verified TypeScript workspace. The first package, `@polyphony/core-types`, now exposes the compile-time-only `Result<T, E>` contract. No agent runtime exists yet, and the broader `core-types` roadmap step is not complete.
 
-The [implementation roadmap](docs/roadmap.md) orders modules, experiments, and integration checks. The next module is `core-types`: its specification and implementation plan will be written immediately before development. Other module specifications follow when their turn comes.
+The [implementation roadmap](docs/roadmap.md) orders modules, experiments, and integration checks. The current `core-types` increment has its own [specification](docs/modules/core-types/specification.md) and [implementation plan](docs/modules/core-types/implementation-plan.md). Identifiers, time, references, DTOs, error codes, helpers, validators, and runtime behavior remain unimplemented; later types will be added only when a real consumer requires them.
 
 ## Architectural foundations
 
@@ -30,7 +30,7 @@ pnpm install --frozen-lockfile
 
 Install pnpm with npm for the active Node installation. The project checks the exact Node/pnpm versions and does not download or switch package managers automatically. [pnpm workspace settings](https://pnpm.io/10.x/settings) control this behavior.
 
-Modules will live in `packages/`; it currently contains only `.gitkeep`. The shared TypeScript configuration targets emitted Node.js ESM and declarations with strict checking. Each code module will provide its own compiler/Biome configuration, scripts, and tests as it is implemented. Biome owns the current formatting/lint baseline.
+Modules live in `packages/`; `packages/core-types` is the first one. The shared TypeScript configuration targets emitted Node.js ESM and declarations with strict checking. Each TypeScript package provides its own compiler/Biome configuration, scripts, and tests. Biome alone handles formatting; linting runs Biome, ESLint, and the applicable package-boundary check.
 
 ```bash
 pnpm format
@@ -41,9 +41,11 @@ pnpm build
 pnpm test
 ```
 
-These commands delegate to workspace packages. With no modules present, they intentionally fail with “No projects matched the filters”; that is not a failed module test, and an empty workspace is not reported as a passing test suite. The bootstrap is verified with a temporary package that is removed afterward.
+These commands delegate to workspace packages. For `core-types`, they verify formatting, both lint contours, its level-0 boundary, TypeScript 7 typechecking and build, compile-time contract fixtures, declarations, and package resolution as ESM.
 
-SQLite/queue adapters, vector retrieval, model services, AI SDK, CI, and experiments E1–E3 are not configured or run by this bootstrap. No Expo app or mobile adapter has been created. The next step is the `core-types` specification in the same task worktree. The shared root `.env` remains operator-owned; task worktrees use a symlink and must not modify it. See the [tooling guide](docs/development-methodology/tooling.md) for package configuration conventions.
+GitHub Actions runs the same root commands for pull requests and subsequent pushes to `develop` or `master`, using the frozen lockfile. Recursive pnpm execution runs each command in every workspace package that defines the corresponding script.
+
+The ESM import smoke test proves package resolution only: `core-types` exports no runtime values. SQLite/queue adapters, vector retrieval, model services, AI SDK, and experiments E1–E3 are not configured or running. No Expo app or mobile adapter has been created. The shared root `.env` remains operator-owned; task worktrees use a symlink and must not modify it. See the [tooling guide](docs/development-methodology/tooling.md) for package configuration conventions.
 
 ## Documentation
 

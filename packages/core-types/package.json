@@ -1,0 +1,29 @@
+{
+  "name": "@polyphony/core-types",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "pnpm run lint:biome && pnpm run lint:eslint && pnpm run lint:boundary",
+    "lint:biome": "biome lint .",
+    "lint:eslint": "eslint .",
+    "lint:boundary": "node ./scripts/check-boundary.mjs",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "build": "tsc --project tsconfig.json",
+    "test": "pnpm run build && pnpm run test:types && pnpm run test:import",
+    "test:types": "tsc --project tsconfig.test.json",
+    "test:import": "node ./scripts/import-smoke.mjs"
+  }
+}
