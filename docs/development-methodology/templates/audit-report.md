@@ -7,18 +7,18 @@
 - **Дата:** YYYY-MM-DD
 - **Document ID:** `<module-id>.validation.<task-id>.<scope-id>.<N>`
 - **Module ID:** `<module-id; для общепроектного документа — project>`
-- **Task ID:** `gh-<issue-number>`
+- **Task ID:** `<gh-<issue-number> | local-<task-slug>>`
 - **Scope ID:** `<artifact-scope>-<audit-kind>`
 - **Путь отчёта:** `docs/validation/<module-id>/<task-id>.<scope-id>.<N>.md`
 - **Объект:** `<путь или иной точный идентификатор>`
 - **Audit commit:** `<полный hash проверенного commit; обязательное поле>`
 - **Вид аудита / skill:** `<Concept Conformance | Spec Conformance | Security | другое>`
 - **Аудитор:** `<идентификатор субагента>`
-- **Модель / reasoning:** `gpt-6-astra` / `<high | xhigh>`
+- **Модель / reasoning:** `<явная пара из agent-policy.md для фактической сложности>`
 - **Номер попытки:** `<N>`
 - **Нормализованный статус:** `<FAIL | BLOCKED>`
 - **Исходный verdict аудитора:** `<verdict>`
-- **PR / Issue:** `<ссылка>`
+- **PR / Issue:** `<ссылка или «локальная методологическая задача без Issue»>`
 - **Предыдущий отчёт:** `<ссылка или «нет»>`
 
 ## Контекст

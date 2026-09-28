@@ -21,7 +21,7 @@ GitHub Issues и элементы GitHub Project не входят в эту и�
 
 ## Идентификаторы документов
 
-Канонические проектные документы получают стабильный `Document ID` по схеме:
+Политика принята оператором 2026-09-28. Канонические проектные документы получают стабильный `Document ID` по схеме:
 
 `<owner>.<kind>[.<local-id>]`
 
@@ -35,8 +35,9 @@ GitHub Issues и элементы GitHub Project не входят в эту и�
 | --- | --- | --- |
 | Концепция | `project.concept` | `docs/polyphony_concept.md` |
 | Архитектура | `project.architecture` | `docs/architecture.md` |
+| Дорожная карта | `project.roadmap` | `docs/roadmap.md` |
 | Раздел методологии | `project.methodology.<topic>` | `docs/development-methodology/<topic>.md` |
-| ADR | `project.adr.<NNNN>` | `docs/adr/ADR-<NNNN>-<slug>.md` |
+| ADR | `project.adr.<NNN>` | `docs/adr/ADR-<NNN>-<slug>.md` |
 | Спецификация модуля | `<module-id>.spec` | `docs/modules/<module-id>/specification.md` |
 | План имплементации | `<module-id>.plan` | `docs/modules/<module-id>/implementation-plan.md` |
 | Алгоритм | `<module-id>.algorithm.<algorithm-id>` | `docs/modules/<module-id>/algorithms/<algorithm-id>.md` |
@@ -44,9 +45,11 @@ GitHub Issues и элементы GitHub Project не входят в эту и�
 
 `module-id` — короткий смысловой kebab-case идентификатор. Он назначается при фиксации модуля в архитектуре и после принятия не меняется вместе с названием. `project` зарезервирован как `module-id` для общепроектной области. При разделении или объединении модулей старые ID не переиспользуются; новые границы получают новые ID.
 
+Номер ADR в ID повторяет номер в существующем имени файла: например, `project.adr.001` для `ADR-001-module-boundaries.md`. Принятие политики не требует переименования ADR или изменения действующих ссылок.
+
 Для validation-отчётов:
 
-- `<task-id>` имеет вид `gh-<issue-number>` и связывает отчёт с GitHub Issue, не превращая Issue в источник требований; локальный ID задачи в плане имплементации остаётся независимым;
+- `<task-id>` имеет вид `gh-<issue-number>` при наличии реальной delivery Issue. Для методологической задачи без Issue используется стабильный `local-<task-slug>`, например `local-rethink`; Issue только ради имени отчёта не создаётся. После появления Issue первоначальный ID сохраняется, а ссылка добавляется отдельно. Локальный ID задачи в плане имплементации остаётся независимым;
 - `<scope-id>` имеет вид `<artifact-scope>-<audit-kind>`, например `spec-concept`, `plan-spec`, `code-security` или `methodology-audits-concept`;
 - `<N>` — последовательный номер отрицательного результата для одной комбинации `module-id`, `task-id` и `scope-id`, начиная с `1`.
 
@@ -75,6 +78,7 @@ GitHub Issues и элементы GitHub Project не входят в эту и�
 ## Язык
 
 - Корневой `README.md` ведётся только на английском языке.
+- Общие инструкции агентам в корневом `AGENTS.md` ведутся на английском языке; проектная политика агентов остаётся русскоязычным документом методологии.
 - Документация разработки создаётся на русском языке.
 - Имена API, типов, команд и другие технические идентификаторы сохраняются без перевода.
 - Англоязычные версии остальных документов создаются только по прямому запросу оператора.

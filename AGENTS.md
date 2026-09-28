@@ -1,163 +1,92 @@
-# Инструкции для агентов
+# Repository instructions
 
-Этот файл действует на весь репозиторий. Более близкий к изменяемому коду `AGENTS.md` или `AGENTS.override.md`, если он появится в подкаталоге, может уточнять правила только для своей области.
+These instructions apply to the entire repository. A closer `AGENTS.md` or
+`AGENTS.override.md` may refine rules within its directory. Explicit operator
+instructions take precedence over project recommendations and skill guidance;
+system and developer constraints remain binding.
 
-## Быстрый старт
+## Start here
 
-Перед изменениями:
+1. Work in the task branch and worktree. Read `git status --short --branch` and
+   preserve existing changes.
+2. Read the authoritative sources and affected methodology before changing files.
+3. Inspect current files, scripts, and dependencies. Choose the smallest change
+   that delivers the requested outcome and a check that could disprove it.
+4. Before delegation, read the operational sections of the
+   [agent policy](docs/development-methodology/agent-policy.md). It owns model
+   routing, reasoning, reuse, concurrency, authority, and assistant lifecycle.
 
-1. Убедитесь, что работа ведётся в отдельном task-worktree и task-ветке, а не в основном checkout.
-2. Выполните `git status --short --branch` и сохраните все существующие изменения пользователя.
-3. Прочитайте канонический источник для задачи и затронутые документы нижележащих уровней.
-4. Проверьте реальные файлы, scripts и зависимости; не полагайтесь на устройство предыдущей реализации.
-5. Ограничьте изменение запрошенным результатом и выберите самую простую достаточную реализацию.
+YAAGI implements Polyphony: one long-lived agent with a continuous identity,
+local model ecology, and controlled reversible development. The concept,
+architecture, ADRs, roadmap, and minimal TypeScript workspace are present.
+Runtime modules and product tests are not implemented. The `v0-archived` tag is
+historical material, not a source of requirements for the new implementation.
 
-Явная инструкция оператора имеет приоритет над проектными рекомендациями и skill-guidance в пределах задачи. Системные ограничения среды продолжают действовать. Если правило или skill вынуждает остановиться либо изменить направление работы, укажите точный источник правила и причину.
+## Sources and documentation
 
-## Проект и текущее состояние
+The source hierarchy is canonical concept → architecture/ADRs → module
+specification → module implementation plan → essential algorithms → code/tests.
+The [roadmap](docs/roadmap.md) orders work without adding requirements. Issues
+and Project entries are navigation. Stop only the dependent work when authority
+or a material requirement conflicts; resolve the decision at its owning level.
 
-Yaagi — репозиторий разработки «Полифонии»: одного долгоживущего цифрового организма с непрерывностью личности, локальной модельной экологией и управляемым обратимым развитием.
+- [Canonical concept](docs/polyphony_concept.md)
+- [Architecture](docs/architecture.md) and [ADRs](docs/adr/)
+- [Methodology and navigation](docs/development-methodology/README.md)
+- [Document IDs and language](docs/development-methodology/documentation.md)
+- [Package tooling](docs/development-methodology/tooling.md)
 
-Проект перезапущен. Техническая архитектура и новая реализация пока не определены. Сейчас репозиторий содержит концепцию, методологию и подготовительные файлы. Не выдавайте документацию, шаблоны или scaffolding за работающую возможность.
+Use the accepted stable Document ID scheme for new or materially changed
+canonical documents; do not rename existing artifacts merely to adopt IDs.
+`README.md` and repository-wide agent instructions are English. Development
+documentation is Russian; other translations require an operator request. The
+Russian concept is authoritative.
 
-Предыдущая реализация сохранена в теге `v0-archived`. Используйте её только как исторический материал по прямому основанию из текущей задачи; она не является источником требований, архитектуры или зависимостей для новой реализации.
+## Git and local resources
 
-## Источники истины
+Follow the [Git workflow](docs/development-methodology/git-and-github.md).
+`develop` is the integration branch; `master` accepts PRs only from `develop`.
+Never push directly or force-push to either branch. Task worktrees live under
+`.worktree/` in the main checkout. One task owns one branch and worktree.
 
-Приоритет проектных решений сверху вниз:
+Each worktree uses an ignored `.env` symlink to the main checkout's `.env`.
+Treat the target as operator-owned and read-only. Do not copy, print, or commit
+its contents. Inspect only symlink metadata when verifying setup.
 
-1. [`docs/polyphony_concept.md`](docs/polyphony_concept.md) — единственная каноническая концепция.
-2. `docs/architecture.md` и `docs/adr/` — утверждённая техническая архитектура и отдельные решения, когда они появятся.
-3. `docs/modules/<module-id>/specification.md` — требуемое наблюдаемое поведение модуля.
-4. `docs/modules/<module-id>/implementation-plan.md` — задачи, зависимости и порядок реализации модуля.
-5. `docs/modules/<module-id>/algorithms/` — существенные алгоритмические решения.
-6. Код и тесты — реализация и доказательства поведения.
+Authorized work includes the local commits required to create stable audit and
+remediation snapshots. Such a commit does not grant publication authority.
+Push, PR, merge, history rewriting, and destructive cleanup require applicable
+operator authorization; reuse authorization already given for this task.
+Preserve unrelated changes and resources. After an authorized merge, verify
+refs before ordinary safe branch/worktree cleanup, unless the operator asked to
+retain the worktree.
 
-Нижележащий источник не может молча менять вышестоящий. При конфликте остановите зависимую часть работы и исправьте или согласуйте документ того уровня, которому принадлежит решение.
+Use `gh` and `gh-utility` for GitHub. Do not run `gh auth login`, `logout`,
+`refresh`, `switch`, `setup-git`, or retrieve tokens. Verify every GitHub mutation
+with a separate read. Do not create an Issue solely to obtain an audit ID.
 
-GitHub Issues и GitHub Project содержат ссылки, статус и краткий контекст. Они не заменяют спецификации и планы.
+## Implementation and verification
 
-Основная навигация:
+Apply `implementation-discipline` for implementation and substantive document
+changes. Specify observable module behavior at public boundaries. Use one
+specification and one compact plan per module; write them when that module is
+next. Follow [module rules](docs/development-methodology/modules.md) and
+[implementation rules](docs/development-methodology/implementation.md).
 
-- [`README.md`](README.md) — краткое описание проекта;
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — точка входа для контрибьюторов;
-- [`docs/development-methodology/README.md`](docs/development-methodology/README.md) — полная методология разработки;
-- [`docs/development-methodology/templates/`](docs/development-methodology/templates/) — шаблоны проектных документов;
-- [`docs/polyphony_concept.en.md`](docs/polyphony_concept.en.md) — английский перевод концепции, не канонический источник.
+Run checks proportional to the change plus mandatory
+[quality gates](docs/development-methodology/quality.md). Root package scripts
+delegate to `packages/*`; with no packages they intentionally return an error.
+Do not describe an empty test set, scaffolding, or documentation as runtime
+capability. Keep README claims consistent with implemented behavior.
 
-## Структура репозитория
+Follow the [audit policy](docs/development-methodology/audits.md) before merge:
+independent reviewers read committed scoped snapshots without inherited context;
+self-review does not replace a required audit. Model/reasoning selection comes
+only from the agent policy. Preserve negative reports and verify remediation on
+a new commit. Reuse a suitable reviewer for delta review; investigate the root
+cause after three consecutive failures of one document.
 
-Текущая структура минимальна:
-
-- `docs/` — концепция и методология;
-- `package.json` — корневые метаданные pnpm-проекта; сейчас без зависимостей и scripts;
-- `.worktree/` — локальные task-worktree, исключённые из Git;
-- корневой `.env` — локальное окружение оператора, не коммитится;
-- `README.md`, `CONTRIBUTING.md`, `LICENSE` — корневые документы.
-
-Целевая структура после начала реализации:
-
-- `packages/` — pnpm workspaces;
-- каждый пакет хранит собственные тесты, конфигурации форматтера, линтера и typechecker, а также scripts для их запуска;
-- корневой `package.json` только рекурсивно координирует одноимённые package-level scripts средствами pnpm;
-- `docs/architecture.md`, `docs/adr/` и `docs/modules/` создаются по мере появления утверждённых решений, а не заранее.
-- `docs/validation/<module-id>/` хранит отчёты об отрицательных результатах аудитов; для общепроектных документов используется `module-id` `project`.
-
-Не придумывайте отсутствующие команды, пакеты, каталоги, стек или архитектуру. Перед запуском команды сначала проверьте соответствующий `package.json` и актуальные документы.
-
-## Язык документов
-
-- Вся документация разработки создаётся и изменяется на русском языке.
-- Англоязычный документ или перевод создаётся только по прямому запросу оператора.
-- Имена API, типов, файлов, команд, параметров и другие технические идентификаторы не переводятся.
-- При наличии перевода в документах должно быть явно указано, какая версия каноническая.
-- Комментарии и пользовательский текст в коде следуют требованиям соответствующей спецификации; эта языковая политика сама по себе не задаёт язык runtime-интерфейсов.
-
-Подробности: [`docs/development-methodology/documentation.md`](docs/development-methodology/documentation.md).
-
-Канонические проектные документы используют стабильный `Document ID` вида `<owner>.<kind>[.<local-id>]`. Module ID — неизменяемый смысловой kebab-case slug; `project` зарезервирован для общепроектной области. GitHub Issue используется в validation-путях как `task-id` вида `gh-<issue-number>`. Заголовки, даты, статусы и версии в идентификатор не входят. Полная схема и исключения определены в документе по ссылке выше.
-
-## Worktree и Git
-
-- `develop` — default branch и основная ветка интеграции.
-- `master` — стабильная ветка; PR в неё разрешён только из `develop`.
-- Прямые и force push в `develop` и `master` запрещены.
-- Одна задача использует одну task-ветку и один worktree.
-- Все worktree располагаются в `.worktree/<task>` основного checkout и создаются от актуальной `origin/develop`.
-- В каждом worktree `.env` должен быть симлинком `../../.env` на корневой файл. Общий `.env` считается read-only для агента; не копируйте, не коммитьте и не выводите его содержимое.
-
-Создание worktree выполняется из основного checkout:
-
-```bash
-git fetch origin develop
-git worktree add .worktree/<task> -b <task-branch> origin/develop
-ln -s ../../.env .worktree/<task>/.env
-```
-
-После создания проверьте ветку, чистоту состояния и разрешение `.env`. После merge и проверки результата удалите worktree штатной командой Git, затем безопасно удалите завершённую локальную ветку.
-
-Не выполняйте разрушительные Git-команды и не перезаписывайте чужие изменения. Запрос на изменение файлов сам по себе не разрешает commit, push, создание PR или merge — для публикации и изменения истории требуется явное поручение оператора.
-
-Полный процесс: [`docs/development-methodology/git-and-github.md`](docs/development-methodology/git-and-github.md).
-
-## GitHub Issues и Project
-
-Типовой поток:
-
-`Issue → task-worktree → task-ветка → реализация и проверки → аудит → PR в develop`
-
-Статусы проекта: `Backlog`, `Ready`, `In progress`, `In review`, `Blocked`, `Done`.
-
-Для каждого модуля создаётся одна рамочная Issue со ссылками на спецификацию и план. Для реализуемых функций или поведений создаются sub-issues, связанные с задачами плана. Требования, BDD-сценарии и сам план в Issues не копируются.
-
-Для GitHub используйте `gh` и применимый skill `gh-utility`. Авторизация уже управляется оператором: агенту запрещены `gh auth login`, `logout`, `refresh`, `switch`, `setup-git` и получение токена. После любой GitHub-мутации отдельно прочитайте ресурс через `gh` и подтвердите фактическое состояние.
-
-## Проектирование и реализация
-
-- Описывайте модуль как ограниченную способность с наблюдаемым поведением, а не как каталог, слой, класс или набор функций.
-- Фиксируйте требования на публичной границе модуля. Не проектируйте внутреннюю реализацию в спецификации.
-- Используйте `Дано / Когда / Тогда` для значимых сценариев поведения. Gherkin и отдельный BDD-фреймворк не обязательны.
-- Для каждого модуля поддерживайте одну спецификацию и один компактный план имплементации. Параллельная работа допустима после фиксации общих контрактов.
-- Создавайте отдельное описание алгоритма только для нетривиальной логики с важными инвариантами, завершением, сложностью или пограничными случаями.
-- При имплементации, исправлении или рефакторинге обязательно применяйте skill `Implementation Discipline` вместе с нужными доменными skills.
-- Реализуйте только текущую спецификацию. Не добавляйте расширяемость, зависимости, абстракции или конфигурацию для гипотетического будущего.
-- Сохраняйте изменения небольшими, обозримыми и обратимыми; не смешивайте несвязанный рефакторинг с функциональной задачей.
-
-Подробности: [`modules.md`](docs/development-methodology/modules.md) и [`implementation.md`](docs/development-methodology/implementation.md).
-
-## Проверки, тесты и CI
-
-- Запускайте минимальный набор проверок, способный опровергнуть заявленный результат, плюс обязательные проверки проекта.
-- Выбирайте тесты по поведению и риску: unit, contract, integration, BDD/acceptance, end-to-end и специализированные проверки применяются только на подходящих границах.
-- Для исправленного дефекта добавляйте воспроизводящий тест, когда это технически оправдано.
-- PR-проверки должны быть быстрыми и точными для затронутых пакетов; merge-проверки — полными для монорепозитория.
-- Не считайте форматирование, линт, typecheck, coverage или наличие файлов самостоятельным доказательством работающей возможности.
-- Не скрывайте flaky-тесты retry-механизмом.
-
-До появления scripts проверяйте документацию статически и не заявляйте, что runtime-проверки выполнены. Политика качества: [`docs/development-methodology/quality.md`](docs/development-methodology/quality.md).
-
-## Аудиты
-
-Следуйте [`docs/development-methodology/audits.md`](docs/development-methodology/audits.md):
-
-- перед аудитом проверяемые изменения коммитятся; полный hash commit передаётся аудитору как неизменяемая база и обязательно включается в каждый отрицательный отчёт;
-- все аудиты выполняет отдельный субагент на `gpt-6-astra` с reasoning `high` или `xhigh`, запущенный с `fork_turns: "none"`; запрашивающий агент передаёт ему самодостаточный scope, источники, audit commit и критерии;
-- значимые изменения концепции, методологии, архитектуры, спецификаций, планов и алгоритмов проходят соответствующий conformance review до merge;
-- код проходит `Spec Conformance Reviewer` и обязательный `Security Reviewer`;
-- документ, меняющий границы доверия, доступ, секреты или персональные данные, дополнительно проходит security review;
-- каждый `FAIL`, `BLOCKED` или эквивалентный отрицательный verdict фиксируется отдельным отчётом по [`audit-report.md`](docs/development-methodology/templates/audit-report.md) в `docs/validation/<module-id>/<task-id>.<scope-id>.<N>.md`;
-- после исправления изменения снова коммитятся, а тот же субагент проверяет только дельту между прежним audit commit и новым remediation commit; неизменённая уже проверенная область не пересматривается;
-- после трёх последовательных `FAIL` одного документа агент сообщает оператору и проводит расширенное исследование первопричины до следующего исправления;
-- исправления опечаток и ссылок не требуют повторного аудита.
-
-Аудит проверяет стабильный снимок и не заменяет тесты. Результат связывается с PR или Issue; отрицательные отчёты сохраняются для последующего ретроспективного анализа.
-
-## Критерий завершения задачи
-
-Перед отчётом о готовности:
-
-1. Сопоставьте результат с запросом, актуальной спецификацией и вышестоящими источниками.
-2. Проверьте только затронутую область командами, реально существующими в репозитории.
-3. Просмотрите diff, удалите случайные и несвязанные изменения, выполните `git diff --check`.
-4. Укажите выполненные проверки и оставшиеся ограничения. Не называйте неподтверждённую возможность реализованной.
-5. Остановитесь после достижения запрошенного результата; не добавляйте попутные улучшения без нового основания.
+Before completion, review the scoped diff, run `git diff --check`, account for
+assistants and task-owned resources, and report verified results, remaining
+limits, branch/HEAD, and any deliberately retained work. Stop once the requested
+outcome is achieved.
