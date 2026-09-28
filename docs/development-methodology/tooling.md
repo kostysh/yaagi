@@ -1,5 +1,7 @@
 # Локальные инструменты
 
+- Document ID: `project.methodology.tooling`
+
 Минимальная среда использует baseline [архитектуры, §2.1](../architecture.md#21-проверенный-технологический-baseline). Первый пакет `@polyphony/core-types` реализует только compile-time контракт `Result<T, E>`; runtime Полифонии и продуктовых тестов пока нет. SQLite adapters, векторное расширение, очереди, модели, AI SDK и CI будут подготовлены отдельными последующими задачами по [roadmap](../roadmap.md).
 
 ## Установка
