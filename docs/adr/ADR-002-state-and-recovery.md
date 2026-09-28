@@ -19,6 +19,10 @@
 
 Desktop driver `state` — `better-sqlite3`; будущий Expo adapter использует `expo-sqlite`. Общий async порт и технические SQL-операции не содержат driver types; синхронный desktop API не становится требованием потребителя. Короткий consistent read snapshot закрывается до reasoning; decision и outcome сохраняются отдельными атомарными транзакциями с проверкой revisions. Факты истории не переписываются, full event sourcing и replay LLM не нужны.
 
+Уточнение оператора 2026-09-29: Drizzle принят для adapters владельцев независимо от совместимости векторного DSL. Raw vector SQL может обходить ORM, но использует тот же transaction-scoped executor и connection `state`. Доменные DTO/validators Zod не выводятся автоматически из таблиц. Универсального repository или заранее спроектированной модели памяти это решение не вводит.
+
+Владельцы сохраняют схемы и семантику data transforms; composition root собирает одну цепочку подготовленных миграций на физическую БД. Drizzle Kit генерирует проверяемые и коммитящиеся SQL artifacts; `vec0` допускает custom SQL без неподтверждённого auto-diff shadow tables. Применённая история неизменяема, применение явно предшествует рабочей нагрузке. `state` исполняет технические apply/journal/check; transaction/compatibility механизм уточняют S1/S2 и CP1 из [плана `state`](../modules/state/implementation-plan.md). Первый evidence-контур — Linux x64, не обещание всех desktop/mobile платформ.
+
 `sqlite-vec` — выбранное расширение для хранения/поиска векторов. `state` отвечает за доверенную загрузку и совместимость, доменный владелец — за retrieval, актуальность индекса и provenance. Индексы восстанавливаемы из источников, связаны с revision и embedding model/version/dimension; embeddings производит `model-organs` при включении соответствующей способности. Векторная БД не является готовым RAG и не заменяет каноническую биографию. [SQLite-vec](https://alexgarcia.xyz/sqlite-vec/), [поддержка Expo](https://docs.expo.dev/versions/latest/sdk/sqlite/).
 
 Перед внешним вызовом durable action переходит в `dispatching`. Crash после этой точки создаёт `unknown`, даже если вызов ещё не успел уйти. Без конкретных receipt/idempotency semantics запрещены повтор старого решения и слепой resend. Operator outbox и доставка клиенту остаются отдельными от решения.
@@ -52,6 +56,7 @@ Desktop использует постоянный consumer, пока работ�
 - PostgreSQL + BullMQ/Redis: заменены текущим решением оператора; `pg-boss` не возвращается в baseline.
 - Одна DB-транзакция на весь тик, включая модель/tools: удерживает writer и всё равно не делает внешний effect атомарным.
 - Независимые owner commits: дают частичное субъективное состояние; сохраняется общий decision commit.
+- Единый универсальный CRUD/repository в `state`: заставляет заранее моделировать ещё не спроектированных владельцев; вместо него приняты технические guarantees и owner-local adapters. Drizzle экономит типизированный SQL/schema tooling, но не заменяет границы модуля и проверку транзакций.
 - Прямой enqueue до/после state commit без outbox: исполняет откатившееся намерение либо теряет его при crash между операциями.
 - Exactly-once эффекты или takeover по истечению lease: queue lease не останавливает старый effect, необходимы owner receipts и executive/reconcile.
 - Единый Node worker API для desktop и Expo: требует недоступного постоянного фонового процесса; объединяем семантику, а не platform mechanics.
