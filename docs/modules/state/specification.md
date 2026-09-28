@@ -2,7 +2,7 @@
 
 - Document ID: `state.spec`
 - Module ID: `state`
-- Статус: draft production contract; S1/S2 разрешены оператором после применимых source-аудитов; production coding blocked до CP1.
+- Статус: CP1 proposal; локальные S1/S2 выполнены, production contract ожидает согласования; production coding blocked до CP1 approval.
 - Дата: 2026-09-29.
 - Источники: [концепция §§4.5–4.9, 12, 14.1, 16–17](../../polyphony_concept.md), [архитектура §§2–6, 7.3, 8–10](../../architecture.md), [ADR-001](../../adr/ADR-001-module-boundaries.md), [ADR-002](../../adr/ADR-002-state-and-recovery.md); принятый оператором `state-first-increment.v3` с последующим решением 2026-09-29: жизненный цикл и единственность инстанса агента принадлежат будущему `runtime`, не `state`.
 - Рамочная Issue: [#26](https://github.com/kostysh/yaagi/issues/26). [План](implementation-plan.md).
@@ -31,7 +31,78 @@ Drizzle принят оператором независимо от vector probe
 
 Первая платформа — Linux x64, Node 24.21.0, pnpm 10.34.5; CI Ubuntu 24.04. Точные зависимости/SQLite ABI закрепляются по S1/S2. Производные ошибки драйвера не выдаются в общем контракте; секреты, SQL payload и локальные данные не попадают в публичную диагностику.
 
-Оператор проверил наличие `node:sqlite` и SQLite `3.53.4`. `sqlite-vec` документирует поддержку этого драйвера; фактическая совместимость выбранного расширения с этой SQLite ещё не подтверждена. S1/S2 сохраняют все прежние oracle, включая BLOB, backup и reopen, без дополнительных спайков или framework. Блокирующая несовместимость возвращается на CP1 с конкретным результатом и вариантами, не разрешает молча вернуть `better-sqlite3`.
+S1/S2 реально проверили Node `24.21.0` / SQLite `3.53.4` / `sqlite-vec 0.1.9` на Linux x64: load, mixed ORM/vector commit/rollback, BLOB, backup и reopen. [Код, команды, результаты и ограничения](../../../experiments/state/README.md). Это не remote CI или evidence production-пакета. Блокирующей несовместимости этой связки не обнаружено; другой драйвер не возвращается без решения оператора.
+
+## Предложение контракта на CP1
+
+Ниже **предложение**, не уже принятые production exports. Оно опирается на S1/S2 и сохраняет R/AC. `Result` импортируется из `@polyphony/core-types`; дополнительных общих примитивов туда не требуется.
+
+`@polyphony/state/contracts` — только типы, без runtime/native side effects:
+
+```ts
+type StorageCode = "busy" | "closed" | "unavailable" | "corrupt"
+  | "incompatible" | "full" | "write_failed" | "cancelled" | "deadline"
+  | "scope_ended" | "sql_failed" | "callback_failed";
+type StorageFailure = { readonly kind: "storage"; readonly code: StorageCode };
+type OwnerFailure<E> = { readonly kind: "owner"; readonly error: E };
+type OperationOptions = {
+  readonly signal?: { readonly aborted: boolean };
+  readonly timeoutMs?: number;
+};
+type SchemaStatus = { readonly applied: number; readonly pending: number };
+interface StoragePort<S> {
+  readSnapshot<T>(read: (scope: S) => Promise<T>, options?: OperationOptions):
+    Promise<Result<T, StorageFailure>>;
+  transact<T, E>(write: (scope: S) => Promise<Result<T, E>>, options?: OperationOptions):
+    Promise<Result<T, StorageFailure | OwnerFailure<E>>>;
+  checkSchema(): Promise<Result<SchemaStatus, StorageFailure>>;
+  close(): Promise<Result<void, StorageFailure>>;
+}
+```
+
+`S` — capability адаптера, не SQL в общем контракте. Структурный `signal` совместим с `AbortSignal`, но не требует Node/DOM declarations. `timeoutMs` — конечное неотрицательное число, отсчёт monotonic с начала вызова; отсутствие значения не задаёт общего deadline. Некорректная техническая конфигурация отклоняется как `incompatible`; owner input/DTO ошибки не маскируются этим кодом.
+
+`@polyphony/state/sqlite` — технические типы без Node/native imports:
+
+```ts
+type SqlValue = null | string | number | bigint | Uint8Array;
+interface SqlScope {
+  all(sql: string, params?: readonly SqlValue[]): SqlValue[][];
+  run(sql: string, params?: readonly SqlValue[]): {
+    changes: number; lastInsertRowid: bigint;
+  };
+}
+type SqlMigration = { readonly id: string; readonly sql: string };
+```
+
+SQL-методы этого Node-механизма **синхронны**. SQL параметризуется; `number` связывается как REAL, `bigint` как INTEGER, `Uint8Array` как BLOB без JSON. Для vec0 integer ID/`k` передаётся bigint; размерность и метрика остаются у владельца. При чтении INTEGER в safe range возвращается number, вне него bigint; нечисловые/не конечные параметры и выход за int64 отвергаются. `lastInsertRowid` всегда bigint; `changes` проверяется на safe integer. Это предложение нормализации, не перенос Node types в контракт.
+
+`@polyphony/state/node` — явное открытие адаптера; native load только при вызове `openSqlite`, не при импорте:
+
+```ts
+interface SqliteState extends StoragePort<SqlScope> {
+  migrate(): Promise<Result<void, StorageFailure>>;
+  backupTo(path: string): Promise<Result<void, StorageFailure>>;
+}
+function openSqlite(options: {
+  readonly path: string;
+  readonly migrations: readonly SqlMigration[];
+}): Promise<Result<SqliteState, StorageFailure>>;
+```
+
+Других exports/драйверов/registry нет; отдельный root export не нужен. Native connection, пути расширения и vendor errors владельцу не передаются. Drizzle остаётся в owner adapter: проверенный локальный `sqlite-proxy` callback вызывает этот же `SqlScope`, без HTTP и собственного transaction helper. Отдельный публичный Drizzle/vector helper в `state` не нужен.
+
+Семантика, предлагаемая к согласованию:
+
+- Одно соединение на открытый экземпляр `SqliteState`; параллельная операция того же экземпляра получает `busy`, без очереди/replay. Это конкуренция операций БД, не запрет нескольких агентов или соединений. SQLite writer busy имеет baseline 40 мс, ограничиваемый остатком `timeoutMs`; это не latency SLA и не настройка E2.
+- `readSnapshot` начинает read-only transaction, snapshot фиксируется первым чтением; callback возвращает DTO владельца. `transact` удерживает `BEGIN IMMEDIATE` до завершения callback. Возврат `{ok:false,error:E}` откатывает всех владельцев и сохраняет E под `kind:owner`. Любая SQL-ошибка отравляет scope; её первая безопасная категория сохраняется даже после catch. Throw callback без SQL-ошибки → `callback_failed`; сообщение/stack/reason/SQL/path не выходят наружу. Живые handles не являются DTO; после выхода они отвергают SQL с `scope_ended`.
+- **Отмена cooperative.** Проверки перед/после SQL и перед commit, rollback после обнаружения отмены/deadline. Синхронный SQL и зависший callback не прерываются, JS timer может опоздать; wall-clock upper bound не обещается. Если commit уже начался и успешно завершился, возвращается успех, даже если время истекло во время самого commit. После уже объявленного отказа commit не происходит. Для hard interruption нужен отдельный разрешённый механизм, он сейчас не добавляется.
+- Миграции — одна immutable цепочка `{id,sql}` на БД; все pending artifacts + журнал атомарны одним вызовом. Проверяется exact applied prefix (position/ID/SHA-256 SQL), техническая валидность журнала и совпадение фактической схемы с сохранённым fingerprint. Changed/truncated/reordered history, неизвестная исходная схема и drift отклоняются; pending — не успех готовности. Production open/check/apply связывают этот результат с готовностью соединения: до полной совместимой схемы допустимы check/migrate/close, не рабочие snapshot/transact. Эта связка ещё не production-реализована; в S1 миграционные функции вызываются явно до `ProbeStore`.
+- Journal/fingerprint — технические метаданные, не доменная модель или криптографическая защита от доверенного владельца файлов. Fingerprint включает virtual/shadow schema, но не auto-diff; перенос между версиями SQLite/extension требует нового evidence. Артефакты не содержат управления транзакциями/подключениями. Схемы и transforms принадлежат owners; композиция и порядок — root.
+- Доверенная конфигурация задаёт заранее созданный private directory (0700). DB/WAL/SHM/backup — 0600, тот же principal; чужие/широкие права отклоняются. Расширение только из pin `sqlite-vec`, load отключается после инициализации. Никаких agentId, canonical agent directory lock или управления запуском.
+- `backupTo` использует SQLite backup; target новый, не перезаписывает существующий файл, source сохраняется. Restore — явное копирование завершённого backup в другой изолированный target и open/readback; отдельный restore framework/API не нужен. `close` закрывает DB, не удаляет файлы, повтор безопасен; при активной операции возвращается `busy`. Непригодное соединение не допускает дальнейший SQL.
+
+**Предлагаемый M1 после CP1:** сначала зафиксировать consumer `StoragePort<FixtureOwners>` и одинаковые public fixtures. Composition root SQLite-варианта связывает `SqlScope` с owner-local Drizzle/Zod adapters; consumer не импортирует SQL/Node. Затем подставить test-only in-memory snapshot/copy-on-write реализацию прежнего порта, не меняя consumer/private code. Одинаковые oracle: атомарность двух owners, read consistency, owner conflict, scope expiry, Result/falsy, cooperative cancel и закрытие. Никакого production alternative backend или generic repository; этот тест не доказывает durability, SQLite faults или платформенную эквивалентность. Такие проверки остаются за real SQLite.
 
 ## Требования и проверка
 
@@ -96,6 +167,6 @@ R13 снят решением оператора: управление един�
 
 TypeScript 7 проверяет/собирает ESM и declarations; Biome форматирует, lint включает Biome + ESLint + package boundary. Package `test` вызывает `test:integration`; существующий root/CI остаётся рекурсивным. Временные спайки имеют собственные точные зависимости и воспроизводимые команды, но не входят в production exports.
 
-Оператор разрешил продолжить S1/S2, затем принял замену драйвера на `node:sqlite`. Применимые Concept/Spec/Security аудиты исправленного снимка сохраняются. Факты спайков возвращаются в архитектуру и эту спецификацию. Открыты: точные signatures, migration unit/history verification, cancel/error semantics и ограниченный M1 contour. CP1 сохраняется: evidence, auditable proposal и явное approval оператора; production-код не начинается до этого.
+Результаты S1/S2 возвращены в архитектуру и эту спецификацию; источники смены драйвера прошли Concept/Spec/Security на `48430efcaa86873e47dfaf913d8dcdeb4293c66e`. Новый CP1 snapshot с evidence, кодом и предложением контракта проходит отдельные применимые аудиты. Открыто решение оператора о signatures, migration semantics и cooperative cancellation из предложения выше. Production handoff и M1 остаются blocked до CP1 approval. `next autonomous action: none` после checkpoint report.
 
 Аудит: Concept Conformance для spec; Security для trust/data boundaries. Снимки и результаты фиксируются в плане/CP1 evidence; наличие этого документа не означает прохождения аудита или спайков.

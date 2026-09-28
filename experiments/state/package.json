@@ -1,0 +1,36 @@
+{
+  "name": "state-sqlite-spikes",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": "24.21.0",
+    "pnpm": "10.34.5"
+  },
+  "scripts": {
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome lint . && eslint . && pnpm lint:boundary",
+    "lint:boundary": "tsc -p tsconfig.contracts.json && pnpm build && node --test dist/boundary.test.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
+    "test": "pnpm build && node --test --test-timeout=15000 dist/*.test.js",
+    "generate": "drizzle-kit generate --config drizzle.config.ts"
+  },
+  "dependencies": {
+    "@polyphony/core-types": "link:../../packages/core-types",
+    "drizzle-orm": "0.45.3",
+    "sqlite-vec": "0.1.9",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14",
+    "@types/node": "24.19.0",
+    "@typescript/native": "npm:typescript@7.0.2",
+    "drizzle-kit": "0.31.11",
+    "eslint": "10.11.0",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "typescript-eslint": "8.71.0"
+  }
+}

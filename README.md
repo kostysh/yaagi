@@ -8,6 +8,8 @@ The repository contains the concept, modular architecture, architectural decisio
 
 The [implementation roadmap](docs/roadmap.md) orders modules, experiments, and integration checks. The current `core-types` increment has its own [specification](docs/modules/core-types/specification.md) and [implementation plan](docs/modules/core-types/implementation-plan.md). Identifiers, time, references, DTOs, error codes, helpers, validators, and runtime behavior remain unimplemented; later types will be added only when a real consumer requires them.
 
+The next `state` increment has local [SQLite/Drizzle spike evidence](experiments/state/README.md) using built-in `node:sqlite` and `sqlite-vec`. Its [contract proposal](docs/modules/state/specification.md#предложение-контракта-на-cp1) is awaiting CP1 approval. These standalone experiments are not a production package and are not included in root CI; M1, I1, and E3 remain unverified.
+
 ## Architectural foundations
 
 - Independent packages with public contracts, assembled into one runtime with a single decision cycle and executor.
@@ -45,7 +47,7 @@ These commands delegate to workspace packages. For `core-types`, they verify for
 
 GitHub Actions runs the same root commands for pull requests and subsequent pushes to `develop` or `master`, using the frozen lockfile. Recursive pnpm execution runs each command in every workspace package that defines the corresponding script.
 
-The ESM import smoke test proves package resolution only: `core-types` exports no runtime values. SQLite/queue adapters, vector retrieval, model services, AI SDK, and experiments E1–E3 are not configured or running. No Expo app or mobile adapter has been created. The shared root `.env` remains operator-owned; task worktrees use a symlink and must not modify it. See the [tooling guide](docs/development-methodology/tooling.md) for package configuration conventions.
+The ESM import smoke test proves package resolution only: `core-types` exports no runtime values. Production SQLite/queue adapters, domain vector retrieval, model services, AI SDK, and experiments E1–E3 are not configured or running. No Expo app or mobile adapter has been created. The shared root `.env` remains operator-owned; task worktrees use a symlink and must not modify it. See the [tooling guide](docs/development-methodology/tooling.md) for package configuration conventions.
 
 ## Documentation
 
