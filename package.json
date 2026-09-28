@@ -27,7 +27,10 @@
     "test": "pnpm --filter './packages/*' --fail-if-no-match -r run test"
   },
   "devDependencies": {
+    "@typescript/native": "npm:typescript@7.0.2",
     "@biomejs/biome": "2.5.14",
-    "typescript": "7.0.2"
+    "eslint": "10.11.0",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "typescript-eslint": "8.71.0"
   }
 }
