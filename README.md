@@ -43,7 +43,9 @@ pnpm test
 
 These commands delegate to workspace packages. For `core-types`, they verify formatting, both lint contours, its level-0 boundary, TypeScript 7 typechecking and build, compile-time contract fixtures, declarations, and package resolution as ESM.
 
-The ESM import smoke test proves package resolution only: `core-types` exports no runtime values. SQLite/queue adapters, vector retrieval, model services, AI SDK, CI, and experiments E1–E3 are not configured or running. No Expo app or mobile adapter has been created. The shared root `.env` remains operator-owned; task worktrees use a symlink and must not modify it. See the [tooling guide](docs/development-methodology/tooling.md) for package configuration conventions.
+GitHub Actions runs the same root commands for pull requests and subsequent pushes to `develop` or `master`, using the frozen lockfile. Recursive pnpm execution runs each command in every workspace package that defines the corresponding script.
+
+The ESM import smoke test proves package resolution only: `core-types` exports no runtime values. SQLite/queue adapters, vector retrieval, model services, AI SDK, and experiments E1–E3 are not configured or running. No Expo app or mobile adapter has been created. The shared root `.env` remains operator-owned; task worktrees use a symlink and must not modify it. See the [tooling guide](docs/development-methodology/tooling.md) for package configuration conventions.
 
 ## Documentation
 

@@ -2,7 +2,7 @@
 
 - Document ID: `project.methodology.tooling`
 
-Минимальная среда использует baseline [архитектуры, §2.1](../architecture.md#21-проверенный-технологический-baseline). Первый пакет `@polyphony/core-types` реализует только compile-time контракт `Result<T, E>`; runtime Полифонии и продуктовых тестов пока нет. SQLite adapters, векторное расширение, очереди, модели, AI SDK и CI будут подготовлены отдельными последующими задачами по [roadmap](../roadmap.md).
+Минимальная среда использует baseline [архитектуры, §2.1](../architecture.md#21-проверенный-технологический-baseline). Первый пакет `@polyphony/core-types` реализует только compile-time контракт `Result<T, E>`; runtime Полифонии и продуктовых тестов пока нет. SQLite adapters, векторное расширение, очереди, модели и AI SDK будут подготовлены отдельными последующими задачами по [roadmap](../roadmap.md).
 
 ## Установка
 
@@ -46,4 +46,6 @@ NodeNext и Node emit — профиль текущей desktop-сборки. О
 
 Установка должна повторяться с `--frozen-lockfile`. Bootstrap ранее проверен на временном некоммитимом workspace-пакете: наследование конфигураций, форматирование, lint, typecheck, сборка JS/declarations, выполнение результата через Node и передача ошибок корневой команде. Временный пакет удалён, а lockfile содержит только реальный состав workspace.
 
-`core-types` отдельно проверяет положительные и отрицательные compile-time fixtures через публичный package export, declarations, ESM import-smoke и package boundary. Эти проверки доказывают только контракт `Result<T, E>` и разрешение пакета, но не runtime-возможность агента. Результаты bootstrap фиксируются в [Issue #16](https://github.com/kostysh/yaagi/issues/16), текущего инкремента — в [Issue #23](https://github.com/kostysh/yaagi/issues/23). CI остаётся отдельной обязательной задачей до merge или поставки первого модуля по [политике качества](quality.md); E1–E3 ещё не запускались.
+`core-types` отдельно проверяет положительные и отрицательные compile-time fixtures через публичный package export, declarations, ESM import-smoke и package boundary. Эти проверки доказывают только контракт `Result<T, E>` и разрешение пакета, но не runtime-возможность агента. Результаты bootstrap фиксируются в [Issue #16](https://github.com/kostysh/yaagi/issues/16), текущего инкремента — в [Issue #23](https://github.com/kostysh/yaagi/issues/23).
+
+GitHub Actions workflow `.github/workflows/ci.yml` запускает те же корневые `format:check`, `lint`, `typecheck`, `build` и `test` для pull request и последующего push в `develop` или `master`. Корневые команды через рекурсивный `pnpm run` выполняют одноимённый script в каждом workspace-пакете, где он определён; отсутствие обязательного script в TypeScript-пакете остаётся нарушением package contract. Workflow использует зафиксированные Node/pnpm и frozen lockfile, read-only `contents` permission и immutable action revisions. Наличие workflow не заменяет успешный GitHub run перед merge и не доказывает runtime-возможность агента; E1–E3 ещё не запускались.
