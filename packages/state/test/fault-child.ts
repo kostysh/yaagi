@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { BroadcastChannel, setEnvironmentData } from 'node:worker_threads';
 import { writeOwners } from '../examples/owners.js';
@@ -8,7 +8,98 @@ import { openState } from './fixture.js';
 import { counts, failure, limits, release, value } from './fixture.js';
 
 const [path, mode] = process.argv.slice(2);
-if (mode === 'wal-cleanup') {
+if (mode === 'first-create') {
+  const firstPath = `${path}.first`;
+  const buffer = new SharedArrayBuffer(8);
+  const flags = new Int32Array(buffer);
+  const name = `state-first-create-${process.pid}`;
+  const channel = new BroadcastChannel(name);
+  const beforeClose = once(channel, 'message', {
+    signal: AbortSignal.timeout(5000),
+  });
+  setEnvironmentData('state-first-create', { name, buffer });
+  const first = openState(
+    { path: firstPath, migrations: release },
+    limits(undefined, 10_000),
+  );
+  const entered = Promise.withResolvers<void>();
+  const resume = Promise.withResolvers<void>();
+  let second:
+    | Extract<Awaited<ReturnType<typeof openState>>, { ok: true }>['value']
+    | undefined;
+  let transaction: Promise<unknown> | undefined;
+  try {
+    await beforeClose;
+    setEnvironmentData('state-first-create', undefined);
+    second = value(
+      await openState({ path: firstPath, migrations: release }, limits()),
+    );
+    value(await second.migrate(limits()));
+    const pending = second.transact(
+      async (scope) => {
+        await writeOwners(scope);
+        entered.resolve();
+        await resume.promise;
+        return { ok: true, value: await counts(scope) };
+      },
+      limits(undefined, 10_000),
+    );
+    transaction = pending;
+    await entered.promise;
+    const inode = statSync(firstPath).ino;
+    // Inspect the real Linux lock, not merely eventual data: WAL SHM locks
+    // can mask loss of the DB lock in an ordinary write/readback test.
+    const locks = () =>
+      readFileSync('/proc/locks', 'utf8')
+        .split('\n')
+        .filter((line) => line.includes(`:${inode} `))
+        .map((line) => line.trim().split(/\s+/).slice(1).join(' '));
+    const before = locks();
+    assert.ok(before.length > 0);
+    const afterClose = once(channel, 'message', {
+      signal: AbortSignal.timeout(5000),
+    });
+    Atomics.store(flags, 0, 1);
+    Atomics.notify(flags, 0);
+    await afterClose;
+    assert.deepEqual(locks(), before);
+    Atomics.store(flags, 1, 1);
+    Atomics.notify(flags, 1);
+    value(await first);
+    resume.resolve();
+    assert.deepEqual(value(await pending), [1, 1, 1]);
+  } finally {
+    setEnvironmentData('state-first-create', undefined);
+    resume.resolve();
+    for (const index of [0, 1]) {
+      Atomics.store(flags, index, 1);
+      Atomics.notify(flags, index);
+    }
+    await transaction;
+    if (second) value(await second.close());
+    const opened = await first;
+    if (opened.ok) value(await opened.value.close());
+    channel.close();
+  }
+  const reopened = value(
+    await openState({ path: firstPath, migrations: release }, limits()),
+  );
+  try {
+    assert.deepEqual(
+      value(await reopened.readSnapshot(counts, limits())),
+      [1, 1, 1],
+    );
+    assert.equal(statSync(firstPath).mode & 0o777, 0o600);
+    assert.equal(
+      readdirSync(dirname(firstPath)).some((file) =>
+        file.startsWith('.state-create-'),
+      ),
+      false,
+    );
+  } finally {
+    value(await reopened.close());
+  }
+} else if (mode === 'wal-cleanup') {
   const state = value(await openState({ path, migrations: release }, limits()));
   const entered = Promise.withResolvers<void>();
   const resume = Promise.withResolvers<void>();

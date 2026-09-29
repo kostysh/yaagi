@@ -9,6 +9,48 @@ import {
 } from 'node:worker_threads';
 
 const mode = process.env.YAAGI_STATE_TEST_FAULT;
+const creation = getEnvironmentData('state-first-create') as
+  | {
+      name: string;
+      buffer: SharedArrayBuffer;
+    }
+  | undefined;
+if (!isMainThread && mode === 'first-create' && creation) {
+  const open = fs.openSync;
+  const close = fs.closeSync;
+  let target: number | undefined;
+  Object.defineProperty(fs, 'openSync', {
+    value: (...args: Parameters<typeof fs.openSync>) => {
+      const fd = open(...args);
+      if (
+        args[1] === 'wx' ||
+        (typeof args[1] === 'number' && args[1] & fs.constants.O_EXCL)
+      )
+        target = fd;
+      return fd;
+    },
+  });
+  Object.defineProperty(fs, 'closeSync', {
+    value: (fd: number) => {
+      if (fd !== target) return close(fd);
+      target = undefined;
+      const flags = new Int32Array(creation.buffer);
+      const channel = new BroadcastChannel(creation.name);
+      try {
+        channel.postMessage('before-close');
+        if (Atomics.wait(flags, 0, 0, 5000) === 'timed-out')
+          throw new Error('Creation pre-close barrier timed out');
+        close(fd);
+        channel.postMessage('after-close');
+        if (Atomics.wait(flags, 1, 0, 5000) === 'timed-out')
+          throw new Error('Creation post-close barrier timed out');
+      } finally {
+        channel.close();
+      }
+    },
+  });
+  syncBuiltinESMExports();
+}
 if (!isMainThread && mode === 'wal-cleanup' && workerData.job === 'check') {
   const control = getEnvironmentData('state-wal-cleanup') as {
     name: string;

@@ -1,12 +1,14 @@
 import {
   closeSync,
-  constants,
+  linkSync,
   lstatSync,
+  mkdtempSync,
   openSync,
+  rmSync,
   type Stats,
   statSync,
 } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import { StorageError } from '../../internal/errors.js';
 
 export function privateDirectory(path: string): void {
@@ -29,25 +31,27 @@ function checkPrivateFile(stat: Stats): void {
 }
 
 export function privateFile(path: string, create = false): void {
-  if (create) {
+  if (create && !lstatSync(path, { throwIfNoEntry: false })) {
+    const temporary = mkdtempSync(join(dirname(path), '.state-create-'));
     try {
-      // Only a NEW inode can be opened/closed outside SQLite. Closing an fd on
-      // an existing DB/WAL/SHM can release another connection's POSIX locks.
-      closeSync(
-        openSync(
-          path,
-          constants.O_RDWR |
-            constants.O_NOFOLLOW |
-            constants.O_CREAT |
-            constants.O_EXCL,
-          0o600,
-        ),
-      );
-    } catch (error) {
-      if (
-        !(error instanceof Error && 'code' in error && error.code === 'EEXIST')
-      )
-        throw error;
+      const file = join(temporary, 'empty');
+      // Close before publishing: another creator can use the final pathname
+      // immediately, so even a newly-created DB inode must not be closed here.
+      closeSync(openSync(file, 'wx', 0o600));
+      try {
+        linkSync(file, path);
+      } catch (error) {
+        if (
+          !(
+            error instanceof Error &&
+            'code' in error &&
+            error.code === 'EEXIST'
+          )
+        )
+          throw error;
+      }
+    } finally {
+      rmSync(temporary, { recursive: true, force: true });
     }
   }
   checkPrivateFile(lstatSync(path));
