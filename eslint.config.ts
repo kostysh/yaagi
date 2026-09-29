@@ -43,6 +43,94 @@ export default [
   },
   ...tseslint.configs.recommended,
   {
+    files: ['packages/queue/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@polyphony/*/*',
+                '!@polyphony/state/contracts',
+                '!@polyphony/state/adapters',
+                '!@polyphony/state/adapters/sqlite',
+                '!@polyphony/queue/contracts',
+                '!@polyphony/queue/ports',
+                '!@polyphony/queue/adapters',
+                '!@polyphony/queue/adapters/agenda',
+                '!@polyphony/queue/storage',
+                '!@polyphony/queue/storage/sqlite',
+                '**/state/src/**',
+                '**/state/dist/**',
+                '**/core-types/src/**',
+                '**/core-types/dist/**',
+              ],
+              message: 'Use only public package exports.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['packages/queue/src/contracts.ts', 'packages/queue/src/ports.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ImportDeclaration[importKind!="type"]',
+          message: 'Portable boundaries must be type-only.',
+        },
+        {
+          selector:
+            'ImportDeclaration[source.value!="@polyphony/core-types"][source.value!="@polyphony/state/contracts"][source.value!="./contracts.js"]',
+          message:
+            'Portable boundaries cannot depend on vendor or runtime types.',
+        },
+        ...[
+          'ImportExpression',
+          'TSImportType',
+          'TSImportEqualsDeclaration',
+          'ExportAllDeclaration',
+          'ExportNamedDeclaration[source]',
+          "CallExpression[callee.name='require']",
+        ].map((selector) => ({
+          selector,
+          message: 'No hidden imports or re-exports in portable boundaries.',
+        })),
+      ],
+    },
+  },
+  {
+    files: [
+      'packages/queue/src/index.ts',
+      'packages/queue/src/internal/**/*.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'ImportDeclaration[source.value!="@polyphony/core-types"][source.value!="@polyphony/state/contracts"][source.value!="zod"][source.value!="./contracts.js"][source.value!="../contracts.js"][source.value!="./ports.js"][source.value!="../ports.js"][source.value!="./internal/model.js"][source.value!="./internal/store.js"][source.value!="./model.js"]',
+          message:
+            'The neutral queue core cannot import Agenda, SQL, Node or private implementations.',
+        },
+        ...[
+          'ImportExpression',
+          'TSImportType',
+          'TSImportEqualsDeclaration',
+          'ExportAllDeclaration',
+          'ExportNamedDeclaration[source]',
+          "CallExpression[callee.name='require']",
+        ].map((selector) => ({
+          selector,
+          message: 'No hidden backend imports or re-exports from the core.',
+        })),
+      ],
+    },
+  },
+  {
     files: ['packages/core-types/src/**/*.ts'],
     rules: {
       'no-restricted-syntax': ['error', ...noSourceDependencySyntax],

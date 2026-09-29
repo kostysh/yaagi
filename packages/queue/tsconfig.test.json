@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "lib": ["ES2024", "DOM"],
+    "rootDir": ".",
+    "outDir": ".test-dist",
+    "declaration": false,
+    "skipLibCheck": true
+  },
+  "include": [
+    "test/**/*.ts",
+    "examples/**/*.ts",
+    "scripts/**/*.ts",
+    "drizzle.config.ts"
+  ]
+}

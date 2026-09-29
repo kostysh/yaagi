@@ -1,0 +1,54 @@
+{
+  "name": "@polyphony/queue",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./contracts": {
+      "types": "./dist/contracts.d.ts",
+      "import": "./dist/contracts.js"
+    },
+    "./ports": {
+      "types": "./dist/ports.d.ts",
+      "import": "./dist/ports.js"
+    },
+    "./adapters/agenda": {
+      "types": "./dist/adapters/agenda.d.ts",
+      "import": "./dist/adapters/agenda.js"
+    },
+    "./storage/sqlite": {
+      "types": "./dist/storage/sqlite.d.ts",
+      "import": "./dist/storage/sqlite.js"
+    }
+  },
+  "scripts": {
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome lint . && node --experimental-strip-types ../../node_modules/eslint/bin/eslint.js --flag unstable_native_nodejs_ts_config . && node --experimental-strip-types scripts/check-boundary.ts",
+    "build:dependencies": "pnpm --filter @polyphony/state build",
+    "build": "pnpm run build:dependencies && tsc -p tsconfig.json && node --experimental-strip-types scripts/copy-sql.ts",
+    "typecheck": "pnpm run build && tsc -p tsconfig.test.json --noEmit && tsc -p tsconfig.contracts.json",
+    "test": "pnpm run test:integration",
+    "test:integration": "pnpm run build && tsc -p tsconfig.test.json && node --test --test-timeout=45000 .test-dist/test/*.test.js",
+    "example": "pnpm run build && tsc -p tsconfig.test.json && node .test-dist/examples/usage.js",
+    "generate": "drizzle-kit generate --config drizzle.config.ts"
+  },
+  "dependencies": {
+    "@polyphony/core-types": "workspace:*",
+    "@polyphony/state": "workspace:*",
+    "agenda": "6.2.6",
+    "drizzle-orm": "0.45.3",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "drizzle-kit": "0.31.11"
+  }
+}

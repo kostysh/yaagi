@@ -5,3 +5,8 @@ engineStrict: true
 packageManagerStrictVersion: true
 managePackageManagerVersions: false
 saveExact: true
+strictDepBuilds: true
+overrides:
+  '@esbuild-kit/core-utils>esbuild': 0.25.12
+allowBuilds:
+  esbuild@0.25.12 || 0.28.2: true
