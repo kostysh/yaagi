@@ -46,21 +46,21 @@ type StorageCode = "busy" | "closed" | "unavailable" | "corrupt"
 type StorageFailure = { readonly kind: "storage"; readonly code: StorageCode };
 type OwnerFailure<E> = { readonly kind: "owner"; readonly error: E };
 type OperationOptions = {
-  readonly signal?: { readonly aborted: boolean };
-  readonly timeoutMs?: number;
+  readonly signal: { readonly aborted: boolean };
+  readonly timeoutMs: number;
 };
 type SchemaStatus = { readonly applied: number; readonly pending: number };
 interface StoragePort<S> {
-  readSnapshot<T>(read: (scope: S) => Promise<T>, options?: OperationOptions):
+  readSnapshot<T>(read: (scope: S) => Promise<T>, options: OperationOptions):
     Promise<Result<T, StorageFailure>>;
-  transact<T, E>(write: (scope: S) => Promise<Result<T, E>>, options?: OperationOptions):
+  transact<T, E>(write: (scope: S) => Promise<Result<T, E>>, options: OperationOptions):
     Promise<Result<T, StorageFailure | OwnerFailure<E>>>;
-  checkSchema(): Promise<Result<SchemaStatus, StorageFailure>>;
+  checkSchema(options: OperationOptions): Promise<Result<SchemaStatus, StorageFailure>>;
   close(): Promise<Result<void, StorageFailure>>;
 }
 ```
 
-`S` — capability адаптера, не SQL в общем контракте. Структурный `signal` совместим с `AbortSignal`, но не требует Node/DOM declarations. `timeoutMs` — конечное неотрицательное число, отсчёт monotonic с начала вызова; отсутствие значения не задаёт общего deadline. Некорректная техническая конфигурация отклоняется как `incompatible`; owner input/DTO ошибки не маскируются этим кодом.
+`S` — capability адаптера, не SQL в общем контракте. Структурный `signal` совместим с `AbortSignal`, но не требует Node/DOM declarations. Вызывающий код обязательно передаёт signal и оставшийся policy-derived budget: `timeoutMs` — конечное неотрицательное число, отсчёт monotonic с начала вызова. `state` проверяет форму лимита и соблюдает его cooperative, но не выбирает policy и не увеличивает budget. Отсутствующий/некорректный лимит или signal отклоняется как `incompatible` до callback и I/O; owner input/DTO ошибки не маскируются этим кодом. Экспериментальная опциональность аргументов `ProbeStore` не переносится в production-контракт; эту stricter boundary ещё предстоит реализовать и проверить после CP1.
 
 `@polyphony/state/sqlite` — технические типы без Node/native imports:
 
@@ -81,13 +81,13 @@ SQL-методы этого Node-механизма **синхронны**. SQL 
 
 ```ts
 interface SqliteState extends StoragePort<SqlScope> {
-  migrate(): Promise<Result<void, StorageFailure>>;
-  backupTo(path: string): Promise<Result<void, StorageFailure>>;
+  migrate(options: OperationOptions): Promise<Result<void, StorageFailure>>;
+  backupTo(path: string, options: OperationOptions): Promise<Result<void, StorageFailure>>;
 }
 function openSqlite(options: {
   readonly path: string;
   readonly migrations: readonly SqlMigration[];
-}): Promise<Result<SqliteState, StorageFailure>>;
+}, limits: OperationOptions): Promise<Result<SqliteState, StorageFailure>>;
 ```
 
 Других exports/драйверов/registry нет; отдельный root export не нужен. Native connection, пути расширения и vendor errors владельцу не передаются. Drizzle остаётся в owner adapter: проверенный локальный `sqlite-proxy` callback вызывает этот же `SqlScope`, без HTTP и собственного transaction helper. Отдельный публичный Drizzle/vector helper в `state` не нужен.
@@ -97,6 +97,7 @@ function openSqlite(options: {
 - Одно соединение на открытый экземпляр `SqliteState`; параллельная операция того же экземпляра получает `busy`, без очереди/replay. Это конкуренция операций БД, не запрет нескольких агентов или соединений. SQLite writer busy имеет baseline 40 мс, ограничиваемый остатком `timeoutMs`; это не latency SLA и не настройка E2.
 - `readSnapshot` начинает read-only transaction, snapshot фиксируется первым чтением; callback возвращает DTO владельца. `transact` удерживает `BEGIN IMMEDIATE` до завершения callback. Возврат `{ok:false,error:E}` откатывает всех владельцев и сохраняет E под `kind:owner`. Любая SQL-ошибка отравляет scope; её первая безопасная категория сохраняется даже после catch. Throw callback без SQL-ошибки → `callback_failed`; сообщение/stack/reason/SQL/path не выходят наружу. Живые handles не являются DTO; после выхода они отвергают SQL с `scope_ended`.
 - **Отмена cooperative.** Проверки перед/после SQL и перед commit, rollback после обнаружения отмены/deadline. Синхронный SQL и зависший callback не прерываются, JS timer может опоздать; wall-clock upper bound не обещается. Если commit уже начался и успешно завершился, возвращается успех, даже если время истекло во время самого commit. После уже объявленного отказа commit не происходит. Для hard interruption нужен отдельный разрешённый механизм, он сейчас не добавляется.
+- Обязательные limits распространяются на open/check/migrate/backup и scopes. Предварительная отмена или нулевой budget не начинает I/O; отменённый незавершённый backup не публикуется как готовый. Rollback и `close` — обязательное освобождение ресурсов, не новая пользовательская нагрузка: их нельзя пропустить из-за исчерпанного budget или отмены. `close` не принимает отмену; при активной операции сохраняется описанный ниже `busy`.
 - Миграции — одна immutable цепочка `{id,sql}` на БД; все pending artifacts + журнал атомарны одним вызовом. Проверяется exact applied prefix (position/ID/SHA-256 SQL), техническая валидность журнала и совпадение фактической схемы с сохранённым fingerprint. Changed/truncated/reordered history, неизвестная исходная схема и drift отклоняются; pending — не успех готовности. Production open/check/apply связывают этот результат с готовностью соединения: до полной совместимой схемы допустимы check/migrate/close, не рабочие snapshot/transact. Эта связка ещё не production-реализована; в S1 миграционные функции вызываются явно до `ProbeStore`.
 - Journal/fingerprint — технические метаданные, не доменная модель или криптографическая защита от доверенного владельца файлов. Fingerprint включает virtual/shadow schema, но не auto-diff; перенос между версиями SQLite/extension требует нового evidence. Артефакты не содержат управления транзакциями/подключениями. Схемы и transforms принадлежат owners; композиция и порядок — root.
 - Доверенная конфигурация задаёт заранее созданный private directory (0700). DB/WAL/SHM/backup — 0600, тот же principal; чужие/широкие права отклоняются. Расширение только из pin `sqlite-vec`, load отключается после инициализации. Никаких agentId, canonical agent directory lock или управления запуском.
@@ -129,6 +130,7 @@ function openSqlite(options: {
 | R18 | Ошибка записи MUST NOT подтверждать commit | Арх. §2.2; S2 fault cases, no false success |
 | R19 | Общие contracts MUST оставаться без SQL/vendor/Node/Expo types и native side effects | Арх. §§2.3–2.4, 3.1; declarations, import и negative boundary fixtures |
 | R20 | Публичные ошибки MUST безопасно различать причины busy/full/corrupt/incompatible/cancel | Арх. §2.2; S2 no raw vendor payload; точная форма после CP1 |
+| R21 | Вызывающий код MUST передать policy-derived signal и конечный budget для open/check/migrate/backup/readSnapshot/transact; `state` MUST отклонить отсутствие/невалидную форму до I/O и callback | Арх. §4.1; после CP1 negative type/runtime fixtures без options/полей и с NaN/Infinity/отрицательным timeout, pre-aborted/нулевой budget; нет записи или вызова callback. Проверка budget не означает hard interruption |
 
 R13 снят решением оператора: управление единственностью инстанса не входит в `state`; остальные ID сохранены. Порядок «получить DTO → завершить snapshot → выполнить model/external work» соблюдает потребитель/runtime. `state` не анализирует DTO и не контролирует чужие model/network calls.
 
@@ -140,7 +142,7 @@ R13 снят решением оператора: управление един�
 - **AC2, R10–R11:** дана предыдущая fixture-схема с данными; когда применяются generated SQL, custom `vec0` DDL и data transform, тогда цепочка обновляется согласованно и повтор безвреден. Changed history, несовместимая схема или failure не допускают рабочую нагрузку и сохраняют исходные данные. Запуск при импорте запрещён.
 - **AC3, R12, R14–R18, R20:** даны реальные временные файлы и child processes; когда происходят конкуренция writers, прерывание процесса записи, storage/extension failure и backup/restore, тогда получены различимые исходы, закрыты непригодные handles и сохранены подтверждённые данные. Это проверки SQLite, не запуска агентов; reopen не заменяет аппаратный restart.
 - **AC4, R19 / M1:** после CP1 неизменный consumer проходит одинаковые public contract fixtures при подстановке SQLite и согласованной тестовой альтернативы. Отдельно проверяются exports/declarations и запреты зависимостей; реальная SQLite-приёмка не закрывается двойником.
-- **AC5, план §4–5:** package/root gates и guide example через публичные exports проходят; README/AGENTS пакета ведут к компактному русскому guide. Это developer-facing evidence, не работа организма.
+- **AC5, R21 / план §4–5:** package/root gates и guide example через публичные exports проходят; README/AGENTS пакета ведут к компактному русскому guide. Пример передаёт policy limits; negative fixtures R21 отвергают безлимитный вызов до I/O, а cleanup остаётся возможным после отмены. Это developer-facing evidence, не работа организма.
 
 Сквозная проверка хранения: fixture input → owner Zod/mapping → общий SQL/vector commit → DTO projection → reopen. Проверяются обе ветви Result, нулевые/falsy payload и BLOB bytes; physical storage принадлежит adapter, схема/интерпретация — fixture owner. Маппер без реального файла не закрывает AC1–AC3.
 
