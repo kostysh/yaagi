@@ -74,11 +74,16 @@ class Runtime {
   sealed = false;
   private changed = Promise.withResolvers<void>();
   private draining: Promise<void> | undefined;
+  private readonly watchdogInterval: number;
+  private watchdogUntil = 0;
 
   constructor(
     readonly input: AdapterInput,
     options: { pollIntervalMs: number; leaseMs: number },
   ) {
+    this.watchdogInterval = Math.ceil(
+      Math.max(options.pollIntervalMs, options.leaseMs) / 2,
+    );
     const repository = new Repository(this);
     this.agenda = new Agenda({
       backend: {
@@ -118,6 +123,12 @@ class Runtime {
   notify(): void {
     this.changed.resolve();
     this.changed = Promise.withResolvers<void>();
+  }
+  lifecycleEnded(): void {
+    // Agenda 6.2.6 leaves the losing watchdog delay of Job.run's Promise.race
+    // alive for at most one interval. Public terminal/failed-initial saves bound
+    // that tail; wait for it during stop without touching private timer handles.
+    this.watchdogUntil = performance.now() + this.watchdogInterval;
   }
   error(code: QueueFailure['code']): void {
     if (this.sealed) return;
@@ -208,6 +219,11 @@ class Runtime {
         await this.agenda.stop(false);
         while (this.active.size || this.pending.size || this.lifecycles.size)
           await this.changed.promise;
+        const watchdogTail = this.watchdogUntil - performance.now();
+        if (watchdogTail > 0)
+          await new Promise<void>((resolve) =>
+            setTimeout(resolve, Math.ceil(watchdogTail)),
+          );
         this.sealed = true;
         this.entries.clear();
       })();
@@ -256,7 +272,9 @@ class Repository implements JobRepository {
       const reserved = await runtime.input.store.reserve(
         type.name,
         type.version,
-        through.getTime(),
+        // Future jobs stay durable until a later library poll. Reserving the
+        // scan horizon creates an Agenda delayed timer that drain cannot cancel.
+        Math.min(through.getTime(), Date.now()),
         deadline.getTime(),
       );
       if (!reserved.ok) {
@@ -284,6 +302,7 @@ class Repository implements JobRepository {
       // overwrite it nor unlock a newer lease, even if its events claim success.
       runtime.lifecycles.delete(id);
       runtime.entries.delete(id);
+      runtime.lifecycleEnded();
       runtime.notify();
       return;
     }
@@ -292,8 +311,10 @@ class Repository implements JobRepository {
       if (
         !runtime.accepting ||
         runtime.lifecycles.size >= runtime.input.concurrency
-      )
+      ) {
+        runtime.lifecycleEnded();
         throw new QueueError('stopping');
+      }
       runtime.lifecycles.add(id);
     }
     return runtime.track(async () => {
@@ -309,7 +330,10 @@ class Repository implements JobRepository {
         entry.begun = true;
       } catch (failure) {
         // Initial save is before Job.run's try/finally and has no terminal save.
-        if (beginning) runtime.lifecycles.delete(id);
+        if (beginning) {
+          runtime.lifecycles.delete(id);
+          runtime.lifecycleEnded();
+        }
         if (
           !(
             failure instanceof QueueError &&

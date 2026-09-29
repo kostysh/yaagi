@@ -3,7 +3,7 @@
 - Document ID: `queue.validation.implementation`
 - Дата: 2026-09-30. Ветка: `codex/queue-agenda`.
 - Исходное требование: прямое решение оператора `queue-creation.agenda.v3@60d0022b`; [queue.spec](../../modules/queue/specification.md), [queue.plan](../../modules/queue/implementation-plan.md).
-- Статус: implementation verification; independent code/claim audits pending. Итоговый снимок передаётся аудиторам после self-check; этот документ не объявляет gate закрытым заранее.
+- Статус: remediation verification; Concept claims PASS на `3461cb2`, Spec/Security code FAIL сохранены ниже. Delta-аудиты исправлений pending; этот документ не объявляет gate закрытым заранее.
 
 ## Реализованный контур и evidence
 
@@ -12,8 +12,8 @@
 | Критерий | Production-export evidence |
 | --- | --- |
 | AC1–2 | `durable.test.ts`: реальный FULL/WAL, enqueue/duplicate/conflict, canonical hash, namespaces, lost enqueue/start/result acknowledgement и reopen |
-| AC3–4 | `recovery.test.ts`: SIGKILL reserved/started/handled/completed × budgets 1/3, повторные process deaths и restart, notBefore; corpus `experiments/queue/scenarios.json` общий с probe. `lifecycle.test.ts`: competing claims/consumers, idempotent begin, stale finalize/touch/release |
-| AC5 | `lifecycle.test.ts`: реальные callbacks, deadline/window/stop/cancel, heartbeat и отказ продления, watchdog → held final write, initial-save failure, bounded stop; `durable.test.ts`: held terminal save |
+| AC3–4 | `recovery.test.ts`: SIGKILL reserved/started/handled/completed × budgets 1/3, повторные process deaths и restart, notBefore; corpus `experiments/queue/scenarios.json` общий с probe. `lifecycle.test.ts`: real competing consumers плюс **дополнительные core-only** claim/begin/fencing tests. `adapter-regression.test.ts`: настоящий Repository Agenda, старые touch/terminal save/single/bulk unlock после замены lease; отдельно unstarted reservations и sealed callbacks |
+| AC5 | `lifecycle.test.ts`: реальные callbacks, deadline/window/stop/cancel, heartbeat и отказ продления, watchdog → held final write, initial-save failure, bounded stop; `durable.test.ts`: held terminal save. `adapter-regression.test.ts`: finite CPU handler и overdue window timer; отдельный `shutdown-child.ts`: отсутствие живых timers и естественный exit после stop/close для delayed/completed jobs, затем reopen/recovery |
 | AC6–7 | `durable.test.ts`: input/codecs/JSON, registry, corrupt record/hash, storage/unknown_commit, safe errors, retained result и receipt/tombstone. `lifecycle.test.ts`: failed final write без false success |
 | AC8 | `packaging.test.ts`: одинаковый consumer/core/state при смене только adapter; `contracts.types.ts`, `import-child.ts`, negative import probes в `scripts/check-boundary.ts` |
 | AC9 | `packaging.test.ts`: dist SQL fresh/repeat/failed migration; state запрещает работу до готовой chain. `recovery.test.ts`: stop/close, отключённый модуль с прежней DB, повторное включение без enqueue. Начальная schema; upgrade неприменим до её следующей версии |
@@ -27,11 +27,24 @@
 
 Self-check выявил и исправил: неверный minimum для backoff=0; тест pending schema, пытавшийся читать её до готовой chain; слишком короткие тестовые lease/window под параллельной нагрузкой; неверное ожидание adapter onError для ошибки, принадлежащей core. Последнее заменено барьером инъекции и проверкой durable state/lifecycle после stop. Общая тестовая lease приведена к 2000 ms (как probe), а watchdog проверяется отдельно удержанием реального heartbeat. Test harness больше не молчит при dispatch error до ожидаемого commit. Прогоны с timeout/failure не считаются PASS.
 
-Итоговый root-прогон: frozen install, format:check, lint/Biome/ESLint/boundary, typecheck, build, test и отдельный queue example — PASS. `core-types` type/import checks, `state` 53/53, `queue` 33/33: 0 failed/cancelled/skipped. Проверены portable declarations, все exports, no import I/O в заявленном smoke-контуре и отсутствие private imports. Scoped diff и `git diff --check` — PASS. Независимые code/claim-аудиты ещё не объявляются PASS до результата.
+Первичный root-прогон на `3461cb2`: frozen install, format:check, lint/Biome/ESLint/boundary, typecheck, build, test и отдельный queue example — PASS. `core-types` type/import checks, `state` 53/53, `queue` 33/33: 0 failed/cancelled/skipped. Проверены portable declarations, все exports, no import I/O в заявленном smoke-контуре и отсутствие private imports. Scoped diff и `git diff --check` — PASS. Этот прогон не обнаружил последующие audit findings и не заменяет их исправление.
 
 Отрицательные probe/plan отчёты сохранены рядом; новые mandatory findings потребуют собственного отчёта и remediation commit.
 
 После выделения общего crash corpus исходная standalone проба повторена: format, lint, typecheck/build и **21/21 tests PASS**, 0 failed/cancelled/skipped. Исторические результаты в README пробы не переписаны.
+
+## Независимые аудиты и исправления
+
+Snapshot `3461cb29833b471585c108502a63795514eca36d`, base `fbf0de9fa7e4fda63bac3bb6c0578bd6bb4ee4ce`:
+
+- Concept delta `/root/audit_queue_roadmap`, `gpt-6-astra/high`: `assessable`, `fake-risk: low`, `proceed`, `capability-demonstrated` в локальном API / **PASS**. Проверены architecture/ADR/spec metadata/AGENTS и прямой README/evidence context; независимо 15/15 guide/recovery/packaging и 4/4 selected lifecycle/durable tests. Full root suite этим аудитором не повторялся.
+- Spec `/root/audit_queue_plan`, `gpt-6-astra/xhigh`: `non-compliant` / **FAIL**; [SPEC-F1/F2](local-queue-agenda.code-spec.1.md). Security `/root/audit_queue_storage_boundary`, `gpt-6-astra/high`: **FAIL**; [SEC-Q-001](local-queue-agenda.code-security.1.md). Оба независимо выполнили исходные 33/33 tests; дополнительные witnesses выявили пробелы набора.
+
+Remediation: абсолютный deadline проверяется после handler/codec до принятия result; admission проверяет window даже при задержанной доставке timer. Repository резервирует только уже due jobs: notBefore остаётся в state до следующего poll. Проверка соседнего resource path выявила также watchdog tail Agenda; stop ждёт не более оставшегося одного интервала после последнего terminal/failed-initial save и возвращает stop_incomplete при недостаточном budget. Public lifecycle и pinned Agenda 6.2.6 позволяют ограничить этот хвост без private handles/patch и собственного scheduler; guide описывает влияние на shutdown budget.
+
+Production regressions вызывают настоящий публичный `Agenda.db`/JobRepository; наблюдение public define/save не подменяет реализацию. Барьеры задерживают begin/heartbeat до замены lease вторым реальным consumer. Проверены begun, unstarted, отсутствующие entries и sealed пути single/bulk unlock, stale touch/finalize. Core-only test более не выдаётся за полное cross-layer evidence.
+
+После remediation полный root-прогон повторён: `pnpm install --frozen-lockfile --store-dir .pnpm-store`, format:check, lint/boundary, typecheck, build, test, отдельный queue example — **PASS**. `state` 53/53, `queue` **40/40**, 0 failed/cancelled/skipped; core-types type/import checks PASS. Использован прежний task-local store без переустановки/смены dependency baseline. Повторный scoped diff --check PASS. Новые 7 regressions дополняют, а не заменяют исходный набор; ожидание независимого delta не маскируется этими self-check результатами.
 
 ## Пределы и поставка
 

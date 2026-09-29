@@ -25,11 +25,11 @@
 
 Публичные состояния: `pending` (ready/delayed/retryable), `running`, `completed`, `failed` (исчерпан бюджет), `cancelled`. `attemptsUsed` и история сохраняются. Reservation ещё не попытка; commit начала списывает её до handler, и crash не возвращает бюджет. После истечения lease прерванная попытка фиксируется как failed/interrupted; если бюджет остался, задание автоматически возвращается к обработке с backoff. Completed/cancelled/exhausted failed не запускаются снова.
 
-Сохранённый `notBefore` соблюдается после restart. Backoff задаётся в миллисекундах между неудачной попыткой и новым запуском; это локальная политика, не измеренный рабочий бюджет E2. Concurrency ограничивает **реально незавершённые callbacks одного экземпляра**, а не всех consumers вместе.
+Сохранённый `notBefore` соблюдается после restart; due jobs подбираются ближайшим poll Agenda, не заранее отдельным timer задания. Backoff задаётся в миллисекундах между неудачной попыткой и новым запуском; это локальная политика, не измеренный рабочий бюджет E2. Concurrency ограничивает **реально незавершённые callbacks одного экземпляра**, а не всех consumers вместе.
 
 ## Handler, время и отмена
 
-Handler выполняется вне storage transaction. Его context содержит ID/namespace, номер попытки, живой `signal` и оставшийся `timeoutMs` от durable начала, ограниченный текущим window. Передавайте их внешней операции и проверяйте abort; не запускайте неучтённые fire-and-forget эффекты. Невалидный result или exception записывает безопасную причину без stack, SQL, paths и содержимого исключения.
+Handler выполняется вне storage transaction. Его context содержит ID/namespace, номер попытки, живой `signal` и оставшийся `timeoutMs` от durable начала, ограниченный текущим window. Передавайте их внешней операции и проверяйте abort; не запускайте неучтённые fire-and-forget эффекты. Синхронный JavaScript нельзя прервать timer: после возврата управления абсолютный deadline проверяется заново, просроченный result не принимается как успешный. Невалидный result или exception записывает безопасную причину без stack, SQL, paths и содержимого исключения.
 
 Handler должен быть повторобезопасным: process может погибнуть после внешнего эффекта и до commit результата. Lease fencing защищает запись очереди, но не отменяет внешний эффект. `cancel(id)` сохраняет terminal cancelled и отменяет локальный callback; после завершённого/исчерпанного задания возвращает conflict. Cancel не откатывает уже выполненное действие. Другой consumer замечает потерю lease при heartbeat/finalize.
 
@@ -41,7 +41,7 @@ Handler должен быть повторобезопасным: process мож
 
 `stop_incomplete` означает: очередь остаётся stopping, **storage оставить открытым**, дождаться реального завершения callbacks и повторить stop с новым budget. `Promise.race` ограничивает ожидание, не останавливает JavaScript. Stop и конец window не равны terminal cancel: уже начатая попытка расходуется, остаток допускает restart. После успешного stop можно явно start тот же экземпляр; после ошибки сначала завершите stop и выясните её причину.
 
-`shutdownMs` ограничивает автоматическую остановку по window/error; явный stop использует переданные `options.timeoutMs` и signal. Queue не закрывает state и не владеет файлами.
+`shutdownMs` ограничивает автоматическую остановку по window/error; явный stop использует переданные `options.timeoutMs` и signal. После окончания попыток Agenda 6.2.6 может сохранять watchdog timer ещё до `ceil(max(pollIntervalMs, leaseMs) / 2)` ms. Adapter учитывает этот хвост в stop; выделяйте соответствующий запас или повторяйте stop после `stop_incomplete`. Private timers не изменяются. Queue не закрывает state и не владеет файлами.
 
 ## Результат, receipt и очистка
 

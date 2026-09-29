@@ -129,7 +129,7 @@ function build(
     namespace,
     storage,
     registrations,
-    () => state === 'running' && !error,
+    () => state === 'running' && !error && Date.now() < windowEnd,
   );
   const authorize = <P, R>(type: JobType<P, R>) => {
     if (
@@ -171,9 +171,11 @@ function build(
         !attempt
       )
         return;
-      const remaining =
-        Math.min(attempt.startedAt + row.policy.timeoutMs, windowEnd) -
-        Date.now();
+      const deadline = Math.min(
+        attempt.startedAt + row.policy.timeoutMs,
+        windowEnd,
+      );
+      const remaining = deadline - Date.now();
       if (state !== 'running') abort('stopped');
       if (remaining <= 0) abort('timeout');
       else timer = setTimeout(() => abort('timeout'), remaining);
@@ -189,6 +191,7 @@ function build(
             signal: controller.signal,
             timeoutMs: Math.max(1, Math.ceil(remaining)),
           });
+          if (Date.now() >= deadline) abort('timeout');
           if (!controller.signal.aborted) {
             try {
               result = {
@@ -202,6 +205,12 @@ function build(
         } catch {
           reason ??= 'handler_failed';
         }
+      }
+      // Timers cannot preempt synchronous handler/codec work. Recheck the actual
+      // deadline after control returns, before accepting its result as successful.
+      if (Date.now() >= deadline) {
+        abort('timeout');
+        result = { available: false };
       }
       clearTimeout(timer);
       // A cooperative abort is not a terminal cancel. Only cancel() changes that
