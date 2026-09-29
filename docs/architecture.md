@@ -2,7 +2,7 @@
 
 Document ID: `project.architecture`
 
-Дата: 2026-09-29. Статус: accepted — baseline с SQLite и ограничением переносимости по решению оператора; `queue` использует хранение через `state`, Agenda 6.2.6 выбрана после локального probe §8. Production queue и runtime ещё не приняты.
+Дата: 2026-09-30. Статус: accepted — baseline с SQLite и ограничением переносимости по решению оператора; `queue` использует хранение через `state`, Agenda 6.2.6 выбрана после локального probe §8. Production пакет реализован; его отдельная приёмка отражена в [evidence](validation/queue/local-queue-agenda.implementation.md). Runtime/E3 не приняты.
 
 Основание: [каноническая концепция](polyphony_concept.md), исходный снимок `07bf45c6d34b832d7760b919cce671a92e590509` с принятым 2026-09-23 уточнением §6.2.1 об одном операторе и будущих каналах связи; [методология](development-methodology/README.md) и решения оператора: независимые пакеты, единый runtime, TypeScript/Node.js + pnpm + SQLite + AI SDK, локальный CLI. Уточнение оператора 2026-09-24: модельные вычисления разных модулей проходят через `model-organs`; среди органов возможны LLM, аудиомодели и специализированные классификаторы. Это уточняет общую границу, не требует включить все типы моделей в первую версию. При противоречии концепция и решения оператора имеют приоритет.
 
@@ -477,7 +477,7 @@ Approval/evaluation читаются по canonical refs из собственн
 | Поток и модули | Статус для `spec-engineer` / причина | Зависимость и точка интеграции |
 | --- | --- | --- |
 | `core-types`, `state`, `constitution` | `ready`; compatibility prototype остаётся обязательством первой реализации | Сначала общие примитивы, owner-store/transaction contract и граница адаптера §2.4 без vendor types, policy/manifest/approval boundary; state integration использует реальный SQLite-файл и vector-extension probe |
-| `queue` | `ready` для спецификации/плана с Agenda 6.2.6; probe принят, production — после аудита контрактов | [queue.spec](modules/queue/specification.md), [queue.plan](modules/queue/implementation-plan.md); публичный `StoragePort`, owner bindings и сменный adapter §2.4; production enqueue/restart/duplicate/result → будущая `physiology` outbox/receipt → E3/R4 |
+| `queue` | Контракты и probe приняты; production пакет и public-export контур реализованы, [приёмка](validation/queue/local-queue-agenda.implementation.md) отдельно от runtime | [queue.spec](modules/queue/specification.md), [queue.plan](modules/queue/implementation-plan.md), [guide/example](../packages/queue/README.md); публичный `StoragePort`, owner bindings и сменный adapter §2.4; enqueue/restart/duplicate/result → будущая `physiology` outbox/receipt → E3/R4 |
 | `timeline`, `perception`, `world-model`, `memory`, `self-model`, `narrative`, `memetics` | `ready`; сценарии могут использовать заданные тестовые бюджеты без назначения production-порогов | Параллельно после фиксации контрактов; затем consistent snapshot и общий decision/outcome commit |
 | `skills`, `model-organs` | `ready` для registry/ports/versioning и контракта baseline; конкретный local inference профиль `blocked` до E1 | Сначала ModelPort и typed capability mapping, затем потребители; real provider до приёмки локальной жизни |
 | `executive`, `operator-cli` | `ready`; реальное workspace/Unix boundary evidence требуется при реализации | Единый протокол общения и управления до параллельной реализации; сквозной CLI path и action outcome |

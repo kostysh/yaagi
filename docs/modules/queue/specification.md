@@ -2,7 +2,7 @@
 
 - Document ID: `queue.spec`
 - Module ID: `queue`
-- Статус: draft; handoff для исполнителя `node-engineer` после полного probe PASS и независимой проверки документов.
+- Статус: accepted. Probe и независимые Concept/Security проверки документов PASS; отдельная приёмка реализации — в [evidence](../../validation/queue/local-queue-agenda.implementation.md).
 - Источники: прямое решение оператора `queue-creation.agenda.v3@60d0022b` → [концепция](../../polyphony_concept.md), §§6.9, 10–12 → [архитектура](../../architecture.md), §§2.4, 5.4, 8 → [ADR-002](../../adr/ADR-002-state-and-recovery.md).
 - Риск: high — потеря заданий, повторные внешние эффекты, ошибочное признание результата, утечка callbacks при shutdown.
 - Текущий потребитель: автор доверенного TypeScript consumer и исполняемого примера. Первый будущий доменный потребитель — `physiology`; он не реализуется здесь.
@@ -113,7 +113,7 @@ interface QueueScope {
 }
 ```
 
-Scope существует только внутри state callback; `candidate` возвращает одну pending due либо expired running/reserved job, без terminal. `put` заменяет одну owner record внутри уже открытой transaction, не открывает новую. Core проверяет неизвестные persisted данные до использования. `StoredJob` — технический JSON envelope с полями `schemaVersion: 1`, namespace/id/name/version/hash/status/policy/notBefore, payload (после cleanup — null), result availability/value, cleaned, attempts и nullable lease `{token, lockedAt}`. Каждая попытка содержит `number`, `startedAt`, nullable `finishedAt`, status, nullable reason и token. Счётчик выводится из массива attempts; null payload после cleanup не означает новое задание с JSON-null payload. Core владеет проверками и переходами этой записи, adapter — polling/dispatch/heartbeat и учётом своих callbacks.
+Scope существует только внутри state callback; `candidate` возвращает одну pending due либо expired running/reserved job, без terminal. `put` заменяет одну owner record внутри уже открытой transaction, не открывает новую. Core проверяет неизвестные persisted данные до использования. `StoredJob` — технический JSON envelope с полями `schemaVersion: 1`, namespace/id/name/version/hash/status/policy/notBefore, неизменным `requestedNotBefore` для проверки исходного hash после retry, payload (после cleanup — null), result availability/value, cleaned, attempts и nullable lease `{token, lockedAt}`. Каждая попытка содержит `number`, `startedAt`, nullable `finishedAt`, status, nullable reason и token. Счётчик выводится из массива attempts; null payload после cleanup не означает новое задание с JSON-null payload. Core владеет проверками и переходами этой записи, adapter — polling/dispatch/heartbeat и учётом своих callbacks.
 
 Reserve не списывает budget; begin списывает и подтверждает его до execute. Execute всегда вне TX; durable outcome пишет core. Touch и release проверяют delivery token; release снимает только не начавшуюся reservation, никогда running чужой/старой попытки. Failed/complete финальный callback adapter не переписывает уже сохранённый outcome. Adapter MUST исполнять R7/R10/R13/R15 даже если библиотека потеряла running bookkeeping. Его ошибки возвращаются кодом и через onError, не сырыми event exceptions. Поздний вызов после успешного stop не обращается к storage. Test adapter в M1 заменяет только эту seam, не core или owner binding.
 
@@ -175,7 +175,7 @@ R17. Schema migrations MUST поставляться immutable SQL artifacts, п
 
 ### High-risk readback
 
-Владелец исходных требований — оператор/архитектура; downstream owner всех applicable строк — исполнитель `node-engineer` с TypeScript/test skills. Источники указаны в связанных R; статус строк draft до gates ниже. Матрица не создаёт новых требований.
+Владелец исходных требований — оператор/архитектура; downstream owner всех applicable строк — исполнитель `node-engineer` с TypeScript/test skills. Источники указаны в связанных R; контракт принят после D0, реализация проверяется AC1–9. Матрица не создаёт новых требований.
 
 | Строка | Применимость, контракт и минимальный отрицательный oracle |
 | --- | --- |
@@ -194,4 +194,4 @@ R17. Schema migrations MUST поставляться immutable SQL artifacts, п
 
 Package readback: `core-types` владеет `Result`; `state/contracts` — `StoragePort`/`OperationOptions`; `state/adapters/sqlite` — `SqlScope`/driver. Queue root принимает уже подготовленный `StoragePort<QueueScope>`, а `queue/storage/sqlite` предоставляет owner binding и SQL chain. Agenda — прямая pinned dependency только технического `queue/adapters/agenda`; Drizzle/Zod — прямые зависимости owner mapping/validation, не случайные транзитивные импорты. Общие consumers ссылаются на queue/contracts, не дублируют aliases. Public contract tests покрывают все статусы/ошибки, M1 — неизменный core/consumer; нарушенный import/export блокирует AC8. Chain composition двух БД и business receipts проверит будущая `physiology`/E3, не этот scope.
 
-Предварительная проба получила Spec/Security PASS после remediation `8ce5d18020b2437cff06358a4d8155ad37a562b1`; [исходный FAIL сохранён](../../validation/queue/local-queue-agenda.probe-spec.1.md). Открытые gates: Concept/Security audit этой спецификации и Spec audit компактного плана. Это проверка артефактов и разрешённого перехода, не новый operator checkpoint. Работоспособность production queue до AC1–9 не заявляется.
+Предварительная проба получила Spec/Security PASS после remediation `8ce5d18020b2437cff06358a4d8155ad37a562b1`; [исходный FAIL сохранён](../../validation/queue/local-queue-agenda.probe-spec.1.md). Concept/Security docs PASS на `3604ae1`, Concept/Spec delta PASS на `fbf0de9` закрыли D0 до production. [Evidence реализации](../../validation/queue/local-queue-agenda.implementation.md) фиксирует AC1–9 и code-аудиты отдельно от приёмки артефактов; нового operator checkpoint нет. Runtime/E3 не выводятся из package acceptance.

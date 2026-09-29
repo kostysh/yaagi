@@ -1,0 +1,6 @@
+{
+  "phases": ["reserved", "started", "handled", "completed"],
+  "attemptBudgets": [1, 3],
+  "payload": 4,
+  "result": 42
+}

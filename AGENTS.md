@@ -21,6 +21,9 @@ local model ecology, and controlled reversible development. The concept,
 architecture, ADRs, roadmap, and minimal TypeScript workspace are present.
 `core-types` provides `Result`; `state` provides a database-neutral executable core
 with an injected SQLite adapter and tested storage primitives.
+`queue` provides durable jobs through the public state port with an injected
+Agenda adapter; its local evidence and audit status are recorded in
+`docs/validation/queue/local-queue-agenda.implementation.md`.
 Agent runtime, domain modules, and product-level tests are not implemented. The `v0-archived` tag is
 historical material, not a source of requirements for the new implementation.
 

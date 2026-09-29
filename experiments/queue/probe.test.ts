@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { fork } from 'node:child_process';
 import { once } from 'node:events';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import type { JobParameters } from 'agenda';
 import { enqueue, fixture, open, worker } from './fixture.js';
@@ -144,8 +145,11 @@ test('old completion, touch and single/bulk unlock cannot mutate a new reservati
   }
 });
 
-for (const phase of ['reserved', 'started', 'handled', 'completed']) {
-  for (const maxAttempts of [1, 3]) {
+const scenarios = JSON.parse(
+  await readFile(new URL('../scenarios.json', import.meta.url), 'utf8'),
+) as { phases: string[]; attemptBudgets: number[] };
+for (const phase of scenarios.phases) {
+  for (const maxAttempts of scenarios.attemptBudgets) {
     test(`SIGKILL ${phase}, budget ${maxAttempts}: restart without enqueue preserves budget and result`, async () => {
       const root = await fixture();
       let running: ReturnType<typeof worker> | undefined;

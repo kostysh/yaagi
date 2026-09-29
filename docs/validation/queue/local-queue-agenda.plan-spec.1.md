@@ -25,6 +25,6 @@
 
 Первопричина: при обновлении выбора не синхронизирована ещё одна активная формулировка ADR-001. Исправлена эта фраза; в architecture:103 прежний пример запрета импорта Liteque заменён общим запретом библиотек очереди, включая Agenda (граница не расширяется). Scope: эти две строки и данный отчёт. Whitespace и поиск активных противоречащих формулировок проверены.
 
-- Remediation commit: ещё не создан.
+- Remediation commit: `fbf0de9fa7e4fda63bac3bb6c0578bd6bb4ee4ce`.
 - Delta: F1 и consistency с уже проверенными architecture/ADR-002/spec/plan/roadmap; отдельно Concept для ADR-001 и уточнения import boundary.
-- Результат: ожидается.
+- Результат: Spec delta `compliant` / **PASS**; отдельный Concept delta `assessable`, `fake-risk: low`, `proceed`, `design-ready` / **PASS**. Проверены две смысловые строки и прямой контекст; новых обязательных findings нет. Неизменённые документы и probe повторно не проверялись; production не принят.
