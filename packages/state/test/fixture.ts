@@ -5,8 +5,31 @@ import { join } from 'node:path';
 import type { TestContext } from 'node:test';
 import type { Result } from '@polyphony/core-types';
 import type { OperationOptions, StorageCode } from '@polyphony/state/contracts';
-import { openSqlite, type SqliteState } from '@polyphony/state/node';
-import type { SqlMigration, SqlScope } from '@polyphony/state/sqlite';
+import { createState } from '@polyphony/state';
+import {
+  createSqliteAdapter,
+  type SqlMigration,
+  type SqlScope,
+} from '@polyphony/state/adapters/sqlite';
+
+export async function openState(
+  config: Parameters<typeof createSqliteAdapter>[0],
+  options: OperationOptions,
+) {
+  const result = await createSqliteAdapter(config, options);
+  if (!result.ok) return result;
+  return {
+    ok: true,
+    value: {
+      ...createState(result.value, (scope) => scope),
+      adapter: result.value,
+    },
+  } as const;
+}
+type TestState = Extract<
+  Awaited<ReturnType<typeof openState>>,
+  { ok: true }
+>['value'];
 
 export const limits = (
   signal: AbortSignal = new AbortController().signal,
@@ -40,11 +63,9 @@ export async function fixture(
 ) {
   const dir = mkdtempSync(join(tmpdir(), 'yaagi-state-public-'));
   const path = join(dir, 'state.db');
-  const stores: SqliteState[] = [];
+  const stores: TestState[] = [];
   const open = async (chain = migrations) => {
-    const store = value(
-      await openSqlite({ path, migrations: chain }, limits()),
-    );
+    const store = value(await openState({ path, migrations: chain }, limits()));
     stores.push(store);
     return store;
   };
@@ -57,6 +78,8 @@ export async function fixture(
   return { dir, path, store, open };
 }
 export const counts = (scope: SqlScope) =>
-  ['fixture_notes', 'fixture_marks', 'fixture_vectors'].map(
-    (table) => scope.all(`SELECT count(*) FROM ${table}`)[0][0],
+  Promise.all(
+    ['fixture_notes', 'fixture_marks', 'fixture_vectors'].map(
+      async (table) => (await scope.all(`SELECT count(*) FROM ${table}`))[0][0],
+    ),
   );

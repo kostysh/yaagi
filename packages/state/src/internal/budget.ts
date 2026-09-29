@@ -1,4 +1,3 @@
-import { performance } from 'node:perf_hooks';
 import { z } from 'zod';
 import type { OperationOptions } from '../contracts.js';
 import { StorageError } from './errors.js';
@@ -10,7 +9,11 @@ const Limits = z.object({
       value !== null &&
       typeof value === 'object' &&
       'aborted' in value &&
-      typeof value.aborted === 'boolean',
+      typeof value.aborted === 'boolean' &&
+      'addEventListener' in value &&
+      typeof value.addEventListener === 'function' &&
+      'removeEventListener' in value &&
+      typeof value.removeEventListener === 'function',
   ),
   timeoutMs: z.number().finite().nonnegative(),
 });
@@ -18,19 +21,30 @@ const Limits = z.object({
 export class Budget {
   readonly #signal: OperationOptions['signal'];
   readonly #end: number;
-  constructor(options: OperationOptions) {
+  constructor(options: OperationOptions, end?: number) {
     const parsed = Limits.safeParse(options);
     if (!parsed.success) throw new StorageError('incompatible');
     this.#signal = parsed.data.signal;
-    this.#end = performance.now() + parsed.data.timeoutMs;
+    this.#end =
+      end ?? performance.timeOrigin + performance.now() + parsed.data.timeoutMs;
     this.check();
   }
   check(): void {
     if (this.#signal.aborted) throw new StorageError('cancelled');
-    if (performance.now() >= this.#end) throw new StorageError('deadline');
+    if (performance.timeOrigin + performance.now() >= this.#end)
+      throw new StorageError('deadline');
   }
-  busyMs(): number {
+  get end(): number {
+    return this.#end;
+  }
+  options(): OperationOptions {
     this.check();
-    return Math.max(0, Math.min(40, Math.floor(this.#end - performance.now())));
+    return {
+      signal: this.#signal,
+      timeoutMs: Math.max(
+        0,
+        this.#end - performance.timeOrigin - performance.now(),
+      ),
+    };
   }
 }

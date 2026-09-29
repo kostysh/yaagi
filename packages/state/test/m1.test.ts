@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { StoragePort } from '@polyphony/state/contracts';
-import type { SqliteState } from '@polyphony/state/node';
-import type { SqlScope } from '@polyphony/state/sqlite';
+import { createState } from '@polyphony/state';
+import type { SqlScope } from '@polyphony/state/adapters/sqlite';
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { z } from 'zod';
 import { ownerDb } from '../examples/owners.js';
 import { failure, fixture, limits, value } from './fixture.js';
 import { Consumer, type FixtureOwners } from './m1-consumer.js';
-import { MemoryPort } from './m1-memory.js';
+import { MemoryAdapter, type MemoryScope } from './m1-memory.js';
 
 const alphaTable = sqliteTable('m1_alpha', { value: integer().notNull() });
 const betaTable = sqliteTable('m1_beta', { value: text().notNull() });
@@ -33,22 +33,28 @@ function owners(scope: SqlScope): FixtureOwners {
     },
   };
 }
-function bind(store: SqliteState): StoragePort<FixtureOwners> {
+function memoryOwners(scope: MemoryScope): FixtureOwners {
   return {
-    readSnapshot: (read, options) =>
-      store.readSnapshot((scope) => read(owners(scope)), options),
-    transact: (write, options) =>
-      store.transact((scope) => write(owners(scope)), options),
-    checkSchema: (options) => store.checkSchema(options),
-    close: () => store.close(),
+    alpha: {
+      read: async () => Alpha.parse({ value: scope.get('alpha') }).value,
+      write: async (value) => {
+        scope.set('alpha', Alpha.parse({ value }).value);
+      },
+    },
+    beta: {
+      read: async () => Beta.parse({ value: scope.get('beta') }).value,
+      write: async (value) => {
+        scope.set('beta', Beta.parse({ value }).value);
+      },
+    },
   };
 }
 for (const implementation of ['sqlite', 'memory'])
   test(`M1 unchanged consumer and fixtures: ${implementation}`, async (t) => {
     const port: StoragePort<FixtureOwners> =
       implementation === 'memory'
-        ? new MemoryPort()
-        : bind(
+        ? createState(new MemoryAdapter(), memoryOwners)
+        : createState(
             (
               await fixture(t, [
                 {
@@ -56,9 +62,13 @@ for (const implementation of ['sqlite', 'memory'])
                   sql: "CREATE TABLE m1_alpha(value); INSERT INTO m1_alpha VALUES(0); CREATE TABLE m1_beta(value); INSERT INTO m1_beta VALUES('');",
                 },
               ])
-            ).store,
+            ).store.adapter,
+            owners,
           );
     const consumer = new Consumer(port);
+    failure(await consumer.read(limits(AbortSignal.abort())), 'cancelled');
+    failure(await consumer.read(limits(undefined, 0)), 'deadline');
+    failure(await consumer.read(limits(undefined, NaN)), 'incompatible');
     assert.deepEqual(value(await consumer.read(limits())), {
       alpha: 0,
       beta: '',

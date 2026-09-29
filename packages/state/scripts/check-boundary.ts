@@ -9,8 +9,8 @@ const manifest = JSON.parse(
 assert.deepEqual(
   manifest.exports,
   Object.fromEntries(
-    ['contracts', 'sqlite', 'node'].map((name) => [
-      `./${name}`,
+    ['index', 'contracts', 'adapters/sqlite'].map((name) => [
+      name === 'index' ? '.' : `./${name}`,
       { types: `./dist/${name}.d.ts`, import: `./dist/${name}.js` },
     ]),
   ),
@@ -48,9 +48,22 @@ for (const path of [
   '../../core-types/src/index.js',
 ]) {
   const [result] = await eslint.lintText(`import '${path}';`, {
-    filePath: new URL('src/node.ts', root).pathname,
+    filePath: new URL('src/adapters/sqlite.ts', root).pathname,
   });
   assert.ok(result.messages.some((m) => m.ruleId === 'no-restricted-imports'));
+}
+for (const code of [
+  "import 'node:worker_threads';",
+  "import './adapters/sqlite.js';",
+  "import './internal/../adapters/sqlite.js';",
+  "import 'sqlite-vec';",
+  "export type { SqlScope } from './adapters/sqlite.js';",
+  "export const native = import('node:sqlite');",
+]) {
+  const [result] = await eslint.lintText(code, {
+    filePath: new URL('src/index.ts', root).pathname,
+  });
+  assert.ok(result.messages.some((m) => m.ruleId === 'no-restricted-syntax'));
 }
 console.log(
   'state boundary: exports, dependencies and negative import probes passed',

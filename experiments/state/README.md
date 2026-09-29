@@ -62,4 +62,16 @@ Generated artifacts получены командами `pnpm generate --name in
 
 Первичные API sources: [Node 24.21.0](https://github.com/nodejs/node/blob/v24.21.0/doc/api/sqlite.md), [sqlite-vec Node binding](https://alexgarcia.xyz/sqlite-vec/js.html), [Drizzle proxy](https://github.com/drizzle-team/drizzle-orm/tree/main/drizzle-orm/src/sqlite-proxy), [custom migrations](https://orm.drizzle.team/docs/drizzle-kit-generate#custom-migrations). Исполненные local versions, их typings и runtime probes важнее предположений по latest docs.
 
-До CP1 production package, экспортная карта и developer usage guide не создаются. M1, remote Ubuntu CI, нагрузочный E2, I1/E3, другие платформы и аппаратная сохранность не подтверждены. К следующей стадии переходить только после явного согласования [предложения контракта](../../docs/modules/state/specification.md#предложение-контракта-на-cp1) и продолжения.
+Предыдущие разделы фиксируют исторический snapshot до CP1, принятый оператором 2026-09-29. Его busy/40 ms/no-worker механизм не является текущим production контрактом. Текущая граница и evidence — в [state.spec](../../docs/modules/state/specification.md); E2, I1/E3, другие платформы и аппаратная сохранность здесь не подтверждаются.
+
+## S1/S2 delta: workers и native concurrency, 2026-09-29
+
+По решению оператора workers разрешены только после подтверждения корректности; собственная очередь/pool/scheduler и callback replay запрещены. Дополнение существующего контура: `concurrency.test.ts` и `concurrency-worker.ts`, временная БД, без нового workspace-пакета/framework/dependencies.
+
+`pnpm build && node --experimental-strip-types --test --test-timeout=15000 dist/concurrency.test.js` проверяет: native BEGIN wait другого worker, продолжение первого через await, readers/read-write snapshot, Drizzle + BLOB + fixed-vector SQL, commit/rollback, ограниченное native ожидание, cooperative cancel после реально выполнявшегося SQL, закрытие всех connections и reopen. Node 24.21.0, SQLite 3.53.4 и vec v0.1.9 подтверждены запросом. SQL внутри worker по-прежнему синхронен.
+
+Первая попытка тестового cleanup зависла: port закрывался до отправки terminal reply. Reply перенесён перед close; три изолированных прогона подряд PASS (~0.6 s process duration каждый), без открытых workers. Полный standalone contour: format/check, dual lint/boundary, typecheck/build и **27 tests PASS**, включая 26 исторических. Исторические tests не подменяют новые production AC6.
+
+При переносе в пакет межпроцессный тест выявил снятие POSIX locks сторонним open/close fd в проверке permissions. Production исправлен на lstat metadata checks и exclusive creation только нового inode; native locks повторно проверены реальными child processes. См. [новое evidence #30](../../docs/validation/state/gh-30.adapters.1.md). Это не собственный lock/exclusivity механизм.
+
+Механизм принят по положительному probe; performance/throughput и hard interruption не заявляются. Новые public exports, unchanged-core M1, migrations/backup regressions и worker-failure tests проверяются в `packages/state`, отдельно от данного прототипа и remote CI.

@@ -11,7 +11,7 @@ export type StorageCode =
   | 'cancelled'
   | 'deadline'
   | 'scope_ended'
-  | 'sql_failed'
+  | 'operation_failed'
   | 'callback_failed';
 export type StorageFailure = {
   readonly kind: 'storage';
@@ -19,7 +19,15 @@ export type StorageFailure = {
 };
 export type OwnerFailure<E> = { readonly kind: 'owner'; readonly error: E };
 export type OperationOptions = {
-  readonly signal: { readonly aborted: boolean };
+  readonly signal: {
+    readonly aborted: boolean;
+    addEventListener(
+      type: 'abort',
+      listener: () => void,
+      options?: { once?: boolean },
+    ): void;
+    removeEventListener(type: 'abort', listener: () => void): void;
+  };
   readonly timeoutMs: number;
 };
 export type SchemaStatus = {
@@ -38,5 +46,23 @@ export interface StoragePort<S> {
   checkSchema(
     options: OperationOptions,
   ): Promise<Result<SchemaStatus, StorageFailure>>;
+  migrate(options: OperationOptions): Promise<Result<void, StorageFailure>>;
+  close(): Promise<Result<void, StorageFailure>>;
+}
+
+export interface StorageSession<S> {
+  readonly scope: S;
+  readonly failure: StorageFailure | undefined;
+  finish(outcome: 'commit' | 'rollback'): Promise<Result<void, StorageFailure>>;
+}
+export interface StorageAdapter<S> {
+  begin(
+    mode: 'snapshot' | 'transaction',
+    options: OperationOptions,
+  ): Promise<Result<StorageSession<S>, StorageFailure>>;
+  checkSchema(
+    options: OperationOptions,
+  ): Promise<Result<SchemaStatus, StorageFailure>>;
+  migrate(options: OperationOptions): Promise<Result<void, StorageFailure>>;
   close(): Promise<Result<void, StorageFailure>>;
 }

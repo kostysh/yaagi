@@ -15,8 +15,14 @@ registerHooks({
   },
 });
 assert.deepEqual(Object.keys(await import('@polyphony/state/contracts')), []);
-assert.deepEqual(Object.keys(await import('@polyphony/state/sqlite')), []);
-contractsOnly = false;
-assert.deepEqual(Object.keys(await import('@polyphony/state/node')), [
-  'openSqlite',
+assert.deepEqual(Object.keys(await import('@polyphony/state')), [
+  'createState',
 ]);
+assert.deepEqual(
+  Object.keys(await import('@polyphony/state/adapters/sqlite')),
+  ['createSqliteAdapter'],
+);
+contractsOnly = false;
+for (const old of ['@polyphony/state/node', '@polyphony/state/sqlite']) {
+  await assert.rejects(import(old), { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' });
+}
