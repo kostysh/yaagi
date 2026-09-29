@@ -1,0 +1,8 @@
+packages: []
+engineStrict: true
+packageManagerStrictVersion: true
+managePackageManagerVersions: false
+saveExact: true
+storeDir: .pnpm-store
+cacheDir: .cache/pnpm
+strictDepBuilds: true

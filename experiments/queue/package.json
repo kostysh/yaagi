@@ -1,0 +1,25 @@
+{
+  "name": "queue-agenda-probe",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": "24.21.0",
+    "pnpm": "10.34.5"
+  },
+  "scripts": {
+    "format": "../../node_modules/.bin/biome format --write .",
+    "format:check": "../../node_modules/.bin/biome format .",
+    "lint": "../../node_modules/.bin/biome lint . && node --experimental-strip-types ../../node_modules/eslint/bin/eslint.js --flag unstable_native_nodejs_ts_config .",
+    "typecheck": "../../node_modules/.bin/tsc -p tsconfig.json --noEmit",
+    "build": "../../node_modules/.bin/tsc -p tsconfig.json",
+    "test": "pnpm build && node --test --test-timeout=30000 dist/*.test.js"
+  },
+  "dependencies": {
+    "@polyphony/core-types": "link:../../packages/core-types",
+    "@polyphony/state": "link:../../packages/state",
+    "agenda": "6.2.6",
+    "zod": "4.6.5"
+  }
+}
