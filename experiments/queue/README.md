@@ -22,7 +22,7 @@ pnpm audit --prod
 
 ## Результат 2026-09-29
 
-Исходные **19 тестов PASS**, 0 failed/skipped, не закрыли gate: независимый Spec audit нашёл stop-дефект ([сохранённый FAIL](../../docs/validation/queue/local-queue-agenda.probe-spec.1.md)). После lifecycle-исправления полный прогон **20/20 PASS**, затем добавлен отказ start-save и весь затронутый shutdown-контур **5/5 PASS**. Format, Biome/ESLint, typecheck и build PASS. Принятие пробы требует delta-аудита нового snapshot. `pnpm audit --prod` для standalone lockfile: 0 известных advisories (это не доказательство отсутствия уязвимостей; linked workspace dependencies проверяются своим контуром).
+Исходные **19 тестов PASS**, 0 failed/skipped, не закрыли gate: независимый Spec audit нашёл stop-дефект ([сохранённый FAIL и remediation PASS](../../docs/validation/queue/local-queue-agenda.probe-spec.1.md)). После lifecycle-исправления полный прогон **20/20 PASS**, затем добавлен отказ start-save и весь затронутый shutdown-контур **5/5 PASS**. Format, Biome/ESLint, typecheck и build PASS. На snapshot `8ce5d18020b2437cff06358a4d8155ad37a562b1` получены независимые Spec и Security delta **PASS**, исходные результаты не перезаписаны. `pnpm audit --prod` для standalone lockfile: 0 известных advisories (это не доказательство отсутствия уязвимостей; linked workspace dependencies проверяются своим контуром).
 
 | Проверяемая граница | Исполняемое evidence в `probe.test.ts` |
 | --- | --- |

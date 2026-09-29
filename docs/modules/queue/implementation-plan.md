@@ -1,0 +1,46 @@
+# План имплементации модуля `queue`
+
+- Document ID: `queue.plan`
+- Module ID: `queue`
+- Дата: 2026-09-29.
+- Статус: draft; production-задачи blocked до D0, результаты их проверок pending.
+- Источники: [queue.spec](specification.md), [архитектура §§2.4, 5.4, 8](../../architecture.md), [ADR-002](../../adr/ADR-002-state-and-recovery.md), принятый оператором план `queue-creation.agenda.v3@60d0022b` и разрешение реализовать публичный `JobRepository` Agenda через `state`.
+- Baseline исполнения: `8ce5d18020b2437cff06358a4d8155ad37a562b1`, `.worktree/queue-agenda`, `codex/queue-agenda`; probe remediation принята, спецификация/план передаются на независимый аудит.
+- Рамочная Issue / sub-issues: ссылки добавляет координатор при разрешённом ведении GitHub по [workflow](../../development-methodology/git-and-github.md); требования остаются в документах. Публикация этим планом не разрешена.
+
+## Результат и границы
+
+Доверенный TypeScript consumer сохраняет задание, получает durable status/result и после перезапуска продолжает незавершённую работу без повторного enqueue и сброса общего бюджета попыток. Сквозная приёмка: consumer → production core → Agenda adapter → публичный `state` → handler → durable result → reopen.
+
+Scope относительно принятого плана unchanged; новых требований нет. Самый прямой путь — один пакет `@polyphony/queue`, существующие `Result`/`StoragePort`, owner-local Drizzle/Zod bindings и сменный Agenda adapter. `queue` владеет схемой/миграциями/job semantics, `state` — драйвером, соединениями, файлами, транзакциями и backup; root мигрирует и закрывает storage после успешного stop. Две БД не объединяются. Будущий владелец canonical outbox/receipts — `physiology`, при её интеграции/E3, не в этой работе.
+
+Не входят private fork/patch Agenda, собственный scheduler/DB driver, изменение API `state`, расширение `core-types`, runtime/physiology, mobile/cloud, exactly-once effects и аппаратный power-loss/E3. Проба, M1 и документы не доказывают эти способности. Риск high: persistent data, public contracts, повторы и shutdown. Низкоуровневый DB-код и storage-fault тесты `state` не копируются.
+
+## Задачи и зависимости
+
+Три production-инкремента Q1–Q3 последовательны; общий меняющийся контракт и migrations не распараллеливаются. Владелец executable evidence — `node-engineer` с `typescript-engineer`, `typescript-test-engineer` и `implementation-discipline`. Общие файлы и lockfile интегрирует координатор. Точные символы берутся из [контракта подключения](specification.md#подключение-core-owner-scope-и-adapter), не определяются этим планом.
+
+| ID | Проверяемый результат / источник | Start-зависимость и текущий handoff | Проверка и фальсификатор |
+| --- | --- | --- | --- |
+| D0 | Полный probe gate закрыт; публичные контракты спецификации достаточны; архитектура/ADR отражают фактический выбор Agenda и ограничения | Probe Spec/Security delta PASS на baseline; pending независимые аудиты документов по маршрутам ниже | Весь набор §8 архитектуры до production, включая stop-регрессию ниже. Фальсификатор: любой незакрытый обязательный finding, опора только на прежние 19 PASS или перенос probe-сценария в Q3 вместо предварительного gate |
+| Q1 | Durable enqueue/get и представление status/result; owner bindings, immutable migrations и validation без vendor types в общем API. Источник: R1–6, R16–17 | Blocked: start после D0; затем ready for coding | Реальный `state`: enqueue/readback/reopen, same ID/hash, conflict, lost acknowledgement, invalid/corrupt данные, сохранение result/tombstone в owner mapping. Fresh/repeat/failure migrations доступны из сборки. Фальсификатор: false success, вторая job, потерянные данные или зависимость SQL artifacts от source tree/cwd. Полный путь получения результата закрывается Q2/Q3 |
+| Q2 | Agenda через публичный `JobRepository` обрабатывает jobs; durable attempts/result, fencing, cancel, deadline/window и bounded stop. Источник: R2, R7–15 | Blocked: start после проверенного Q1; затем ready for coding | Реальный handler вне короткой TX; reservation не списывает попытку, ambiguous start не списывает дважды. Проверить stale completion/touch/single и bulk unlock, heartbeat failure, live signal, фактический concurrency и stop при watchdog/позднем save. Фальсификатор: event-only success, callback после false stopped или новая попытка сверх бюджета/лимита |
+| Q3 | Recovery/concurrency и coordinated cleanup сохраняют идентичность, бюджет и outcome. Источник: R3–17, AC1–7/AC9 | Blocked: start после Q2; затем ready for coding; Q1/Q2/Q3 имеют общую acceptance | Повторить весь контур пробы через production exports с переиспользованием fixtures: реальные файлы, IPC kill/restart после reservation/start/handler/result commit, последняя попытка, повторные рестарты, competing claims/enqueue. Проверить retained result → receipt → cleanup/tombstone. Фальсификатор: повторный enqueue для восстановления, запуск terminal job, сброс бюджета, ранний delayed/retry, premature cleanup или stale запись |
+| Q4 | Потребитель может подключить и проверить готовый модуль; M1, example/guide, rollback, package/root gates и обязательные аудиты завершены. Источник: AC1–9, R17, методология | Blocked: start после Q3; coding/test + `documentation`; аудиторы независимы от авторов | M1 сохраняет production core, consumer и fixtures, меняется только QueueAdapter на test-only альтернативу. Исполнимый пример и rollback используют собранные exports. Фальсификатор: замена всего Queue, два production backend, импорт с I/O, недоступный SQL из dist или документация обещает непроверенную способность |
+
+D0 требует эффективного `FULL`, durable enqueue/readback/reopen, неоднозначного enqueue с прежними ID/hash, ID/hash conflict, process kill/restart после reservation и начала попытки, включая последнюю, исчерпания общего бюджета, stale completion, result до cleanup и bounded stop. [Исходная проба](../../../experiments/queue/README.md) и [отрицательный аудит](../../validation/queue/local-queue-agenda.probe-spec.1.md) сохраняются: watchdog expiry выявил окно перед поздним terminal save. До PASS remediation/delta исходные 19 тестов не закрывают gate. Нового operator checkpoint/CP1 нет: после полного gate работа продолжается; несовместимость возвращается координатору с конкретным evidence и блокирует только зависимую реализацию.
+
+## Совместная приёмка и завершение
+
+Acceptance Q1–Q4 принадлежит координатору: все AC1–9 проходят на одном интегрированном snapshot. Pending/delayed/retryable/interrupted восстанавливаются автоматически; completed/cancelled/exhausted failed не запускаются. Общий бюджет расходует каждая начатая попытка, crash его не возвращает; последняя interrupted попытка заканчивается durable failed. Stop/window end не являются terminal cancel; `stop_incomplete` не разрешает root закрыть storage. Ни Promise.race, ни событие Agenda не доказывают прекращение callbacks или durable result.
+
+- Перед production installation сверить exact dependencies, peer/runtime совместимость Node 24.21.0 / TS / `state` и security updates; фиксировать lockfile без смены root toolchain baseline. Пакет получает обязательные scripts; root/CI по-прежнему делегируют пакетам, integration tests входят в root test.
+- Выполнить frozen install, package/root format:check, Biome + ESLint + boundary, typecheck, build, test/test:integration, example и `git diff --check`. Проверить portable declarations, public/private imports, все exports без I/O; авторский код/scripts/config — TypeScript, прямой запуск только с `--experimental-strip-types`.
+- Документы: русские package README/guide и исполняемый пример подключения/migrations/lifecycle/recovery/cleanup; root README — английский. Architecture/ADR handoff и roadmap меняются только по фактическому выбору и evidence. По R17/AC9 доказать rollback: успешный stop, сохранённая DB без queue, повторное открытие совместимой сборкой и продолжение прежней job; без destructive down и старого DB snapshot.
+- До coding-ready: Concept для spec и изменённых architecture/ADR; Spec для плана/roadmap; Security для изменённых trust/data границ документов. До завершения: Spec и Security кода, Spec guide/README/example по применимому предмету. Self-check и gates → локальный commit координатора → независимый audit snapshot. [Отрицательные отчёты](../../development-methodology/audits.md) сохраняются; remediation — новый commit и delta review, после трёх FAIL одного документа — RCA.
+- Итог: реальные test/audit results и ограничения, branch/HEAD, оставленные resources/worktree; локальный PASS не подменяет remote CI. Push/PR/merge/tag и удаление worktree не входят в текущее разрешение. Навигационные Issue/sub-issues не копируют spec/plan.
+
+## Открытые условия
+
+- D0 / координатор: probe remediation PASS получен; дождаться независимых аудитов документов. Production tests/results пока pending.
+- Новых вопросов оператору нет. Если реализация выявит противоречие, детали поведения возвращаются `spec-engineer`, изменение границы — `architecture-engineer`; до решения приостанавливается только зависимый переход, без молчаливого изменения API или scope.

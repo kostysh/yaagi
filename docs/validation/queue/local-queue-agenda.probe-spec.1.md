@@ -33,6 +33,6 @@ Witness аудитора: enqueue с budget 3; handler ждёт abort; terminal 
 
 ## Повторный аудит
 
-- Remediation commit: ещё не создан.
+- Remediation commit: `8ce5d18020b2437cff06358a4d8155ad37a562b1`.
 - Передаваемая дельта: исправление F1, новый тест `watchdog expiry cannot make stop succeed…`, связанные shutdown-пути и точность evidence.
-- Результат: ожидается.
+- Результат: **PASS**, исходный `compliant`, тот же независимый Spec аудитор. Повторены build, 5/5 shutdown tests и diff-check; F1 закрыт, новых mandatory findings в прямом blast radius нет. Независимый Security delta audit того же commit — `PASS (scoped)` / **PASS**, также 5/5 shutdown tests. Неизменённые сценарии не перезапускались, production этим не принят.
