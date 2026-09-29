@@ -76,6 +76,7 @@ for (const mode of [
   'worker-before',
   'worker-after',
   'backup-cancel',
+  'wal-cleanup',
 ])
   test(`safe real SQLite/extension failure (${mode})`, async (t) => {
     const f = await fixture(t);

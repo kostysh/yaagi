@@ -1,8 +1,45 @@
-import { registerHooks } from 'node:module';
+import fs from 'node:fs';
+import { registerHooks, syncBuiltinESMExports } from 'node:module';
 import { DatabaseSync } from 'node:sqlite';
-import { isMainThread, workerData } from 'node:worker_threads';
+import {
+  BroadcastChannel,
+  getEnvironmentData,
+  isMainThread,
+  workerData,
+} from 'node:worker_threads';
 
 const mode = process.env.YAAGI_STATE_TEST_FAULT;
+if (!isMainThread && mode === 'wal-cleanup' && workerData.job === 'check') {
+  const control = getEnvironmentData('state-wal-cleanup') as {
+    name: string;
+    buffer: SharedArrayBuffer;
+  };
+  const original = fs.lstatSync;
+  let paused = false;
+  Object.defineProperty(fs, 'lstatSync', {
+    value: (path: fs.PathLike, options?: fs.StatOptions) => {
+      const stat = original(path, options);
+      if (!paused && String(path).endsWith('-wal') && stat) {
+        paused = true;
+        const channel = new BroadcastChannel(control.name);
+        try {
+          channel.postMessage('observed-wal');
+          // Only pause after a real metadata read. The real last reader closes
+          // and SQLite itself removes WAL; no file or result is fabricated.
+          if (
+            Atomics.wait(new Int32Array(control.buffer), 0, 0, 5000) ===
+            'timed-out'
+          )
+            throw new Error('WAL cleanup test barrier timed out');
+        } finally {
+          channel.close();
+        }
+      }
+      return stat;
+    },
+  });
+  syncBuiltinESMExports();
+}
 if (!isMainThread && mode === 'backup-cancel' && workerData.job === 'backup') {
   const fixture = new URL('./backup-fixture.js', import.meta.url).href;
   registerHooks({

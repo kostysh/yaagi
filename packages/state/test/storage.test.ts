@@ -574,6 +574,55 @@ test('online SQLite backup is no-overwrite, private, independently restorable an
   );
 });
 
+test('backup captures committed WAL while an older reader retains its snapshot', async (t) => {
+  const f = await fixture(t);
+  const target = join(f.dir, 'live-wal-backup.db');
+  value(
+    await f.store.readSnapshot(async (old) => {
+      assert.deepEqual(await counts(old), [0, 0, 0]);
+      value(
+        await f.store.transact(async (writer) => {
+          await writeOwners(writer);
+          return { ok: true, value: undefined };
+        }, limits()),
+      );
+      // Metadata only: opening/closing a live sidecar fd could release locks.
+      assert.ok(statSync(`${f.path}-wal`).size > 0);
+      value(await f.store.adapter.backupTo(target, limits()));
+      assert.deepEqual(await counts(old), [0, 0, 0]);
+    }, limits()),
+  );
+  const restore = join(f.dir, 'live-wal-restored.db');
+  copyFileSync(target, restore);
+  const restored = value(
+    await openState({ path: restore, migrations: release }, limits()),
+  );
+  try {
+    value(
+      await restored.readSnapshot(async (scope) => {
+        assert.deepEqual(await counts(scope), [1, 1, 1]);
+        assert.deepEqual(await scope.all('SELECT bytes FROM fixture_notes'), [
+          [new Uint8Array([0, 255, 128, 42])],
+        ]);
+        assert.deepEqual(
+          await scope.all(
+            'SELECT rowid,distance FROM fixture_vectors WHERE embedding MATCH ? AND k = ?',
+            [vector, 1n],
+          ),
+          [[1, 0]],
+        );
+      }, limits()),
+    );
+  } finally {
+    value(await restored.close());
+  }
+  value(await f.store.close());
+  assert.deepEqual(
+    value(await (await f.open()).readSnapshot(counts, limits())),
+    [1, 1, 1],
+  );
+});
+
 test('cancellation while starting backup never publishes a target', async (t) => {
   const f = await fixture(t);
   value(

@@ -1,4 +1,11 @@
-import { closeSync, constants, lstatSync, openSync, statSync } from 'node:fs';
+import {
+  closeSync,
+  constants,
+  lstatSync,
+  openSync,
+  type Stats,
+  statSync,
+} from 'node:fs';
 import { dirname } from 'node:path';
 import { StorageError } from '../../internal/errors.js';
 
@@ -6,6 +13,15 @@ export function privateDirectory(path: string): void {
   const stat = statSync(path);
   if (
     !stat.isDirectory() ||
+    stat.uid !== process.getuid?.() ||
+    (stat.mode & 0o077) !== 0
+  )
+    throw new StorageError('unavailable');
+}
+
+function checkPrivateFile(stat: Stats): void {
+  if (
+    !stat.isFile() ||
     stat.uid !== process.getuid?.() ||
     (stat.mode & 0o077) !== 0
   )
@@ -34,13 +50,7 @@ export function privateFile(path: string, create = false): void {
         throw error;
     }
   }
-  const stat = lstatSync(path);
-  if (
-    !stat.isFile() ||
-    stat.uid !== process.getuid?.() ||
-    (stat.mode & 0o077) !== 0
-  )
-    throw new StorageError('unavailable');
+  checkPrivateFile(lstatSync(path));
 }
 
 export function databaseFiles(path: string, allowMissing = false): void {
@@ -50,6 +60,8 @@ export function databaseFiles(path: string, allowMissing = false): void {
     const stat = lstatSync(file, { throwIfNoEntry: false });
     if (!stat && suffix === '' && !allowMissing)
       throw new StorageError('unavailable');
-    if (stat) privateFile(file);
+    // SQLite may remove optional sidecars when its last connection closes.
+    // Validate this metadata snapshot without a second racing filesystem read.
+    if (stat) checkPrivateFile(stat);
   }
 }
