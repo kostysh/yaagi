@@ -34,6 +34,15 @@ export function worker(
 ) {
   const abort = new AbortController();
   const active = new Set<Promise<void>>();
+  // Agenda may remove a job from its running list before Job.run finally enters
+  // saveJobState. Track that whole public repository lifecycle, including the gap.
+  const deliveries = new Set<string>();
+  let changed = Promise.withResolvers<void>();
+  let sealed = false;
+  const notify = () => {
+    changed.resolve();
+    changed = Promise.withResolvers<void>();
+  };
   const errors: Error[] = [];
   // Resource accounting, not a second worker/scheduler: drain public repository calls
   // already accepted by Agenda before its poll interval was stopped.
@@ -41,19 +50,50 @@ export function worker(
   function track<T>(promise: Promise<T>): Promise<T> {
     pending.add(promise);
     void promise.then(
-      () => pending.delete(promise),
-      () => pending.delete(promise),
+      () => {
+        pending.delete(promise);
+        notify();
+      },
+      () => {
+        pending.delete(promise);
+        notify();
+      },
     );
     return promise;
   }
   const next = repository.getNextJobToRun.bind(repository);
-  repository.getNextJobToRun = (...args) => track(next(...args));
+  repository.getNextJobToRun = (...args) =>
+    sealed ? Promise.resolve(undefined) : track(next(...args));
   const save = repository.saveJobState.bind(repository);
-  repository.saveJobState = (...args) => track(save(...args));
+  repository.saveJobState = (job) => {
+    if (sealed) return Promise.reject(new Error('Repository admission closed'));
+    const finalizing = !job.lockedAt;
+    const beginning = Boolean(
+      job._id && !finalizing && !deliveries.has(job._id),
+    );
+    if (job._id && !finalizing) deliveries.add(job._id);
+    return track(
+      (async () => {
+        try {
+          await save(job);
+        } catch (error) {
+          // The first save in Agenda Job.run is BEFORE its try/finally. Rejection
+          // there never gets a terminal save and never enters the handler.
+          if (job._id && beginning) deliveries.delete(job._id);
+          throw error;
+        } finally {
+          if (job._id && finalizing) deliveries.delete(job._id);
+          notify();
+        }
+      })(),
+    );
+  };
   const unlock = repository.unlockJob.bind(repository);
-  repository.unlockJob = (...args) => track(unlock(...args));
+  repository.unlockJob = (...args) =>
+    sealed ? Promise.resolve() : track(unlock(...args));
   const unlockMany = repository.unlockJobs.bind(repository);
-  repository.unlockJobs = (...args) => track(unlockMany(...args));
+  repository.unlockJobs = (...args) =>
+    sealed ? Promise.resolve() : track(unlockMany(...args));
   const agenda = new Agenda({
     backend: {
       name: 'state-probe',
@@ -87,6 +127,7 @@ export function worker(
         await execution;
       } finally {
         active.delete(execution);
+        notify();
       }
     },
     { backoff: () => 20 },
@@ -111,9 +152,11 @@ export function worker(
             const result = await drained;
             if (result.timedOut || result.aborted)
               throw new Error('Agenda drain incomplete');
-            await Promise.allSettled(active);
             await agenda.stop(false);
-            while (pending.size) await Promise.allSettled(pending);
+            while (active.size || pending.size || deliveries.size)
+              await changed.promise;
+            // No future library continuation can start I/O after successful stop.
+            sealed = true;
           })(),
           new Promise<never>((_resolve, reject) => {
             timer = setTimeout(

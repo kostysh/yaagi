@@ -390,6 +390,81 @@ test('stop waits for a held terminal repository callback, not only the handler o
   }
 });
 
+test('watchdog expiry cannot make stop succeed in the gap before the late terminal save', async () => {
+  const root = await fixture();
+  const started = Promise.withResolvers<void>();
+  const held = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  let terminalSettled = false;
+  const finalize = root.repository.saveJobState.bind(root.repository);
+  root.repository.saveJobState = async (job) => {
+    if (!job.lockedAt) {
+      held.resolve();
+      await release.promise;
+    }
+    await finalize(job);
+    if (!job.lockedAt) terminalSettled = true;
+  };
+  const running = worker(
+    root.repository,
+    async (_job, signal) => {
+      const aborted = new Promise<void>((resolve) =>
+        signal.addEventListener('abort', () => resolve(), { once: true }),
+      );
+      started.resolve();
+      await aborted;
+      return 42;
+    },
+    200,
+  );
+  try {
+    await enqueue(root.repository);
+    const expired = once(running.agenda, 'error');
+    await running.start();
+    await started.promise;
+    await expired;
+    const stopping = running.stop();
+    const rejected = assert.rejects(stopping, /incomplete/i);
+    await held.promise;
+    await rejected;
+    assert.equal(terminalSettled, false);
+    const finalized = once(running.agenda, 'complete');
+    release.resolve();
+    await finalized;
+    await running.stop();
+    assert.equal(terminalSettled, true);
+    required(await root.storage.close());
+    // Even a future library continuation cannot write after successful stop.
+    await root.repository.unlockJobs(['["a","obsolete"]']);
+  } finally {
+    release.resolve();
+    await running.stop();
+    await root.cleanup();
+  }
+});
+
+test('rejected start save has no future terminal callback and does not strand stop tracking', async () => {
+  const root = await fixture();
+  root.repository.saveJobState = async () => {
+    throw new Error('injected start refusal');
+  };
+  const running = worker(root.repository, async () => {
+    assert.fail('Start not committed');
+  });
+  try {
+    await enqueue(root.repository);
+    const refused = once(running.agenda, 'error');
+    await running.start();
+    await refused;
+    await running.stop();
+    assert.equal((await root.repository.read('a'))?.attempts, 0);
+    required(await root.storage.close());
+  } finally {
+    await running.stop();
+    await root.cleanup();
+  }
+});
+
 test('delayed job survives reopen and is never executed before notBefore', async () => {
   const root = await fixture();
   const notBefore = Date.now() + 2_000;

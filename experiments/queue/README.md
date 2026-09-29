@@ -22,7 +22,7 @@ pnpm audit --prod
 
 ## Результат 2026-09-29
 
-**19 тестов PASS**, 0 failed/skipped; format, Biome/ESLint, typecheck и build PASS. `pnpm audit --prod` для standalone lockfile: 0 известных advisories (это не доказательство отсутствия уязвимостей; linked workspace dependencies проверяются своим контуром).
+Исходные **19 тестов PASS**, 0 failed/skipped, не закрыли gate: независимый Spec audit нашёл stop-дефект ([сохранённый FAIL](../../docs/validation/queue/local-queue-agenda.probe-spec.1.md)). После lifecycle-исправления полный прогон **20/20 PASS**, затем добавлен отказ start-save и весь затронутый shutdown-контур **5/5 PASS**. Format, Biome/ESLint, typecheck и build PASS. Принятие пробы требует delta-аудита нового snapshot. `pnpm audit --prod` для standalone lockfile: 0 известных advisories (это не доказательство отсутствия уязвимостей; linked workspace dependencies проверяются своим контуром).
 
 | Проверяемая граница | Исполняемое evidence в `probe.test.ts` |
 | --- | --- |
@@ -37,6 +37,7 @@ pnpm audit --prod
 | Конкурирующие consumers | `two independent state clients…`: один победитель reservation, бюджет пока не списан |
 | Отложенные задания | `delayed job survives reopen…`: без повторного enqueue; callback не раньше сохранённого notBefore |
 | Остановка | Три `stop…` / `bounded stop…` теста: live abort, callback accounting, задержанная terminal запись; незавершённая остановка — ошибка, не разрешение закрыть storage |
+| Watchdog → поздний terminal callback | `watchdog expiry cannot make stop succeed…`: настоящий watchdog error, живой handler, удержанный final-save; incomplete до его завершения. `rejected start save…` проверяет отсутствие зависшего lifecycle после отказа до handler |
 | Ошибка сохранения результата | `Agenda complete event…`: даже при событии complete ошибка durable write не превращается в completed/result |
 
 Межпроцессные kill-точки задаются IPC barriers, не sleeps. Ожидание delayed job проверяется фактическим временем входа; polling/timers принадлежат Agenda. Низкоуровневые fault guarantees SQLite не дублируются.
@@ -50,8 +51,8 @@ pnpm audit --prod
 Найденные особенности, обязательные для production adapter:
 
 1. `Job.run()` подавляет ошибку финального `saveJobState`; события `success/complete` не являются подтверждением результата. Результат фиксируется отдельным owner-local commit с проверкой token и читается из `state`.
-2. `stop()` не ждёт handlers; `drain()` не учитывает все уже начатые repository calls. Нужен учёт callbacks и обращений к порту. Таймаут ожидания возвращает incomplete, не «убивает» callback; после него root сохраняет storage открытым, ждёт завершения и повторяет stop.
-3. На первоначальном прогоне с lease **400 ms** обнаружена гонка: Agenda очищает `lockedAt` до завершения async terminal save, а watchdog может сообщить `no lockedAt`. Тестовая lease изменена на **2000 ms**, добавлен учёт in-flight repository calls. Это не upstream fix и не гарантия отсутствия гонки при медленном I/O. Production обязан сохранять durable truth и лимит реально выполняющихся callbacks независимо от watchdog/event bookkeeping; heartbeat и медленная финализация требуют отдельных regression tests.
+2. `stop()` не ждёт handlers; `drain()` не учитывает все repository calls и промежутки между callbacks. Нужен учёт полного lifecycle от начала start-save до завершения terminal-save, отдельно от handlers и in-flight calls. Отказ первого save обрабатывается отдельно: в Agenda он находится перед try/finally, terminal callback после него не будет. Таймаут ожидания возвращает incomplete, не «убивает» callback; root сохраняет storage открытым и повторяет stop после реального завершения. Успешный stop закрывает admission последующих library I/O.
+3. На первоначальном прогоне с lease **400 ms** обнаружена гонка: Agenda очищает `lockedAt` до завершения async terminal save, watchdog может сообщить `no lockedAt`. Тестовая lease изменена на **2000 ms**, но это не upstream fix. Аудитор затем воспроизвёл F1 и при 2000 ms: successful stop до позднего terminal-save после watchdog expiry. Это блокировало текущий gate, а не только production. Regression исправляет shutdown accounting; production дополнительно обязан сохранять durable truth и лимит реально выполняющихся callbacks независимо от watchdog/event bookkeeping, проверять heartbeat/slow I/O.
 4. Первая попытка читать `PRAGMA` через scoped SQL была отклонена `state` по его контракту. Проверка использует разрешённые read-only table-valued pragma SELECT, API `state` не изменялся.
 
 Источники: [release 6.2.6](https://github.com/agenda/agenda/releases/tag/agenda@6.2.6), [JobRepository](https://github.com/agenda/agenda/blob/agenda@6.2.6/packages/agenda/src/types/JobRepository.ts), [Job](https://github.com/agenda/agenda/blob/agenda@6.2.6/packages/agenda/src/Job.ts), [JobProcessor](https://github.com/agenda/agenda/blob/agenda@6.2.6/packages/agenda/src/JobProcessor.ts). Решение о переносе в production опирается на этот исполняемый контур, не только на описание upstream.
