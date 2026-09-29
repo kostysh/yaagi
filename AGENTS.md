@@ -50,9 +50,12 @@ Russian concept is authoritative.
 ## Git and local resources
 
 Follow the [Git workflow](docs/development-methodology/git-and-github.md).
-`develop` is the integration branch; `master` accepts PRs only from `develop`.
-Never push directly or force-push to either branch. Task worktrees live under
-`.worktree/` in the main checkout. One task owns one branch and worktree.
+All repository changes, including documentation and configuration, follow
+task worktree and branch → pull request → integration into `develop`.
+`develop` is the default and integration branch; `master` accepts PRs only from
+`develop`. Never commit changes directly, push directly, or force-push to either
+branch. Task worktrees live under `.worktree/` in the main checkout. One task
+owns one branch and worktree.
 
 Create, publish, move, or delete Git tags only on the operator's direct request.
 A merge or stable baseline decision does not authorize creating or publishing a tag.
