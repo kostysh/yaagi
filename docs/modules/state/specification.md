@@ -148,7 +148,7 @@ R13 снят решением оператора: управление един�
 
 ## High-risk readback
 
-Матрица не вводит новые обязанности: строки ограничены принятым планом и архитектурой. Owner решения — оператор/architecture; исполнитель и владелец evidence — `node-engineer` с `typescript-test-engineer`; точные contracts готовит `spec-engineer`. Production handoff всех applicable строк blocked до CP1.
+Матрица не вводит новые обязанности: строки ограничены принятым планом и архитектурой. Owner решения — оператор/architecture; исполнитель и владелец evidence — `node-engineer` с `typescript-test-engineer`; точные contracts подготовлены `spec-engineer` и приняты оператором на CP1. Production handoff разрешён; поставка требует аудитов реализации и актуального remote CI.
 
 | Строка | Применимость, контракт и negative oracle |
 | --- | --- |
@@ -169,6 +169,6 @@ R13 снят решением оператора: управление един�
 
 TypeScript 7 проверяет/собирает ESM и declarations; Biome форматирует, lint включает Biome + ESLint + package boundary. Package `test` вызывает `test:integration`; существующий root/CI остаётся рекурсивным. Временные спайки имеют собственные точные зависимости и воспроизводимые команды, но не входят в production exports.
 
-Результаты S1/S2 возвращены в архитектуру и эту спецификацию; источники смены драйвера прошли Concept/Spec/Security на `48430efcaa86873e47dfaf913d8dcdeb4293c66e`. Новый CP1 snapshot с evidence, кодом и предложением контракта проходит отдельные применимые аудиты. Открыто решение оператора о signatures, migration semantics и cooperative cancellation из предложения выше. Production handoff и M1 остаются blocked до CP1 approval. `next autonomous action: none` после checkpoint report.
+Результаты S1/S2 возвращены в архитектуру и эту спецификацию; источники смены драйвера прошли Concept/Spec/Security на `48430efcaa86873e47dfaf913d8dcdeb4293c66e`. После применимых CP1/tooling аудитов оператор 2026-09-29 принял signatures, migration semantics и cooperative cancellation и разрешил продолжение. Production-пакет, schema-readiness, M1 и guide проверены локально через exports; до merge остаются независимые аудиты production snapshot и актуальный Ubuntu CI. Следующий handoff — завершить эти проверки и согласованную интеграцию в `develop`, без повторного запроса CP1.
 
 Аудит: Concept Conformance для spec; Security для trust/data boundaries. Снимки и результаты фиксируются в плане/CP1 evidence; наличие этого документа не означает прохождения аудита или спайков.
