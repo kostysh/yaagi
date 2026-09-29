@@ -19,7 +19,8 @@ system and developer constraints remain binding.
 YAAGI implements Polyphony: one long-lived agent with a continuous identity,
 local model ecology, and controlled reversible development. The concept,
 architecture, ADRs, roadmap, and minimal TypeScript workspace are present.
-Runtime modules and product tests are not implemented. The `v0-archived` tag is
+`core-types` provides `Result`; `state` provides tested SQLite storage primitives.
+Agent runtime, domain modules, and product-level tests are not implemented. The `v0-archived` tag is
 historical material, not a source of requirements for the new implementation.
 
 ## Sources and documentation
@@ -69,6 +70,14 @@ Use `gh` and `gh-utility` for GitHub. Do not run `gh auth login`, `logout`,
 with a separate read. Do not create an Issue solely to obtain an audit ID.
 
 ## Implementation and verification
+
+All authored code, including scripts and executable configuration, is TypeScript.
+Do not add JavaScript or `.mjs` source files. Run `.ts` files directly with Node
+only with the explicit `--experimental-strip-types` flag; stripping types does
+not replace TypeScript checks. Generated JavaScript and third-party dependencies
+are not authored sources.
+Biome formatting uses single quotes for TypeScript and JSX; all package configs
+inherit the shared root setting. JSON retains the quotes required by its syntax.
 
 Apply `implementation-discipline` for implementation and substantive document
 changes. Specify observable module behavior at public boundaries. Use one

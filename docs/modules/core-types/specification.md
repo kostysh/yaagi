@@ -69,6 +69,7 @@ export type Result<T, E> =
 - Biome является formatter и одним lint-контуром; ESLint является вторым lint-контуром.
 - `lint` также проверяет отсутствие imports/re-exports, зависимостей и deep exports у текущего import-free пакета.
 - Публичный контракт проверяется только через package export, без импорта private source path.
+- Проверочные scripts и ESLint config написаны на TypeScript; прямой Node-запуск `.ts` содержит `--experimental-strip-types` и не заменяет typecheck. Node-типы разрешены только в отдельной tooling-конфигурации, не в source/consumer fixtures.
 
 ## Зависимости
 

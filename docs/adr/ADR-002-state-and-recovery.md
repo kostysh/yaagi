@@ -1,7 +1,8 @@
 # ADR-002: Единая история, commit points и восстановление
 
+- Document ID: `project.adr.002`
 - Статус: accepted для SQLite, outbox и переносимого контракта очередей по решению оператора 2026-09-28; desktop backend Liteque — candidate до проверки §8 архитектуры. Recovery требует реального evidence E3.
-- Дата: 2026-09-28.
+- Дата: 2026-09-28; уточнение драйвера `state`: 2026-09-29.
 - Основание: [концепция](../polyphony_concept.md), §§4.5–4.9, 6.9, 8.7, 10–12, 13.7, 14.1, 16.8, 17; решения оператора о локальной SQLite, векторном расширении, замене BullMQ и сменных адаптерах `state`/`queue` без требования мобильной или облачной поставки.
 - Связанный документ: [архитектура, §§2–6 и 8–10](../architecture.md).
 
@@ -13,17 +14,23 @@
 
 ## Решение
 
-В локальном baseline SQLite adapter `state` предоставляет каноническое хранилище состояния и истории; отдельная локальная SQLite БД `queue` хранит технические jobs. Доменные adapters участвуют в одном transaction-scoped handle `state`, таблицы и миграции принадлежат владельцам. PostgreSQL schemas/advisory locks не переносятся буквально: используются owner-prefix таблиц и отдельная lifecycle exclusivity. Две БД не имеют общего atomic commit, даже при одинаковом SQL engine. Полный протокол нормативно задан в §5 архитектуры.
+В локальном baseline SQLite adapter `state` предоставляет каноническое хранилище состояния и истории; отдельная локальная SQLite БД `queue` хранит технические jobs. Доменные adapters участвуют в одном transaction-scoped handle `state`, таблицы и миграции принадлежат владельцам. Для разделения таблиц используются owner-prefix; lifecycle/exclusivity не является частью хранения. Две БД не имеют общего atomic commit, даже при одинаковом SQL engine. Полный протокол нормативно задан в §5 архитектуры.
 
-Механизм сменных адаптеров закреплён в [§2.4 архитектуры](../architecture.md#24-адаптеры-state-и-queue). SQLite-профиль ниже — локальная реализация общих гарантий. Другой `state` adapter обязан сохранять atomic commit, consistent snapshot и эксклюзивность; другой `queue` adapter — durable учёт заданий и результатов, допустимые повторы и защиту от устаревших попыток. Замена адаптера не отменяет owner outbox/receipts и не объединяет commit состояния, доставку и внешний effect в одну транзакцию. Mobile/cloud реализация и выбор её хранилищ отложены.
+Механизм сменных адаптеров закреплён в [§2.4 архитектуры](../architecture.md#24-адаптеры-state-и-queue). SQLite-профиль ниже — локальная реализация общих гарантий. Другой `state` adapter обязан сохранять atomic commit, consistent snapshot и проверку совместимости схем; другой `queue` adapter — durable учёт заданий и результатов, допустимые повторы и защиту от устаревших попыток. Замена адаптера не отменяет owner outbox/receipts и не объединяет commit состояния, доставку и внешний effect в одну транзакцию. Mobile/cloud реализация и выбор её хранилищ отложены.
 
-Desktop driver `state` — `better-sqlite3`; будущий Expo adapter использует `expo-sqlite`. Общий async порт и технические SQL-операции не содержат driver types; синхронный desktop API не становится требованием потребителя. Короткий consistent read snapshot закрывается до reasoning; decision и outcome сохраняются отдельными атомарными транзакциями с проверкой revisions. Факты истории не переписываются, full event sourcing и replay LLM не нужны.
+Принятое уточнение оператора 2026-09-29: desktop driver `state` — встроенный `node:sqlite` (`DatabaseSync`), заменяющий `better-sqlite3`, не дополнительный кандидат. Будущий Expo adapter использует `expo-sqlite`. Общий async порт и технические SQL-операции не содержат Node/driver types; Promise не делает синхронный SQL неблокирующим. Runtime получает результат завершённого consistent read snapshot до reasoning; decision и outcome сохраняются отдельными атомарными транзакциями, внутри которых владельцы проверяют свои revisions. `state` не управляет reasoning и не вводит общий доменный revision API. Факты истории не переписываются, full event sourcing и replay LLM не нужны.
+
+S1/S2 подтвердили локальный Drizzle `sqlite-proxy` bridge и `sqlite-vec 0.1.9` на SQLite `3.53.4` из Node `24.21.0`: [код/evidence](../../experiments/state/README.md). Подтверждены scoped commit/rollback, BLOB/vector, миграции и isolated backup/restore; это не runtime recovery или remote CI. Отдельная native build-зависимость SQLite-драйвера исключена, расширение остаётся native-кодом фиксированной поставки. Точные контракты CP1 и cooperative cancellation без hard interrupt/worker приняты оператором 2026-09-29; production-приёмка отдельно проверяет их через public exports. Блокирующая несовместимость возвращается оператору с результатами и вариантами; без разрешения другой драйвер не возвращается. Это изменение не выбирает backend будущей `queue`.
+
+Уточнение оператора 2026-09-29: Drizzle принят для adapters владельцев независимо от совместимости векторного DSL. Raw vector SQL может обходить ORM, но использует тот же transaction-scoped executor и connection `state`. Доменные DTO/validators Zod не выводятся автоматически из таблиц. Универсального repository или заранее спроектированной модели памяти это решение не вводит.
+
+Владельцы сохраняют схемы и семантику data transforms; composition root собирает одну цепочку подготовленных миграций на физическую БД. Drizzle Kit генерирует проверяемые и коммитящиеся SQL artifacts; `vec0` допускает custom SQL без неподтверждённого auto-diff shadow tables. Применённая история неизменяема, применение явно предшествует рабочей нагрузке. `state` исполняет технические apply/journal/check; transaction/compatibility механизм уточняют S1/S2 и CP1 из [плана `state`](../modules/state/implementation-plan.md). Первый evidence-контур — Linux x64, не обещание всех desktop/mobile платформ.
 
 `sqlite-vec` — выбранное расширение для хранения/поиска векторов. `state` отвечает за доверенную загрузку и совместимость, доменный владелец — за retrieval, актуальность индекса и provenance. Индексы восстанавливаемы из источников, связаны с revision и embedding model/version/dimension; embeddings производит `model-organs` при включении соответствующей способности. Векторная БД не является готовым RAG и не заменяет каноническую биографию. [SQLite-vec](https://alexgarcia.xyz/sqlite-vec/), [поддержка Expo](https://docs.expo.dev/versions/latest/sdk/sqlite/).
 
 Перед внешним вызовом durable action переходит в `dispatching`. Crash после этой точки создаёт `unknown`, даже если вызов ещё не успел уйти. Без конкретных receipt/idempotency semantics запрещены повтор старого решения и слепой resend. Operator outbox и доставка клиенту остаются отдельными от решения.
 
-В desktop baseline один runtime/effect dispatcher удерживает OS lifecycle lock на canonical directory/agentId. SQLite writer lock сериализует записи, но не запрещает второму процессу внешний effect. При потере storage/exclusivity новые dispatch прекращаются; replacement ждёт подтверждённой остановки прежней process group. TTL/heartbeat/PID-файл не разрешают takeover; multi-host failover не входит в baseline. Будущий platform lifecycle adapter должен сохранить гарантию единственного исполнителя и запрет небезопасного takeover.
+Уточнение оператора 2026-09-29: один агент имеет один запущенный инстанс; это обязанность будущего runtime, а не `state`. Запуск, остановка и replacement проектируются вместе с runtime, без выбора OS lock или другого механизма сейчас. `state` открывает/закрывает соединения и сообщает ошибки хранения, не выдаёт право запуска или внешнего действия. При потере доступа к storage runtime прекращает новые dispatch; replacement не допускает одновременной работы старого и нового инстансов. SQLite writer lock отвечает только за конкуренцию записей. Multi-host failover не входит в baseline.
 
 Когда job связана с state commit, владелец сохраняет intent/outbox в той же транзакции `state`; доверенный relay после commit публикует её через `queue` с устойчивым ID/hash. Rollback не публикуется, разрыв commit/enqueue закрывает outbox. `published` не закрывает intent: owner хранит его до принятого результата/отказа/отмены и восстанавливает по очереди и receipts. Самостоятельная техническая job может ставиться прямо в `queue`. [Протокол повторов и очистки](../architecture.md#54-устойчивая-очередь-и-согласование-с-состоянием).
 
@@ -52,6 +59,7 @@ Desktop использует постоянный consumer, пока работ�
 - PostgreSQL + BullMQ/Redis: заменены текущим решением оператора; `pg-boss` не возвращается в baseline.
 - Одна DB-транзакция на весь тик, включая модель/tools: удерживает writer и всё равно не делает внешний effect атомарным.
 - Независимые owner commits: дают частичное субъективное состояние; сохраняется общий decision commit.
+- Единый универсальный CRUD/repository в `state`: заставляет заранее моделировать ещё не спроектированных владельцев; вместо него приняты технические guarantees и owner-local adapters. Drizzle экономит типизированный SQL/schema tooling, но не заменяет границы модуля и проверку транзакций.
 - Прямой enqueue до/после state commit без outbox: исполняет откатившееся намерение либо теряет его при crash между операциями.
 - Exactly-once эффекты или takeover по истечению lease: queue lease не останавливает старый effect, необходимы owner receipts и executive/reconcile.
 - Единый Node worker API для desktop и Expo: требует недоступного постоянного фонового процесса; объединяем семантику, а не platform mechanics.
@@ -66,7 +74,7 @@ Persisted контракты имеют schemaVersion/release manifest. Rollback
 
 ## Проверка и пересмотр
 
-E3 и R1–R4: два процесса одной cell, недоступное storage/lost lifecycle lock, kill в commit/effect windows, worker/runtime/host restart, оба окна outbox, потерянная queue record/result, исчерпание попыток, cleanup, cancellation и stale input/attempt. Проверяются persisted state, техническая очередь **и** реальный effect/receipt. Vector probe в `state` проверяет load/insert/query/reopen; актуальность и качество retrieval — у владельца при его включении. Mobile port проверяется отдельно только после решения о поставке.
+E3 и R1–R4: отказ runtime второму инстансу одного агента, недоступное storage, kill в commit/effect windows, worker/runtime/host restart, оба окна outbox, потерянная queue record/result, исчерпание попыток, cleanup, cancellation и stale input/attempt. Проверяются persisted state, техническая очередь **и** реальный effect/receipt. Механизм единственности инстанса и его отказы уточняются при разработке runtime. Vector probe в `state` проверяет load/insert/query/reopen; актуальность и качество retrieval — у владельца при его включении. Mobile port проверяется отдельно только после решения о поставке.
 
 Пересмотр: провал probe/E3, неподдерживаемая extension/ABI, недостаточная производительность writer, новый неидемпотентный adapter, изменение ownership или multi-host/mobile topology. До evidence это архитектурные обязательства, не испытанная отказоустойчивость.
 

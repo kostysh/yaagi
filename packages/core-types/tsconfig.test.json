@@ -3,7 +3,8 @@
   "compilerOptions": {
     "noEmit": true,
     "rootDir": ".",
-    "types": []
+    "types": [],
+    "erasableSyntaxOnly": true
   },
-  "include": ["test/**/*.ts"]
+  "include": ["test/**/*.ts", "scripts/import-smoke.ts"]
 }

@@ -2,7 +2,7 @@
 
 - Document ID: `project.methodology.tooling`
 
-Минимальная среда использует baseline [архитектуры, §2.1](../architecture.md#21-проверенный-технологический-baseline). Первый пакет `@polyphony/core-types` реализует только compile-time контракт `Result<T, E>`; runtime Полифонии и продуктовых тестов пока нет. SQLite adapters, векторное расширение, очереди, модели и AI SDK будут подготовлены отдельными последующими задачами по [roadmap](../roadmap.md).
+Минимальная среда использует baseline [архитектуры, §2.1](../architecture.md#21-проверенный-технологический-baseline). `@polyphony/core-types` реализует только compile-time контракт `Result<T, E>`; runtime Полифонии и продуктовых тестов пока нет. После принятого CP1 пакет [`@polyphony/state`](../../packages/state/README.md) добавляет SQLite snapshots/transactions, миграции и backup; Drizzle/vec0, M1 и guide проверяются через public exports. [Локальные S1/S2](../../experiments/state/README.md) сохранены как отдельное evidence. Очереди, модели и AI SDK остаются последующими задачами по [roadmap](../roadmap.md).
 
 ## Установка
 
@@ -27,6 +27,8 @@ pnpm install --frozen-lockfile
 
 ## Граница пакета
 
+Весь авторский исполняемый код, включая tooling scripts и конфигурацию, пишется на TypeScript, без `.mjs`/JavaScript-исходников. Прямой запуск `.ts` через Node всегда содержит явный `--experimental-strip-types`; type stripping не заменяет отдельный TypeScript typecheck. Сгенерированный JS и код сторонних зависимостей не переписываются. Для directly-run scripts используется erasable syntax; package source по-прежнему компилируется в ESM.
+
 `pnpm-workspace.yaml` включает только `packages/*`. Пакет создаётся после подготовки своей спецификации и плана; текущий `packages/core-types` следует [спецификации инкремента](../modules/core-types/specification.md).
 
 - Имя пакета — `@polyphony/<module-id>`, `type` — `module`. Соседние пакеты подключаются через `workspace:*` и публичные exports, а не через private source paths.
@@ -34,9 +36,12 @@ pnpm install --frozen-lockfile
 - База включает `strict`, `NodeNext`, `verbatimModuleSyntax`, emit declarations и запрет emit при ошибках. Компилируется TypeScript; Node запускает полученный ESM. Относительные импорты должны разрешаться в итоговые JS-файлы. Node/DOM и другие дополнительные типы подключает нуждающийся в них пакет.
 - Собственный `biome.json` задаёт `root: false` и `extends: ["../../biome.json"]`, наследуя корневые formatting/lint настройки через явный относительный путь. Проверяются исходники своего пакета; generated output игнорируется согласно Git ignore. Основание: [Biome в монорепозитории](https://biomejs.dev/guides/big-projects/).
 - `format` и `format:check` выполняет только Biome. `lint` каждого TypeScript-пакета обязательно запускает Biome, ESLint и проверку package boundary; один инструмент не заменяет остальные.
+- Корневые `javascript.formatter.quoteStyle: "single"` и `jsxQuoteStyle: "single"` задают одинарные кавычки для TypeScript/JSX; package configs и эксперимент наследуют их без overrides. JSON сохраняет обязательные для своего синтаксиса двойные кавычки.
 - Каждый пакет кода предоставляет `format`, `format:check`, `lint`, `typecheck`, `build`, `test`; для adapter добавляется `test:integration` по §4.4 архитектуры. Выбор конкретных тестов относится к спецификации и плану пакета.
 
-Общий `eslint.config.mjs` использует syntax-only recommended rules. Для текущего import-free `core-types` он дополнительно запрещает в `src` static и dynamic imports, import types, TypeScript import assignments, `require` и re-exports. Узкий package-local boundary script проверяет отсутствие dependency-полей и ровно один корневой export на JS и declarations. Это проверка текущей границы уровня 0, а не универсальный dependency graph framework.
+Общий `eslint.config.ts` использует syntax-only recommended rules. ESLint запускается через Node с `--experimental-strip-types` и `--flag unstable_native_nodejs_ts_config`: конфигурация загружается нативно, без дополнительного loader. Это [режим ESLint для TS-конфигурации](https://eslint.org/docs/latest/use/configure/configuration-files#native-typescript-support). Для текущего import-free `core-types` он дополнительно запрещает в `src` static и dynamic imports, import types, TypeScript import assignments, `require` и re-exports. Узкий package-local TypeScript boundary script проверяет отсутствие dependency-полей и ровно один корневой export на JS и declarations. Это проверка текущей границы уровня 0, а не универсальный dependency graph framework. Отдельный `tsconfig.tools.json` проверяет Node-скрипты и общий ESLint config через TypeScript 7; root devDependency `@types/node@24.19.0` обслуживает только tooling, а source/test configs `core-types` сохраняют `types: []`.
+
+`state` предоставляет только `/contracts`, `/sqlite`, `/node`, без root export. Его boundary script проверяет exports/dependencies и отрицательные ESLint cases для Node/native imports в contracts и private imports соседнего пакета. Общие contracts отдельно проверяются с `types: []`; runtime import-probe запрещает загрузку native-модулей при импорте каждого export. Node entrypoint загружает SQLite только при `openSqlite`. Для чистой установки `state` перед typecheck/build собирает публичную зависимость `core-types`, не обходит её exports через source paths. Drizzle остаётся devDependency owner fixtures/guide, SQLitevec и Zod — runtime dependencies адаптера; дополнительный addon-драйвер или native build scripts в workspace не нужны. Drizzle Kit и его узкие build-разрешения остаются только в standalone S1.
 
 NodeNext и Node emit — профиль текущей desktop-сборки. Общие contracts и доменная логика не получают зависимость от Node-only API/types; native SQLite/queue adapters отделяются exports по §2.3 архитектуры. Expo/Metro, mobile adapters и сборки сейчас не устанавливаются и не проверяются.
 

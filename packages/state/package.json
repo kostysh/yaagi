@@ -1,0 +1,46 @@
+{
+  "name": "@polyphony/state",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    "./contracts": {
+      "types": "./dist/contracts.d.ts",
+      "import": "./dist/contracts.js"
+    },
+    "./sqlite": {
+      "types": "./dist/sqlite.d.ts",
+      "import": "./dist/sqlite.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js"
+    }
+  },
+  "scripts": {
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "pnpm run lint:biome && pnpm run lint:eslint && pnpm run lint:boundary",
+    "lint:biome": "biome lint .",
+    "lint:eslint": "node --experimental-strip-types ../../node_modules/eslint/bin/eslint.js --flag unstable_native_nodejs_ts_config .",
+    "lint:boundary": "node --experimental-strip-types scripts/check-boundary.ts",
+    "build:dependencies": "pnpm --filter @polyphony/core-types build",
+    "typecheck": "pnpm run build:dependencies && tsc -p tsconfig.json --noEmit && pnpm run build && tsc -p tsconfig.test.json --noEmit && tsc -p tsconfig.contracts.json",
+    "build": "pnpm run build:dependencies && tsc -p tsconfig.json",
+    "test": "pnpm run test:integration",
+    "test:integration": "pnpm run build && tsc -p tsconfig.test.json && node --test .test-dist/test/*.test.js",
+    "example": "pnpm run build && tsc -p tsconfig.test.json && node .test-dist/examples/usage.js"
+  },
+  "dependencies": {
+    "@polyphony/core-types": "workspace:*",
+    "sqlite-vec": "0.1.9",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "drizzle-orm": "0.45.3"
+  }
+}

@@ -24,6 +24,7 @@
 - Проверка поведения: compile-time consumer fixture через `@polyphony/core-types`, включая отрицательные `@ts-expect-error` случаи.
 - Интеграционная проверка: package build, declaration/export resolution и Node ESM import-smoke; это не runtime-тест поведения агента.
 - Проверка границы: Biome, ESLint, package-local manifest/export check и отрицательные lint-пробы для relative и `node:*` imports.
+- Tooling delta 2026-09-29 по решению оператора: scripts/config переведены в TypeScript, direct Node scripts используют `--experimental-strip-types`; отдельный no-emit tooling typecheck не меняет контракт `Result` и source `types: []`.
 - Затронутая документация: tooling, README и текущий статус roadmap; архитектура и ADR не меняются.
 - Требуемые аудиты: Concept Conformance для спецификации и tooling-методологии; Spec Conformance для плана, реализации и roadmap; Security для кода/config.
 
