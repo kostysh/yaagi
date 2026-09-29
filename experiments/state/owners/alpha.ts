@@ -1,11 +1,11 @@
-import { blob, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { z } from "zod";
+import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { z } from 'zod';
 
-export const notes = sqliteTable("fixture_notes", {
+export const notes = sqliteTable('fixture_notes', {
   id: text().primaryKey(),
   text: text().notNull(),
   revision: integer().notNull(),
-  bytes: blob({ mode: "buffer" }).notNull(),
+  bytes: blob({ mode: 'buffer' }).notNull(),
   tag: text(),
 });
 export const Note = z.object({

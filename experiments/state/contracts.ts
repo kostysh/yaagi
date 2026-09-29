@@ -1,25 +1,25 @@
 // Experimental contract proposal only; not a production package or export.
-import type { Result } from "@polyphony/core-types";
+import type { Result } from '@polyphony/core-types';
 
 export type StorageCode =
-  | "busy"
-  | "closed"
-  | "unavailable"
-  | "corrupt"
-  | "incompatible"
-  | "full"
-  | "write_failed"
-  | "cancelled"
-  | "deadline"
-  | "scope_ended"
-  | "sql_failed"
-  | "callback_failed";
+  | 'busy'
+  | 'closed'
+  | 'unavailable'
+  | 'corrupt'
+  | 'incompatible'
+  | 'full'
+  | 'write_failed'
+  | 'cancelled'
+  | 'deadline'
+  | 'scope_ended'
+  | 'sql_failed'
+  | 'callback_failed';
 
 export type StorageFailure = {
-  readonly kind: "storage";
+  readonly kind: 'storage';
   readonly code: StorageCode;
 };
-export type OwnerFailure<E> = { readonly kind: "owner"; readonly error: E };
+export type OwnerFailure<E> = { readonly kind: 'owner'; readonly error: E };
 export type OperationOptions = {
   readonly signal?: { readonly aborted: boolean };
   readonly timeoutMs?: number;

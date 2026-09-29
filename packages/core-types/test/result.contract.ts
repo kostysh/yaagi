@@ -1,6 +1,6 @@
-import type { Result } from "@polyphony/core-types";
+import type { Result } from '@polyphony/core-types';
 
-type Failure = { readonly code: "failed" };
+type Failure = { readonly code: 'failed' };
 
 const preserve = <T, E>(result: Result<T, E>): Result<T, E> => result;
 
@@ -10,7 +10,7 @@ const success: Result<{ readonly id: number }, Failure> = {
 };
 const failure: Result<{ readonly id: number }, Failure> = {
   ok: false,
-  error: { code: "failed" },
+  error: { code: 'failed' },
 };
 
 const preservedSuccess: Result<{ readonly id: number }, Failure> =
@@ -37,7 +37,7 @@ const read = <T, E>(result: Result<T, E>): T | E => {
 };
 
 const zero: Result<0, Failure> = { ok: true, value: 0 };
-const empty: Result<"", Failure> = { ok: true, value: "" };
+const empty: Result<'', Failure> = { ok: true, value: '' };
 const falseValue: Result<false, Failure> = { ok: true, value: false };
 const undefinedValue: Result<undefined, Failure> = {
   ok: true,
@@ -56,7 +56,7 @@ const missingError: Result<number, Failure> = { ok: false };
 
 const invalidDiscriminant: Result<number, Failure> = {
   // @ts-expect-error -- the discriminant must be the literal true or false.
-  ok: "true",
+  ok: 'true',
   value: 1,
 };
 
@@ -67,7 +67,7 @@ if (success.ok) {
 
 if (!failure.ok) {
   // @ts-expect-error -- both branch payloads are readonly.
-  failure.error = { code: "failed" };
+  failure.error = { code: 'failed' };
 }
 
 // @ts-expect-error -- the discriminant is readonly as well.

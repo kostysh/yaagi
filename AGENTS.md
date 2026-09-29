@@ -75,6 +75,8 @@ Do not add JavaScript or `.mjs` source files. Run `.ts` files directly with Node
 only with the explicit `--experimental-strip-types` flag; stripping types does
 not replace TypeScript checks. Generated JavaScript and third-party dependencies
 are not authored sources.
+Biome formatting uses single quotes for TypeScript and JSX; all package configs
+inherit the shared root setting. JSON retains the quotes required by its syntax.
 
 Apply `implementation-discipline` for implementation and substantive document
 changes. Specify observable module behavior at public boundaries. Use one
