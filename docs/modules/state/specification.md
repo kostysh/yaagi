@@ -184,6 +184,6 @@ R13 снят решением оператора: управление един�
 
 TypeScript 7 проверяет/собирает ESM и declarations; Biome форматирует, lint включает Biome + ESLint + package boundary. Package `test` вызывает `test:integration`; существующий root/CI остаётся рекурсивным. Временные спайки имеют собственные точные зависимости и воспроизводимые команды, но не входят в production exports.
 
-Исторические S1/S2/CP1 и первый production snapshot не доказывают R22/R23. Новый worker-механизм проверен в существующем S1/S2 контуре; production реализует новый контракт, усиленный M1 и real SQLite/AC6 regression. Следующий handoff — scoped audits и актуальные checks новой корректировки, не повтор старого CP1. При несовместимости остановить зависимую реализацию с конкретным результатом, без смены драйвера.
+Исторические S1/S2/CP1 и первый production snapshot не доказывают R22/R23. Новый worker-механизм проверен в существующем S1/S2 контуре; production реализует новый контракт, усиленный M1 и real SQLite/AC6 regression. Scoped audits и локальные checks новой корректировки прошли; [точные снимки и ограничения](../../validation/state/gh-30.adapters.1.md), внешний delivery/CI handoff — [#30](https://github.com/kostysh/yaagi/issues/30). Старый CP1 не повторяется. При несовместимости остановить зависимую реализацию с конкретным результатом, без смены драйвера.
 
 Аудит: Concept Conformance для spec; Security для trust/data boundaries. Снимки и результаты фиксируются в плане/CP1 evidence; наличие этого документа не означает прохождения аудита или спайков.
