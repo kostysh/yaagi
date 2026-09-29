@@ -18,6 +18,77 @@ import {
   terminal,
 } from './fixture.js';
 
+test('overlapping Agenda polls do not multiply a pending storage reservation', async (t) => {
+  const instances: Agenda[] = [];
+  const define = Agenda.prototype.define;
+  t.mock.method(
+    Agenda.prototype,
+    'define',
+    function (this: Agenda, ...args: Parameters<Agenda['define']>) {
+      instances.push(this);
+      return define.apply(this, args);
+    },
+  );
+  const entered = deferred();
+  const release = deferred();
+  let reservations = 0;
+  const processing = agenda();
+  const held: QueueAdapter = {
+    ...processing,
+    start: (input) =>
+      processing.start({
+        ...input,
+        store: {
+          reserve: async (...args) => {
+            reservations++;
+            entered.resolve();
+            await release.promise;
+            return input.store.reserve(...args);
+          },
+          begin: (...args) => input.store.begin(...args),
+          touch: (...args) => input.store.touch(...args),
+          release: (...args) => input.store.release(...args),
+        },
+      }),
+  };
+  const root = await fixture(t);
+  const registration = job();
+  const queue = root.make(registration, held);
+  await enqueue(queue, registration);
+  required(await queue.start(startOptions, limits()));
+  await entered.promise;
+  const [instance] = instances;
+  assert.ok(instance);
+  const repository = instance.db;
+  // The real repository seam receives overlapping calls while the first poll
+  // is held. No elapsed-time assertion or replacement scheduler is involved.
+  const overlapping = Array.from({ length: 8 }, () =>
+    repository.getNextJobToRun(
+      JSON.stringify(['work', 1]),
+      new Date(),
+      new Date(0),
+      undefined,
+      undefined,
+    ),
+  );
+  try {
+    assert.equal(reservations, 1);
+    const done = root.committed(terminal);
+    release.resolve();
+    assert.deepEqual(await Promise.all(overlapping), Array(8).fill(undefined));
+    await done;
+  } finally {
+    const stopped = queue.stop(limits());
+    release.resolve();
+    await Promise.allSettled(overlapping);
+    required(await stopped);
+  }
+  assert.deepEqual(
+    required(await queue.get(registration.type, 'a', limits())).result,
+    { available: true, value: 42 },
+  );
+});
+
 test('a finite synchronous handler cannot return a successful result after its deadline', async (t) => {
   let signal: { readonly aborted: boolean } | undefined;
   const registration = job(async (_value, context) => {

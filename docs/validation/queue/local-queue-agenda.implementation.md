@@ -3,7 +3,7 @@
 - Document ID: `queue.validation.implementation`
 - Дата: 2026-09-30. Ветка: `codex/queue-agenda`.
 - Исходное требование: прямое решение оператора `queue-creation.agenda.v3@60d0022b`; [queue.spec](../../modules/queue/specification.md), [queue.plan](../../modules/queue/implementation-plan.md).
-- Статус: **локальная приёмка Q1–Q4 завершена**. Concept claims PASS на `3461cb2`; Spec/Security delta PASS на `29a3ec3203990687a511960c2429e84dc0371eee`. Исходные FAIL сохранены ниже. Remote delivery не выполнялась.
+- Статус исходного этапа: **локальная приёмка Q1–Q4 завершена**. Concept claims PASS на `3461cb2`; Spec/Security delta PASS на `29a3ec3203990687a511960c2429e84dc0371eee`. Исходные FAIL сохранены ниже. Последующая интеграция и обнаруженное CI-ограничение описаны отдельно ниже.
 
 ## Реализованный контур и evidence
 
@@ -57,6 +57,18 @@ Production regressions вызывают настоящий публичный `A
 
 Гарантия локального модуля — durable at-least-once jobs. Lease не отзывает внешний эффект; handler обязан быть повторобезопасным и соблюдать signal. Namespace не ACL, receipt — заявление доверенного owner, не проверка его отдельной БД. Stop timeout не убивает callback и не разрешает close.
 
-Не заявляются physiology/runtime, canonical owner outbox/receipts, полный E3, exactly-once effects, hardware power-loss, sandbox, mobile/cloud и remote CI. Rollback означает сохранить DB/tombstones/jobs при отключении модуля; destructive down/restore старого snapshot не выполняются.
+Не заявляются physiology/runtime, canonical owner outbox/receipts, полный E3, exactly-once effects, hardware power-loss, sandbox и mobile/cloud. Remote CI принимается только по обязательным checks соответствующего snapshot. Rollback означает сохранить DB/tombstones/jobs при отключении модуля; destructive down/restore старого snapshot не выполняются.
 
-Поставка только локальная: task-worktree сохраняется, разрешены audit/remediation commits. Push/PR/merge/tag, Issues и удаление worktree не выполняются.
+Исходный этап был только локальным, без публикации и удаления worktree. Последующее прямое решение оператора «доведи изменения до интеграции» разрешило delivery в `develop`; оно не разрешает `master`, release или tags.
+
+## Интеграция: устранение наложенных scans Agenda
+
+На исходном head `a4496c814525fb8064738dc0826416ed689300de` создан [PR #41](https://github.com/kostysh/yaagi/pull/41). Первый [Workspace CI](https://github.com/kostysh/yaagi/actions/runs/36643820751) — **FAIL**: queue 24 PASS, 10 FAIL, 6 cancelled; state 53/53 и остальные gates до queue прошли. Локальная приёмка не обнаружила эту зависимость от скорости исполнения. Отдельный полный повтор на двух CPU с последовательными файлами тоже дал FAIL: 33 PASS, 4 FAIL, 3 cancelled. Одного ограничения file concurrency недостаточно.
+
+Причина: Agenda 6.2.6 вызывает `getNextJobToRun` при следующем poll, не дожидаясь предыдущего. Repository пропускал каждый scan в state, чьи реальные SQLite-транзакции создают scoped workers; при медленном исполнении незавершённые scans накапливались и задерживали heartbeat/commit. Это дефект adapter admission, а не основание ослабить durable, fencing или restart assertions.
+
+Исправление допускает только один незавершённый scan каждого разрешённого типа. Повторный overlapping вызов не обращается к storage; после завершения (включая отказ) scan освобождается в `finally`. Действительная операция остаётся в существующем pending-учёте stop. Polling и dispatch остаются в Agenda; нет новых timers, scheduler, private API, изменений state/API/schema/dependencies.
+
+Новый `adapter-regression.test.ts` удерживает первую reservation на public seam и вызывает настоящий Agenda JobRepository ещё восемь раз. На прежнем production-коде наблюдалось 9 reservation вместо 1 — **FAIL**; после исправления только одна, затем реальный handler и durable result — **PASS**. Исходный failing witness двух Agenda consumers на двух CPU тоже прошёл. Полный compiled production набор на двух CPU с `--test-concurrency=2 --test-timeout=45000`: **41/41 PASS**, 0 failed/cancelled/skipped. Существующие таймауты, leases, assertions и test scripts не изменены; предварительная standalone проба не включена в root CI и не повторяется для этого production delta.
+
+После исправления обычные корневые `pnpm install --frozen-lockfile --store-dir .pnpm-store`, `format:check`, `lint`, `typecheck`, `build`, `test` и отдельный queue `example` — **PASS**: state 53/53, queue 41/41, core-types type/import checks; 0 failed/cancelled/skipped. Scoped diff и `git diff --check` — PASS. Новая дельта требует независимых Spec/Security-аудитов и нового GitHub CI до merge; прежние PASS не распространяются на неё автоматически.

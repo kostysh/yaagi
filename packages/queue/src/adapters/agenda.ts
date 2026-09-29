@@ -67,6 +67,7 @@ function unsupported(): never {
 class Runtime {
   readonly agenda: Agenda;
   readonly entries = new Map<string, Entry>();
+  readonly scans = new Set<string>();
   readonly lifecycles = new Set<string>();
   readonly pending = new Set<Promise<unknown>>();
   readonly active = new Set<Promise<void>>();
@@ -261,6 +262,7 @@ class Repository implements JobRepository {
     if (
       !runtime.accepting ||
       runtime.sealed ||
+      runtime.scans.has(name) ||
       runtime.lifecycles.size >= runtime.input.concurrency
     )
       return;
@@ -268,27 +270,34 @@ class Repository implements JobRepository {
       (type) => jobName(type.name, type.version) === name,
     );
     if (!type) unsupported();
+    // Agenda's interval can overlap an unfinished poll. Coalesce scans per type
+    // instead of accumulating storage transactions behind a slow reservation.
+    runtime.scans.add(name);
     return runtime.track(async () => {
-      const reserved = await runtime.input.store.reserve(
-        type.name,
-        type.version,
-        // Future jobs stay durable until a later library poll. Reserving the
-        // scan horizon creates an Agenda delayed timer that drain cannot cancel.
-        Math.min(through.getTime(), Date.now()),
-        deadline.getTime(),
-      );
-      if (!reserved.ok) {
-        runtime.error(reserved.error.code);
-        throw new QueueError(reserved.error.code);
+      try {
+        const reserved = await runtime.input.store.reserve(
+          type.name,
+          type.version,
+          // Future jobs stay durable until a later library poll. Reserving the
+          // scan horizon creates an Agenda delayed timer that drain cannot cancel.
+          Math.min(through.getTime(), Date.now()),
+          deadline.getTime(),
+        );
+        if (!reserved.ok) {
+          runtime.error(reserved.error.code);
+          throw new QueueError(reserved.error.code);
+        }
+        if (!reserved.value) return;
+        const delivery = reserved.value;
+        runtime.entries.set(identity(delivery), {
+          delivery,
+          begun: false,
+          controller: new AbortController(),
+        });
+        return this.parameters(delivery);
+      } finally {
+        runtime.scans.delete(name);
       }
-      if (!reserved.value) return;
-      const delivery = reserved.value;
-      runtime.entries.set(identity(delivery), {
-        delivery,
-        begun: false,
-        controller: new AbortController(),
-      });
-      return this.parameters(delivery);
     });
   }
   async saveJobState(job: JobParameters): Promise<void> {
