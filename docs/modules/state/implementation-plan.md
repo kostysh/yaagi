@@ -3,15 +3,15 @@
 - Document ID: `state.plan`
 - Module ID: `state`
 - Дата: 2026-09-29.
-- Статус: CP1 proposal; S1/S2 completed locally, CP1 pending approval; production coding blocked до явного согласования.
+- Статус: CP1 принят оператором 2026-09-29; T3/T4 реализованы и проверены локально, независимые аудиты и интеграция T5 выполняются до поставки.
 - Спецификация: [state.spec](specification.md); [локальное evidence S1/S2](../../../experiments/state/README.md).
 - Источники: [архитектура §§2–6, 7.3, 8–10](../../architecture.md), [ADR-001](../../adr/ADR-001-module-boundaries.md), [ADR-002](../../adr/ADR-002-state-and-recovery.md); `state-first-increment.v3` с прямыми решениями оператора 2026-09-29 ограничить `state` хранением, принять встроенный `node:sqlite` и продолжить S1/S2.
 - Рамочная Issue: [#26](https://github.com/kostysh/yaagi/issues/26); поведение snapshot/transaction/migration — [#27](https://github.com/kostysh/yaagi/issues/27), безопасность и сохранность SQLite — [#28](https://github.com/kostysh/yaagi/issues/28).
-- Scope delta: narrowed относительно v3 — управление агентом исключено; общие доменные revisions/DTO не вводятся. Внутри этой границы оператор заменил драйвер на `node:sqlite DatabaseSync`; последствия — адаптация S1/S2 без отдельной сборки addon-драйвера. Текущая CP1 delta не меняет scope: фиксирует evidence и готовность, не принимает предложенные contracts. Новых обязанностей нет. Риск: high — persistent data, native extension и атомарность.
+- Scope delta: narrowed относительно v3 — управление агентом исключено; общие доменные revisions/DTO не вводятся. Внутри этой границы оператор заменил драйвер на `node:sqlite DatabaseSync`; последствия — адаптация S1/S2 без отдельной сборки addon-драйвера. CP1 с точными contracts принят оператором; production-реализация не добавляет новых обязанностей. Риск: high — persistent data, native extension и атомарность.
 
 ## Результат и границы
 
-Цель T3/T4 после CP1: разработчик owner adapter и composition root получает проверенные `readSnapshot`, `transact`, `checkSchema` и открытие/закрытие соединений БД; согласованное чтение и общий commit нескольких владельцев сохраняются после reopen. Реальные SQLite/BLOB/vector проверки должны пройти через публичные exports. Самый прямой путь — один пакет с общими контрактами, техническим SQLite export и отдельным Node adapter для драйвера и файлов БД; фикстуры не требуют реализации соседних модулей. Сейчас выполнен локальный эксперимент, не этот production-пакет.
+Цель T3/T4 после CP1: разработчик owner adapter и composition root получает проверенные `readSnapshot`, `transact`, `checkSchema` и открытие/закрытие соединений БД; согласованное чтение и общий commit нескольких владельцев сохраняются после reopen. Реальные SQLite/BLOB/vector проверки проходят через публичные exports. Самый прямой путь — один пакет с общими контрактами, техническим SQLite export и отдельным Node adapter для драйвера и файлов БД; фикстуры не требуют реализации соседних модулей. Пакет находится в `packages/state`; локальный эксперимент сохранён как evidence S1/S2, не подмена package tests.
 
 Capability — наблюдаемое поведение из AC1–AC5 спецификации. Substrate — документы, пакет, tooling и guide. Anti-claims: не реализуются runtime, memory/timeline/RAG, queue, универсальный repository, vector helpers или новые доменные схемы; I1/E3, двухбазовое recovery, physical power-loss и другие платформы не закрываются. M1 доказывает только проверенное контрактное поведение, не durability тестовой альтернативы или эквивалентность платформ.
 
@@ -24,11 +24,11 @@ Capability — наблюдаемое поведение из AC1–AC5 спец
 | ID | Проверяемый результат и источник | Готовность / зависимость | Следующий владелец / проверка | Tracking |
 | --- | --- | --- | --- | --- |
 | T0 | Architecture/ADR, `state.spec` и этот план согласованы с принятым `node:sqlite` в границах хранения | completed; Concept/Spec/Security PASS на `48430efcaa86873e47dfaf913d8dcdeb4293c66e` | Авторы sources и reviewers; новая CP1 delta аудируется отдельно | #26 |
-| S1 | Evidence общего async scope и migration chain, AC1–AC2 / R1–R11, R15, R19 | completed locally после T0 PASS; production exports и schema-readiness wiring ещё не реализованы | `node-engineer` + TypeScript/test skills → авторы sources/CP1; evidence ниже | #27 |
+| S1 | Evidence общего async scope и migration chain, AC1–AC2 / R1–R11, R15, R19 | completed locally после T0 PASS | `node-engineer` + TypeScript/test skills → авторы sources/CP1; evidence ниже | #27 |
 | S2 | Evidence ошибок хранения, сохранности и native-связки, AC3 / R12, R14–R18, R20 | completed locally после T0 PASS; remote CI не выполнен | `node-engineer` + TypeScript/test skills → авторы sources/CP1; evidence ниже | #28 |
-| CP1 | Evidence возвращено в sources; точные contracts и acceptance предложены оператору | pending approval; `start`: S1/S2 evidence получено, применимые аудиты нового committed snapshot ещё требуются | Авторы sources и независимые reviewers; затем оператор и hard stop | #26 |
-| T3 | Принятые гарантии хранения реализованы в `@polyphony/state` | blocked; `start`: явное approval CP1 и принятая спецификация | Coding с `implementation-discipline`, `node-engineer`, `typescript-engineer`, `typescript-test-engineer`; AC1–AC3 | #27, #28 |
-| T4 | Отдельный M1 replacement prototype и исполняемый guide доступны потребителю | blocked; `start`: CP1 и публичные exports T3 | Coding/test skills, `documentation`; AC4–AC5 | #26 |
+| CP1 | Evidence, точные contracts и acceptance согласованы | accepted оператором 2026-09-29 после Concept/Spec/Security PASS и tooling delta PASS на `db705a8` | Завершённая остановка; разрешено продолжение через T5 | #26 |
+| T3 | Принятые гарантии хранения реализованы в `@polyphony/state` | local acceptance PASS; delivery требует T5 | Coding с `implementation-discipline`, `node-engineer`, `typescript-engineer`, `typescript-test-engineer`; AC1–AC3 | #27, #28 |
+| T4 | Отдельный M1 replacement prototype и исполняемый guide доступны потребителю | local acceptance PASS; delivery требует T5 | Coding/test skills, `documentation`; AC4–AC5 | #26 |
 | T5 | Проверенные пакет и документы интегрированы в `develop` | `merge`: T3/T4, PASS аудитов и актуальный CI | Координатор, `git-engineer`, `gh-utility`; refs/CI readback | #26 |
 
 Общие contracts, dependency choices, lockfiles и migration artifacts меняются последовательно. S1/S2 используют согласованную native-связку; искусственного параллелизма на общей границе нет. Общая `acceptance` T3/T4 — real SQLite integration и неизменный consumer через exports; M1 имеет отдельный oracle ниже. `future-owner`: будущий runtime отвечает за единственность своего инстанса, связывает owners в I1 и проверяет state/queue/effect recovery в E3. Механизм управления агентом сейчас не выбирается; эти результаты не входят в закрытие `state`, точки интеграции сохраняются в roadmap.
@@ -61,11 +61,11 @@ Promise-обёртка не делает SQL `DatabaseSync` асинхронны
 
 ### CP1 — hard stop перед production
 
-Результаты спайков, полезные regression cases и evidence limits сохранены; architecture/ADR, spec и план уточнены. [Точное предложение CP1](specification.md#предложение-контракта-на-cp1) содержит signatures/exports `readSnapshot`, `transact`, `checkSchema` и операций соединения БД: side-effect/native-free `./contracts`, нормализованный SQL/BLOB `./sqlite`, отдельный Node entrypoint для драйвера/файлов. Там же предложены migration unit/journal compatibility, Result/error/cancel semantics и ограниченный M1 contour с test-only альтернативой. Общий domain revision API и валидация owner DTO в контракт `state` не входят. Предложение не принято: эти решения принимает оператор на CP1, не implementation-агент после него; новый production backend/driver/platform не выбирается.
+Результаты спайков, regression cases и evidence limits сохранены. [Точный контракт CP1](specification.md#предложение-контракта-на-cp1), включая migration compatibility, error/cooperative cancellation и M1, принят оператором 2026-09-29 сообщением «да, принимаю. продолжай». До этого production, push и PR не выполнялись. Общий domain revision API и валидация owner DTO в контракт `state` не входят; новый backend/driver/platform не выбирается.
 
 После self-check и применимых gates сделать локальный commit и независимые аудиты изменённых sources и сохраняемого экспериментального кода. Дождаться помощников, проверить их terminal status и task-owned ресурсы. CP1 report содержит выполненный scope, Capability/Substrate/Anti-claims, `accepted now`, `not accepted`, `blocking decision`, checks/evidence и пропуски с причинами, ключевые решения с основаниями/последствиями либо их явное отсутствие, deviations и вопросы. Compact recovery ledger: время, task/source/artifact locators, repo/worktree/branch/full HEAD/base/upstream, ahead/behind и staged/unstaged/untracked status, tracking/publication/CI, последний принятый checkpoint/commit и evidence.
 
-На CP1 `next autonomous action: none` до явного согласования оператором контрактов и продолжения. До этого запрещены production-пакет, push ветки и PR. Разрешение «Продолжай» относилось к выполненным S1/S2 и не отменяет CP1. Material blocker или failed gate останавливает только зависимую работу.
+Hard stop CP1 соблюдён и снят указанным явным approval. Следующее действие — T3/T4, затем согласованная интеграция T5 без нового permission gate. Material blocker или failed gate останавливает только зависимую работу.
 
 ## Реализация, документация и общая проверка после CP1
 
@@ -91,4 +91,4 @@ T0 delta audits смены драйвера завершены PASS на ука�
 
 После approval CP1 уже согласованная поставка выполняется без нового permission gate: `git-engineer`/`gh-utility`, task push → PR в `develop` → обязательный актуальный CI на кандидате → merge → отдельный readback refs и послемержевого CI. `master` и теги не меняются. GitHub mutations подтверждаются отдельным чтением. Затем закрываются tracking и task-owned ресурсы; после проверки refs выполняется безопасная очистка завершённых task-ветки/worktree, `roadmap-bootstrap` сохраняется. Финал сообщает verified results/limits, PR/CI, branch/HEAD и оставленные ресурсы.
 
-Открыто согласование оператором предложенных signatures, SQL/BLOB/numeric normalization, migration compatibility/unit, error/cooperative cancellation semantics и ограниченного M1 contour; механизм опирается на выполненные S1/S2, не на непроверенную совместимость драйвера/extension. После применимых аудитов CP1 production handoff остаётся blocked до явного approval. M1, публичный production-пакет и его schema-readiness wiring, исполняемый guide и remote Ubuntu CI ещё не выполнены; локальный эксперимент их не заменяет.
+Открытых решений по CP1 нет. Публичный пакет, schema-readiness wiring, M1 и исполняемый guide проверяются отдельно от S1/S2. Перед поставкой остаются committed-snapshot audits и актуальный Ubuntu CI; их результаты фиксируются в PR/tracking, не подменяются локальным прогоном.

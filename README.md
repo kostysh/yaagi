@@ -6,15 +6,15 @@ YAAGI (Yet Another AGI) is a project to build Polyphony: an autonomous agent wit
 
 The repository contains the concept, modular architecture, architectural decision records, implementation roadmap, development methodology, and a verified TypeScript workspace. The first package, `@polyphony/core-types`, now exposes the compile-time-only `Result<T, E>` contract. No agent runtime exists yet, and the broader `core-types` roadmap step is not complete.
 
-The [implementation roadmap](docs/roadmap.md) orders modules, experiments, and integration checks. The current `core-types` increment has its own [specification](docs/modules/core-types/specification.md) and [implementation plan](docs/modules/core-types/implementation-plan.md). Identifiers, time, references, DTOs, error codes, helpers, validators, and runtime behavior remain unimplemented; later types will be added only when a real consumer requires them.
+The [implementation roadmap](docs/roadmap.md) orders modules, experiments, and integration checks. The current `core-types` increment has its own [specification](docs/modules/core-types/specification.md) and [implementation plan](docs/modules/core-types/implementation-plan.md). That package does not yet provide identifiers, time, references, DTOs, error codes, helpers, validators, or runtime behavior; later common types will be added only when a real consumer requires them.
 
-The next `state` increment has local [SQLite/Drizzle spike evidence](experiments/state/README.md) using built-in `node:sqlite` and `sqlite-vec`. Its [contract proposal](docs/modules/state/specification.md#предложение-контракта-на-cp1) is awaiting CP1 approval. These standalone experiments are not a production package and are not included in root CI; M1, I1, and E3 remain unverified.
+The first [`@polyphony/state` increment](packages/state/README.md) implements the [approved CP1 contract](docs/modules/state/specification.md#предложение-контракта-на-cp1): scoped snapshots/transactions, migration checks, fixed `sqlite-vec` loading, and backup on built-in `node:sqlite`. Public-export tests cover two owners using Drizzle and raw vector SQL on one connection, rollback/reopen, storage faults, and an unchanged M1 consumer with a test-only alternative. The [developer guide](packages/state/docs/usage.md) links a compiled, executable example. These package guarantees do not establish agent runtime, I1, E3, power-loss resilience, or another platform. The earlier [standalone spikes](experiments/state/README.md) remain supporting evidence, outside root CI.
 
 ## Architectural foundations
 
 - Independent packages with public contracts, assembled into one runtime with a single decision cycle and executor.
 - A local first deployment using TypeScript, Node.js, pnpm, and embedded SQLite, with `sqlite-vec` for vector storage and search. Detailed choices and versions belong in the architecture document.
-- Database-neutral contracts in `state` and a durable job API in `queue`, with platform adapters. Liteque is the desktop queue candidate pending a recovery and lifecycle probe. Domain job intents and receipts stay with their owners; no database server, Redis, Docker Compose, or `infrastructure` package is required. These modules are planned, not implemented.
+- Database-neutral contracts and a Linux x64 SQLite adapter in `state`; a durable job API in `queue` remains planned. Liteque is the desktop queue candidate pending a recovery and lifecycle probe. Domain schemas, job intents, and receipts stay with their owners; no database server, Redis, Docker Compose, or `infrastructure` package is required.
 - Shared contracts avoid Node-specific dependencies to leave room for future Expo adapters. Mobile execution, background scheduling, and a complete RAG pipeline are outside the current delivery scope.
 - Shared model access through `model-organs`, supporting language models, specialized classifiers, embeddings, and audio models as needed. The baseline local model and hardware profile still need to be selected and evaluated.
 - Exactly one operator, with a two-way CLI in the first version. Other communication channels may be added as the system develops.
@@ -43,11 +43,11 @@ pnpm build
 pnpm test
 ```
 
-These commands delegate to workspace packages. For `core-types`, they verify formatting, both lint contours, its level-0 boundary, TypeScript 7 typechecking and build, compile-time contract fixtures, declarations, and package resolution as ESM.
+These commands delegate to workspace packages. For `core-types`, they verify its compile-time contract and package boundary; for `state`, they also run real SQLite integration tests, M1, and the guide example. Both use TypeScript 7 for typechecking/build, Biome formatting, and Biome plus syntax-only ESLint linting. `state` prepares its public `core-types` dependency before typechecking, so fresh CI needs no private-source import bypass.
 
 GitHub Actions runs the same root commands for pull requests and subsequent pushes to `develop` or `master`, using the frozen lockfile. Recursive pnpm execution runs each command in every workspace package that defines the corresponding script.
 
-The ESM import smoke test proves package resolution only: `core-types` exports no runtime values. Production SQLite/queue adapters, domain vector retrieval, model services, AI SDK, and experiments E1–E3 are not configured or running. No Expo app or mobile adapter has been created. The shared root `.env` remains operator-owned; task worktrees use a symlink and must not modify it. See the [tooling guide](docs/development-methodology/tooling.md) for package configuration conventions.
+Import smoke tests alone prove resolution and absence of native import side effects, not storage behavior; `state` has separate real SQLite tests. Queue adapters, domain vector retrieval, model services, AI SDK, and experiments E1–E3 are not configured or running. No Expo app or mobile adapter has been created. The shared root `.env` remains operator-owned; task worktrees use a symlink and must not modify it. See the [tooling guide](docs/development-methodology/tooling.md) for package configuration conventions.
 
 ## Documentation
 

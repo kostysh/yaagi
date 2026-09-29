@@ -2,7 +2,7 @@
 
 - Document ID: `project.methodology.tooling`
 
-Минимальная среда использует baseline [архитектуры, §2.1](../architecture.md#21-проверенный-технологический-baseline). Первый пакет `@polyphony/core-types` реализует только compile-time контракт `Result<T, E>`; runtime Полифонии и продуктовых тестов пока нет. SQLite и векторное расширение проверены только в [локальных S1/S2](../../experiments/state/README.md), production-пакет ожидает CP1. Очереди, модели и AI SDK остаются последующими задачами по [roadmap](../roadmap.md).
+Минимальная среда использует baseline [архитектуры, §2.1](../architecture.md#21-проверенный-технологический-baseline). `@polyphony/core-types` реализует только compile-time контракт `Result<T, E>`; runtime Полифонии и продуктовых тестов пока нет. После принятого CP1 пакет [`@polyphony/state`](../../packages/state/README.md) добавляет SQLite snapshots/transactions, миграции и backup; Drizzle/vec0, M1 и guide проверяются через public exports. [Локальные S1/S2](../../experiments/state/README.md) сохранены как отдельное evidence. Очереди, модели и AI SDK остаются последующими задачами по [roadmap](../roadmap.md).
 
 ## Установка
 
@@ -40,6 +40,8 @@ pnpm install --frozen-lockfile
 - Каждый пакет кода предоставляет `format`, `format:check`, `lint`, `typecheck`, `build`, `test`; для adapter добавляется `test:integration` по §4.4 архитектуры. Выбор конкретных тестов относится к спецификации и плану пакета.
 
 Общий `eslint.config.ts` использует syntax-only recommended rules. ESLint запускается через Node с `--experimental-strip-types` и `--flag unstable_native_nodejs_ts_config`: конфигурация загружается нативно, без дополнительного loader. Это [режим ESLint для TS-конфигурации](https://eslint.org/docs/latest/use/configure/configuration-files#native-typescript-support). Для текущего import-free `core-types` он дополнительно запрещает в `src` static и dynamic imports, import types, TypeScript import assignments, `require` и re-exports. Узкий package-local TypeScript boundary script проверяет отсутствие dependency-полей и ровно один корневой export на JS и declarations. Это проверка текущей границы уровня 0, а не универсальный dependency graph framework. Отдельный `tsconfig.tools.json` проверяет Node-скрипты и общий ESLint config через TypeScript 7; root devDependency `@types/node@24.19.0` обслуживает только tooling, а source/test configs `core-types` сохраняют `types: []`.
+
+`state` предоставляет только `/contracts`, `/sqlite`, `/node`, без root export. Его boundary script проверяет exports/dependencies и отрицательные ESLint cases для Node/native imports в contracts и private imports соседнего пакета. Общие contracts отдельно проверяются с `types: []`; runtime import-probe запрещает загрузку native-модулей при импорте каждого export. Node entrypoint загружает SQLite только при `openSqlite`. Для чистой установки `state` перед typecheck/build собирает публичную зависимость `core-types`, не обходит её exports через source paths. Drizzle остаётся devDependency owner fixtures/guide, SQLitevec и Zod — runtime dependencies адаптера; дополнительный addon-драйвер или native build scripts в workspace не нужны. Drizzle Kit и его узкие build-разрешения остаются только в standalone S1.
 
 NodeNext и Node emit — профиль текущей desktop-сборки. Общие contracts и доменная логика не получают зависимость от Node-only API/types; native SQLite/queue adapters отделяются exports по §2.3 архитектуры. Expo/Metro, mobile adapters и сборки сейчас не устанавливаются и не проверяются.
 
