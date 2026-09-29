@@ -18,12 +18,12 @@
     "format:check": "biome format .",
     "lint": "pnpm run lint:biome && pnpm run lint:eslint && pnpm run lint:boundary",
     "lint:biome": "biome lint .",
-    "lint:eslint": "eslint .",
-    "lint:boundary": "node ./scripts/check-boundary.mjs",
-    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "lint:eslint": "node --experimental-strip-types ../../node_modules/eslint/bin/eslint.js --flag unstable_native_nodejs_ts_config . ../../eslint.config.ts",
+    "lint:boundary": "node --experimental-strip-types ./scripts/check-boundary.ts",
+    "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.tools.json",
     "build": "tsc --project tsconfig.json",
     "test": "pnpm run build && pnpm run test:types && pnpm run test:import",
     "test:types": "tsc --project tsconfig.test.json",
-    "test:import": "node ./scripts/import-smoke.mjs"
+    "test:import": "node --experimental-strip-types ./scripts/import-smoke.ts"
   }
 }

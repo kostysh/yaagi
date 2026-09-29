@@ -2,7 +2,7 @@
 
 - Document ID: `project.methodology.tooling`
 
-Минимальная среда использует baseline [архитектуры, §2.1](../architecture.md#21-проверенный-технологический-baseline). Первый пакет `@polyphony/core-types` реализует только compile-time контракт `Result<T, E>`; runtime Полифонии и продуктовых тестов пока нет. SQLite adapters, векторное расширение, очереди, модели и AI SDK будут подготовлены отдельными последующими задачами по [roadmap](../roadmap.md).
+Минимальная среда использует baseline [архитектуры, §2.1](../architecture.md#21-проверенный-технологический-baseline). Первый пакет `@polyphony/core-types` реализует только compile-time контракт `Result<T, E>`; runtime Полифонии и продуктовых тестов пока нет. SQLite и векторное расширение проверены только в [локальных S1/S2](../../experiments/state/README.md), production-пакет ожидает CP1. Очереди, модели и AI SDK остаются последующими задачами по [roadmap](../roadmap.md).
 
 ## Установка
 
@@ -27,6 +27,8 @@ pnpm install --frozen-lockfile
 
 ## Граница пакета
 
+Весь авторский исполняемый код, включая tooling scripts и конфигурацию, пишется на TypeScript, без `.mjs`/JavaScript-исходников. Прямой запуск `.ts` через Node всегда содержит явный `--experimental-strip-types`; type stripping не заменяет отдельный TypeScript typecheck. Сгенерированный JS и код сторонних зависимостей не переписываются. Для directly-run scripts используется erasable syntax; package source по-прежнему компилируется в ESM.
+
 `pnpm-workspace.yaml` включает только `packages/*`. Пакет создаётся после подготовки своей спецификации и плана; текущий `packages/core-types` следует [спецификации инкремента](../modules/core-types/specification.md).
 
 - Имя пакета — `@polyphony/<module-id>`, `type` — `module`. Соседние пакеты подключаются через `workspace:*` и публичные exports, а не через private source paths.
@@ -36,7 +38,7 @@ pnpm install --frozen-lockfile
 - `format` и `format:check` выполняет только Biome. `lint` каждого TypeScript-пакета обязательно запускает Biome, ESLint и проверку package boundary; один инструмент не заменяет остальные.
 - Каждый пакет кода предоставляет `format`, `format:check`, `lint`, `typecheck`, `build`, `test`; для adapter добавляется `test:integration` по §4.4 архитектуры. Выбор конкретных тестов относится к спецификации и плану пакета.
 
-Общий `eslint.config.mjs` использует syntax-only recommended rules. Для текущего import-free `core-types` он дополнительно запрещает в `src` static и dynamic imports, import types, TypeScript import assignments, `require` и re-exports. Узкий package-local boundary script проверяет отсутствие dependency-полей и ровно один корневой export на JS и declarations. Это проверка текущей границы уровня 0, а не универсальный dependency graph framework.
+Общий `eslint.config.ts` использует syntax-only recommended rules. ESLint запускается через Node с `--experimental-strip-types` и `--flag unstable_native_nodejs_ts_config`: конфигурация загружается нативно, без дополнительного loader. Это [режим ESLint для TS-конфигурации](https://eslint.org/docs/latest/use/configure/configuration-files#native-typescript-support). Для текущего import-free `core-types` он дополнительно запрещает в `src` static и dynamic imports, import types, TypeScript import assignments, `require` и re-exports. Узкий package-local TypeScript boundary script проверяет отсутствие dependency-полей и ровно один корневой export на JS и declarations. Это проверка текущей границы уровня 0, а не универсальный dependency graph framework. Отдельный `tsconfig.tools.json` проверяет Node-скрипты и общий ESLint config через TypeScript 7; root devDependency `@types/node@24.19.0` обслуживает только tooling, а source/test configs `core-types` сохраняют `types: []`.
 
 NodeNext и Node emit — профиль текущей desktop-сборки. Общие contracts и доменная логика не получают зависимость от Node-only API/types; native SQLite/queue adapters отделяются exports по §2.3 архитектуры. Expo/Metro, mobile adapters и сборки сейчас не устанавливаются и не проверяются.
 

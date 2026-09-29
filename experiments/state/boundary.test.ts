@@ -2,23 +2,12 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";
 
 test("S1 boundary: common contracts compile without Node types and import without native loads", () => {
-  const contracts = new URL("./contracts.js", import.meta.url).href;
-  const sqlite = new URL("./sqlite.js", import.meta.url).href;
   execFileSync(process.execPath, [
-    "--input-type=module",
-    "-e",
-    `
-    import { registerHooks } from 'node:module';
-    registerHooks({resolve(specifier, context, next) {
-      if (specifier.startsWith('node:') || specifier.includes('sqlite-vec') || specifier.includes('drizzle-orm')) throw new Error('Native import forbidden');
-      return next(specifier, context);
-    }});
-    await import(${JSON.stringify(contracts)});
-    await import(${JSON.stringify(sqlite)});
-  `,
+    fileURLToPath(new URL("./contracts-import-child.js", import.meta.url)),
   ]);
   const declaration = readFileSync(
     new URL("./contracts.d.ts", import.meta.url),
@@ -28,7 +17,7 @@ test("S1 boundary: common contracts compile without Node types and import withou
 });
 
 test("S1 boundary: lint rejects Node/native imports, dynamic imports and sibling internals", async () => {
-  const eslint = new ESLint();
+  const eslint = new ESLint({ flags: ["unstable_native_nodejs_ts_config"] });
   for (const source of [
     'import type { DatabaseSync } from "node:sqlite"; export type X = DatabaseSync;',
     'export const x = import("node:sqlite");',

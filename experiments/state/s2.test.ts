@@ -7,6 +7,7 @@ import { performance } from "node:perf_hooks";
 import { backup, DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
 import { setImmediate as yieldLoop } from "node:timers/promises";
+import { fileURLToPath } from "node:url";
 import { getLoadablePath } from "sqlite-vec";
 import { counts, fixture, value, vector, writeOwners } from "./fixture.js";
 import { checkSchema, release } from "./migrations.js";
@@ -262,21 +263,10 @@ test("S2: extension loader rejects invalid binary; no fallback success", (t) => 
 
 test("S2: missing fixed extension supply fails adapter open with a safe error", (t) => {
   const f = fixture(t);
-  const module = new URL("./probe.js", import.meta.url).href;
   const path = join(f.dir, "missing-extension.db");
   execFileSync(process.execPath, [
-    "--input-type=module",
-    "-e",
-    `
-    import assert from 'node:assert/strict';
-    import { registerHooks } from 'node:module';
-    registerHooks({resolve(specifier, context, next) {
-      if (specifier === 'sqlite-vec-linux-x64/vec0.so') throw new Error('private supply path');
-      return next(specifier, context);
-    }});
-    const {openProbeDb, ProbeError} = await import(${JSON.stringify(module)});
-    assert.throws(() => openProbeDb(${JSON.stringify(path)}), new ProbeError('incompatible'));
-  `,
+    fileURLToPath(new URL("./extension-failure-child.js", import.meta.url)),
+    path,
   ]);
 });
 

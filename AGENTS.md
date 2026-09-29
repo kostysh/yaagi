@@ -70,6 +70,12 @@ with a separate read. Do not create an Issue solely to obtain an audit ID.
 
 ## Implementation and verification
 
+All authored code, including scripts and executable configuration, is TypeScript.
+Do not add JavaScript or `.mjs` source files. Run `.ts` files directly with Node
+only with the explicit `--experimental-strip-types` flag; stripping types does
+not replace TypeScript checks. Generated JavaScript and third-party dependencies
+are not authored sources.
+
 Apply `implementation-discipline` for implementation and substantive document
 changes. Specify observable module behavior at public boundaries. Use one
 specification and one compact plan per module; write them when that module is

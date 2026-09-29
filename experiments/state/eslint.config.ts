@@ -1,3 +1,4 @@
+import type { Linter } from "eslint";
 import tseslint from "typescript-eslint";
 
 export default [
@@ -57,4 +58,4 @@ export default [
       ],
     },
   },
-];
+] satisfies Linter.Config[];

@@ -22,6 +22,8 @@ pnpm audit
 
 Тесты создают только собственные временные каталоги `yaagi-state-*`, удаляют их и завершают только собственные child processes. Рабочая БД и `.env` не используются. Lockfile, локальные store/cache, точные зависимости и узкий `allowBuilds` обеспечивают воспроизводимость установки без сборки отдельного SQLite addon. Эти же команды подготовлены для Ubuntu 24.04; remote CI **не запускался**, эксперимент не входит в root recursive CI. После CP1 package `test` будет включать `test:integration` и прежние root-команды подхватят пакет.
 
+Исходники, child probes и ESLint config — TypeScript. Тесты и child probes запускаются из compiler output; Node-процесс ESLint использует `--experimental-strip-types` и native TS-config flag. Прямой запуск любого `.ts` разрешён только с `node --experimental-strip-types`; это не замена `pnpm typecheck`.
+
 ## Проверенный снимок среды и результаты
 
 Локально 2026-09-29: `node:sqlite DatabaseSync`, SQLite **3.53.4**, `sqlite-vec` **0.1.9** (`vec_version() = v0.1.9`), Drizzle ORM **0.45.3**, Drizzle Kit **0.31.11**, Zod **4.6.5**, `@types/node` **24.19.0**. Общий toolchain: TypeScript **7.0.2** как `tsc`, TS6 alias **6.0.2** для syntax-only ESLint, ESLint **10.11.0**, typescript-eslint **8.71.0**, Biome **2.5.14**. Это реальный load/insert/query/rollback/reopen, не вывод только из документации.

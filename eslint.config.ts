@@ -1,3 +1,4 @@
+import type { Linter } from "eslint";
 import tseslint from "typescript-eslint";
 
 const noSourceDependencySyntax = [
@@ -47,4 +48,4 @@ export default [
       "no-restricted-syntax": ["error", ...noSourceDependencySyntax],
     },
   },
-];
+] satisfies Linter.Config[];
