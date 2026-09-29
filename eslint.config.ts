@@ -59,8 +59,8 @@ export default [
               group: [
                 '@polyphony/*/*',
                 '!@polyphony/state/contracts',
-                '!@polyphony/state/sqlite',
-                '!@polyphony/state/node',
+                '!@polyphony/state/adapters',
+                '!@polyphony/state/adapters/sqlite',
                 '**/core-types/**',
               ],
               message: 'Use only public package exports.',
@@ -71,7 +71,7 @@ export default [
     },
   },
   {
-    files: ['packages/state/src/contracts.ts', 'packages/state/src/sqlite.ts'],
+    files: ['packages/state/src/contracts.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -106,6 +106,47 @@ export default [
         {
           selector: "CallExpression[callee.name='require']",
           message: 'No require in contracts.',
+        },
+      ],
+    },
+  },
+  {
+    files: [
+      'packages/state/src/index.ts',
+      'packages/state/src/internal/**/*.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'ImportDeclaration[source.value!="@polyphony/core-types"][source.value!="zod"][source.value!="./contracts.js"][source.value!="../contracts.js"][source.value!="./internal/budget.js"][source.value!="./internal/errors.js"][source.value!="./errors.js"]',
+          message:
+            'The neutral core may only import its own neutral implementation and core-types/Zod.',
+        },
+        {
+          selector: 'ImportExpression',
+          message: 'No backend/runtime loading in the neutral core.',
+        },
+        {
+          selector: 'TSImportType',
+          message: 'No hidden backend types in the core.',
+        },
+        {
+          selector: 'TSImportEqualsDeclaration',
+          message: 'No import assignments in the core.',
+        },
+        {
+          selector: 'ExportAllDeclaration',
+          message: 'No backend re-exports from the core.',
+        },
+        {
+          selector: 'ExportNamedDeclaration[source]',
+          message: 'No backend re-exports from the core.',
+        },
+        {
+          selector: "CallExpression[callee.name='require']",
+          message: 'No require in the core.',
         },
       ],
     },

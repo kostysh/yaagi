@@ -15,8 +15,8 @@ import { performance } from 'node:perf_hooks';
 import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
 import type { OperationOptions } from '@polyphony/state/contracts';
-import { openSqlite } from '@polyphony/state/node';
-import type { SqlScope } from '@polyphony/state/sqlite';
+import { openState } from './fixture.js';
+import type { SqlScope } from '@polyphony/state/adapters/sqlite';
 import { eq } from 'drizzle-orm';
 import {
   marks,
@@ -40,7 +40,7 @@ test('public exports: two owners, BLOB and real vec0 commit together and survive
   const reopened = await f.open();
   const dto = value(
     await reopened.readSnapshot(async (scope) => {
-      assert.deepEqual(counts(scope), [1, 1, 1]);
+      assert.deepEqual(await counts(scope), [1, 1, 1]);
       const db = ownerDb(scope);
       assert.equal('transaction' in db, false);
       const note = await db.select().from(notes).where(eq(notes.id, 'n')).get();
@@ -49,7 +49,7 @@ test('public exports: two owners, BLOB and real vec0 commit together and survive
         undefined,
       );
       assert.equal((await db.select().from(marks).get())?.amount, 0);
-      const nearest = scope.all(
+      const nearest = await scope.all(
         'SELECT rowid,distance FROM fixture_vectors WHERE embedding MATCH ? AND k = ?',
         [vector, 1n],
       );
@@ -77,7 +77,7 @@ test('falsy/undefined results and lossless integer/BLOB normalization', async (t
   value(
     await store.readSnapshot(async (scope) => {
       assert.deepEqual(
-        scope.all('SELECT ?,?,?,?', [
+        await scope.all('SELECT ?,?,?,?', [
           9223372036854775807n,
           1n,
           1.5,
@@ -91,15 +91,15 @@ test('falsy/undefined results and lossless integer/BLOB normalization', async (t
   for (const invalid of [NaN, Infinity, 9223372036854775808n]) {
     failure(
       await store.transact(async (scope) => {
-        scope.all('SELECT ?', [invalid]);
+        await scope.all('SELECT ?', [invalid]);
         return { ok: true, value: 0 };
       }, limits()),
-      'sql_failed',
+      'operation_failed',
     );
   }
 });
 
-test('await retains transaction; competing operations are busy; handles expire', async (t) => {
+test('await retains its transaction; overlapping operations work and close drains; handles expire', async (t) => {
   const { store } = await fixture(t);
   const entered = Promise.withResolvers<void>();
   const resume = Promise.withResolvers<void>();
@@ -109,22 +109,27 @@ test('await retains transaction; competing operations are busy; handles expire',
     await writeOwners(scope);
     entered.resolve();
     await resume.promise;
-    assert.deepEqual(counts(scope), [1, 1, 1]);
+    assert.deepEqual(await counts(scope), [1, 1, 1]);
     return { ok: true, value: false };
   }, limits());
   await entered.promise;
-  failure(await store.readSnapshot(async () => 0, limits()), 'busy');
-  failure(
-    await store.transact(async () => ({ ok: true, value: 0 }), limits()),
-    'busy',
+  assert.deepEqual(
+    value(await store.readSnapshot(counts, limits())),
+    [0, 0, 0],
   );
-  failure(await store.checkSchema(limits()), 'busy');
-  failure(await store.migrate(limits()), 'busy');
-  failure(await store.close(), 'busy');
+  const second = store.transact(async () => ({ ok: true, value: 0 }), limits());
+  const migration = store.migrate(limits());
+  value(await store.checkSchema(limits()));
+  const closing = store.close();
+  failure(await store.checkSchema(limits()), 'closed');
   resume.resolve();
   assert.equal(value(await pending), false);
-  assert.throws(() => saved?.all('SELECT 1'), /scope_ended/);
-  assert.throws(() => saved?.run('DELETE FROM fixture_notes'), /scope_ended/);
+  assert.equal(value(await second), 0);
+  value(await migration);
+  value(await closing);
+  assert.ok(saved);
+  await assert.rejects(saved.all('SELECT 1'), /scope_ended/);
+  await assert.rejects(saved.run('DELETE FROM fixture_notes'), /scope_ended/);
 });
 
 test('throw, owner failure, constraint and automatic rollback poison the whole commit without replay', async (t) => {
@@ -156,13 +161,13 @@ test('throw, owner failure, constraint and automatic rollback poison the whole c
     failure(
       await store.transact(async (scope) => {
         await writeOwners(scope);
-        assert.throws(() => scope.run(sql));
-        assert.throws(() =>
+        await assert.rejects(scope.run(sql));
+        await assert.rejects(
           scope.run("UPDATE fixture_notes SET text='escaped'"),
         );
         return { ok: true, value: 0 };
       }, limits()),
-      'sql_failed',
+      'operation_failed',
     );
   }
   assert.equal(calls, 1);
@@ -188,7 +193,7 @@ test('owner revision conflict rolls back both owners and vector work', async (t)
   );
   const result = await store.transact(async (scope) => {
     await writeOwners(scope, 'second', 2n);
-    const updated = scope.run(
+    const updated = await scope.run(
       'UPDATE fixture_notes SET revision=revision+1 WHERE id=? AND revision=?',
       ['n', 99],
     );
@@ -210,14 +215,14 @@ test('snapshot stays consistent across await and another connection committing',
   const other = await open();
   const result = value(
     await store.readSnapshot(async (scope) => {
-      const before = counts(scope);
+      const before = await counts(scope);
       value(
         await other.transact(async (writer) => {
           await writeOwners(writer);
           return { ok: true, value: 0 };
         }, limits()),
       );
-      return { before, after: counts(scope) };
+      return { before, after: await counts(scope) };
     }, limits()),
   );
   assert.deepEqual(result, { before: [0, 0, 0], after: [0, 0, 0] });
@@ -227,7 +232,7 @@ test('snapshot stays consistent across await and another connection committing',
   );
   failure(
     await store.readSnapshot(
-      async (scope) => scope.run('DELETE FROM fixture_marks'),
+      async (scope) => await scope.run('DELETE FROM fixture_marks'),
       limits(),
     ),
     'write_failed',
@@ -242,13 +247,14 @@ test('required budgets reject before callback and storage I/O; live cancellation
     null,
     {},
     { signal: {}, timeoutMs: 100 },
-    { signal: { aborted: false }, timeoutMs: NaN },
-    { signal: { aborted: false }, timeoutMs: Infinity },
-    { signal: { aborted: false }, timeoutMs: -1 },
+    { signal: { aborted: false }, timeoutMs: 100 },
+    { signal: new AbortController().signal, timeoutMs: NaN },
+    { signal: new AbortController().signal, timeoutMs: Infinity },
+    { signal: new AbortController().signal, timeoutMs: -1 },
   ]) {
     // Deliberately cross the untyped caller boundary.
     failure(
-      await openSqlite(
+      await openState(
         { path: invalidPath, migrations: [] },
         bad as OperationOptions,
       ),
@@ -271,7 +277,7 @@ test('required budgets reject before callback and storage I/O; live cancellation
     failure(await f.store.checkSchema(bad as OperationOptions), 'incompatible');
     failure(await f.store.migrate(bad as OperationOptions), 'incompatible');
     failure(
-      await f.store.backupTo(invalidPath, bad as OperationOptions),
+      await f.store.adapter.backupTo(invalidPath, bad as OperationOptions),
       'incompatible',
     );
     assert.equal(called, false);
@@ -279,11 +285,11 @@ test('required budgets reject before callback and storage I/O; live cancellation
   assert.equal(existsSync(invalidPath), false);
   const aborted = AbortSignal.abort('SECRET');
   failure(
-    await openSqlite({ path: invalidPath, migrations: [] }, limits(aborted)),
+    await openState({ path: invalidPath, migrations: [] }, limits(aborted)),
     'cancelled',
   );
   failure(
-    await openSqlite(
+    await openState(
       { path: invalidPath, migrations: [] },
       limits(undefined, 0),
     ),
@@ -309,8 +315,9 @@ test('required budgets reject before callback and storage I/O; live cancellation
   failure(await f.store.checkSchema(limits()), 'closed');
 });
 
-test('synchronous SQL blocks timers; expired budget rolls back without a late commit', async (t) => {
+test('worker SQL leaves timers responsive; expired budget rolls back without a late commit', async (t) => {
   const { store } = await fixture(t);
+  let executed = false;
   let timerRan = false;
   const timer = setTimeout(() => {
     timerRan = true;
@@ -320,20 +327,22 @@ test('synchronous SQL blocks timers; expired budget rolls back without a late co
   failure(
     await store.transact(
       async (scope) => {
-        scope.run(
+        await scope.run(
           "INSERT INTO fixture_notes VALUES('n','payload',0,x'00',NULL)",
         );
-        scope.all(
-          'WITH RECURSIVE x(n) AS (VALUES(0) UNION ALL SELECT n+1 FROM x WHERE n<1500000) SELECT sum(n) FROM x',
+        executed = true;
+        await scope.all(
+          'WITH RECURSIVE x(n) AS (VALUES(0) UNION ALL SELECT n+1 FROM x WHERE n<10000000) SELECT sum(n) FROM x',
         );
         return { ok: true, value: undefined };
       },
-      limits(undefined, 30),
+      limits(undefined, 1000),
     ),
     'deadline',
   );
-  assert.ok(performance.now() - start >= 30);
-  assert.equal(timerRan, false);
+  assert.ok(performance.now() - start >= 1000);
+  assert.equal(executed, true);
+  assert.equal(timerRan, true);
   assert.deepEqual(
     value(await store.readSnapshot(async (scope) => counts(scope), limits())),
     [0, 0, 0],
@@ -364,7 +373,9 @@ test('fresh install, upgrade, replay, exact history and actual schema checks', a
   value(await f.store.migrate(limits()));
   value(
     await f.store.transact(async (scope) => {
-      scope.run("INSERT INTO fixture_notes VALUES('old','before',0,x'01')");
+      await scope.run(
+        "INSERT INTO fixture_notes VALUES('old','before',0,x'01')",
+      );
       return { ok: true, value: 0 };
     }, limits()),
   );
@@ -383,7 +394,7 @@ test('fresh install, upgrade, replay, exact history and actual schema checks', a
   assert.deepEqual(
     value(
       await upgraded.readSnapshot(
-        async (scope) => scope.all('SELECT tag FROM fixture_notes'),
+        async (scope) => await scope.all('SELECT tag FROM fixture_notes'),
         limits(),
       ),
     ),
@@ -398,7 +409,7 @@ test('fresh install, upgrade, replay, exact history and actual schema checks', a
     ],
   ]) {
     failure(
-      await openSqlite({ path: f.path, migrations: changed }, limits()),
+      await openState({ path: f.path, migrations: changed }, limits()),
       'incompatible',
     );
   }
@@ -416,7 +427,9 @@ test('failed migration rolls back DDL, data and journal; unknown/malformed histo
   const f = await fixture(t, release.slice(0, 1));
   value(
     await f.store.transact(async (scope) => {
-      scope.run("INSERT INTO fixture_notes VALUES('old','original',0,x'00')");
+      await scope.run(
+        "INSERT INTO fixture_notes VALUES('old','original',0,x'00')",
+      );
       return { ok: true, value: 0 };
     }, limits()),
   );
@@ -429,7 +442,7 @@ test('failed migration rolls back DDL, data and journal; unknown/malformed histo
     },
   ];
   const upgrade = await f.open(broken);
-  failure(await upgrade.migrate(limits()), 'sql_failed');
+  failure(await upgrade.migrate(limits()), 'operation_failed');
   value(await upgrade.close());
   const restored = await f.open(release.slice(0, 1));
   assert.deepEqual(value(await restored.checkSchema(limits())), {
@@ -439,7 +452,7 @@ test('failed migration rolls back DDL, data and journal; unknown/malformed histo
   assert.deepEqual(
     value(
       await restored.readSnapshot(
-        async (scope) => scope.all('SELECT text FROM fixture_notes'),
+        async (scope) => await scope.all('SELECT text FROM fixture_notes'),
         limits(),
       ),
     ),
@@ -458,7 +471,7 @@ test('failed migration rolls back DDL, data and journal; unknown/malformed histo
   other.close();
   chmodSync(unknown, 0o600);
   failure(
-    await openSqlite({ path: unknown, migrations: [] }, limits()),
+    await openState({ path: unknown, migrations: [] }, limits()),
     'incompatible',
   );
 });
@@ -466,24 +479,22 @@ test('failed migration rolls back DDL, data and journal; unknown/malformed histo
 test('versions, effective WAL/FULL/FK, private files and safe unavailable/corrupt errors', async (t) => {
   const f = await fixture(t);
   const result = value(
-    await f.store.readSnapshot(
-      async (scope) =>
-        scope.all(
-          'SELECT sqlite_version(),vec_version(),(SELECT journal_mode FROM pragma_journal_mode),(SELECT synchronous FROM pragma_synchronous),(SELECT foreign_keys FROM pragma_foreign_keys),(SELECT timeout FROM pragma_busy_timeout)',
-        ),
-      limits(),
-    ),
+    await f.store.readSnapshot(async (scope) => {
+      for (const suffix of ['', '-wal', '-shm'])
+        assert.equal(statSync(`${f.path}${suffix}`).mode & 0o777, 0o600);
+      return await scope.all(
+        'SELECT sqlite_version(),vec_version(),(SELECT journal_mode FROM pragma_journal_mode),(SELECT synchronous FROM pragma_synchronous),(SELECT foreign_keys FROM pragma_foreign_keys),(SELECT timeout FROM pragma_busy_timeout)',
+      );
+    }, limits()),
   );
   assert.deepEqual(result[0]?.slice(0, 5), ['3.53.4', 'v0.1.9', 'wal', 2, 1]);
-  assert.ok(Number(result[0]?.[5]) <= 40);
-  for (const suffix of ['', '-wal', '-shm'])
-    assert.equal(statSync(`${f.path}${suffix}`).mode & 0o777, 0o600);
+  assert.ok(Number(result[0]?.[5]) > 40 && Number(result[0]?.[5]) <= 5000);
   assert.equal(statSync(f.dir).mode & 0o777, 0o700);
   const bad = join(f.dir, 'corrupt.db');
   writeFileSync(bad, 'not a database', { mode: 0o600 });
-  failure(await openSqlite({ path: bad, migrations: [] }, limits()), 'corrupt');
+  failure(await openState({ path: bad, migrations: [] }, limits()), 'corrupt');
   failure(
-    await openSqlite(
+    await openState(
       { path: join(f.dir, 'absent', 'data.db'), migrations: [] },
       limits(),
     ),
@@ -492,17 +503,17 @@ test('versions, effective WAL/FULL/FK, private files and safe unavailable/corrup
   const link = join(f.dir, 'link.db');
   symlinkSync(f.path, link);
   failure(
-    await openSqlite({ path: link, migrations: release }, limits()),
+    await openState({ path: link, migrations: release }, limits()),
     'unavailable',
   );
   chmodSync(bad, 0o644);
   failure(
-    await openSqlite({ path: bad, migrations: [] }, limits()),
+    await openState({ path: bad, migrations: [] }, limits()),
     'unavailable',
   );
   chmodSync(f.dir, 0o755);
   failure(
-    await openSqlite({ path: f.path, migrations: release }, limits()),
+    await openState({ path: f.path, migrations: release }, limits()),
     'unavailable',
   );
   chmodSync(f.dir, 0o700);
@@ -517,15 +528,14 @@ test('online SQLite backup is no-overwrite, private, independently restorable an
     }, limits()),
   );
   const source = readFileSync(f.path);
-  const wal = readFileSync(`${f.path}-wal`);
   const target = join(f.dir, 'backup.db');
-  value(await f.store.backupTo(target, limits()));
+  value(await f.store.adapter.backupTo(target, limits()));
   assert.equal(statSync(target).mode & 0o777, 0o600);
   const completed = readFileSync(target);
-  failure(await f.store.backupTo(target, limits()), 'incompatible');
+  failure(await f.store.adapter.backupTo(target, limits()), 'incompatible');
   assert.deepEqual(readFileSync(target), completed);
   failure(
-    await f.store.backupTo(
+    await f.store.adapter.backupTo(
       join(f.dir, 'cancelled.db'),
       limits(AbortSignal.abort()),
     ),
@@ -535,7 +545,7 @@ test('online SQLite backup is no-overwrite, private, independently restorable an
   const restore = join(f.dir, 'restored.db');
   copyFileSync(target, restore);
   const restored = value(
-    await openSqlite({ path: restore, migrations: release }, limits()),
+    await openState({ path: restore, migrations: release }, limits()),
   );
   try {
     assert.deepEqual(
@@ -554,7 +564,6 @@ test('online SQLite backup is no-overwrite, private, independently restorable an
     value(await restored.close());
   }
   assert.deepEqual(readFileSync(f.path), source);
-  assert.deepEqual(readFileSync(`${f.path}-wal`), wal);
   assert.deepEqual(
     value(await f.store.readSnapshot(async (scope) => counts(scope), limits())),
     [1, 1, 1],
@@ -565,11 +574,11 @@ test('online SQLite backup is no-overwrite, private, independently restorable an
   );
 });
 
-test('cancellation during native backup never publishes an incomplete target', async (t) => {
+test('cancellation while starting backup never publishes a target', async (t) => {
   const f = await fixture(t);
   value(
     await f.store.transact(async (scope) => {
-      scope.run(
+      await scope.run(
         "INSERT INTO fixture_notes VALUES('large','fixture',0,zeroblob(10000000),NULL)",
       );
       return { ok: true, value: undefined };
@@ -577,7 +586,7 @@ test('cancellation during native backup never publishes an incomplete target', a
   );
   const controller = new AbortController();
   const target = join(f.dir, 'cancelled-backup.db');
-  const pending = f.store.backupTo(target, limits(controller.signal));
+  const pending = f.store.adapter.backupTo(target, limits(controller.signal));
   controller.abort();
   failure(await pending, 'cancelled');
   assert.equal(existsSync(target), false);
@@ -588,7 +597,8 @@ test('cancellation during native backup never publishes an incomplete target', a
   assert.deepEqual(
     value(
       await f.store.readSnapshot(
-        async (scope) => scope.all('SELECT length(bytes) FROM fixture_notes'),
+        async (scope) =>
+          await scope.all('SELECT length(bytes) FROM fixture_notes'),
         limits(),
       ),
     ),

@@ -1,53 +1,81 @@
-# Сохранить и прочитать данные нескольких владельцев
+# Использовать state со своим владельцем данных
 
-Для разработчика owner adapter и composition root. Требуются workspace install, Linux x64 и Node 24.21.0. Проверяемый путь целиком находится в [examples/usage.ts](../examples/usage.ts), ORM/DTO — в [examples/owners.ts](../examples/owners.ts). Из корня репозитория:
+Для разработчика owner adapter и composition root. Проверяемая платформа SQLite adapter — Linux x64, Node 24.21.0. Полный [исполняемый пример](../examples/usage.ts), [Drizzle/Zod bindings](../examples/owners.ts), [backend-neutral consumer](../test/m1-consumer.ts).
 
 ```bash
 pnpm --filter @polyphony/state example
 ```
 
-Команда компилирует пример TypeScript 7, выполняет общий commit, vector query, rollback, backup и reopen во временном каталоге и удаляет только этот каталог. Ожидается `state guide: commit, vector query, rollback, backup and reopen passed`. Тот же пример включён в `pnpm test` и CI.
+Команда компилирует TypeScript 7 и проверяет общий commit, vector query, rollback, backup и reopen во временном приватном каталоге. Ожидаемый вывод: `state guide: commit, vector query, rollback, backup and reopen passed`. Пример входит в package/root tests.
 
-## 1. Открыть, проверить схему, мигрировать
+## Открыть и связать
 
-Composition root заранее выбирает путь и создаёт приватный каталог `0700`; существующие DB/WAL/SHM должны принадлежать текущему principal и не быть доступны группе/остальным (`0600`). `openSqlite({ path, migrations }, limits)` не создаёт каталог и не управляет агентом. `:memory:` и другие платформы не поддерживаются этим адаптером.
+```ts
+import { createState } from '@polyphony/state';
+import { createSqliteAdapter } from '@polyphony/state/adapters/sqlite';
 
-`limits` обязателен для всех операций, кроме `close`: `{ signal, timeoutMs }`, где signal совместим с `AbortSignal`, а timeout — оставшийся конечный неотрицательный бюджет вызывающего кода. Пять секунд в примере — только его тестовая политика, не default пакета.
+const opened = await createSqliteAdapter({ path, migrations }, limits);
+if (!opened.ok) return opened;
+const adapter = opened.value;
+const state = createState(adapter, bindOwners);
+try {
+  const migrated = await state.migrate(limits);
+  if (!migrated.ok) return migrated;
+  // state.readSnapshot(owners => ..., limits)
+  // state.transact(owners => ..., limits)
+} finally {
+  await state.close();
+}
+```
 
-`openSqlite` возвращает `Result<SqliteState, StorageFailure>`. `checkSchema(limits)` возвращает `{ applied, pending }`; при pending соединение ещё не готово к snapshot/transaction. Явно вызовите `migrate(limits)`, прежде чем запускать нагрузку. При импорте exports ничего не открывается/мигрируется. `close()` вызывайте в `finally`; повторное закрытие успешно, закрытие во время активной операции вернёт `busy`.
+Это фрагмент композиции; определённые config/bindings/limits — в исполняемом примере. Корневой `createState` — нейтральное исполняемое ядро; типы `StoragePort<O>`, `StorageAdapter<S>`, `StorageSession<S>` — в `/contracts`. Backend фабрика, `SqlScope`, `SqlMigration` и SQLite backup — только в `/adapters/sqlite`. Старых `/node`, `/sqlite`, `openSqlite` нет. Импорт любого export не открывает файл и не загружает Node/native adapter.
 
-## 2. Подключить свой Drizzle/Zod adapter
+Composition root выбирает файл и заранее создаёт приватный каталог 0700. Новый файл БД создаётся при явном `createSqliteAdapter`, существующий открывается; потеря файла после открытия не приводит к его пересозданию. DB/WAL/SHM/backup — 0600 и текущий principal; symlink файла запрещён. Не открывайте/закрывайте активные DB/WAL/SHM обычным файловым API: это способно снять POSIX locks SQLite. Для backup используйте adapter.
 
-Владельцу принадлежат table schema, запросы, row mapping и Zod DTO — таблица Drizzle не является доменным контрактом. Установите Drizzle в пакет владельца. `state` не экспортирует ORM или repository.
+Обычно root создаёт один state и передаёт владельцам общий доступ через bindings. Разные adapters одного файла тоже допустимы; у них должна быть согласованная migration chain. Разные файлы — разные транзакционные границы: общий атомарный commit между ними не обещается. Путь, `:memory:` (не поддерживается), Node и platform policy не входят в нейтральные contracts.
 
-В [ownerDb](../examples/owners.ts) `drizzle-orm/sqlite-proxy` работает локально, без HTTP: `run` вызывает `scope.run`, остальные методы — `scope.all`. Результат `get` — одна positional row, а не массив строк; отсутствие строки проверяется integration-тестом. Адаптер отдаёт владельцу select/insert/update/delete, не transaction/commit/native client. Пример учитывает конкретный API Drizzle 0.45.3.
+`checkSchema(limits)` возвращает `{ applied, pending }`. Pending запрещает рабочие scopes; сначала явно примените `migrate(limits)`. Миграций при импорте нет.
 
-Общий `StoragePort<S>` импортируется из `/contracts`, технический `SqlScope`/`SqlMigration` — из `/sqlite`, `openSqlite` — из `/node`. Consumer может зависеть только от `StoragePort<OwnerPorts>`; composition root связывает owner ports с SQL scope. [M1 consumer](../test/m1-consumer.ts) один и тот же для SQLite и test-only memory-port.
+## Владельцы и заменяемый adapter
 
-## 3. Прочитать snapshot и выполнить общий commit
+Владелец определяет таблицы, запросы, row mapping, доменные revisions и Zod DTO. Drizzle table schema не является доменным контрактом. `bindOwners(scope)` связывает технический scope с owner-портами; доменный consumer получает только их. Технический consumer может использовать identity-binding `scope => scope`, как компактный SQL-пример.
 
-`readSnapshot(async scope => dto, limits)` удерживает один read transaction через `await`; возвращайте самостоятельный DTO. `transact(async scope => result, limits)` удерживает `BEGIN IMMEDIATE` до завершения callback. Два owner adapters и raw vector SQL получают **тот же scope**. Другая операция на этом экземпляре сразу получает `busy`; SQLite writer contention ограничено оставшимся budget и максимумом 40 ms. Автоматической очереди и повторного исполнения callback нет.
+В [ownerDb](../examples/owners.ts) Drizzle 0.45.3 `sqlite-proxy` вызывает и **await**-ит `scope.run/all` без HTTP. Proxy `get` получает одну positional row; BLOB остаётся байтами. Владелец получает select/insert/update/delete, не native connection/transaction/commit. Его Drizzle package dependency остаётся у владельца.
 
-Возврат `{ ok: true, value }` подтверждает commit, `{ ok: false, error }` откатывает всё и возвращает `{ kind: 'owner', error }` без изменения доменной ошибки. Expected revision и conflict проверяет owner внутри общего commit. Throw возвращает безопасный `callback_failed`; первая SQL-ошибка отравляет scope даже после `catch`, включая автоматический rollback SQLite. Истёкший scope больше не выполняет SQL (`scope_ended`). Snapshot защищён `query_only`; owner не может управлять transaction/connection командами.
+[Усиленный M1](../test/m1.test.ts) вызывает тот же production `createState` с SQLite adapter + SQL bindings и с test-only memory adapter + memory bindings. Consumer и общие fixtures не меняются. При смене СУБД SQL/DDL bindings могут измениться; нейтральное ядро и доменный consumer — нет. Memory double не доказывает durability, native concurrency или другую платформу.
 
-За пределами callback работайте только с DTO. Model/network-вызовы выполняйте после snapshot; если данные устарели, owner проверяет revision в следующем commit. Пакет не выбирает эту доменную политику.
+## Snapshot, общий commit и конкурентность
 
-## 4. Векторы и миграции
+`readSnapshot(async owners => dto, limits)` держит согласованное read-only чтение через await; возвращайте DTO. `transact(async owners => result, limits)` держит общий write transaction. Drizzle и raw vector SQL получают **тот же scope**, соединение и транзакцию.
 
-Пример пишет `vec0` напрямую параметризованным SQL в том же commit, что Drizzle. BLOB boundary — `Uint8Array`, `number` передаётся как REAL, `bigint` как INTEGER; поэтому `vec0.rowid` и `k` в примере — `1n`. Безопасные INTEGER читаются как number, остальные — bigint; NaN/Infinity и bigint вне int64 запрещены. Размерность/метрика/retrieval/provenance/freshness — решение владельца, не `state`.
+Независимые операции одного state или нескольких adapters одного файла запускаются независимо. SQLite координирует writers; synchronous DatabaseSync ждёт native lock в отдельном worker, не блокируя callback в главном потоке. Readers могут читать одновременно и сохраняют snapshot во время commit writer. Собственных очередей, pool, scheduler, replay, искусственного busy или cutoff 40 ms нет. На операцию создаётся worker/connection: есть накладные расходы и конечные ресурсы, throughput не обещается.
 
-Composition root собирает **одну неизменяемую цепочку** `{ id, sql }` на физическую БД. [Первые два SQL artifacts](../test/migrations/0000_initial.sql) получены Drizzle Kit в [S1](../../../experiments/state/README.md); [третий](../test/migrations/0002_vectors_and_transform.sql) — проверенный custom SQL для `vec0` и data transform. Владелец генерирует и проверяет новые SQL, фиксирует их в release и не изменяет уже применённые. Kit не нужен во время работы пакета. Не отдавайте virtual/shadow tables автоматическому diff; не включайте управление соединением/транзакцией в SQL миграции. На время artifact SQL authorizer SQLite запрещает операции transaction/savepoint/attach/detach/pragma, включая `END` как commit; слова в строках/комментариях и `CASE`/trigger syntax не являются такими операциями. `VACUUM` также нельзя выполнять внутри общей транзакции. Это защита принятой атомарной границы, не sandbox недоверенного SQL.
+Не ожидайте отдельную вложенную write-транзакцию, удерживая нужный ей writer: для общего commit используйте существующий scope. Не ожидайте `close()` из его собственного callback. Это логическая взаимозависимость, не независимая конкуренция. `close` прекращает новые операции, ждёт принятые, освобождает ресурсы; повтор безопасен.
 
-Весь pending batch и журнал применяются атомарно. Проверяются exact prefix ID/position/SHA-256 SQL, техническая форма журнала и fingerprint действительной схемы, включая virtual/shadow tables. Изменённая/усечённая/переставленная история, неизвестная схема или drift дают `incompatible`, не автоматическое исправление/очистку. Fingerprint проверен для закреплённой SQLite/extension; обновление native-связки требует отдельной проверки совместимости.
+`{ ok: true, value }` подтверждает commit. `{ ok: false, error }` откатывает владельцев и возвращает `{ kind: 'owner', error }` без изменения ошибки. Expected revision/conflict проверяет owner внутри commit. Throw даёт `callback_failed`; первая storage/SQL failure сохраняется даже после catch и запрещает продолжение/commit. После finish scope отозван (`scope_ended`); уже отправленный SQL завершается до cleanup/возврата. Всегда await-ите SQL: scope не становится долгоживущим ORM client.
 
-## 5. Ошибки, отмена и backup
+Model/network-работа выполняется после snapshot; пакет не выбирает доменную политику актуальности DTO.
 
-Storage failure содержит только `{ kind: 'storage', code }`. Коды: `busy`, `closed`, `unavailable`, `corrupt`, `incompatible`, `full`, `write_failed`, `cancelled`, `deadline`, `scope_ended`, `sql_failed`, `callback_failed`. Не извлекайте из пакета raw vendor errors, SQL, пути или cancellation reason. При `corrupt`/`unavailable`/`write_failed` во время операции соединение закрывается; решать дальнейшую recovery-политику должен вызывающий код.
+## Векторы и migrations
 
-Отмена **cooperative**: проверки до/после SQL и перед commit. Синхронный `DatabaseSync` блокирует поток; JS timer не прерывает SQL, а callback обязан завершиться сам. После обнаружения отмены/истёкшего бюджета — rollback; после уже успешного commit поздняя отмена не меняет успех на ложный rollback. Ни `Promise.race`, ни обёртка Promise не дают hard deadline. Cleanup не отменяется.
+[Пример](../examples/owners.ts) пишет `vec0` параметризованным SQL в том же commit, что Drizzle. `Uint8Array` переносится через structured clone, не JSON. Number связывается как REAL, bigint — INTEGER; vec0 rowid/k требуют bigint. Safe INTEGER возвращается number, остальные — bigint; NaN/Infinity и bigint вне int64 отвергаются. Размерность/метрика/retrieval/provenance/freshness — у владельца.
 
-`backupTo(newPath, limits)` делает согласованный SQLite backup (включая committed WAL) в новый приватный файл, не перезаписывает существующий. При отмене завершение native backup дожидается cleanup, неполный файл не публикуется. Для проверки восстановления скопируйте завершённый backup в отдельное изолированное место, откройте с той же цепочкой и сверьте данные; источник не изменяйте. [Integration test](../test/storage.test.ts) воспроизводит это. Это backup одного хранилища, не recovery `state`+`queue`, не аппаратная гарантия power-loss и не управление identity агента.
+Composition root собирает одну immutable цепочку `{ id, sql }` на файл. [Generated SQL](../test/migrations/0000_initial.sql) получен Drizzle Kit в [S1](../../../experiments/state/README.md); [custom artifact](../test/migrations/0002_vectors_and_transform.sql) добавляет vec0 и data transform. Kit не нужен в runtime. Не изменяйте применённые units и не отдавайте virtual/shadow tables неподтверждённому auto-diff.
 
-Пакет предполагает доверенные owner-код, SQL и release artifacts. Private directory и scoped API — не sandbox против кода того же процесса/principal. Runtime, agent lifecycle и единственность инстанса не относятся к `state`.
+Pending batch и journal применяются атомарно. Проверяются exact prefix ID/position/SHA-256, форма журнала и fingerprint actual schema, включая virtual/shadow tables. Несовместимость даёт `incompatible`, не очистку. Transaction/savepoint/attach/detach/pragma в artifacts запрещает native authorizer (включая END-as-COMMIT); literals, comments, CASE и trigger syntax допустимы. VACUUM вне общей транзакции здесь не поддерживается. Обновление SQLite/extension требует повторной проверки fingerprint/ABI.
 
-Полный контракт: [state.spec](../../../docs/modules/state/specification.md), приёмка/поставка: [state.plan](../../../docs/modules/state/implementation-plan.md), команды: [README](../README.md).
+## Ошибки, budgets и backup
+
+Storage failure — только `{ kind: 'storage', code }`: busy, closed, unavailable, corrupt, incompatible, full, write_failed, cancelled, deadline, scope_ended, operation_failed, callback_failed. Нет SQL, raw driver errors, путей или cancellation reason. Fatal corrupt/unavailable/write_failed закрывает adapter для новых операций; текущие scopes завершают cleanup.
+
+`limits = { signal, timeoutMs }` обязателен кроме close. Signal живой и совместим с abort events стандартного AbortSignal (aborted + add/removeEventListener), не boolean snapshot; budget конечный, неотрицательный, отсчитывается с начала вызова, включая startup/native wait. Значение 5000 в примере — только его политика. Pre-abort/нулевой budget не вызывает I/O/callback. Native wait использует оставшийся budget; его исчерпание даёт deadline. Busy зарезервирован реальным non-waitable native locks, не пересечению вызовов.
+
+Отмена cooperative: главный поток остаётся отзывчивым, но timer/AbortSignal **не прерывает** уже исполняющийся синхронный SQL. Проверки до/после SQL и перед commit; после обнаруженного отказа — rollback, без позднего commit. Начавшийся успешный commit не превращается в вымышленный rollback из-за поздней отмены. Cleanup не отменяется; зависший callback не получает hard termination.
+
+Если worker аварийно завершился до подтверждения commit, возвращается unavailable, не успех. Commit мог целиком произойти до потери ответа: это неопределённый исход, не гарантия rollback. Переоткройте БД и сверьте owner revision/данные; автоматического replay нет. [Fault tests](../test/process.test.ts) проверяют разрыв до и после COMMIT.
+
+`adapter.backupTo(newPath, limits)` делает согласованный SQLite backup в отдельный приватный файл с атомарной no-replace публикацией. Отмена ждёт cleanup, partial target не публикуется. Завершённый backup можно скопировать в изолированное место, открыть с той же chain и сверить данные, сохранив источник. Это не recovery state+queue, power-loss гарантия или управление identity.
+
+Все adapters, owners, SQL и release artifacts — доверенный код одного principal; package/worker boundary не sandbox. Agent lifecycle, exclusivity и управление процессами вне state.
+
+Полный контракт: [state.spec](../../../docs/modules/state/specification.md), приёмка: [state.plan](../../../docs/modules/state/implementation-plan.md), команды: [README](../README.md).

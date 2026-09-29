@@ -1,4 +1,4 @@
-import type { SqlScope, SqlValue } from '@polyphony/state/sqlite';
+import type { SqlScope, SqlValue } from '@polyphony/state/adapters/sqlite';
 import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
 import { z } from 'zod';
@@ -40,10 +40,10 @@ export function ownerDb(scope: SqlScope) {
   const db = drizzle(async (sql, params: unknown[], method) => {
     const values = params.map(parameter);
     if (method === 'run') {
-      scope.run(sql, values);
+      await scope.run(sql, values);
       return { rows: [] };
     }
-    const rows = scope.all(sql, values);
+    const rows = await scope.all(sql, values);
     // Drizzle 0.45.3 get consumes a single positional row or undefined;
     // its callback type incorrectly requires any[] also for a missing row.
     return { rows: method === 'get' ? (rows[0] as SqlValue[]) : rows };
@@ -71,7 +71,7 @@ export async function writeOwners(
   const db = ownerDb(scope);
   await db.insert(notes).values({ ...note, bytes: Buffer.from(note.bytes) });
   await db.insert(marks).values({ id: `m-${id}`, noteId: id, amount: 0 });
-  scope.run('INSERT INTO fixture_vectors(rowid,embedding) VALUES(?,?)', [
+  await scope.run('INSERT INTO fixture_vectors(rowid,embedding) VALUES(?,?)', [
     rowid,
     vector,
   ]);

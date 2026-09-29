@@ -58,6 +58,8 @@ Desktop использует постоянный consumer, пока работ�
 
 До принятия backend `node-engineer` выполняет probe и возвращает `architecture-engineer` evidence: durable enqueue/reopen, kill после claim, bounded retries/stop, stale completion, ID/hash conflict, result до cleanup и эффективный `FULL`. Если нужен новый полноценный scheduler поверх Liteque, выбор пересматривается. Общий контракт не ослабляется ради библиотеки; `core-types` и `state` могут разрабатываться независимо. Точные версии SQLite engine/driver/extension/queue и security updates фиксируются при реализации, перед установкой.
 
+Локальная проверка worker-механизма 2026-09-29 подтверждает native wait без блокирования другого callback, параллельные snapshots, ORM/BLOB/vector, rollback/cancel и reopen; [новое evidence](../validation/state/gh-30.adapters.1.md) не наследует CI первого инкремента. При потере ответа adapter после COMMIT допустим неизвестный атомарный исход, но не ложный success/rollback; сверка выполняется через owner readback после reopen. Abort events остаются переносимым контрактом, worker API — private. Проверки прав DB/WAL/SHM не должны закрытием постороннего fd снимать POSIX locks SQLite ([основание](https://www.sqlite.org/howtocorrupt.html#posix_advisory_locks_canceled_by_a_separate_thread_doing_close)).
+
 ## Другие рассмотренные варианты
 
 - PostgreSQL + BullMQ/Redis: заменены текущим решением оператора; `pg-boss` не возвращается в baseline.

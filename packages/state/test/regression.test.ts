@@ -3,7 +3,7 @@ import { chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
-import { openSqlite } from '@polyphony/state/node';
+import { openState } from './fixture.js';
 import { writeOwners } from '../examples/owners.js';
 import { counts, failure, fixture, limits, value } from './fixture.js';
 
@@ -36,13 +36,13 @@ test('callback errors that resemble OS/SQLite failures stay callback_failed and 
   failure(
     await store.transact(async (scope) => {
       try {
-        scope.run('INSERT INTO absent VALUES(1)');
+        await scope.run('INSERT INTO absent VALUES(1)');
       } catch {
         throw Object.assign(new Error('owner wrapper'), { code: 'EACCES' });
       }
       return { ok: true, value: undefined };
     }, limits()),
-    'sql_failed',
+    'operation_failed',
   );
 });
 
@@ -60,7 +60,7 @@ test('sqlitex owner names are included in the schema fingerprint and unknown-sch
   failure(await f.store.checkSchema(limits()), 'incompatible');
   failure(await f.store.readSnapshot(async () => 0, limits()), 'incompatible');
   failure(
-    await openSqlite({ path: f.path, migrations }, limits()),
+    await openState({ path: f.path, migrations }, limits()),
     'incompatible',
   );
   const path = join(f.dir, 'unknown.db');
@@ -68,7 +68,7 @@ test('sqlitex owner names are included in the schema fingerprint and unknown-sch
   unknown.exec('CREATE TABLE sqlitex_unknown(value)');
   unknown.close();
   chmodSync(path, 0o600);
-  failure(await openSqlite({ path, migrations: [] }, limits()), 'incompatible');
+  failure(await openState({ path, migrations: [] }, limits()), 'incompatible');
 });
 
 test('migration connection control, including END, cannot commit partial DDL/data/journal', async (t) => {
@@ -130,8 +130,8 @@ test('migration data literals, CASE, trigger BEGIN/END and comments are not conn
     value(
       await store.readSnapshot(
         async (scope) => ({
-          rows: scope.all('SELECT value FROM owner_data'),
-          events: scope.all('SELECT value FROM owner_events'),
+          rows: await scope.all('SELECT value FROM owner_data'),
+          events: await scope.all('SELECT value FROM owner_events'),
         }),
         limits(),
       ),

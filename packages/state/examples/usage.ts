@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Result } from '@polyphony/core-types';
-import { openSqlite } from '@polyphony/state/node';
+import { createState } from '@polyphony/state';
+import { createSqliteAdapter } from '@polyphony/state/adapters/sqlite';
 import { eq } from 'drizzle-orm';
 import { Note, notes, ownerDb, vector, writeOwners } from './owners.js';
 
@@ -32,7 +33,10 @@ export async function example(): Promise<void> {
   // Example-only policy budget, not a default chosen by state.
   const limits = () => ({ signal: abort.signal, timeoutMs: 5_000 });
   try {
-    const state = unwrap(await openSqlite({ path, migrations }, limits()));
+    const adapter = unwrap(
+      await createSqliteAdapter({ path, migrations }, limits()),
+    );
+    const state = createState(adapter, (scope) => scope);
     try {
       unwrap(await state.migrate(limits()));
       unwrap(
@@ -49,7 +53,7 @@ export async function example(): Promise<void> {
           .get();
         return {
           note: Note.parse(row),
-          nearest: scope.all(
+          nearest: await scope.all(
             'SELECT rowid,distance FROM fixture_vectors WHERE embedding MATCH ? AND k=?',
             [vector, 1n],
           ),
@@ -60,22 +64,25 @@ export async function example(): Promise<void> {
       assert.deepEqual(result.value.nearest, [[1, 0]]);
       // No model/network call while a scope is live: only detached DTOs escape.
       const denied = await state.transact(async (scope) => {
-        scope.run("UPDATE fixture_notes SET text='discard'");
+        await scope.run("UPDATE fixture_notes SET text='discard'");
         return { ok: false, error: 'owner-conflict' };
       }, limits());
       assert.deepEqual(denied, {
         ok: false,
         error: { kind: 'owner', error: 'owner-conflict' },
       });
-      unwrap(await state.backupTo(join(dir, 'backup.db'), limits()));
+      unwrap(await adapter.backupTo(join(dir, 'backup.db'), limits()));
     } finally {
       unwrap(await state.close());
     }
-    const reopened = unwrap(await openSqlite({ path, migrations }, limits()));
+    const reopened = createState(
+      unwrap(await createSqliteAdapter({ path, migrations }, limits())),
+      (scope) => scope,
+    );
     try {
       const rows = unwrap(
         await reopened.readSnapshot(
-          async (scope) => scope.all('SELECT text FROM fixture_notes'),
+          async (scope) => await scope.all('SELECT text FROM fixture_notes'),
           limits(),
         ),
       );

@@ -3,7 +3,7 @@
 - Document ID: `state.plan`
 - Module ID: `state`
 - Дата: 2026-09-29.
-- Статус: ready for проверка механизма; production-корректировка после evidence и source-аудитов.
+- Статус: локально реализовано; приёмка новой корректировки #30 на committed snapshots.
 - Источники: [spec](specification.md), [архитектура §2.4](../../architecture.md#24-адаптеры-state-и-queue), [ADR-001](../../adr/ADR-001-module-boundaries.md), [ADR-002](../../adr/ADR-002-state-and-recovery.md); прямое решение оператора о реальном adapter boundary, отсутствии искусственного busy/своих очередей, разрешении workers при подтверждении корректности.
 - Baseline: develop `586814fb01fe3ed24b9cffaa05d48ea45ebf3ea7`; первый инкремент доставлен [PR #29](https://github.com/kostysh/yaagi/pull/29), прежние [#26](https://github.com/kostysh/yaagi/issues/26)–[#28](https://github.com/kostysh/yaagi/issues/28) закрыты. CP1 принят; новый permission gate не создаётся.
 - Работа: `.worktree/state-adapters`, `codex/state-adapters` от origin/develop. Read-only .env symlink; roadmap-bootstrap, master и теги не затрагиваются.
@@ -45,4 +45,4 @@ TypeScript-only, прямой TS только с --experimental-strip-types. Nod
 
 Прежняя поставка завершена. Новую корректировку сначала довести до проверенного локального результата; публикация — при применимом разрешении оператора, новый PR/matching-SHA CI/readback develop. Прежний CI #29 не доказывает новую версию. До завершения сохранить worktree/ветку и сообщить Git/CI/tracking state; завершить helpers/resources. При провале worker probe остановить только зависимую production-корректировку и представить evidence/варианты, без молчаливого fallback.
 
-Текущее evidence: первый инкремент исторически доставлен; новый механизм/M1/production boundary ещё не выполнены. Следующее действие — D1 self-check/commit/audits, затем S1/S2 delta.
+Текущее evidence: первый инкремент исторически доставлен; новый механизм и граница имеют отдельное локальное evidence. D1 Concept/Spec/Security завершены; Concept FAIL по старому import path исправлен delta-аудитом. S1/S2 worker delta PASS, D2/D3 реализованы локально. Дальше D4: полный contour и независимые аудиты, затем handoff. Evidence: [#30](https://github.com/kostysh/yaagi/issues/30), [локальная запись](../../validation/state/gh-30.adapters.1.md).

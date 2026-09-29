@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "types": [], "noEmit": true },
-  "include": ["src/contracts.ts", "src/sqlite.ts", "test/contracts.types.ts"]
+  "compilerOptions": { "types": [], "lib": ["ES2024", "DOM"], "noEmit": true },
+  "include": ["src/contracts.ts", "src/index.ts", "test/contracts.types.ts"]
 }

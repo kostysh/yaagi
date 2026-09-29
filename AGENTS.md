@@ -19,7 +19,8 @@ system and developer constraints remain binding.
 YAAGI implements Polyphony: one long-lived agent with a continuous identity,
 local model ecology, and controlled reversible development. The concept,
 architecture, ADRs, roadmap, and minimal TypeScript workspace are present.
-`core-types` provides `Result`; `state` provides tested SQLite storage primitives.
+`core-types` provides `Result`; `state` provides a database-neutral executable core
+with an injected SQLite adapter and tested storage primitives.
 Agent runtime, domain modules, and product-level tests are not implemented. The `v0-archived` tag is
 historical material, not a source of requirements for the new implementation.
 

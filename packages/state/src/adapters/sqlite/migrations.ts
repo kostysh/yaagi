@@ -1,10 +1,10 @@
 import { createHash } from 'node:crypto';
 import { constants, type DatabaseSync } from 'node:sqlite';
 import { z } from 'zod';
-import type { SchemaStatus } from '../contracts.js';
+import type { SchemaStatus } from '../../contracts.js';
 import type { SqlMigration } from '../sqlite.js';
-import type { Budget } from './budget.js';
-import { StorageError } from './errors.js';
+import type { Budget } from '../../internal/budget.js';
+import { StorageError } from '../../internal/errors.js';
 
 const journalSql =
   'CREATE TABLE _state_migrations(position INTEGER PRIMARY KEY, id TEXT NOT NULL UNIQUE, digest TEXT NOT NULL, schema TEXT NOT NULL)';
@@ -138,7 +138,7 @@ export function applyMigrations(
     const migration = chain[i];
     if (!migration) throw new StorageError('incompatible');
     executeArtifact(db, migration.sql);
-    if (!db.isTransaction) throw new StorageError('sql_failed');
+    if (!db.isTransaction) throw new StorageError('operation_failed');
     budget.check();
     db.prepare('INSERT INTO _state_migrations VALUES(?,?,?,?)').run(
       i,

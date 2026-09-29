@@ -42,11 +42,14 @@ for (const mode of ['rollback', 'commit'])
     let calls = 0;
     const start = performance.now();
     failure(
-      await f.store.transact(async () => {
-        calls++;
-        return { ok: true, value: 0 };
-      }, limits()),
-      'busy',
+      await f.store.transact(
+        async () => {
+          calls++;
+          return { ok: true, value: 0 };
+        },
+        limits(undefined, 250),
+      ),
+      'deadline',
     );
     assert.equal(calls, 0);
     assert.ok(performance.now() - start < 1_000);
@@ -57,7 +60,8 @@ for (const mode of ['rollback', 'commit'])
     assert.deepEqual(
       value(
         await reopened.readSnapshot(
-          async (scope) => scope.all('SELECT revision FROM fixture_notes'),
+          async (scope) =>
+            await scope.all('SELECT revision FROM fixture_notes'),
           limits(),
         ),
       ),
@@ -65,16 +69,28 @@ for (const mode of ['rollback', 'commit'])
     );
   });
 
-for (const mode of ['full', 'readonly', 'extension'])
+for (const mode of [
+  'full',
+  'readonly',
+  'extension',
+  'worker-before',
+  'worker-after',
+  'backup-cancel',
+])
   test(`safe real SQLite/extension failure (${mode})`, async (t) => {
     const f = await fixture(t);
     execFileSync(
       process.execPath,
       [
+        '--import',
+        fileURLToPath(new URL('./fault-hook.js', import.meta.url)),
         fileURLToPath(new URL('./fault-child.js', import.meta.url)),
         f.path,
         mode,
       ],
-      { timeout: 10_000 },
+      {
+        timeout: 10_000,
+        env: { ...process.env, YAAGI_STATE_TEST_FAULT: mode },
+      },
     );
   });
