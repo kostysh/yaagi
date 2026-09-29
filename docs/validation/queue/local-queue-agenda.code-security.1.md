@@ -27,3 +27,11 @@
 Первопричина: факт доставки timer ошибочно использовался как единственный источник истечения абсолютного бюджета. Исправление и новый committed delta требуют runtime-воспроизведения и повторного независимого аудита. Исходный FAIL сохраняется.
 
 Подготовленное исправление: проверка абсолютного deadline после invoke и codec, admission сверяет windowEnd. Production regressions воспроизводят finite CPU-bound handler и задержанную доставку window timer внутри реального candidate callback; последняя проверяет отсутствие даже reservation, не только handler. Root gates и 40/40 queue tests PASS. Независимый committed delta пока pending.
+
+## Повторная проверка
+
+- Remediation commit: `29a3ec3203990687a511960c2429e84dc0371eee`; base — исходный audit commit.
+- Прежний независимый аудитор `/root/audit_queue_storage_boundary`, `gpt-6-astra/high`; исходный verdict `PASS (scoped)`, нормализованный **PASS**.
+- SEC-Q-001 **CLOSED**, новых mandatory findings нет. Исходный 500/200 ms witness теперь даёт failed/timeout без result; самостоятельный slow-result-codec witness также PASS. Проверены overdue window admission, resource tail по исходнику pinned Agenda 6.2.6, production fencing и guide/evidence.
+- Самостоятельно adapter-regression + lifecycle **17/17 PASS**, отдельный codec witness **1/1 PASS**, diff --check PASS. Stable existing build; неизменённые SQL/dependency/root/state/probe не повторялись. HEAD/worktree не изменены, собственный witness удалён, временные БД и процессы закрыты.
+- PASS ограничен remediation delta и не утверждает preemption/sandbox, безопасность внешних эффектов или всей системы, E3. Исторический FAIL выше сохранён.

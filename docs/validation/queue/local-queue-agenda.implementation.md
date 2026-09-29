@@ -3,7 +3,7 @@
 - Document ID: `queue.validation.implementation`
 - Дата: 2026-09-30. Ветка: `codex/queue-agenda`.
 - Исходное требование: прямое решение оператора `queue-creation.agenda.v3@60d0022b`; [queue.spec](../../modules/queue/specification.md), [queue.plan](../../modules/queue/implementation-plan.md).
-- Статус: remediation verification; Concept claims PASS на `3461cb2`, Spec/Security code FAIL сохранены ниже. Delta-аудиты исправлений pending; этот документ не объявляет gate закрытым заранее.
+- Статус: **локальная приёмка Q1–Q4 завершена**. Concept claims PASS на `3461cb2`; Spec/Security delta PASS на `29a3ec3203990687a511960c2429e84dc0371eee`. Исходные FAIL сохранены ниже. Remote delivery не выполнялась.
 
 ## Реализованный контур и evidence
 
@@ -44,7 +44,14 @@ Remediation: абсолютный deadline проверяется после han
 
 Production regressions вызывают настоящий публичный `Agenda.db`/JobRepository; наблюдение public define/save не подменяет реализацию. Барьеры задерживают begin/heartbeat до замены lease вторым реальным consumer. Проверены begun, unstarted, отсутствующие entries и sealed пути single/bulk unlock, stale touch/finalize. Core-only test более не выдаётся за полное cross-layer evidence.
 
-После remediation полный root-прогон повторён: `pnpm install --frozen-lockfile --store-dir .pnpm-store`, format:check, lint/boundary, typecheck, build, test, отдельный queue example — **PASS**. `state` 53/53, `queue` **40/40**, 0 failed/cancelled/skipped; core-types type/import checks PASS. Использован прежний task-local store без переустановки/смены dependency baseline. Повторный scoped diff --check PASS. Новые 7 regressions дополняют, а не заменяют исходный набор; ожидание независимого delta не маскируется этими self-check результатами.
+После remediation полный root-прогон повторён: `pnpm install --frozen-lockfile --store-dir .pnpm-store`, format:check, lint/boundary, typecheck, build, test, отдельный queue example — **PASS**. `state` 53/53, `queue` **40/40**, 0 failed/cancelled/skipped; core-types type/import checks PASS. Использован прежний task-local store без переустановки/смены dependency baseline. Повторный scoped diff --check PASS. Новые 7 regressions дополняют, а не заменяют исходный набор.
+
+Повторный независимый audit snapshot: `29a3ec3203990687a511960c2429e84dc0371eee`, base `3461cb29833b471585c108502a63795514eca36d`:
+
+- Spec delta, прежний `/root/audit_queue_plan`, `gpt-6-astra/xhigh`: `compliant` / **PASS**; SPEC-F1/F2 CLOSED, новых mandatory findings нет. Самостоятельно 7/7 новых regressions и 6/6 прежних shutdown/watchdog/held-write/initial-failure сценариев, scoped diff --check PASS. Проверены direct blast radius deadline/window и guide/evidence. Не повторялись неизменённые root/state/probe/D0.
+- Security delta, прежний `/root/audit_queue_storage_boundary`, `gpt-6-astra/high`: `PASS (scoped)` / **PASS**; SEC-Q-001 CLOSED, новых mandatory findings нет. Самостоятельно 17/17 adapter-regression/lifecycle и дополнительный 1/1 witness медленного result codec, scoped diff --check PASS. Рассмотрены resource tail и fencing; неизменённые SQL/dependency/root/state/probe не повторялись.
+
+Оба аудитора использовали стабильную сборку и read-only scoped snapshot, не меняли tracked files, завершили проверки и удалили свои временные witnesses. Принятый предел — pinned Agenda 6.2.6 и локальный public API. Финальная запись результатов не меняет audited code/schema/contracts. Все помощники завершены; API их закрытия недоступен. Сохранены task-worktree, `.env` symlink и ignored dependencies/build outputs для дальнейшей работы; основная ветка `develop` не изменена.
 
 ## Пределы и поставка
 

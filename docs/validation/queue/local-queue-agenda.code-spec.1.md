@@ -25,3 +25,11 @@
 Первопричины: stop учитывал DB/callback lifecycle, но не библиотечный delayed timer; core-level fencing test ошибочно представлялся полным cross-layer AC4. Исправления и новый committed delta требуют повторного независимого аудита. Исходный FAIL остаётся историческим результатом.
 
 Подготовленное исправление: reserve только due jobs; учёт остаточного watchdog delay после последнего terminal/failed-initial save. `adapter-regression.test.ts` и `shutdown-child.ts` проверяют натуральный subprocess exit, отсутствие Timeout после close и последующее delayed recovery. Настоящий Agenda.db проверен для stale touch/terminal/single/bulk unlock, begun и unstarted entries, missing/sealed путей. Guide уточняет polling и shutdown budget. Root gates и 40/40 queue tests PASS; независимый committed delta пока pending.
+
+## Повторная проверка
+
+- Remediation commit: `29a3ec3203990687a511960c2429e84dc0371eee`; base — исходный audit commit.
+- Прежний независимый аудитор `/root/audit_queue_plan`, `gpt-6-astra/xhigh`; исходный verdict `compliant`, нормализованный **PASS**.
+- SPEC-F1 и SPEC-F2 **CLOSED**, новых mandatory findings в delta нет. Проверены due-only reservation, watchdog quiescence, реальные Repository stale paths, deadline/window blast radius, guide и честное разделение core-only/production evidence.
+- Самостоятельно 7/7 новых и 6/6 выбранных прежних lifecycle/held-write tests PASS; scoped diff --check PASS. Без rebuild/install и повторения неизменённых root/state/probe/D0. Read-only snapshot сохранился чистым; процессы завершены, дополнительных ресурсов не оставлено.
+- Этот delta PASS не заменяет отдельный Security verdict и не заявляет E3/power-loss/runtime. Исторический FAIL выше не отменён и не переписан.
