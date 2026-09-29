@@ -2,7 +2,7 @@
 
 Document ID: `project.architecture`
 
-Дата: 2026-09-28. Статус: accepted — baseline с SQLite и ограничением переносимости по решению оператора; конкретный desktop backend очереди остаётся кандидатом до проверки §8. Runtime ещё не реализован.
+Дата: 2026-09-29. Статус: accepted — baseline с SQLite и ограничением переносимости по решению оператора; `queue` использует хранение через `state`, выбор библиотеки очереди открыт до проверки §8. Runtime ещё не реализован.
 
 Основание: [каноническая концепция](polyphony_concept.md), исходный снимок `07bf45c6d34b832d7760b919cce671a92e590509` с принятым 2026-09-23 уточнением §6.2.1 об одном операторе и будущих каналах связи; [методология](development-methodology/README.md) и решения оператора: независимые пакеты, единый runtime, TypeScript/Node.js + pnpm + SQLite + AI SDK, локальный CLI. Уточнение оператора 2026-09-24: модельные вычисления разных модулей проходят через `model-organs`; среди органов возможны LLM, аудиомодели и специализированные классификаторы. Это уточняет общую границу, не требует включить все типы моделей в первую версию. При противоречии концепция и решения оператора имеют приоритет.
 
@@ -13,6 +13,8 @@ Document ID: `project.architecture`
 Тем же решением для `state` и `queue` закреплены общие контракты и сменные адаптеры (§2.4). Возможная будущая адаптация к облачной платформе, включая Cloudflare, учитывается на уровне границ; выбор облачных сервисов и реализация адаптеров отложены.
 
 Уточнение оператора 2026-09-29: жизненный цикл и единственность инстанса одного агента принадлежат `runtime`, не `state`. Механизм будет выбран при разработке runtime; OS lock и отдельный exclusivity port в контракт хранения не входят.
+
+Уточнение оператора 2026-09-29 при подготовке `queue`: модуль повторно использует публичный `StoragePort` уже реализованного `state`. Прежний запрет зависимости `queue → state` отменён. Библиотека очереди подключается сменным адаптером внутри `queue`; самостоятельное хранилище или SQLite-драйвер в обход `state` не допускаются (§2.4).
 
 ## 1. Архитектурные основания
 
@@ -39,11 +41,17 @@ flowchart LR
         Runtime[Единый Polyphony Runtime]
         DB[(SQLite: состояние и vector index)]
         QueueDB[(SQLite: технические jobs)]
+        State["state: канонические данные"]
+        Queue["queue: доверенный consumer"]
+        QueueState["state: данные очереди"]
         Models[Локальные модельные органы]
         Jobs[Изолированные evaluation jobs]
         Body[Read-only body и версии навыков]
-        Runtime <--> DB
-        Runtime <-->|queue: доверенный consumer| QueueDB
+        Runtime <--> State
+        State <--> DB
+        Runtime <--> Queue
+        Queue <--> QueueState
+        QueueState <--> QueueDB
         Runtime <--> Models
         Runtime --> Jobs
         Jobs --> Runtime
@@ -52,7 +60,7 @@ flowchart LR
     CLI <-->|Unix socket: сообщения и управление| Runtime
 ```
 
-`state` и `queue` предоставляют открытие/закрытие своих локальных БД; runtime вызывает эти операции при запуске и остановке сборки. Серверы БД, Redis, Docker Compose и отдельный пакет `infrastructure` не нужны. Закрытие handles не удаляет данные. Изолированный evaluator не получает файлы БД: доверенный consumer передаёт ему ограниченный snapshot и принимает результат (§7.2). Локальные model servers и их собственные требования к запуску сохраняются; Docker не является обязательной частью baseline.
+Runtime создаёт два экземпляра `state` с отдельными SQLite adapters: для канонических данных и технических данных очереди. `queue` получает внедрённый `StoragePort` только своей БД и управляет обработкой заданий; после её остановки runtime закрывает хранилища через `state`. Серверы БД, Redis, Docker Compose и отдельный пакет `infrastructure` не нужны. Закрытие handles не удаляет данные. Изолированный evaluator не получает файлы БД или storage ports: доверенный consumer передаёт ему ограниченный snapshot и принимает результат (§7.2). Локальные model servers и их собственные требования к запуску сохраняются; Docker не является обязательной частью baseline.
 
 Оператор — один и тот же человек в общении с Полифонией и в управлении её запуском, остановкой, настройками и подтверждениями. Для первой cell используется один CLI и одна доверенная привязка оператора; обычное сообщение и явная команда управления различаются по типу операции. Core, БД и model servers не публикуют порты в общедоступную сеть. Минимальный сценарий не требует интернета или ключа облачного API.
 
@@ -68,8 +76,8 @@ flowchart LR
 | Хранение | SQLite внутри `state`; принятое уточнение 2026-09-29 — встроенный `node:sqlite` (`DatabaseSync`) вместо `better-sqlite3`. Будущий Expo adapter — `expo-sqlite`; драйверы не входят в общий контракт | [Node 24.21.0 API](https://github.com/nodejs/node/blob/v24.21.0/doc/api/sqlite.md), [Expo SQLite](https://docs.expo.dev/versions/latest/sdk/sqlite/). Локальные S1/S2 подтвердили SQLite `3.53.4` + `sqlite-vec 0.1.9`; [evidence и пределы](../experiments/state/README.md) |
 | ORM | Drizzle принят оператором 2026-09-29 для SQLite adapters владельцев; Drizzle Kit подготавливает проверяемые SQL-миграции | Векторный SQL может обходить ORM, но не общий transaction scope `state`. Совместимость конкретных версий проверяет S1 из [плана `state`](modules/state/implementation-plan.md) |
 | Векторный поиск | `sqlite-vec` в SQLite; производный индекс, без отдельного vector server | [sqlite-vec](https://alexgarcia.xyz/sqlite-vec/), [JS binding](https://alexgarcia.xyz/sqlite-vec/js.html); Expo включает расширение через `withSQLiteVecExtension` |
-| Очереди | Общий `queue`; для desktop исследован Liteque `0.9.1` + SQLite. Кандидат требует проверки сохранения результатов и lifecycle, не принят как готовая замена BullMQ | [Liteque](https://github.com/karakeep-app/liteque), [manifest 0.9.1](https://registry.npmjs.org/liteque/0.9.1), сравнение и ограничения в [ADR-002](adr/ADR-002-state-and-recovery.md) |
-| Будущая mobile-адаптация | Сохранение jobs в `expo-sqlite`, разрешённые ОС окна через `expo-background-task` / `expo-task-manager`; сейчас не реализуется | [Expo BackgroundTask](https://docs.expo.dev/versions/latest/sdk/background-task/); OS scheduling не заменяет durable queue |
+| Очереди | Общий `queue` с хранением через внедрённый `state` и сменным адаптером библиотеки очереди. Пригодность исследованного Liteque `0.9.1` открыта: сначала совместимость с этим путём хранения, затем recovery/lifecycle | [Liteque](https://github.com/karakeep-app/liteque), [manifest 0.9.1](https://registry.npmjs.org/liteque/0.9.1), сравнение и ограничения в [ADR-002](adr/ADR-002-state-and-recovery.md) |
+| Будущая mobile-адаптация | Сохранение jobs через `state` с будущим `expo-sqlite` adapter, разрешённые ОС окна через `expo-background-task` / `expo-task-manager`; сейчас не реализуется | [Expo BackgroundTask](https://docs.expo.dev/versions/latest/sdk/background-task/); OS scheduling не заменяет durable queue |
 | AI SDK | `ai@7.0.112` + `@ai-sdk/openai-compatible@3.0.54` внутри `model-organs` | [SDK manifest](https://registry.npmjs.org/ai/7.0.112), [provider manifest](https://registry.npmjs.org/@ai-sdk%2fopenai-compatible/3.0.54): Node ≥22, совпадающий provider ABI 4.0.18 |
 
 Для SDK выбрать одну точную совместимую Zod 4-версию из его peer-range `^4.1.8` при bootstrap и зафиксировать lockfile. AI SDK 7 не означает принятия его agent/workflow platform: использовать только модельные вызовы, structured output и ограниченную отменяемую генерацию. Provider создаётся явно с локальным allowlisted endpoint; строковый shorthand с неявным AI Gateway запрещён. [Описание совместимого provider](https://ai-sdk.dev/providers/openai-compatible-providers).
@@ -80,9 +88,9 @@ AI SDK — внутренний адаптер для совместимых о�
 
 ### 2.2 Локальные файлы и профиль сохранности
 
-У каждой cell свой закрытый каталог данных на локальном диске: каноническая БД `state` с индексами и отдельная техническая БД `queue`. Пути задаёт доверенная конфигурация; другая cell и тесты используют отдельные каталоги. Connectors, открытие/закрытие и технические migrations принадлежат своим модулям; доменные таблицы/миграции — владельцам данных. Runtime проверяет согласованность manifest и порядок boot. Общий `.env` остаётся read-only для task-worktree. Пустой пакет `infrastructure` вместо Compose не создаётся.
+У каждой cell свой закрытый каталог данных на локальном диске: каноническая БД с индексами и отдельная техническая БД `queue`, обе обслуживаются через `state`. Пути задаёт доверенная конфигурация; другая cell и тесты используют отдельные каталоги. Connectors, соединения, файлы и механизм применения миграций принадлежат SQLite adapter `state`; таблицы, миграции и row mapping — владельцам данных, включая `queue`. Runtime создаёт/закрывает хранилища и проверяет согласованность manifest и порядок boot. Общий `.env` остаётся read-only для task-worktree. Пустой пакет `infrastructure` вместо Compose не создаётся.
 
-Drizzle-схемы, SQL, row mapping и семантика преобразования данных находятся рядом с владельцем; это владение исходным кодом, не отдельная физическая БД. Composition root собирает одну упорядоченную цепочку миграций для канонической БД. Drizzle Kit генерирует SQL из схем владельцев; проверенные SQL artifacts фиксируются в release, применённые миграции не редактируются. Неподдерживаемые DDL `vec0` и data transforms оформляются custom SQL; virtual/shadow tables не передаются неподтверждённому auto-diff. `state` отвечает за технические journal/apply/check, а не за доменную схему. Применение явно выполняется до рабочей нагрузки, никогда при импорте; ошибка или несовместимость не разрешают начать работу со схемой. Точные transaction/journal semantics проходят S1 и согласование CP1, а не предполагаются свойствами ORM.
+Drizzle-схемы, SQL, row mapping и семантика преобразования данных находятся рядом с владельцем; это владение исходным кодом, не отдельная физическая БД для каждого владельца. Composition root собирает упорядоченную цепочку миграций для каждой физической БД: owners канонического состояния и отдельно `queue`. Drizzle Kit генерирует SQL из схем владельцев; проверенные SQL artifacts фиксируются в release, применённые миграции не редактируются. Неподдерживаемые DDL `vec0` и data transforms оформляются custom SQL; virtual/shadow tables не передаются неподтверждённому auto-diff. `state` отвечает за технические journal/apply/check, а не за схему владельца. Применение явно выполняется до рабочей нагрузки, никогда при импорте; ошибка или несовместимость не разрешают начать работу со схемой. Точные transaction/journal semantics определены [спецификацией `state`](modules/state/specification.md), а не предполагаются свойствами ORM.
 
 Для обеих БД исходный профиль: WAL, `synchronous=FULL`, `foreign_keys=ON` и ограниченное ожидание занятого writer; эффективные настройки проверяются на каждом соединении после инициализации библиотек. Должны различаться занятость, нехватка места, corrupt/incompatible schema и отмена; ошибка записи не подтверждает commit/enqueue. WAL допускает читателей параллельно с одним writer, поэтому транзакции короткие, ожидание имеет deadline, а долгий model call выполняется вне транзакции. Сетевой filesystem и multi-host доступ не входят в baseline. Основания: [WAL](https://sqlite.org/wal.html), [профиль synchronous](https://sqlite.org/pragma.html#pragma_synchronous).
 
@@ -114,16 +122,18 @@ Drizzle-схемы, SQL, row mapping и семантика преобразов�
 
 Локальный worker probe 2026-09-29 подтверждён в существующем [S1/S2 контуре](../experiments/state/README.md); production evidence новой корректировки отдельно в [#30](validation/state/gh-30.adapters.1.md). Live cancellation использует переносимые abort events, без Node API в общем контракте; hard interrupt не добавляется. Авария adapter до получения подтверждения commit даёт unavailable с неопределённым исходом: commit мог целиком произойти. Требуется owner readback после reopen, а не автоматический replay или обещание отката. Проверки прав существующих DB/WAL/SHM не открывают/закрывают fd вне SQLite, чтобы не снимать её POSIX locks. Это техническая сохранность, не agent exclusivity.
 
-Оба модуля разделяют публичный асинхронный контракт и его платформенные реализации. Контракт описывает операции, DTO, ошибки и гарантии, которые видит потребитель. Адаптер скрывает драйвер, SDK, формат хранения и особенности платформы. Адаптеры принадлежат соответствующему модулю, доступны через отдельные entrypoints и явно подключаются в composition root; потребители не выбирают backend и не ветвятся по платформе. Новый пакет, реестр плагинов или динамическая загрузка для этого не нужны.
+Оба модуля разделяют публичный асинхронный контракт и его реализации. Контракт описывает операции, DTO, ошибки и гарантии, которые видит потребитель. `state` скрывает драйвер и механизм хранения; `queue` скрывает библиотеку очереди и механизм обработки заданий. Адаптеры принадлежат соответствующему модулю, доступны через отдельные entrypoints и явно подключаются в composition root; потребители не выбирают backend и не ветвятся по платформе. Новый пакет, реестр плагинов или динамическая загрузка для этого не нужны.
+
+`queue` использует внедрённый публичный `StoragePort` модуля `state` для устойчивого хранения. Схема очереди, миграции, отображение записей, статусы, попытки и результаты принадлежат `queue`; драйвер, соединения, файлы, транзакционный механизм и технический backup — адаптеру `state`. Composition root создаёт отдельный экземпляр `state` для технической БД и связывает его с mappings `queue` через `createState(adapter, bindOwners)`. Ядро и библиотечный адаптер `queue` используют этот порт; SQL mappings получают scoped executor из `state/adapters/sqlite`. Native connection или второй драйвер внутри `queue` не нужны и не допускаются. `state` не знает схемы или логики очереди и не зависит от `queue`.
 
 | Модуль | Что сохраняется при замене адаптера | Что остаётся внутри реализации |
 | --- | --- | --- |
 | `state` | Согласованный snapshot, атомарный commit изменений владельцев и проверка совместимости схем | Соединения, SQL/драйвер, механизм транзакций, загрузка расширений, технические apply/journal/check; доменные storage adapters, revisions и миграции остаются у владельцев |
-| `queue` | Durable enqueue/status/result, идентичность job, правила повторов, отмены, ограниченного выполнения и защиты от устаревшей попытки | Хранение технических jobs/результатов, доставка и запуск обработчика: локальный worker, окно ОС или вызов платформы |
+| `queue` | Durable enqueue/status/result, идентичность job, правила повторов, отмены, ограниченного выполнения и защиты от устаревшей попытки | Библиотека очереди, доставка и запуск обработчика: локальный worker, окно ОС или вызов платформы; учёт jobs/результатов сохраняется через внедрённый `state` |
 
 SQLite — выбранная реализация локального baseline. Файл БД и `state/adapters/sqlite` не входят в общий контракт `state`: технический SQL export нужен только SQLite adapters владельцев. Замена хранилища может потребовать их замены и миграции данных, сохраняя публичные доменные контракты и общий commit. Совпадение сигнатур без сохранения атомарности, snapshot и совместимости схем не делает новый backend совместимым. Проверка доменных revisions и Zod DTO выполняется владельцами; `state` не вводит общий revision carrier или универсальную доменную валидацию.
 
-Для `queue` транспорт сообщения отделён от учёта задания. Устойчивые ID, status/result, попытки и отмена остаются обязательством модуля независимо от того, предоставляет ли их backend. Адаптер может использовать отдельное техническое хранилище; локальный SQLite-файл и постоянно работающий consumer не являются требованиями общего API. Лимиты платформы должны быть явно учтены при подключении и обработке запросов: неподдерживаемый режим отклоняется, без молчаливого ослабления гарантий или потери заданий. Согласование с `state` сохраняет owner outbox/receipts из §5.4.
+Для `queue` транспорт сообщения отделён от учёта задания. Устойчивые ID, status/result, попытки и отмена остаются обязательством модуля независимо от возможностей библиотеки. Его техническая БД обслуживается через отдельный внедрённый `state`; локальный SQLite-файл и постоянно работающий consumer не являются требованиями общего API. Замена библиотеки очереди не разрешает обходить этот путь хранения. Лимиты платформы должны быть явно учтены при подключении и обработке запросов: неподдерживаемый режим отклоняется, без молчаливого ослабления гарантий или потери заданий. Два экземпляра `state` не объединяют commit разных БД; owner outbox/receipts из §5.4 сохраняются.
 
 Совместимость адаптера проверяется общими контрактными сценариями и интеграцией в его реальном окружении. Точные интерфейсы и сценарии текущего `state` заданы его спецификацией; `queue` уточняется при подготовке своего следующего инкремента. Desktop реализуется первым. Expo и Cloudflare остаются возможными последующими адаптациями, а перенос всего runtime, моделей и границ исполнения потребует отдельного решения и проверки.
 
@@ -161,7 +171,7 @@ flowchart TB
 | --- | --- | --- | --- |
 | `core-types` | `AgentId`, `TickId`, `ActionId`, `Revision`, `EvidenceRef`, время, `Result<T,E>` | Типы и проверка общих примитивов; без I/O | Общий `AgentState`, произвольный event bus, доменные DTO |
 | `state` | Нейтральная граница хранения и её адаптеры; в локальном baseline — SQLite, разрешённый vector extension, транзакции и журнал версий схем | `readSnapshot`, `transact`, `checkSchema`; общие контракты без типов драйвера | Доменные решения, retrieval policy, универсальный repository API, жизненный цикл и единственность инстанса агента |
-| `queue` | Именованные устойчивые очереди, технические статусы/попытки/результаты; адаптеры хранения, доставки и исполнения, локально — SQLite | Создание очереди, durable enqueue, ограниченная обработка, status/result, retry, отмена и закрытие; собственные DTO/ошибки без platform types | Policy фоновых работ, доменные outbox/receipts, выбор или повтор внешнего действия, гарантированное время OS wakeup |
+| `queue` | Именованные устойчивые очереди, их схемы, технические статусы/попытки/результаты через `state`; сменный адаптер библиотеки доставки и исполнения | Создание очереди, durable enqueue, ограниченная обработка, status/result, retry, отмена и остановка обработки; собственные DTO/ошибки без platform types | DB-драйвер и соединения, policy фоновых работ, доменные outbox/receipts, выбор или повтор внешнего действия, гарантированное время OS wakeup |
 | `constitution` | Внешняя read-only policy: привязка единственного оператора, полномочия, лимиты, окна, стабильные manifest и approvals | `checkBoot(manifest, schema)`, `authorize(action, principal, policyRevision)`, `validateApproval(scope)` | Ценности агента; самоизменение policy; исполнение обычного сообщения как команды управления |
 | `timeline` | Одна последовательность тиков, elapsed time, режим, ссылки на решения | `reserveTick(trigger)`, `decide(tick, actionRef)`, `settle(tick, outcomeRef)`, `resume()` | Мышление, самостоятельное исполнение действий |
 | `perception` | Inbox, происхождение стимулов, распознавание оператора по доверенной привязке, статусы внимания | `accept(input, transportPrincipal) → Receipt`, `select(snapshot, budget) → PerceptBatch`, `markAttended(batch, tick)` | Решение отвечать; назначение операторов или полномочий |
@@ -189,18 +199,19 @@ flowchart TB
 | Уровень | Пакеты | Разрешённые импорты помимо `core-types` |
 | --- | --- | --- |
 | 0 | `core-types` | Нет |
-| 1 | `state`, `queue`, `constitution`, `timeline`, `perception`, `world-model`, `memory`, `self-model`, `narrative`, `memetics`, `skills`, `model-organs` | Доменные входы определяются собственными контрактами через primitive/evidence refs; SDK/драйверы доступны только внутри соответствующих adapters |
+| 1 | `state`, `constitution`, `timeline`, `perception`, `world-model`, `memory`, `self-model`, `narrative`, `memetics`, `skills`, `model-organs` | Доменные входы определяются собственными контрактами через primitive/evidence refs; SDK/драйверы доступны только внутри соответствующих adapters |
+| 2 | `queue` | `state/contracts`: внедрённый `StoragePort`; SQLite mappings очереди используют технический export `state/adapters/sqlite` по правилу владельцев ниже |
 | 2 | `homeostasis` | Контракты `self-model`, `narrative`, `memetics`, `timeline` |
-| 2 | `physiology` | Контракты `queue`; окна, admission и обработка результата принадлежат `physiology` |
-| 3 | `development` | Контракты `skills`, `model-organs`, `physiology`, `constitution` |
-| 3 | `executive` | Контракты `self-model`, `constitution`, `perception`, `skills`, `physiology` |
-| 4 | `cognition` | Контракты `perception`, `world-model`, `memory`, `self-model`, `narrative`, `memetics`, `skills`, `model-organs`, `executive` |
-| 4 | `operator-cli` | Клиентские контракты `perception`, `executive`, `constitution`; без runtime implementation |
-| 5 | `runtime` | Публичные exports модулей кода и их adapters; не импортирует `operator-cli` |
+| 3 | `physiology` | Контракты `queue`; окна, admission и обработка результата принадлежат `physiology` |
+| 4 | `development` | Контракты `skills`, `model-organs`, `physiology`, `constitution` |
+| 4 | `executive` | Контракты `self-model`, `constitution`, `perception`, `skills`, `physiology` |
+| 5 | `cognition` | Контракты `perception`, `world-model`, `memory`, `self-model`, `narrative`, `memetics`, `skills`, `model-organs`, `executive` |
+| 5 | `operator-cli` | Клиентские контракты `perception`, `executive`, `constitution`; без runtime implementation |
+| 6 | `runtime` | Публичные exports модулей кода и их adapters; не импортирует `operator-cli` |
 
 Собственный `./sqlite` adapter каждого владельца дополнительно зависит от технического export `state/adapters/sqlite`, но не наоборот. Он получает transaction-scoped handle с нормализованными SQL-операциями, без Node/Expo driver types, и сохраняет только данные своего владельца. Private SQL и миграции остаются внутри owner adapter; root связывает их в общий commit. Общие доменные контракты `state` не содержат SQL или vendor errors. Замена СУБД требует adapters/миграции и доказательства прежних гарантий; будущее переключение Node/Expo SQLite driver не должно менять DTO владельцев. Изоляция пакетов остаётся дисциплиной доверенного кода, **не** sandbox против злонамеренного npm-пакета.
 
-`queue` скрывает библиотеку, driver/SDK и механизм доставки внутри адаптеров (§2.4); `state` и `queue` не импортируют друг друга. Первый потребитель — `physiology`, получающий узкий queue port через root. Generic queue не знает job kinds организма; allowlist и обработчики задаёт доверенный потребитель, не payload. Другой потребитель требует явного ребра к `queue/contracts` и проверки ownership/retry. Платформенный backend не экспортируется из общего entrypoint; будущий адаптер реализует тот же контракт, но не обязан использовать ту же библиотеку, сервис или внутренние таблицы.
+`queue` зависит от публичного контракта `state` и скрывает библиотеку очереди/механизм доставки внутри своего сменного адаптера (§2.4). Обратный импорт `state → queue` запрещён. Root внедряет порт технической БД с bindings очереди; это не даёт ей доступ к канонической БД или чужим таблицам. Первый потребитель — `physiology`, получающий узкий queue port через root. Generic queue не знает job kinds организма; allowlist и обработчики задаёт доверенный потребитель, не payload. Другой потребитель требует явного ребра к `queue/contracts` и проверки ownership/retry. Библиотека не экспортируется из общего entrypoint; её замена сохраняет общий контракт и использование `state`.
 
 **Зависимости 20 пакетов кода.** Сплошная стрелка `A → B` означает, что `A` может импортировать публичные контракты `B`; у `state → core-types` это общие примитивы. Пунктир от `runtime` к группе означает сборку её пакетов через публичные exports. Рамки только группируют узлы для чтения.
 
@@ -245,6 +256,7 @@ flowchart LR
     dev --> sk & mo & ph & co
     ex --> psm & co & pe & sk & ph
     ph --> q
+    q --> st
     st --> types
 ```
 
@@ -260,7 +272,7 @@ flowchart LR
 
 Root сначала проверяет manifest/policy/schema, затем открывает adapters, загружает версии владельцев и только после этого допускает tick. Pure modules не делают I/O при создании. Stateful owner принимает snapshot/revision, готовит change и сохраняет его только в установленной commit phase. Shutdown отменяет незавершённые вычисления, фиксирует известный outcome и закрывает adapters; runtime не допускает replacement до остановки прежнего инстанса. Отмена не выдаётся за rollback уже совершённого эффекта.
 
-Queue adapters и доверенные consumers запускаются явно после admission владельца, а не при import. Shutdown прекращает выдачу новых jobs, ограниченно дожидается/отменяет работу и закрывает queue handles; незавершённые intents сохраняются для recovery. Недоступность/занятость SQLite возвращает ошибку постановки/выдачи в пределах deadline, не бесконечное ожидание и не успешную обработку. При неоднозначном ответе enqueue повторная сверка использует тот же jobId.
+Queue adapters и доверенные consumers запускаются явно после admission владельца и подготовки внедрённого `state`, а не при import. При shutdown `queue` прекращает выдачу новых jobs, ограниченно дожидается/отменяет обработку и завершает работу с внедрённым портом. Затем composition root закрывает соответствующий `StoragePort`; `queue` не закрывает чужое хранилище или native handles. Незавершённые intents/jobs сохраняются для recovery. Недоступность/занятость хранения через `state` возвращает ошибку постановки/выдачи в пределах deadline, не бесконечное ожидание и не успешную обработку. При неоднозначном ответе enqueue повторная сверка использует тот же jobId.
 
 | Владельцы | Существенный отказ публичного контракта | Минимальная изолированная проверка |
 | --- | --- | --- |
@@ -366,7 +378,7 @@ Queue adapters и доверенные consumers запускаются явно
 
 `state` передаёт один transaction-scoped handle собственным adapters владельцев. Все writes decision/outcome commit выполняются через одно соединение и одну SQLite-транзакцию; независимые соединения не складываются в общий commit. Async порт не разрешает выпустить SQL из transaction scope или смешать с ним сторонние запросы; синхронный transaction callback драйвера не должен завершать commit раньше awaited работы. Для будущего Expo adapter требуется эквивалентная изоляция; обычный `withTransactionAsync` не ограничивает все запросы лексическим callback ([Expo transactions](https://docs.expo.dev/versions/latest/sdk/sqlite/#executing-queries-within-an-async-transaction)).
 
-Канонические inbox, action log, operator outbox и job intents/receipts остаются в `state`. Техническая доставка — в отдельной SQLite БД `queue`; общий движок не делает две БД/соединения одной транзакцией. Согласование сохраняет outbox-протокол §5.4. Это разделение позволяет менять queue backend без переноса канонической истории.
+Канонические inbox, action log, operator outbox и job intents/receipts остаются в канонической БД через `state`. Технические данные `queue` — в отдельной БД через другой экземпляр того же `state`; повторное использование модуля не делает две БД/соединения одной транзакцией. Согласование сохраняет outbox-протокол §5.4. Это разделение позволяет менять библиотечный адаптер очереди без переноса канонической истории.
 
 Короткая read-транзакция через owner adapters собирает согласованный snapshot PSM, narrative, мира, episodes/memes/skills и входов. После её закрытия reasoning получает immutable DTO. Model call, CLI wait и evaluation не удерживают DB-транзакцию. Поздние stimuli остаются в inbox для следующего тика; write commit перепроверяет expected revisions и authority.
 
@@ -408,7 +420,7 @@ Boot проверяет stable body manifest: code revision, версии кон
 
 Consumer сверяет актуальность intent/cancellation/input revision, а владелец атомарно принимает receipt по ID/hash не более одного раза. Поздняя попытка не завершает новую lease и не перезаписывает принятый результат. Удаление библиотекой завершённой job не разрешает потерять наблюдаемый result/status: `queue` сохраняет их по своему контракту до согласованной очистки. Backend dedupe после очистки не заменяет owner receipts.
 
-Desktop-кандидат Liteque имеет timeout/retry и allocation token, но удаляет completed job и по умолчанию включает `synchronous=NORMAL`. Поэтому проверка §8 должна подтвердить небольшой adapter, который сохраняет terminal result до удаления записи, отклоняет conflicting payload, ограничивает shutdown/попытки и применяет профиль §2.2. Успех callback библиотеки не приравнивается к durable receipt. Если это требует форка private internals или собственной полной очереди поверх библиотеки, кандидат пересматривается, а контракт не ослабляется.
+У исследованного Liteque есть timeout/retry и allocation token, но штатный storage напрямую использует `better-sqlite3`, удаляет completed job и по умолчанию включает `synchronous=NORMAL`. Пригодность библиотеки открыта: проверка §8 сначала должна подтвердить подключение через существующий асинхронный `StoragePort` и mappings владельца, затем terminal result до cleanup, conflicting payload и ограниченные shutdown/попытки. Профиль хранения §2.2 обеспечивает адаптер `state`; `queue` его не дублирует. Успех callback библиотеки не приравнивается к durable receipt. Если интеграция требует обхода `state`, форка private internals или собственной полной очереди поверх библиотеки, кандидат пересматривается, а контракт не ослабляется.
 
 `perception` сохраняет inbox и правила внимания, `executive` — action log и operator outbox. Техническая очередь не переносит каноническую историю, не запускает второй цикл решений и не разрешает retry действия с `unknown` исходом. State commit, queue commit и внешний effect остаются разными границами; recovery проверяется отдельно и вместе в E3/R4.
 
@@ -465,7 +477,7 @@ Approval/evaluation читаются по canonical refs из собственн
 | Поток и модули | Статус для `spec-engineer` / причина | Зависимость и точка интеграции |
 | --- | --- | --- |
 | `core-types`, `state`, `constitution` | `ready`; compatibility prototype остаётся обязательством первой реализации | Сначала общие примитивы, owner-store/transaction contract и граница адаптера §2.4 без vendor types, policy/manifest/approval boundary; state integration использует реальный SQLite-файл и vector-extension probe |
-| `queue` | `ready` для платформенно-нейтральной спецификации; окончательная фиксация Liteque `blocked` до bounded probe ниже | Общие гарантии и сменный адаптер §2.4; durable storage отдельно от execution windows; SQLite restart/duplicate/result проверки → `physiology` outbox/receipt → E3/R4 |
+| `queue` | `ready` для платформенно-нейтральной спецификации; выбор библиотеки `blocked` до bounded probe через `state` ниже | Публичный `StoragePort` реализованного `state`, схемы/bindings очереди и сменный библиотечный адаптер §2.4; enqueue/restart/duplicate/result через `state` → `physiology` outbox/receipt → E3/R4 |
 | `timeline`, `perception`, `world-model`, `memory`, `self-model`, `narrative`, `memetics` | `ready`; сценарии могут использовать заданные тестовые бюджеты без назначения production-порогов | Параллельно после фиксации контрактов; затем consistent snapshot и общий decision/outcome commit |
 | `skills`, `model-organs` | `ready` для registry/ports/versioning и контракта baseline; конкретный local inference профиль `blocked` до E1 | Сначала ModelPort и typed capability mapping, затем потребители; real provider до приёмки локальной жизни |
 | `executive`, `operator-cli` | `ready`; реальное workspace/Unix boundary evidence требуется при реализации | Единый протокол общения и управления до параллельной реализации; сквозной CLI path и action outcome |
@@ -474,7 +486,9 @@ Approval/evaluation читаются по canonical refs из собственн
 | Дополнительные модельные операции, включая аудио и специализированные классификаторы | `draft`; конкретные задачи, модели, форматы медиа и пределы ещё не выбраны | Потребность потребителя → typed request/result и dependency → bounded evaluation → adapter. Новые медиа/внешние API требуют проверки затронутых data/egress границ; отсутствие дополнительного органа не блокирует baseline |
 | Поздний somatic/cloud/rich-world контур и дополнительные каналы связи | `draft`; отложены по §§6.2.1, 17.2 концепции | Для каналов — входы `perception` и действия `executive`; один оператор сохраняется. Только затронутые owner contracts и architecture/security review при расширении |
 
-Для выбора desktop queue `node-engineer` получает `ready` bounded probe: на изолированной временной SQLite БД проверить Liteque с требуемым `FULL`, enqueue/reopen, kill после claim, исчерпание попыток, позднее завершение старой lease, ID/hash conflict, durable result до cleanup и остановку по deadline без утечки незавершённых задач. Зафиксировать точные версии, потребовавшийся adapter и ограничения; результат вернуть `architecture-engineer` до принятия backend и зависимой реализации. Это локальная проверка выбора библиотеки в работе над `queue`, не четвёртый системный эксперимент и не уже выполненный тест. `spec-engineer` может подготовить независимый контракт; отсутствие этого evidence не блокирует `core-types` и `state`.
+Для выбора библиотеки desktop queue `node-engineer` получает `ready` bounded probe в два последовательных шага. Сначала подтвердить, что библиотечный адаптер использует существующий асинхронный `StoragePort` и owner mappings без собственного драйвера/соединения, обхода `state` или форка private internals. Пригодность Liteque не предполагается; отрицательный результат возвращается `architecture-engineer` для пересмотра кандидата до зависимой реализации.
+
+После подтверждения этой границы проверить на изолированной временной БД, открытой через реальный SQLite adapter `state`: эффективный `FULL`, enqueue/readback/reopen, неоднозначный enqueue с повтором прежнего ID/hash, kill после claim, исчерпание попыток, позднее завершение старой lease, ID/hash conflict, durable result до cleanup и остановку по deadline без утечки незавершённых задач. Низкоуровневые storage-fault гарантии опираются на проверки `state`; интеграция `queue` доказывает перечисленные сценарии через его public exports, а не собственной копией DB-механизма. Зафиксировать версии, библиотечный адаптер и ограничения; результат вернуть `architecture-engineer` до принятия библиотеки. Это локальная проверка в работе над `queue`, не четвёртый системный эксперимент и не уже выполненный тест. `spec-engineer` может подготовить независимый контракт; отсутствие этого evidence не блокирует уже выполненную разработку `core-types` и `state`.
 
 Mobile adapter остаётся `draft`: его реализация, сборка и device evidence не входят в текущий handoff. При отдельном решении о мобильной поставке требуются contract tests общего API, реальная native-сборка SQLite/vec и проверки foreground/background/force-quit на устройствах.
 
@@ -524,6 +538,6 @@ PR gate: применимые format/lint/typecheck/build, проверки из
 - [ADR-002: единая история, commit points и recovery](adr/ADR-002-state-and-recovery.md).
 - [ADR-003: границы действия, моделей и развития](adr/ADR-003-action-and-development-boundaries.md).
 
-Архитектура и ADR-001–003 приняты оператором 2026-09-24. Решение 2026-09-28 о SQLite, переносимом `queue` и отсутствии Docker заменяет серверный вариант 2026-09-25. Liteque остаётся кандидатом, пока не закрыта его локальная проверка (§8). Принятие фиксирует проектные решения и разрешает переход к спецификациям и реализации; оно не закрывает эксперименты E1–E3 и не подтверждает работоспособность организма. Пересмотр требуется при смене topology, data ownership, action set/trust boundary, профиля сохранности, провале E1–E3 или изменении концепции.
+Архитектура и ADR-001–003 приняты оператором 2026-09-24. Решение 2026-09-28 о SQLite, переносимом `queue` и отсутствии Docker заменяет серверный вариант 2026-09-25. Уточнение оператора 2026-09-29 отменяет запрет `queue → state`: очередь использует готовый `StoragePort`, а библиотека подключается её сменным адаптером. Пригодность Liteque и выбор библиотеки открыты до проверки этой интеграции и queue-гарантий (§8). Принятие фиксирует проектные решения и разрешает переход к спецификациям и реализации; оно не закрывает эксперименты E1–E3 и не подтверждает работоспособность организма. Пересмотр требуется при смене topology, data ownership, action set/trust boundary, профиля сохранности, провале E1–E3 или изменении концепции.
 
-Документационный self-check, `concept-conformance-reviewer` и `security-reviewer` выполняются в пределах проектирования; независимый внешний аудит не заявляется. Покрытие, снимок, результаты и ограничения текущей ревизии публикуются в связанной [Issue #16](https://github.com/kostysh/yaagi/issues/16) согласно [правилам аудитов](development-methodology/audits.md). Реальные model/CLI/SQLite/queue проверки относятся к реализации.
+Документационный self-check, `concept-conformance-reviewer` и `security-reviewer` выполняются в пределах проектирования; независимый внешний аудит не заявляется. [Issue #16](https://github.com/kostysh/yaagi/issues/16) содержит историческую навигацию архитектурного комплекта; прежние результаты не доказывают проверку уточнённой границы `queue → state`. Снимок, покрытие и результат её отдельной проверки фиксируются согласно [правилам аудитов](development-methodology/audits.md). Реальные model/CLI/SQLite/queue проверки относятся к реализации.
