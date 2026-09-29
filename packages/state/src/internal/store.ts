@@ -259,7 +259,14 @@ class SqliteStore implements SqliteState {
         );
         if (inspect(this.#db, this.#migrations, budget).pending !== 0)
           throw new StorageError('incompatible');
-        const result = await callback(scope);
+        let result: Result<T, E>;
+        try {
+          result = await callback(scope);
+        } catch {
+          // Owner exceptions may have code/errcode fields too. Only SQL recorded
+          // by this scope is a driver failure; never classify arbitrary callbacks.
+          throw new StorageError(poison?.code ?? 'callback_failed');
+        }
         check();
         if (!result.ok) {
           this.#db.exec('ROLLBACK');

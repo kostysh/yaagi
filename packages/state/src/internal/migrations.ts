@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { DatabaseSync } from 'node:sqlite';
+import { constants, type DatabaseSync } from 'node:sqlite';
 import { z } from 'zod';
 import type { SchemaStatus } from '../contracts.js';
 import type { SqlMigration } from '../sqlite.js';
@@ -24,7 +24,7 @@ function schemaHash(db: DatabaseSync): string {
     JSON.stringify(
       db
         .prepare(
-          "SELECT type,name,tbl_name,sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' AND name != '_state_migrations' ORDER BY type,name",
+          "SELECT type,name,tbl_name,sql FROM sqlite_schema WHERE name NOT GLOB 'sqlite_*' AND name != '_state_migrations' ORDER BY type,name",
         )
         .all(),
     ),
@@ -44,7 +44,7 @@ export function inspect(
     if (
       db
         .prepare(
-          "SELECT name FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%'",
+          "SELECT name FROM sqlite_schema WHERE name NOT GLOB 'sqlite_*'",
         )
         .get()
     )
@@ -77,7 +77,7 @@ export function inspect(
     !last &&
     db
       .prepare(
-        "SELECT name FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' AND name != '_state_migrations'",
+        "SELECT name FROM sqlite_schema WHERE name NOT GLOB 'sqlite_*' AND name != '_state_migrations'",
       )
       .get()
   )
@@ -89,6 +89,35 @@ export function inspect(
     applied: parsed.data.length,
     pending: chain.length - parsed.data.length,
   };
+}
+
+const connectionActions = new Set<number>([
+  constants.SQLITE_TRANSACTION,
+  constants.SQLITE_SAVEPOINT,
+  constants.SQLITE_ATTACH,
+  constants.SQLITE_DETACH,
+  constants.SQLITE_PRAGMA,
+]);
+
+function executeArtifact(db: DatabaseSync, sql: string): void {
+  let rejected = false;
+  // SQLite identifies operations, including END-as-COMMIT, without confusing
+  // data literals, comments or trigger/CASE syntax with connection control.
+  db.setAuthorizer((action) => {
+    if (connectionActions.has(action)) {
+      rejected = true;
+      return constants.SQLITE_DENY;
+    }
+    return constants.SQLITE_OK;
+  });
+  try {
+    db.exec(sql);
+  } catch (error) {
+    if (rejected) throw new StorageError('incompatible');
+    throw error;
+  } finally {
+    db.setAuthorizer(null);
+  }
 }
 
 // Called only inside the connection's exclusive BEGIN IMMEDIATE scope.
@@ -107,15 +136,8 @@ export function applyMigrations(
   for (let i = applied; i < chain.length; i++) {
     budget.check();
     const migration = chain[i];
-    // Conservative guard for trusted release artifacts, not a SQL sandbox/parser.
-    if (
-      !migration ||
-      /\b(BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE|ATTACH|DETACH|VACUUM|PRAGMA)\b/i.test(
-        migration.sql,
-      )
-    )
-      throw new StorageError('incompatible');
-    db.exec(migration.sql);
+    if (!migration) throw new StorageError('incompatible');
+    executeArtifact(db, migration.sql);
     if (!db.isTransaction) throw new StorageError('sql_failed');
     budget.check();
     db.prepare('INSERT INTO _state_migrations VALUES(?,?,?,?)').run(
