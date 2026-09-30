@@ -17,7 +17,7 @@ system and developer constraints remain binding.
    routing, reasoning, reuse, concurrency, authority, and assistant lifecycle.
 
 YAAGI implements Polyphony: one long-lived agent with a continuous identity,
-local model ecology, and controlled reversible development. The concept,
+configurable model ecology, and controlled reversible development. The concept,
 architecture, ADRs, roadmap, and minimal TypeScript workspace are present.
 `core-types` provides `Result`; `state` provides a database-neutral executable core
 with an injected SQLite adapter and tested storage primitives.
