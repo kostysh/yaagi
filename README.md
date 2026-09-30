@@ -4,13 +4,9 @@ YAAGI (Yet Another AGI) is a project to build Polyphony: an autonomous agent wit
 
 ## Project status
 
-The repository contains the concept, modular architecture, architectural decision records, implementation roadmap, development methodology, and a verified TypeScript workspace. The first package, `@polyphony/core-types`, now exposes the compile-time-only `Result<T, E>` contract. No agent runtime exists yet, and the broader `core-types` roadmap step is not complete.
+The repository contains the concept, modular architecture, architectural decision records, development methodology, and a verified TypeScript workspace. Three package increments are integrated into `develop`: [`@polyphony/core-types`](docs/modules/core-types/specification.md) provides the compile-time-only `Result<T, E>` contract, [`@polyphony/state`](packages/state/README.md) provides executable storage with an injected SQLite adapter, and [`@polyphony/queue`](packages/queue/README.md) provides durable jobs through `state` with an injected Agenda adapter. The broader `core-types` roadmap step remains incomplete, and no agent runtime exists yet.
 
-The [implementation roadmap](docs/roadmap.md) orders modules, experiments, and integration checks. The current `core-types` increment has its own [specification](docs/modules/core-types/specification.md) and [implementation plan](docs/modules/core-types/implementation-plan.md). That package does not yet provide identifiers, time, references, DTOs, error codes, helpers, validators, or runtime behavior; later common types will be added only when a real consumer requires them.
-
-The first [`@polyphony/state` increment](packages/state/README.md) implements a [database-neutral executable core with an injected adapter](docs/modules/state/specification.md): scoped snapshots/transactions, migration checks, fixed `sqlite-vec` loading, and backup on built-in `node:sqlite`. Public-export tests cover two owners using Drizzle and raw vector SQL on one connection, rollback/reopen, storage faults, and the same production core and unchanged M1 consumer with a test-only adapter. Independent overlapping operations use separate SQLite worker connections and native locking, without an application queue or callback replay. The [developer guide](packages/state/docs/usage.md) links a compiled, executable example. These package guarantees do not establish agent runtime, I1, E3, power-loss resilience, or another platform. The earlier [standalone spikes](experiments/state/README.md) remain supporting evidence, outside root CI.
-
-[`@polyphony/queue`](packages/queue/README.md) provides typed durable enqueue/status/result, bounded attempts, cancellation and restart recovery through an injected `state` storage port. Agenda 6.2.6 is a replaceable processing adapter inside the neutral queue core. Public-export tests use real SQLite and separate-process crash checkpoints, stale leases, shutdown, retained results/tombstones and M1. The [guide](packages/queue/docs/usage.md) includes an executable composition example. Local verification and independent audit status are recorded in the [implementation evidence](docs/validation/queue/local-queue-agenda.implementation.md); this does not establish `physiology`, runtime/E3, exactly-once external effects or power-loss guarantees.
+The [development status in the roadmap](docs/roadmap.md#состояние-разработки) records delivered scope and acceptance/PR links for modules, experiments, and integration stages, followed by the implementation sequence and next step. Module specifications and package guides describe their public contracts and usage.
 
 ## Architectural foundations
 
@@ -58,7 +54,7 @@ Import smoke tests alone prove resolution and absence of tested import side effe
 | [Polyphony concept](docs/polyphony_concept.md) | Canonical principles, intended capabilities, and project boundaries |
 | [Modular architecture](docs/architecture.md) | Modules, dependencies, contracts, state ownership, integration, and recovery |
 | [Architecture decisions](docs/adr/) | Rationale and constraints behind significant decisions |
-| [Implementation roadmap](docs/roadmap.md) | Module order, experiments, dependencies, and integration evidence |
+| [Implementation roadmap](docs/roadmap.md) | Development status, delivered scope, next step, and module/experiment/integration order |
 | [Development methodology](docs/development-methodology/README.md) | Specifications, plans, verification, and delivery workflow |
 | [Local tooling](docs/development-methodology/tooling.md) | Pinned tools, package configurations, and delegated commands |
 | [Contributing](CONTRIBUTING.md) | Entry point for repository work |
