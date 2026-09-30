@@ -29,14 +29,15 @@ historical material, not a source of requirements for the new implementation.
 
 ## Sources and documentation
 
-The source hierarchy is canonical concept → architecture/ADRs → module
-specification → module implementation plan → essential algorithms → code/tests.
+The source hierarchy is canonical concept → architecture/ADRs → system design →
+module specification → module implementation plan → essential algorithms → code/tests.
 The [roadmap](docs/roadmap.md) orders work without adding requirements. Issues
 and Project entries are navigation. Stop only the dependent work when authority
 or a material requirement conflicts; resolve the decision at its owning level.
 
 - [Canonical concept](docs/polyphony_concept.md)
 - [Architecture](docs/architecture.md) and [ADRs](docs/adr/)
+- [System design methodology and embedded template](docs/development-methodology/system-design.md)
 - [Methodology and navigation](docs/development-methodology/README.md)
 - [Document IDs and language](docs/development-methodology/documentation.md)
 - [Package tooling](docs/development-methodology/tooling.md)
@@ -87,7 +88,10 @@ Biome formatting uses single quotes for TypeScript and JSX; all package configs
 inherit the shared root setting. JSON retains the quotes required by its syntax.
 
 Apply `implementation-discipline` for implementation and substantive document
-changes. Specify observable module behavior at public boundaries. Use one
+changes. Follow the [document relationship rule](docs/development-methodology/documentation.md#правило-связи-документов):
+prepare and accept the system design for all modules of the target system before
+continuing module development. A methodology or template alone does not satisfy
+this prerequisite. Specify observable module behavior at public boundaries. Use one
 specification and one compact plan per module; write them when that module is
 next. Follow [module rules](docs/development-methodology/modules.md) and
 [implementation rules](docs/development-methodology/implementation.md).
