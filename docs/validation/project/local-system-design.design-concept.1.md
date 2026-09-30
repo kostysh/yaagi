@@ -65,11 +65,20 @@
 - **Первопричина:** два процессных термина из прежнего локального сценария остались после смены источников конфигурации и владения сервером.
 - **Исправление:** архитектура §7.1 и F7 описывают staging неактивного binding к настроенному endpoint, health-check до переключения, сохранение прежнего binding и операторское управление сервером. В F7 порядок проверок явно предшествует CAS.
 - **Прямой blast radius:** `docs/architecture.md:477`, `docs/system-design.md:181–182`; код, контракты профилей, grants и roadmap не изменены.
-- **Доказательство исправления:** чтение исправленных абзацев и поиск прежних обязательных формулировок; `git diff --check` прошёл. Независимая проверка исправления ожидается.
+- **Доказательство исправления:** чтение исправленных абзацев и поиск прежних обязательных формулировок; `git diff --check` прошёл. Независимый delta re-audit подтвердил закрытие A-001.
 
 ## Повторный аудит
 
-- **Remediation commit:** ещё не создан
+- **Remediation commit:** `1141976bb63fde4c67a7ee4e190baf6d625335b1`
 - **Переданная дельта:** A-001 и сохранение F7/grant/CAS/recovery при local/provider bindings; неизменённая область не требует повторного полного аудита.
-- **Результат:** ожидается
-- **Следующий отчёт:** пока не требуется
+- **Аудитор:** `/root/polyphony_system_design_audit`, `gpt-6-astra` / `xhigh`; 2026-09-30.
+- **Исходный verdict:** `design-time / assessable / substrate-ready`; fake-risk: `low`; primary decision: `proceed as substrate`.
+- **Нормализованный результат:** `PASS`; A-001 закрыт, новых P1/P2/P3 findings нет.
+- **Evidence:** для двух операторских provider-профилей прослеживается candidate binding → evaluation/approval/grant → выбранный `development.apply` → health-check → CAS и ledger → feedback/rollback. Серверный процесс и новые полномочия не нужны. Сохранены grant/actionId, binding/ledger, reconciliation, точное approval и отдельное разрешение на rollback. Аудитор подтвердил сохранность исходного отрицательного отчёта; scoped `git diff --check` прошёл.
+- **Предел:** только A-001, прямое влияние и сохранность отчёта; runtime не запускался, draft не объявлен принятым оператором.
+- **Следующий отчёт:** не требуется.
+
+## Связанные успешные проверки
+
+- **Security:** `/root/polyphony_config_security_audit`, `gpt-6-astra` / `xhigh`, исходный `PASS (scoped)`, нормализованный `PASS` для `ec46db67846a8d2a5a9a0d7b40e9780c677d9cec`; затем delta `PASS` для `1141976bb63fde4c67a7ee4e190baf6d625335b1`. Проверены env/secret/provider boundary, handlers, grant/replay и recovery; исправление не добавило endpoint discovery, credentials или обход approval. Runtime enforcement не проверялся.
+- **Roadmap Spec:** `/root/roadmap_spec_audit`, `gpt-6-astra` / `medium`, исходный `compliant`, нормализованный `PASS` для `ec46db67846a8d2a5a9a0d7b40e9780c677d9cec`. Проверены новые решения, I1–I4/E1–E3, порядок восстановления и отложенные isolation/backup; findings нет. Remediation не меняет roadmap или уже проверенные условия его этапов.
