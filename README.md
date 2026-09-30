@@ -4,7 +4,7 @@ YAAGI (Yet Another AGI) is a project to build Polyphony: an autonomous agent wit
 
 ## Project status
 
-The repository contains the concept, modular architecture, architectural decision records, development methodology, and a verified TypeScript workspace. Three package increments are integrated into `develop`: [`@polyphony/core-types`](docs/modules/core-types/specification.md) provides the compile-time-only `Result<T, E>` contract, [`@polyphony/state`](packages/state/README.md) provides executable storage with an injected SQLite adapter, and [`@polyphony/queue`](packages/queue/README.md) provides durable jobs through `state` with an injected Agenda adapter. The broader `core-types` roadmap step remains incomplete, and no agent runtime exists yet.
+The repository contains the concept, modular architecture, architectural decision records, an accepted system design covering all 20 modules, development methodology, and a verified TypeScript workspace. Three package increments are integrated into `develop`: [`@polyphony/core-types`](docs/modules/core-types/specification.md) provides the compile-time-only `Result<T, E>` contract, [`@polyphony/state`](packages/state/README.md) provides executable storage with an injected SQLite adapter, and [`@polyphony/queue`](packages/queue/README.md) provides durable jobs through `state` with an injected Agenda adapter. The broader `core-types` roadmap step remains incomplete, and no agent runtime exists yet.
 
 The [development status in the roadmap](docs/roadmap.md#состояние-разработки) records delivered scope and acceptance/PR links for modules, experiments, and integration stages, followed by the implementation sequence and next step. Module specifications and package guides describe their public contracts and usage.
 
@@ -14,7 +14,7 @@ The [development status in the roadmap](docs/roadmap.md#состояние-ра�
 - A local first deployment using TypeScript, Node.js, pnpm, and embedded SQLite, with `sqlite-vec` for vector storage and search. Detailed choices and versions belong in the architecture document.
 - Database-neutral contracts/core and an explicitly injected Linux x64 SQLite adapter in `state`. `queue` reuses its public `StoragePort` for a separate technical database and injects Agenda 6.2.6 as a replaceable processing adapter. A [local compatibility probe](experiments/queue/README.md) preceded implementation. Queue schemas, jobs, attempts, and results belong to `queue`; database drivers, connections, files, and backup remain in `state`. The composition root owns storage lifecycle. Domain job intents and receipts stay with their owners; the two databases retain separate commits and outbox coordination. No database server, Redis, Docker Compose, or `infrastructure` package is required.
 - Shared contracts avoid Node-specific dependencies to leave room for future Expo adapters. Mobile execution, background scheduling, and a complete RAG pipeline are outside the current delivery scope.
-- Shared model access through `model-organs`, supporting language models, specialized classifiers, embeddings, and audio models as needed. The baseline local model and hardware profile still need to be selected and evaluated.
+- Planned shared model access through `model-organs`: local or provider-hosted OpenAI-compatible endpoints configured through environment variables at startup. One model profile comes first; purpose-specific profiles are added as needed. The operator supplies the model and server; actual compatibility and quality still require evaluation.
 - Exactly one operator, with a two-way CLI in the first version. Other communication channels may be added as the system develops.
 
 ## Local development setup
@@ -54,9 +54,10 @@ Import smoke tests alone prove resolution and absence of tested import side effe
 | [Polyphony concept](docs/polyphony_concept.md) | Canonical principles, intended capabilities, and project boundaries |
 | [Modular architecture](docs/architecture.md) | Modules, dependencies, contracts, state ownership, integration, and recovery |
 | [Architecture decisions](docs/adr/) | Rationale and constraints behind significant decisions |
+| [System design](docs/system-design.md) | How all 20 modules work together through shared flows and incremental system assemblies |
 | [Implementation roadmap](docs/roadmap.md) | Development status, delivered scope, next step, and module/experiment/integration order |
 | [Development methodology](docs/development-methodology/README.md) | Specifications, plans, verification, and delivery workflow |
 | [Local tooling](docs/development-methodology/tooling.md) | Pinned tools, package configurations, and delegated commands |
 | [Contributing](CONTRIBUTING.md) | Entry point for repository work |
 
-This README is maintained in English. The concept and development documentation are maintained in Russian. The [English concept translation](docs/polyphony_concept.en.md) does not yet include the clarification about a single operator and communication channels; the Russian original remains authoritative.
+This README is maintained in English. The concept and development documentation are maintained in Russian. The [English concept translation](docs/polyphony_concept.en.md) is not synchronized with the latest operator decisions; the Russian original remains authoritative.
