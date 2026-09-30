@@ -18,6 +18,30 @@ import {
   terminal,
 } from './fixture.js';
 
+function holdHeartbeat(
+  processing: QueueAdapter,
+  entered: () => void,
+  release: Promise<void>,
+): QueueAdapter {
+  return {
+    ...processing,
+    start: (input) =>
+      processing.start({
+        ...input,
+        store: {
+          reserve: (...args) => input.store.reserve(...args),
+          begin: (...args) => input.store.begin(...args),
+          release: (...args) => input.store.release(...args),
+          touch: async (...args) => {
+            entered();
+            await release;
+            return input.store.touch(...args);
+          },
+        },
+      }),
+  };
+}
+
 test('overlapping Agenda polls do not multiply a pending storage reservation', async (t) => {
   const instances: Agenda[] = [];
   const define = Agenda.prototype.define;
@@ -270,28 +294,17 @@ test('production Agenda stale touch, terminal save and single/bulk unlock cannot
   );
   const heartbeatHeld = deferred();
   const heartbeatRelease = deferred();
+  const newHeartbeatHeld = deferred();
+  const newHeartbeatRelease = deferred();
   const oldEntered = deferred();
   const newEntered = deferred();
   const oldRelease = deferred();
   const newRelease = deferred();
-  const processing = agenda(600);
-  const delayedHeartbeat: QueueAdapter = {
-    ...processing,
-    start: (input) =>
-      processing.start({
-        ...input,
-        store: {
-          reserve: (...args) => input.store.reserve(...args),
-          begin: (...args) => input.store.begin(...args),
-          release: (...args) => input.store.release(...args),
-          touch: async (...args) => {
-            heartbeatHeld.resolve();
-            await heartbeatRelease.promise;
-            return input.store.touch(...args);
-          },
-        },
-      }),
-  };
+  const delayedHeartbeat = holdHeartbeat(
+    agenda(600),
+    heartbeatHeld.resolve,
+    heartbeatRelease.promise,
+  );
   const root = await fixture(t);
   const second = await open(root.path);
   t.after(() => second.close());
@@ -306,7 +319,14 @@ test('production Agenda stale touch, terminal save and single/bulk unlock cannot
     return 42;
   });
   const q1 = root.make(firstJob, delayedHeartbeat);
-  const q2 = second.make(secondJob, agenda());
+  const q2 = second.make(
+    secondJob,
+    holdHeartbeat(
+      agenda(),
+      newHeartbeatHeld.resolve,
+      newHeartbeatRelease.promise,
+    ),
+  );
   await enqueue(q1, firstJob);
   required(await q1.start(startOptions, limits()));
   const [first] = instances;
@@ -321,6 +341,8 @@ test('production Agenda stale touch, terminal save and single/bulk unlock cannot
     assert.ok(old?._id);
     required(await q2.start(startOptions, limits()));
     await newEntered.promise;
+    // Keep the current owner's real heartbeat pending while stale calls run.
+    await newHeartbeatHeld.promise;
     const current = required(
       await second.base.readSnapshot(
         (scope) => scope.get('tests', 'a'),
@@ -346,12 +368,13 @@ test('production Agenda stale touch, terminal save and single/bulk unlock cannot
       ),
       current,
     );
-    heartbeatRelease.resolve();
+    newHeartbeatRelease.resolve();
     const done = second.committed(terminal);
     newRelease.resolve();
     await done;
   } finally {
     heartbeatRelease.resolve();
+    newHeartbeatRelease.resolve();
     oldRelease.resolve();
     newRelease.resolve();
   }
@@ -380,6 +403,8 @@ for (const mode of ['single', 'bulk'] as const) {
     const beginRelease = deferred();
     const newEntered = deferred();
     const newRelease = deferred();
+    const newHeartbeatHeld = deferred();
+    const newHeartbeatRelease = deferred();
     const instances: Agenda[] = [];
     const define = Agenda.prototype.define;
     t.mock.method(
@@ -433,7 +458,14 @@ for (const mode of ['single', 'bulk'] as const) {
       return 42;
     });
     const q1 = root.make(oldJob, heldBegin);
-    const q2 = second.make(newJob, agenda(1_000));
+    const q2 = second.make(
+      newJob,
+      holdHeartbeat(
+        agenda(1_000),
+        newHeartbeatHeld.resolve,
+        newHeartbeatRelease.promise,
+      ),
+    );
     await enqueue(q1, oldJob);
     required(await q1.start(startOptions, limits()));
     try {
@@ -443,6 +475,8 @@ for (const mode of ['single', 'bulk'] as const) {
       assert.ok(first && old._id);
       required(await q2.start(startOptions, limits()));
       await newEntered.promise;
+      // A legitimate heartbeat must not race the full-record comparison.
+      await newHeartbeatHeld.promise;
       const current = required(
         await second.base.readSnapshot(
           (scope) => scope.get('tests', 'a'),
@@ -460,11 +494,13 @@ for (const mode of ['single', 'bulk'] as const) {
         ),
         current,
       );
+      newHeartbeatRelease.resolve();
       beginRelease.resolve();
       const done = second.committed(terminal);
       newRelease.resolve();
       await done;
     } finally {
+      newHeartbeatRelease.resolve();
       beginRelease.resolve();
       newRelease.resolve();
     }

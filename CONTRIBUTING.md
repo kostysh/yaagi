@@ -1,6 +1,6 @@
 # Участие в разработке
 
-Разработка начинается с GitHub Issue и выполняется в отдельном worktree и task-ветке. Полная методология находится в [docs/development-methodology](docs/development-methodology/README.md); этот файл служит только короткой точкой входа и не дублирует правила.
+Любые изменения в репозитории, включая документацию и конфигурацию, проходят путь `отдельный worktree и task-ветка → Pull Request → интеграция в develop`. Полная методология находится в [docs/development-methodology](docs/development-methodology/README.md); этот файл служит только короткой точкой входа и не дублирует правила.
 
 ## Перед началом
 
@@ -19,4 +19,4 @@
 - Обновите затронутые спецификации или планы, если изменились их решения или поведение.
 - Проведите [обязательные аудиты](docs/development-methodology/audits.md).
 - Создайте PR task-ветки в `develop`. PR в `master` допускается только из `develop`.
-- Не выполняйте прямые push в `develop` или `master`.
+- Не создавайте коммиты изменений напрямую в `develop` или `master`; прямые push и force push в эти ветки запрещены. `develop` — default branch.
