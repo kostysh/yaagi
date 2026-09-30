@@ -37,6 +37,7 @@ or a material requirement conflicts; resolve the decision at its owning level.
 
 - [Canonical concept](docs/polyphony_concept.md)
 - [Architecture](docs/architecture.md) and [ADRs](docs/adr/)
+- [System design](docs/system-design.md)
 - [System design methodology](docs/development-methodology/system-design.md) and [template](docs/development-methodology/templates/system-design.md)
 - [Methodology and navigation](docs/development-methodology/README.md)
 - [Document IDs and language](docs/development-methodology/documentation.md)
