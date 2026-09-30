@@ -115,7 +115,7 @@ Roadmap не вводит и не переопределяет требован�
 ## Шаблоны
 
 - [Архитектура](templates/architecture.md)
-- [Системный дизайн — шаблон внутри методологии](system-design.md#шаблон-системного-дизайна)
+- [Системный дизайн](templates/system-design.md)
 - [ADR](templates/adr.md)
 - [Спецификация модуля](templates/module-specification.md)
 - [План имплементации модуля](templates/module-implementation-plan.md)

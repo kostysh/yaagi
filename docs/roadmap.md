@@ -22,7 +22,7 @@
 | `core-types` | Интегрирован | Первый инкремент: compile-time `Result<T, E>`. IDs, refs, время и валидация ещё не реализованы | [Спецификация](modules/core-types/specification.md), [PR #25](https://github.com/kostysh/yaagi/pull/25) |
 | `state` | Интегрирован | Первый инкремент и корректировка: нейтральное ядро, внедряемый SQLite adapter, snapshot/transaction/schema, `sqlite-vec`, backup и M1 | [Пакет и guide](../packages/state/README.md), [PR #29](https://github.com/kostysh/yaagi/pull/29), [PR #31](https://github.com/kostysh/yaagi/pull/31), [PR #33](https://github.com/kostysh/yaagi/pull/33) |
 | `queue` | Интегрирован | Q1–Q4: durable jobs через `state`, сменный Agenda adapter, бюджет попыток, отмена, restart recovery и M1 | [Приёмка](validation/queue/local-queue-agenda.implementation.md), [PR #41](https://github.com/kostysh/yaagi/pull/41) |
-| Системный дизайн целевой системы | Запланирован | — | [Методология и шаблон](development-methodology/system-design.md); документ ещё не создан |
+| Системный дизайн целевой системы | Запланирован | — | [Методология](development-methodology/system-design.md) и [шаблон](development-methodology/templates/system-design.md); документ ещё не создан |
 | `constitution` | Запланирован | — | — |
 | `timeline` | Запланирован | — | — |
 | `memory` | Запланирован | — | — |
