@@ -4,7 +4,7 @@ YAAGI (Yet Another AGI) is a project to build Polyphony: an autonomous agent wit
 
 ## Project status
 
-The repository contains the concept, modular architecture, architectural decision records, development methodology, and a verified TypeScript workspace. Three package increments are integrated into `develop`: [`@polyphony/core-types`](docs/modules/core-types/specification.md) provides the compile-time-only `Result<T, E>` contract, [`@polyphony/state`](packages/state/README.md) provides executable storage with an injected SQLite adapter, and [`@polyphony/queue`](packages/queue/README.md) provides durable jobs through `state` with an injected Agenda adapter. The broader `core-types` roadmap step remains incomplete, and no agent runtime exists yet.
+The repository contains the concept, modular architecture, architectural decision records, an accepted system design covering all 20 modules, development methodology, and a verified TypeScript workspace. Three package increments are integrated into `develop`: [`@polyphony/core-types`](docs/modules/core-types/specification.md) provides the compile-time-only `Result<T, E>` contract, [`@polyphony/state`](packages/state/README.md) provides executable storage with an injected SQLite adapter, and [`@polyphony/queue`](packages/queue/README.md) provides durable jobs through `state` with an injected Agenda adapter. The broader `core-types` roadmap step remains incomplete, and no agent runtime exists yet.
 
 The [development status in the roadmap](docs/roadmap.md#состояние-разработки) records delivered scope and acceptance/PR links for modules, experiments, and integration stages, followed by the implementation sequence and next step. Module specifications and package guides describe their public contracts and usage.
 
@@ -54,9 +54,10 @@ Import smoke tests alone prove resolution and absence of tested import side effe
 | [Polyphony concept](docs/polyphony_concept.md) | Canonical principles, intended capabilities, and project boundaries |
 | [Modular architecture](docs/architecture.md) | Modules, dependencies, contracts, state ownership, integration, and recovery |
 | [Architecture decisions](docs/adr/) | Rationale and constraints behind significant decisions |
+| [System design](docs/system-design.md) | How all 20 modules work together through shared flows and incremental system assemblies |
 | [Implementation roadmap](docs/roadmap.md) | Development status, delivered scope, next step, and module/experiment/integration order |
 | [Development methodology](docs/development-methodology/README.md) | Specifications, plans, verification, and delivery workflow |
 | [Local tooling](docs/development-methodology/tooling.md) | Pinned tools, package configurations, and delegated commands |
 | [Contributing](CONTRIBUTING.md) | Entry point for repository work |
 
-This README is maintained in English. The concept and development documentation are maintained in Russian. The [English concept translation](docs/polyphony_concept.en.md) does not yet include the clarification about a single operator and communication channels; the Russian original remains authoritative.
+This README is maintained in English. The concept and development documentation are maintained in Russian. The [English concept translation](docs/polyphony_concept.en.md) is not synchronized with the latest operator decisions; the Russian original remains authoritative.
