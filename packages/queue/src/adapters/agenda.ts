@@ -208,16 +208,13 @@ class Runtime {
     if (this.sealed) return ok(undefined);
     this.accepting = false;
     if (!this.draining) {
-      // Drain disables library polling before cancellation. Agenda's own list is
-      // insufficient after watchdog expiry; also wait for the whole Job.run seam.
-      const drained = this.agenda.drain({
-        timeout: budget.options().timeoutMs,
-        closeConnection: false,
-      });
+      // Public stop disables polling and unlocks unstarted library jobs. Its
+      // running list is insufficient after watchdog expiry, so our own full
+      // callback/storage/Job.run accounting remains the completion boundary.
+      const stopped = this.agenda.stop(false);
       for (const entry of this.entries.values()) entry.controller.abort();
       this.draining = (async () => {
-        await drained;
-        await this.agenda.stop(false);
+        await stopped;
         while (this.active.size || this.pending.size || this.lifecycles.size)
           await this.changed.promise;
         const watchdogTail = this.watchdogUntil - performance.now();

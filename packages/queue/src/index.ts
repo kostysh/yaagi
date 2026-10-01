@@ -57,8 +57,16 @@ export function defineJob<P, R>(
     return ok(
       Object.freeze({
         type,
-        invoke: async (value: unknown, context: Context) =>
-          handler(decode(type.payload, value), context),
+        invoke: async (value: unknown, context: Context) => {
+          const deadline = Date.now() + context.timeoutMs;
+          const payload = decode(type.payload, value);
+          // Core supplies a live remaining budget; a standalone invocation may
+          // supply a static one. Neither may gain time while its codec runs.
+          const timeoutMs = Math.min(context.timeoutMs, deadline - Date.now());
+          if (context.signal.aborted) throw new QueueError('cancelled');
+          if (timeoutMs <= 0) throw new QueueError('deadline');
+          return handler(payload, { ...context, timeoutMs });
+        },
       }),
     );
   } catch {
@@ -189,7 +197,11 @@ function build(
             namespace,
             attempt: attempt.number,
             signal: controller.signal,
-            timeoutMs: Math.max(1, Math.ceil(remaining)),
+            // Keep the absolute attempt/window deadline authoritative across
+            // synchronous payload decoding in the registration bridge.
+            get timeoutMs() {
+              return Math.max(0, deadline - Date.now());
+            },
           });
           if (Date.now() >= deadline) abort('timeout');
           if (!controller.signal.aborted) {
@@ -203,7 +215,8 @@ function build(
             }
           }
         } catch {
-          reason ??= 'handler_failed';
+          if (Date.now() >= deadline) abort('timeout');
+          else reason ??= 'handler_failed';
         }
       }
       // Timers cannot preempt synchronous handler/codec work. Recheck the actual
@@ -478,6 +491,7 @@ function build(
       try {
         const stopped = await adapter.stop(budget.options());
         if (!stopped.ok) return fail('stop_incomplete');
+        budget.check();
         state = 'idle';
         startup = undefined;
         return ok(undefined);
