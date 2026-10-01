@@ -17,20 +17,26 @@ system and developer constraints remain binding.
 4. Before delegation, read the operational sections of the
    [agent policy](docs/development-methodology/agent-policy.md). It owns model
    routing, reasoning, reuse, concurrency, authority, and assistant lifecycle.
+5. In active `/plan` mode, read the global `PLANS.md` specified by the environment
+   in full before planning. Accepted plan obligations remain binding after leaving
+   `/plan`; more specific project instructions take precedence within their scope.
+   If that file is unavailable, report the blocked planning work and continue only
+   independent authorized research unless a required stop applies.
 
 ## Workflow navigation
 
 Start with the matching scenario; combine rows when the work spans scenarios.
 The linked documents own the rules and prerequisites. Respect their approval
-status, including the proposed Issue description standard.
+status.
 
 | Scenario | Read first |
 | --- | --- |
 | Understand the system or assess current capabilities | [Canonical sources](#sources-and-documentation) and [development status](docs/roadmap.md#состояние-разработки) |
 | Choose the next task or track delivery | [Roadmap sequence](docs/roadmap.md#последовательность) and [task lifecycle and statuses](docs/development-methodology/task-methodology.md) |
-| Create or refine a delivery Issue | [Task description standard (proposed)](docs/development-methodology/task-methodology.md#стандарт-описания-задачи) and [Issue template](docs/development-methodology/templates/delivery-issue.md) |
+| Create or refine a delivery Issue | [Task description standard](docs/development-methodology/task-methodology.md#стандарт-описания-задачи) and [Issue template](docs/development-methodology/templates/delivery-issue.md) |
 | Change the concept, architecture, or an ADR | [Source authority](docs/development-methodology/documentation.md#иерархия-источников-истины), [canonical sources](#sources-and-documentation), and [document templates](docs/development-methodology/documentation.md#шаблоны) |
 | Create or revise the system design | [System design methodology](docs/development-methodology/system-design.md) and [design template](docs/development-methodology/templates/system-design.md) |
+| Work in `/plan` mode | Global `PLANS.md` at the environment-provided path, in full; then [project planning authority and model routing](docs/development-methodology/agent-policy.md#авторитет-и-порядок-чтения) |
 | Specify or plan the next module | [Document prerequisites](docs/development-methodology/documentation.md#правило-связи-документов) and [module specifications, BDD, and plans](docs/development-methodology/modules.md) |
 | Implement, fix, or refactor a module | [Implementation rules](docs/development-methodology/implementation.md) and [module boundaries](docs/development-methodology/modules.md#модуль) |
 | Set up the workspace or a package | [Package tooling](docs/development-methodology/tooling.md) |
@@ -61,7 +67,7 @@ historical material, not a source of requirements for the new implementation.
 The source hierarchy is canonical concept → architecture/ADRs → system design →
 module specification → module implementation plan → essential algorithms → code/tests.
 The [roadmap](docs/roadmap.md) orders work without adding requirements. Issues
-and Project entries are navigation; their workflow and proposed description
+and Project entries are navigation; their workflow and description
 standard are in the [task methodology](docs/development-methodology/task-methodology.md).
 Stop only the dependent work when authority
 or a material requirement conflicts; resolve the decision at its owning level.
