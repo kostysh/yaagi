@@ -9,8 +9,23 @@ governed by the [audit policy](docs/development-methodology/audits.md).
 
 The [source hierarchy](docs/development-methodology/documentation.md),
 [agent policy](docs/development-methodology/agent-policy.md), other authority
-rules, and checkpoint approvals remain in force. This refinement adds no audit
-question, reviewer, registry, or publication permission.
+rules, and checkpoint approvals remain in force. The preceding simplicity audit
+does not change the existing four questions or grant publication permission.
+
+## Audit order
+
+After completing the draft and final self-check, stabilize the candidate plan
+and apply the global independent implementation-discipline simplicity audit
+first. The auditor reads `implementation-discipline` from the current skill
+catalog and reviews all material decisions against the task and accepted
+requirements, using the global criteria and strict simplicity verdict. Apply
+the project agent policy for model routing and reviewer independence.
+
+Only a current simplicity `PASS` permits starting the four-question audit below
+or any other required plan audits. Do not run them before or in parallel with
+the simplicity audit. At simplicity `FAIL`, return the plan for revision; a
+failed or blocked simplicity gate cannot be bypassed by author self-check or
+another audit's `PASS`.
 
 ## Question 2 and verdict
 
@@ -40,9 +55,11 @@ The auditor does not revoke the ADR or authorize a deviation independently.
 
 ## Re-audit boundary
 
-Only material deltas require another candidate-plan audit, using the same four
-questions and verdict. A changed premise brings affected dependent decisions
-into scope even when their text is unchanged. Limit re-audit to changed parts
+Only material deltas require re-audit. First repeat the global simplicity audit
+on the affected scope; only after its `PASS` run the affected later audits,
+keeping the same four questions and verdict for the candidate-plan audit.
+A changed premise brings affected dependent decisions into scope even when
+their text is unchanged. Limit re-audit to changed parts
 and decisions affected by the delta; previously checked parts outside that
 influence are not re-audited. Non-material wording or formatting changes do not
 trigger re-audit. A replacement of the task's goal remains a new candidate plan
