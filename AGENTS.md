@@ -32,7 +32,9 @@ historical material, not a source of requirements for the new implementation.
 The source hierarchy is canonical concept → architecture/ADRs → system design →
 module specification → module implementation plan → essential algorithms → code/tests.
 The [roadmap](docs/roadmap.md) orders work without adding requirements. Issues
-and Project entries are navigation. Stop only the dependent work when authority
+and Project entries are navigation; their workflow and proposed description
+standard are in the [task methodology](docs/development-methodology/task-methodology.md).
+Stop only the dependent work when authority
 or a material requirement conflicts; resolve the decision at its owning level.
 
 - [Canonical concept](docs/polyphony_concept.md)

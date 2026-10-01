@@ -5,7 +5,7 @@
 ## Перед началом
 
 - Изучите [иерархию проектных документов](docs/development-methodology/documentation.md) и источники истины для задачи.
-- Для модуля используйте его спецификацию и план имплементации; GitHub Issues служат навигацией, а не заменой этих документов.
+- Для модуля используйте его спецификацию и план имплементации; GitHub Issues служат навигацией по [методике задач](docs/development-methodology/task-methodology.md).
 - Создайте worktree и task-ветку по [Git- и GitHub-процессу](docs/development-methodology/git-and-github.md).
 
 ## Во время работы
