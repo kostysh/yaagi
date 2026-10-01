@@ -1,6 +1,8 @@
 # Project defaults; explicit launches follow docs/development-methodology/agent-policy.md.
-model = "gpt-6.1-sol"
-model_reasoning_effort = "max"
+# Keep main-session overrides disabled for the model-picker workaround:
+# https://github.com/openai/codex/issues/47710
+# model = "gpt-6.1-sol"
+# model_reasoning_effort = "max"
 
 [agents]
 default_subagent_model = "gpt-6.1-sol"
