@@ -247,161 +247,217 @@ for (const mode of ['completed', 'retry'] as const) {
   });
 }
 
-test('a lost heartbeat acknowledgement can confirm the concurrently committed finish', async (t) => {
-  const renewed = deferred();
-  const touchReply = deferred();
-  const finished = deferred();
-  const finishReply = deferred();
-  const handlerRelease = deferred();
-  const touched = deferred<Result<void, QueueFailure>>();
-  let lost = false;
-  const root = await fixture(t, {
-    afterCommit: async (row) => {
-      if (
-        row.status === 'running' &&
-        row.lease &&
-        row.lease.lockedAt > row.attempts[0].startedAt
-      ) {
-        renewed.resolve();
-        await touchReply.promise;
-      } else if (row.status === 'completed') {
-        finished.resolve();
-        await finishReply.promise;
-      }
-    },
-    loseReply: (row) => {
-      if (
-        !lost &&
-        row.status === 'running' &&
-        row.lease &&
-        row.lease.lockedAt > row.attempts[0].startedAt
-      ) {
-        lost = true;
-        return true;
-      }
-      return false;
-    },
-  });
-  const processing = agenda(1_000);
-  const observed: QueueAdapter = {
-    ...processing,
-    start: (input) =>
-      processing.start({
-        ...input,
-        store: {
-          reserve: (...args) => input.store.reserve(...args),
-          begin: (...args) => input.store.begin(...args),
-          release: (...args) => input.store.release(...args),
-          touch: async (...args) => {
-            const result = await input.store.touch(...args);
-            touched.resolve(result);
-            return result;
-          },
-        },
-      }),
-  };
-  const registration = job(async () => {
-    await handlerRelease.promise;
-    return 42;
-  });
-  const queue = root.make(registration, observed);
-  await enqueue(queue, registration);
-  required(await queue.start(startOptions, limits()));
-  try {
-    await renewed.promise;
-    handlerRelease.resolve();
-    await finished.promise;
-    touchReply.resolve();
-    required(await touched.promise);
-    assert.equal(lost, true);
-    assert.equal(queue.lifecycle().error, undefined);
-  } finally {
-    handlerRelease.resolve();
-    touchReply.resolve();
-    finishReply.resolve();
-    required(await queue.stop(limits()));
-  }
-  const status = required(await queue.get(registration.type, 'a', limits()));
-  assert.equal(status.status, 'completed');
-  assert.equal(status.attemptsUsed, 1);
-  assert.deepEqual(status.result, { available: true, value: 42 });
-});
-
-test('an in-flight finish cannot hide a replacement lease from heartbeat', async (t) => {
-  const committed = deferred();
-  const acknowledge = deferred();
-  const touchEntered = deferred();
-  const touchRelease = deferred();
-  const touched = deferred<Result<void, QueueFailure>>();
-  const nextEntered = deferred();
-  const nextRelease = deferred();
-  const root = await fixture(t, {
-    afterCommit: async (row) => {
-      if (row.status === 'pending' && row.attempts.length === 1) {
-        committed.resolve();
-        await acknowledge.promise;
-      }
-    },
-  });
-  const second = await open(root.path);
-  t.after(() => second.close());
-  const processing = agenda(2_000);
-  const held: QueueAdapter = {
-    ...processing,
-    start: (input) =>
-      processing.start({
-        ...input,
-        store: {
-          reserve: (...args) => input.store.reserve(...args),
-          begin: (...args) => input.store.begin(...args),
-          release: (...args) => input.store.release(...args),
-          touch: async (...args) => {
-            touchEntered.resolve();
-            await touchRelease.promise;
-            const result = await input.store.touch(...args);
-            touched.resolve(result);
-            return result;
-          },
-        },
-      }),
-  };
-  const firstJob = job(async () => {
-    throw new Error('first attempt');
-  });
-  const nextJob = job(async () => {
-    nextEntered.resolve();
-    await nextRelease.promise;
-    return 42;
-  });
-  const q1 = root.make(firstJob, held);
-  const q2 = second.make(nextJob);
-  await enqueue(q1, firstJob, 'a', 2);
-  required(await q1.start(startOptions, limits()));
-  try {
-    await committed.promise;
-    required(await q2.start(startOptions, limits()));
-    await nextEntered.promise;
-    await touchEntered.promise;
-    touchRelease.resolve();
-    assert.deepEqual(await touched.promise, {
-      ok: false,
-      error: { code: 'conflict' },
+for (const order of ['touch-first', 'finish-first'] as const) {
+  test(`a lost heartbeat acknowledgement confirms finish and preserves retry: ${order}`, async (t) => {
+    const renewed = deferred();
+    const touchReply = deferred();
+    const finished = deferred();
+    const finishReply = deferred();
+    const handlerRelease = deferred();
+    const executed = deferred();
+    const touched = deferred<Result<void, QueueFailure>>();
+    let lost = false;
+    let calls = 0;
+    let afterTouch: unknown;
+    const root = await fixture(t, {
+      afterCommit: async (row) => {
+        if (
+          row.status === 'running' &&
+          row.lease &&
+          row.lease.lockedAt > row.attempts[0].startedAt
+        ) {
+          renewed.resolve();
+          await touchReply.promise;
+        } else if (row.status === 'pending' && row.attempts.length === 1) {
+          finished.resolve();
+          await finishReply.promise;
+        }
+      },
+      loseReply: (row) => {
+        if (
+          !lost &&
+          row.status === 'running' &&
+          row.lease &&
+          row.lease.lockedAt > row.attempts[0].startedAt
+        ) {
+          lost = true;
+          return true;
+        }
+        return false;
+      },
     });
-    const done = second.committed(terminal);
-    nextRelease.resolve();
-    await done;
-  } finally {
-    touchRelease.resolve();
-    nextRelease.resolve();
-    acknowledge.resolve();
-    required(await q1.stop(limits()));
-    required(await q2.stop(limits()));
-  }
-  const status = required(await q2.get(nextJob.type, 'a', limits()));
-  assert.equal(status.attemptsUsed, 2);
-  assert.equal(status.attempts[0].reason, 'handler_failed');
-  assert.deepEqual(status.result, { available: true, value: 42 });
-});
+    const processing = agenda(2_000);
+    const observed: QueueAdapter = {
+      ...processing,
+      start: (input) =>
+        processing.start({
+          ...input,
+          execute: async (...args) => {
+            await input.execute(...args);
+            executed.resolve();
+          },
+          store: {
+            reserve: (...args) => input.store.reserve(...args),
+            begin: (...args) => input.store.begin(...args),
+            release: (...args) => input.store.release(...args),
+            touch: async (...args) => {
+              const result = await input.store.touch(...args);
+              // Observe before returning this ACK to Agenda: releasing its
+              // lifecycle can legitimately let the next retry change the row.
+              afterTouch = required(
+                await root.base.readSnapshot(
+                  (scope) => scope.get('tests', 'a'),
+                  limits(),
+                ),
+              );
+              touched.resolve(result);
+              return result;
+            },
+          },
+        }),
+    };
+    const registration = job(async () => {
+      calls++;
+      if (calls === 1) {
+        await handlerRelease.promise;
+        throw new Error('first attempt');
+      }
+      return 42;
+    });
+    const queue = root.make(registration, observed);
+    await enqueue(queue, registration, 'a', 2);
+    required(await queue.start(startOptions, limits()));
+    try {
+      await renewed.promise;
+      handlerRelease.resolve();
+      await finished.promise;
+      const before = required(
+        await root.base.readSnapshot(
+          (scope) => scope.get('tests', 'a'),
+          limits(),
+        ),
+      );
+      if (order === 'finish-first') {
+        finishReply.resolve();
+        await executed.promise;
+      }
+      touchReply.resolve();
+      required(await touched.promise);
+      assert.equal(lost, true);
+      assert.equal(queue.lifecycle().error, undefined);
+      assert.deepEqual(afterTouch, before);
+      const done = root.committed(terminal);
+      finishReply.resolve();
+      await done;
+    } finally {
+      handlerRelease.resolve();
+      touchReply.resolve();
+      finishReply.resolve();
+      required(await queue.stop(limits()));
+    }
+    const status = required(await queue.get(registration.type, 'a', limits()));
+    assert.equal(status.status, 'completed');
+    assert.equal(calls, 2);
+    assert.equal(status.attemptsUsed, 2);
+    assert.equal(status.attempts[0].reason, 'handler_failed');
+    assert.equal(queue.lifecycle().error, undefined);
+    assert.deepEqual(status.result, { available: true, value: 42 });
+  });
+}
+
+for (const phase of [
+  'before-execute-settles',
+  'after-execute-settles',
+] as const) {
+  test(`finish cannot hide a replacement lease from heartbeat: ${phase}`, async (t) => {
+    const committed = deferred();
+    const acknowledge = deferred();
+    const executed = deferred();
+    const touchEntered = deferred();
+    const touchRelease = deferred();
+    const touched = deferred<Result<void, QueueFailure>>();
+    const nextEntered = deferred();
+    const nextRelease = deferred();
+    const root = await fixture(t, {
+      afterCommit: async (row) => {
+        if (row.status === 'pending' && row.attempts.length === 1) {
+          committed.resolve();
+          await acknowledge.promise;
+        }
+      },
+    });
+    const second = await open(root.path);
+    t.after(() => second.close());
+    const processing = agenda(2_000);
+    const held: QueueAdapter = {
+      ...processing,
+      start: (input) =>
+        processing.start({
+          ...input,
+          execute: async (...args) => {
+            await input.execute(...args);
+            executed.resolve();
+          },
+          store: {
+            reserve: (...args) => input.store.reserve(...args),
+            begin: (...args) => input.store.begin(...args),
+            release: (...args) => input.store.release(...args),
+            touch: async (...args) => {
+              touchEntered.resolve();
+              await touchRelease.promise;
+              const result = await input.store.touch(...args);
+              touched.resolve(result);
+              return result;
+            },
+          },
+        }),
+    };
+    const firstJob = job(async () => {
+      throw new Error('first attempt');
+    });
+    const nextJob = job(async () => {
+      nextEntered.resolve();
+      await nextRelease.promise;
+      return 42;
+    });
+    const q1 = root.make(firstJob, held);
+    const q2 = second.make(nextJob);
+    await enqueue(q1, firstJob, 'a', 2);
+    required(await q1.start(startOptions, limits()));
+    try {
+      await committed.promise;
+      required(await q2.start(startOptions, limits()));
+      await nextEntered.promise;
+      await touchEntered.promise;
+      if (phase === 'after-execute-settles') {
+        acknowledge.resolve();
+        await executed.promise;
+      }
+      touchRelease.resolve();
+      assert.deepEqual(await touched.promise, {
+        ok: false,
+        error: { code: 'conflict' },
+      });
+      // The observed touch promise is delivered before Agenda's failure handler.
+      // Let its already-settled microtask chain run; no elapsed-time oracle.
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      assert.deepEqual(q1.lifecycle().error, { code: 'conflict' });
+      const done = second.committed(terminal);
+      nextRelease.resolve();
+      await done;
+    } finally {
+      touchRelease.resolve();
+      nextRelease.resolve();
+      acknowledge.resolve();
+      required(await q1.stop(limits()));
+      required(await q2.stop(limits()));
+    }
+    const status = required(await q2.get(nextJob.type, 'a', limits()));
+    assert.equal(status.attemptsUsed, 2);
+    assert.equal(status.attempts[0].reason, 'handler_failed');
+    assert.deepEqual(status.result, { available: true, value: 42 });
+  });
+}
 
 test('stop rejects a late acknowledgement even before its deadline timer can run', async (t) => {
   let now = performance.now();

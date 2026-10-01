@@ -36,7 +36,6 @@ type Change<T> = { value: T; next?: StoredJob };
 // All transitions belong to the neutral core. The scope is an owner-local mapping,
 // and state alone supplies transaction serialization and commit semantics.
 export class Store implements ProcessingStore {
-  private readonly finishing = new Set<string>();
   constructor(
     readonly namespace: string,
     readonly storage: StoragePort<QueueScope>,
@@ -272,10 +271,11 @@ export class Store implements ProcessingStore {
       this.mutate(
         delivery.id,
         (value) => {
-          // Finish may have committed while its acknowledgement is still in
-          // flight. Confirm that exact local outcome without renewing a lease
-          // or treating ordinary completion as a storage/ownership failure.
-          if (this.settledHere(value, delivery)) return { value: undefined };
+          // The durable outcome ends this generation regardless of ACK order.
+          // Confirm it without renewing a lease or asserting that a particular
+          // heartbeat committed. Cancellation/recovery/replacement still fail.
+          if (this.finishedAttempt(value, delivery))
+            return { value: undefined };
           const row = this.current(value, delivery);
           if (row.status !== 'running') throw new QueueError('conflict');
           return {
@@ -293,21 +293,25 @@ export class Store implements ProcessingStore {
           (row?.status === 'running' &&
             row.lease?.token === delivery.token &&
             row.lease.lockedAt >= lockedAt) ||
-          this.settledHere(row, delivery)
+          this.finishedAttempt(row, delivery)
             ? { value: undefined }
             : undefined,
       ),
     );
   }
 
-  private settledHere(row: StoredJob | undefined, delivery: Delivery): boolean {
+  private finishedAttempt(
+    row: StoredJob | undefined,
+    delivery: Delivery,
+  ): boolean {
     const last = row?.attempts.at(-1);
     return (
-      this.finishing.has(delivery.token) &&
       row?.name === delivery.name &&
       row.version === delivery.version &&
       row.lease === null &&
-      row.status !== 'cancelled' &&
+      (row.status === 'completed' ||
+        row.status === 'failed' ||
+        row.status === 'pending') &&
       last?.token === delivery.token &&
       last.finishedAt !== null &&
       last.status !== 'running' &&
@@ -340,60 +344,49 @@ export class Store implements ProcessingStore {
       reason: FailureReason | null;
     },
   ): Promise<void> {
-    this.finishing.add(delivery.token);
-    try {
-      await this.mutate(
-        delivery.id,
-        (value) => {
-          const row = this.current(value, delivery);
-          const last = row.attempts.at(-1);
-          if (
-            row.status !== 'running' ||
-            !last ||
-            last.token !== delivery.token
-          )
-            throw new QueueError('conflict');
-          const status = outcome.result.available
-            ? 'completed'
-            : row.attempts.length === row.policy.maxAttempts
-              ? 'failed'
-              : 'pending';
-          return {
-            value: undefined,
-            next: {
-              ...row,
-              status,
-              result: outcome.result,
-              lease: null,
-              notBefore: outcome.result.available
-                ? row.notBefore
-                : nextTime(row),
-              attempts: [
-                ...row.attempts.slice(0, -1),
-                {
-                  ...last,
-                  status: outcome.result.available ? 'completed' : 'failed',
-                  reason: outcome.reason,
-                  finishedAt: Math.max(Date.now(), last.startedAt),
-                },
-              ],
-            },
-          };
-        },
-        (row) => {
-          const attempt = row?.attempts.find(
-            (entry) => entry.token === delivery.token,
-          );
-          return attempt &&
-            attempt.status !== 'running' &&
-            attempt.reason === outcome.reason &&
-            (outcome.result.available ? row?.status === 'completed' : true)
-            ? { value: undefined }
-            : undefined;
-        },
-      );
-    } finally {
-      this.finishing.delete(delivery.token);
-    }
+    await this.mutate(
+      delivery.id,
+      (value) => {
+        const row = this.current(value, delivery);
+        const last = row.attempts.at(-1);
+        if (row.status !== 'running' || !last || last.token !== delivery.token)
+          throw new QueueError('conflict');
+        const status = outcome.result.available
+          ? 'completed'
+          : row.attempts.length === row.policy.maxAttempts
+            ? 'failed'
+            : 'pending';
+        return {
+          value: undefined,
+          next: {
+            ...row,
+            status,
+            result: outcome.result,
+            lease: null,
+            notBefore: outcome.result.available ? row.notBefore : nextTime(row),
+            attempts: [
+              ...row.attempts.slice(0, -1),
+              {
+                ...last,
+                status: outcome.result.available ? 'completed' : 'failed',
+                reason: outcome.reason,
+                finishedAt: Math.max(Date.now(), last.startedAt),
+              },
+            ],
+          },
+        };
+      },
+      (row) => {
+        const attempt = row?.attempts.find(
+          (entry) => entry.token === delivery.token,
+        );
+        return attempt &&
+          attempt.status !== 'running' &&
+          attempt.reason === outcome.reason &&
+          (outcome.result.available ? row?.status === 'completed' : true)
+          ? { value: undefined }
+          : undefined;
+      },
+    );
   }
 }

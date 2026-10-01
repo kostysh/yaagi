@@ -168,14 +168,8 @@ class Runtime {
             .then(
               () => {},
               (failure: unknown) => {
-                // Completion can win a transaction concurrently with the final touch.
-                // Once execute has settled, its own durable outcome is authoritative.
-                if (
-                  !executing &&
-                  failure instanceof QueueError &&
-                  failure.code === 'conflict'
-                )
-                  return;
+                // Core confirms finished generations durably. Any remaining
+                // failure is real, even if execute settled before its ACK.
                 entry.controller.abort();
                 this.error(
                   failure instanceof QueueError ? failure.code : 'storage',
