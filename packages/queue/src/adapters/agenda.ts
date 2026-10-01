@@ -168,14 +168,8 @@ class Runtime {
             .then(
               () => {},
               (failure: unknown) => {
-                // Completion can win a transaction concurrently with the final touch.
-                // Once execute has settled, its own durable outcome is authoritative.
-                if (
-                  !executing &&
-                  failure instanceof QueueError &&
-                  failure.code === 'conflict'
-                )
-                  return;
+                // Core confirms finished generations durably. Any remaining
+                // failure is real, even if execute settled before its ACK.
                 entry.controller.abort();
                 this.error(
                   failure instanceof QueueError ? failure.code : 'storage',
@@ -208,16 +202,13 @@ class Runtime {
     if (this.sealed) return ok(undefined);
     this.accepting = false;
     if (!this.draining) {
-      // Drain disables library polling before cancellation. Agenda's own list is
-      // insufficient after watchdog expiry; also wait for the whole Job.run seam.
-      const drained = this.agenda.drain({
-        timeout: budget.options().timeoutMs,
-        closeConnection: false,
-      });
+      // Public stop disables polling and unlocks unstarted library jobs. Its
+      // running list is insufficient after watchdog expiry, so our own full
+      // callback/storage/Job.run accounting remains the completion boundary.
+      const stopped = this.agenda.stop(false);
       for (const entry of this.entries.values()) entry.controller.abort();
       this.draining = (async () => {
-        await drained;
-        await this.agenda.stop(false);
+        await stopped;
         while (this.active.size || this.pending.size || this.lifecycles.size)
           await this.changed.promise;
         const watchdogTail = this.watchdogUntil - performance.now();

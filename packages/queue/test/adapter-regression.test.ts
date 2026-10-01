@@ -114,13 +114,18 @@ test('overlapping Agenda polls do not multiply a pending storage reservation', a
 });
 
 test('a finite synchronous handler cannot return a successful result after its deadline', async (t) => {
+  let now = Date.now();
+  t.mock.method(Date, 'now', () => now);
   let signal: { readonly aborted: boolean } | undefined;
+  let calls = 0;
+  let abortedBeforeReturn: boolean | undefined;
   const registration = job(async (_value, context) => {
+    calls++;
     signal = context.signal;
-    const until = performance.now() + 500;
-    while (performance.now() < until) {
-      /* Finite CPU work delays timer delivery. */
-    }
+    // Cross the supplied deadline without yielding to the abort timer. Storage
+    // latency cannot consume this controlled clock before the handler enters.
+    now += context.timeoutMs + 1;
+    abortedBeforeReturn = context.signal.aborted;
     return 42;
   });
   const root = await fixture(t);
@@ -144,10 +149,14 @@ test('a finite synchronous handler cannot return a successful result after its d
   assert.equal(status.status, 'failed');
   assert.equal(status.attempts[0].reason, 'timeout');
   assert.deepEqual(status.result, { available: false });
+  assert.equal(calls, 1);
+  assert.equal(abortedBeforeReturn, false);
   assert.equal(signal?.aborted, true);
 });
 
 test('execution window blocks admission even before an overdue timer can run', async (t) => {
+  let now = Date.now();
+  t.mock.method(Date, 'now', () => now);
   const root = await fixture(t);
   const scanned = deferred();
   let calls = 0;
@@ -168,10 +177,8 @@ test('execution window blocks admission even before an overdue timer can run', a
               const row = await scope.candidate(...args);
               assert.ok(row);
               selected = true;
-              const until = performance.now() + 1_100;
-              while (performance.now() < until) {
-                /* Delay window timer delivery. */
-              }
+              // The window expires before a timer callback gets control.
+              now += 1_001;
               return row;
             },
             put: async (row) => {
@@ -186,8 +193,13 @@ test('execution window blocks admission even before an overdue timer can run', a
     },
   });
   await enqueue(queue, registration);
-  required(await queue.start({ ...startOptions, windowMs: 1_000 }, limits()));
-  await scanned.promise;
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  try {
+    required(await queue.start({ ...startOptions, windowMs: 1_000 }, limits()));
+    await scanned.promise;
+  } finally {
+    t.mock.timers.reset();
+  }
   required(await queue.stop(limits()));
   const status = required(await queue.get(registration.type, 'a', limits()));
   assert.equal(calls, 0);

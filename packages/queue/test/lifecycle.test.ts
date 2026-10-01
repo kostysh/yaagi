@@ -293,16 +293,16 @@ test('competing reservations, idempotent begin and stale finalize/touch/single-o
 test('two real Agenda consumers share one durable job; heartbeat protects a long live lease', async (t) => {
   const entered = deferred();
   const release = deferred();
-  const heartbeat = deferred();
+  const scannedAfterExpiry = deferred();
+  let startedAt: number | undefined;
+  let renewedAt = 0;
   let calls = 0;
   const root = await fixture(t, {
     afterCommit: async (row) => {
-      if (
-        row.status === 'running' &&
-        row.lease &&
-        row.lease.lockedAt > row.attempts[0].startedAt
-      )
-        heartbeat.resolve();
+      if (row.status === 'running' && row.lease) {
+        startedAt ??= row.attempts[0].startedAt;
+        renewedAt = row.lease.lockedAt;
+      }
     },
   });
   const second = await open(root.path);
@@ -314,14 +314,48 @@ test('two real Agenda consumers share one durable job; heartbeat protects a long
     return 42;
   });
   const q1 = root.make(registration, agenda(1_000));
-  const q2 = second.make(registration, agenda(1_000));
+  const processing = agenda(1_000);
+  const competing: QueueAdapter = {
+    ...processing,
+    start: (input) =>
+      processing.start({
+        ...input,
+        store: {
+          reserve: async (...args) => {
+            const result = await input.store.reserve(...args);
+            const deadline = args[3];
+            // A real competitor has scanned past the original lease horizon,
+            // while the committed renewal still protects this one callback.
+            if (
+              result.ok &&
+              !result.value &&
+              startedAt !== undefined &&
+              deadline > startedAt &&
+              deadline < renewedAt
+            )
+              scannedAfterExpiry.resolve();
+            return result;
+          },
+          begin: (...args) => input.store.begin(...args),
+          touch: (...args) => input.store.touch(...args),
+          release: (...args) => input.store.release(...args),
+        },
+      }),
+  };
+  const q2 = second.make(registration, competing);
   await enqueue(q1, registration);
   const done = root.committed(terminal);
   required(await q1.start(startOptions, limits()));
   await entered.promise;
-  required(await q2.start(startOptions, limits()));
-  await heartbeat.promise;
-  release.resolve();
+  try {
+    required(await q2.start(startOptions, limits()));
+    await scannedAfterExpiry.promise;
+    assert.equal(calls, 1);
+    assert.equal(q1.lifecycle().error, undefined);
+    assert.ok(startedAt !== undefined && renewedAt > startedAt);
+  } finally {
+    release.resolve();
+  }
   await done;
   required(await q1.stop(limits()));
   required(await q2.stop(limits()));

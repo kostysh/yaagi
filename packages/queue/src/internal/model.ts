@@ -145,7 +145,7 @@ export async function within(
   let abort = () => {};
   try {
     const options = budget.options();
-    return await Promise.race([
+    const completed = await Promise.race([
       work.then(
         () => true,
         () => false,
@@ -157,6 +157,10 @@ export async function within(
         if (options.signal.aborted) abort();
       }),
     ]);
+    // A settled promise can beat an overdue timer after synchronous work or a
+    // delayed acknowledgement. Timer delivery alone does not establish budget.
+    budget.check();
+    return completed;
   } catch {
     return false;
   } finally {

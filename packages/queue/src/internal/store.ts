@@ -271,6 +271,11 @@ export class Store implements ProcessingStore {
       this.mutate(
         delivery.id,
         (value) => {
+          // The durable outcome ends this generation regardless of ACK order.
+          // Confirm it without renewing a lease or asserting that a particular
+          // heartbeat committed. Cancellation/recovery/replacement still fail.
+          if (this.finishedAttempt(value, delivery))
+            return { value: undefined };
           const row = this.current(value, delivery);
           if (row.status !== 'running') throw new QueueError('conflict');
           return {
@@ -285,12 +290,33 @@ export class Store implements ProcessingStore {
           };
         },
         (row) =>
-          row?.status === 'running' &&
-          row.lease?.token === delivery.token &&
-          row.lease.lockedAt >= lockedAt
+          (row?.status === 'running' &&
+            row.lease?.token === delivery.token &&
+            row.lease.lockedAt >= lockedAt) ||
+          this.finishedAttempt(row, delivery)
             ? { value: undefined }
             : undefined,
       ),
+    );
+  }
+
+  private finishedAttempt(
+    row: StoredJob | undefined,
+    delivery: Delivery,
+  ): boolean {
+    const last = row?.attempts.at(-1);
+    return (
+      row?.name === delivery.name &&
+      row.version === delivery.version &&
+      row.lease === null &&
+      (row.status === 'completed' ||
+        row.status === 'failed' ||
+        row.status === 'pending') &&
+      last?.token === delivery.token &&
+      last.finishedAt !== null &&
+      last.status !== 'running' &&
+      last.reason !== 'cancelled' &&
+      last.reason !== 'interrupted'
     );
   }
 
