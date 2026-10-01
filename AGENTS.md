@@ -9,12 +9,41 @@ system and developer constraints remain binding.
 
 1. Work in the task branch and worktree. Read `git status --short --branch` and
    preserve existing changes.
-2. Read the authoritative sources and affected methodology before changing files.
-3. Inspect current files, scripts, and dependencies. Choose the smallest change
-   that delivers the requested outcome and a check that could disprove it.
+2. Use the [workflow navigation](#workflow-navigation) to find and read the
+   applicable methodology and authoritative sources before acting.
+3. Read directory-specific agent instructions and inspect current files, scripts,
+   and dependencies. Choose the smallest change that delivers the requested
+   outcome and a check that could disprove it.
 4. Before delegation, read the operational sections of the
    [agent policy](docs/development-methodology/agent-policy.md). It owns model
    routing, reasoning, reuse, concurrency, authority, and assistant lifecycle.
+
+## Workflow navigation
+
+Start with the matching scenario; combine rows when the work spans scenarios.
+The linked documents own the rules and prerequisites. Respect their approval
+status, including the proposed Issue description standard.
+
+| Scenario | Read first |
+| --- | --- |
+| Understand the system or assess current capabilities | [Canonical sources](#sources-and-documentation) and [development status](docs/roadmap.md#состояние-разработки) |
+| Choose the next task or track delivery | [Roadmap sequence](docs/roadmap.md#последовательность) and [task lifecycle and statuses](docs/development-methodology/task-methodology.md) |
+| Create or refine a delivery Issue | [Task description standard (proposed)](docs/development-methodology/task-methodology.md#стандарт-описания-задачи) and [Issue template](docs/development-methodology/templates/delivery-issue.md) |
+| Change the concept, architecture, or an ADR | [Source authority](docs/development-methodology/documentation.md#иерархия-источников-истины), [canonical sources](#sources-and-documentation), and [document templates](docs/development-methodology/documentation.md#шаблоны) |
+| Create or revise the system design | [System design methodology](docs/development-methodology/system-design.md) and [design template](docs/development-methodology/templates/system-design.md) |
+| Specify or plan the next module | [Document prerequisites](docs/development-methodology/documentation.md#правило-связи-документов) and [module specifications, BDD, and plans](docs/development-methodology/modules.md) |
+| Implement, fix, or refactor a module | [Implementation rules](docs/development-methodology/implementation.md) and [module boundaries](docs/development-methodology/modules.md#модуль) |
+| Set up the workspace or a package | [Package tooling](docs/development-methodology/tooling.md) |
+| Choose checks, validate a change, or investigate CI | [Quality gates and testing](docs/development-methodology/quality.md) |
+| Audit a change or resolve audit findings | [Audit selection and evidence](docs/development-methodology/audits.md) and [remediation and re-audit](docs/development-methodology/audits.md#исправление-и-повторный-аудит) |
+| Delegate work or manage assistants | [Agent policy](docs/development-methodology/agent-policy.md#выбор-reasoning-перед-запуском) |
+| Publish a PR, integrate, or clean up local resources | [Git workflow and authority](docs/development-methodology/git-and-github.md) and [task delivery workflow](docs/development-methodology/task-methodology.md#поток-задачи) |
+| Update documentation or development status | [Document IDs and language](docs/development-methodology/documentation.md) and [synchronization rules](docs/development-methodology/documentation.md#минимальная-синхронизация) |
+
+See the [methodology index](docs/development-methodology/README.md) for the full
+document list. Read the relevant rules before using their templates.
+
+## Current baseline
 
 YAAGI implements Polyphony: one long-lived agent with a continuous identity,
 configurable model ecology, and controlled reversible development. The concept,
