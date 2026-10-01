@@ -25,7 +25,7 @@
 | [Дорожная карта реализации](../roadmap.md) | Порядок модулей, экспериментов и сквозных проверок |
 | [Модули, BDD и планы](modules.md) | Декомпозиция, спецификация модуля, планирование и алгоритмы |
 | [Имплементация](implementation.md) | Простота реализации и обязательное применение Implementation Discipline |
-| [Git и GitHub](git-and-github.md) | Worktree, ветки, Issues, GitHub Project и Pull Request |
+| [Git и GitHub](git-and-github.md) | Worktree, ветки, Issues, GitHub Project и Pull Request; [проект стандарта описания задачи](git-and-github.md#стандарт-описания-задачи) |
 | [Репозиторий, тесты и CI](quality.md) | pnpm-монорепозиторий, проверки, тестирование и уровни CI |
 | [Локальные инструменты](tooling.md) | Установка pnpm, workspace и конфигурации пакетов |
 | [Аудиты](audits.md) | Обязательные проверки документов и кода |
