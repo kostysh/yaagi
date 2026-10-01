@@ -48,3 +48,5 @@ R1–8, R10 и R13–17 выполнены в проверенном локал�
 Исходные findings выше неизменны. Исправление, новый commit, проверки и результат delta audit будут добавлены после выполнения Q5; до этого **PASS не заявляется**.
 
 Первый remediation snapshot `553bf1e6aa4761a58b6028b198fec05c27fcd217`: H2/H3 закрыты, H1 остаётся при обратном порядке ACK. Code delta **non-compliant / FAIL**, Q5 plan **compliant / PASS**, независимый Security **PASS (scoped) / PASS**. [Отдельный отрицательный результат №2](local-queue-hardening.code-spec.2.md) сохраняет новый witness и уточнение причины; это не окончательная приёмка.
+
+Финальный remediation snapshot `42fbc0643abc721ee4a0e1b38c6c60428e49ce04`: тот же Spec-аудитор — **compliant / PASS**, SPEC-H1–H3 CLOSED; Q5 отдельно **compliant / PASS**. Независимый Security delta — **PASS (scoped) / PASS**. Покрытие, дополнительные negative witnesses и границы результата — в [evidence](local-queue-hardening.implementation.md). Исходный FAIL и findings этого отчёта сохранены.
