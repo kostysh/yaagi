@@ -3,10 +3,10 @@
 - Document ID: `queue.plan`
 - Module ID: `queue`
 - Дата: 2026-09-29.
-- Статус: accepted; D0 и локальная приёмка Q1–Q4 завершены; checks и независимые audits PASS зафиксированы в [evidence](../../validation/queue/local-queue-agenda.implementation.md). Публикация не выполнялась.
+- Статус: accepted; Q1–Q4 интегрированы в `develop` через [PR #41](https://github.com/kostysh/yaagi/pull/41), Q5 — через [PR #72](https://github.com/kostysh/yaagi/pull/72). Checks и независимые audits PASS сохранены в [исходном evidence](../../validation/queue/local-queue-agenda.implementation.md) и [отчёте hardening](../../validation/queue/local-queue-hardening.implementation.md). Текущий срез — в [roadmap](../../roadmap.md#состояние-разработки).
 - Источники: [queue.spec](specification.md), [архитектура §§2.4, 5.4, 8](../../architecture.md), [ADR-002](../../adr/ADR-002-state-and-recovery.md), принятый оператором план `queue-creation.agenda.v3@60d0022b` и разрешение реализовать публичный `JobRepository` Agenda через `state`.
 - Baseline исполнения: `8ce5d18020b2437cff06358a4d8155ad37a562b1`, `.worktree/queue-agenda`, `codex/queue-agenda`; probe remediation и последующие документы получили PASS до production.
-- Рамочная Issue / sub-issues: ссылки добавляет координатор при разрешённом ведении GitHub по [методике задач](../../development-methodology/task-methodology.md); требования остаются в документах. Публикация этим планом не разрешена.
+- Рамочная Issue: [#36](https://github.com/kostysh/yaagi/issues/36); исходные sub-issues: [#37](https://github.com/kostysh/yaagi/issues/37)–[#40](https://github.com/kostysh/yaagi/issues/40). Требования остаются в документах по [методике задач](../../development-methodology/task-methodology.md).
 
 ## Результат и границы
 
