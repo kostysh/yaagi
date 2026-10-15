@@ -3,7 +3,7 @@
 - Document ID: `state.plan`
 - Module ID: `state`
 - Дата: 2026-09-29.
-- Статус: реализовано, локальные проверки и D4-аудиты PASS; внешний статус поставки/CI — в #30 и связанном PR.
+- Статус: реализовано и интегрировано в `develop` через [PR #31](https://github.com/kostysh/yaagi/pull/31); локальные проверки и D4-аудиты PASS, evidence и CI связаны с [#30](https://github.com/kostysh/yaagi/issues/30). Текущий срез — в [roadmap](../../roadmap.md#состояние-разработки).
 - Источники: [spec](specification.md), [архитектура §2.4](../../architecture.md#24-адаптеры-state-и-queue), [ADR-001](../../adr/ADR-001-module-boundaries.md), [ADR-002](../../adr/ADR-002-state-and-recovery.md); прямое решение оператора о реальном adapter boundary, отсутствии искусственного busy/своих очередей, разрешении workers при подтверждении корректности.
 - Baseline: develop `586814fb01fe3ed24b9cffaa05d48ea45ebf3ea7`; первый инкремент доставлен [PR #29](https://github.com/kostysh/yaagi/pull/29), прежние [#26](https://github.com/kostysh/yaagi/issues/26)–[#28](https://github.com/kostysh/yaagi/issues/28) закрыты. CP1 принят; новый permission gate не создаётся.
 - Работа: `.worktree/state-adapters`, `codex/state-adapters` от origin/develop. Read-only .env symlink; roadmap-bootstrap, master и теги не затрагиваются.

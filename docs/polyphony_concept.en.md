@@ -10,7 +10,7 @@
 
 ## Document Status
 
-> Этот перевод пока не включает уточнение об одном операторе и будущих каналах связи, а также решения 2026-09-30 о локальных/провайдерских моделях, env-конфигурации и переносе изоляции/backup на последующие этапы. Источник актуальных требований — [каноническая концепция](polyphony_concept.md), для канала оператора — её [§6.2.1](polyphony_concept.md#621-канал-взаимодействия-с-оператором).
+> Этот перевод пока не включает уточнение об одном операторе и будущих каналах связи, решения 2026-09-30 о локальных/провайдерских моделях, env-конфигурации и переносе изоляции/backup на последующие этапы, а также принятый 2026-10-15 цикл прогнозирования и проверки исходов. Источник актуальных требований — [каноническая концепция](polyphony_concept.md), для канала оператора — её [§6.2.1](polyphony_concept.md#621-канал-взаимодействия-с-оператором), для прогнозного цикла — [§6.3](polyphony_concept.md#63-модель-мира).
 
 This is an English translation of the [canonical Russian concept](polyphony_concept.md). The Russian original is the **current, authoritative statement of the Polyphony concept** and the sole conceptual source for subsequent technical architecture and implementation.
 
