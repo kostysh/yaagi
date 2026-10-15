@@ -6,6 +6,8 @@ YAAGI (Yet Another AGI) is a project to build Polyphony: an autonomous agent wit
 
 The repository contains the concept, modular architecture, architectural decision records, an accepted system design covering all 20 modules, development methodology, and a verified TypeScript workspace. Three package increments are integrated into `develop`: [`@polyphony/core-types`](docs/modules/core-types/specification.md) provides the compile-time-only `Result<T, E>` contract, [`@polyphony/state`](packages/state/README.md) provides executable storage with an injected SQLite adapter, and [`@polyphony/queue`](packages/queue/README.md) provides durable jobs through `state` with an injected Agenda adapter. The broader `core-types` roadmap step remains incomplete, and no agent runtime exists yet.
 
+The initial C1 increment of [`@polyphony/constitution`](packages/constitution/README.md) is prepared for review. It provides synchronous boot checks against an immutable host policy, a single Linux operator binding, and the actual manifest/schema composition. Action authorization, approvals, transport authentication, and the I1 runtime assembly remain separate work.
+
 The [development status in the roadmap](docs/roadmap.md#состояние-разработки) records delivered scope and acceptance/PR links for modules, experiments, and integration stages, followed by the implementation sequence and next step. Module specifications and package guides describe their public contracts and usage.
 
 ## Architectural foundations
@@ -42,6 +44,8 @@ pnpm test
 ```
 
 These commands delegate to workspace packages. `core-types` checks its compile-time contract and package boundary; `state` and `queue` also run real SQLite integration tests, M1, and executable guide examples. All use TypeScript 7 for typechecking/build, Biome formatting, and Biome plus syntax-only ESLint linting. Packages prepare their public workspace dependencies before typechecking, so fresh CI needs no private-source import bypass. Queue migrations are included in its build output. Drizzle Kit's legacy esbuild dependency has a narrow pinned security override, without changing the root toolchain baseline.
+
+`constitution` adds production boot checks, negative cases, immutable snapshot checks, M1 consumer scenarios, portable contracts, and an executable success/error/recovery example. Its core has no Node-specific imports; its only dependencies are the existing `Result` package and Zod.
 
 GitHub Actions runs the same root commands for pull requests and subsequent pushes to `develop` or `master`, using the frozen lockfile. Recursive pnpm execution runs each command in every workspace package that defines the corresponding script.
 

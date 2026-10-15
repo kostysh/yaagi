@@ -43,6 +43,73 @@ export default [
   },
   ...tseslint.configs.recommended,
   {
+    files: ['packages/constitution/src/**/*.ts'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        'process',
+        'console',
+        'fetch',
+        'WebSocket',
+        'setTimeout',
+        'setInterval',
+        'setImmediate',
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'ImportDeclaration[source.value!="@polyphony/core-types"][source.value!="zod"][source.value!="./contracts.js"]',
+          message:
+            'The pure constitution core only imports its contracts, core-types and Zod.',
+        },
+        ...[
+          'ImportExpression',
+          'TSImportType',
+          'TSImportEqualsDeclaration',
+          'ExportAllDeclaration',
+          'ExportNamedDeclaration[source]',
+          "CallExpression[callee.name='require']",
+        ].map((selector) => ({
+          selector,
+          message: 'No hidden imports or re-exports in constitution.',
+        })),
+      ],
+    },
+  },
+  {
+    files: ['packages/constitution/src/contracts.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ImportDeclaration[importKind!="type"]',
+          message: 'Contracts must be type-only.',
+        },
+        {
+          selector: 'ImportDeclaration[source.value!="@polyphony/core-types"]',
+          message: 'Constitution contracts may only import core-types.',
+        },
+        ...[
+          'ImportExpression',
+          'TSImportType',
+          'TSImportEqualsDeclaration',
+          'ExportAllDeclaration',
+          'ExportNamedDeclaration[source]',
+          'VariableDeclaration',
+          'FunctionDeclaration',
+          'ClassDeclaration',
+          'TSEnumDeclaration',
+          "CallExpression[callee.name='require']",
+        ].map((selector) => ({
+          selector,
+          message:
+            'No runtime code, hidden imports or re-exports in contracts.',
+        })),
+      ],
+    },
+  },
+  {
     files: ['packages/queue/**/*.ts'],
     rules: {
       'no-restricted-imports': [
