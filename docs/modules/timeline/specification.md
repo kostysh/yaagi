@@ -2,8 +2,8 @@
 
 - Document ID: `timeline.spec`
 - Module ID: `timeline`
-- Статус: draft T1, к принятию в CP1; код ещё не реализован.
-- Передача: ready for document review; start реализации заблокирован принятием CP1 и нужным поднабором #45.
+- Статус: T1 accepted в CP1 на `acef6a2b89dcefe5bc534537785422479f8d8393` решением оператора 2026-10-16; код ещё не реализован.
+- Передача: start реализации заблокирован принятием и доступностью нужного поднабора #45; текущая синхронизация не объявляет его готовым.
 - Потребитель: доверенный composition root; сначала технический consumer T1, затем реальные участники I1.
 - Концепция: [§4.1](../../polyphony_concept.md#41-время--не-параметр-а-среда-существования), [§11](../../polyphony_concept.md#11-темпоральность-физиология-и-режимы-работы), §§12/14.
 - Архитектура: [§§3–4](../../architecture.md#3-модули-состояние-и-публичные-операции), [§5](../../architecture.md#5-единство-состояния-и-полный-тик), [M1](../../architecture.md#10-приёмочные-сценарии-и-evidence); [ADR-001](../../adr/ADR-001-module-boundaries.md), [ADR-002](../../adr/ADR-002-state-and-recovery.md), [ADR-003](../../adr/ADR-003-action-and-development-boundaries.md).
@@ -31,7 +31,7 @@
 - Wall time — целые UTC milliseconds в safe integer range; движение wall clock назад допустимо. Elapsed — отдельно измеренная неотрицательная safe integer duration. Timeline не вычисляет её вычитанием wall times.
 - `EvidenceRef` сохраняет вид источника, stable id и revision/hash по архитектуре §4.1. `outcomeRef` использует эту форму; ссылка не доказывает истинность или существование исхода.
 
-Точные имена двух time exports остаются у #45; ниже `WallTimeMs`/`ElapsedMs` обозначают потребность, а не альтернативные aliases. Согласование #45 должно сохранить эти смысл и диапазоны либо вернуть противоречие на принятие CP1 до кода. Новый `EpochService`, `SequenceId`, `OutcomeId` или общий `AgentState` не требуется.
+В проекте [контракта #45](../core-types/specification.md#общие-значения-поднабора-t1) для двух time exports выбраны `WallTimeMs`/`ElapsedMs`; это те же symbols владельца, а не локальные aliases timeline. Контракт #45 пока к принятию CP1 и не реализован. Он сохраняет принятые здесь смысл и диапазоны; несовместимое изменение возвращается на согласование до кода. Новый `EpochService`, `SequenceId`, `OutcomeId` или общий `AgentState` не требуется.
 
 ### DTO владельца
 
@@ -140,6 +140,6 @@ M1: один неизменный consumer и одни contract scenarios с pro
 - До CP1: self-check, проверка ссылок/языка/синхронизации, `git diff --check`, local audit commit; Concept для spec и затронутых design/AGENTS, Spec для plan/roadmap/status docs, Security для trust/persisted границ. Точные SHA/verdict фиксируются в checkpoint report.
 - До принятия T1: R1–R14 через production порт и реальный state, M1, schema/recovery/immutability, package и consumer checks; `format:check`, `lint`, `typecheck`, `build`, `test`, `test:integration`, `git diff --check`; Spec/Security на стабильном итоговом commit. Evidence — `docs/validation/timeline/`.
 - Общая атомарность реальных timeline/memory/root и consistent context не доказаны этими документами или T1: это #49/#50. Реальные действия требуют E3 соответствующего состава.
-- Блокер старта кода: принятие этих документов оператором и принятие/доступность минимальных общих primitives #45. #49 блокирует только зависимый совместный mapping; его отсутствие не выдаётся за готовую интеграцию и не требует реализации runtime внутри #47.
+- CP1 этих документов принят на `acef6a2`; блокер старта кода — принятие и доступность минимальных общих primitives #45. #49 блокирует только зависимый совместный mapping; его отсутствие не выдаётся за готовую интеграцию и не требует реализации runtime внутри #47.
 
 Принятие CP1 не является принятием кода, публикации или всей #47. По мере готовности следующих потребителей уточняются те же spec/plan; рамочная Issue остаётся открытой до принятия всего её scope.
