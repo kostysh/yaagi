@@ -2,7 +2,7 @@
 
 - Document ID: `constitution.plan`
 - Module ID: `constitution`
-- Статус: accepted для C1 — checkpoint 1 принят оператором 2026-10-15 в снимке `626c7ff11dd2bbc3f19dd2931d7d390da5bd85a9`; Concept, Spec и Security — PASS. Checkpoints 2–3 остаются впереди.
+- Статус: accepted для C1 — checkpoint 1 принят оператором 2026-10-15 в снимке `626c7ff11dd2bbc3f19dd2931d7d390da5bd85a9`; Concept, Spec и Security — PASS. Реализация `ed481ccd56d341d2fdea703342017f5f5e9486ed` и итоговая сдача C1 приняты оператором; checkpoints 2–3 завершены через [PR #77](https://github.com/kostysh/yaagi/pull/77), merge `dc312c0e611184f0181a61633ae2527e7c31eb6f`, [полный post-merge CI](https://github.com/kostysh/yaagi/actions/runs/38801906083) — PASS. C2/C3 и вся #46 не завершены.
 - Спецификация: [constitution.spec](specification.md), текущий инкремент C1; точные DTO и требования C1-R1–R11 остаются в спецификации.
 - Архитектура: [модуль и зависимости](../../architecture.md#3-модули-состояние-и-публичные-операции), [контракты](../../architecture.md#4-контракты-обмена), [boot](../../architecture.md#53-ошибки-единственный-исполнитель-и-восстановление), [границы полномочий](../../architecture.md#7-развитие-физиология-и-границы-доверия); ADR-001/003 по ссылкам спецификации.
 - Системный дизайн: [F1–F4/F7–F8](../../system-design.md#3-сквозные-потоки), [I1–I4](../../system-design.md#5-поэтапная-сборка).
