@@ -2,13 +2,13 @@
 
 - Document ID: `core-types.spec`
 - Module ID: `core-types`
-- Статус: инкремент `Result<T, E>` accepted и интегрирован; необходимый timeline T1 поднабор — draft к принятию CP1, не реализован.
-- Передача: ready for document review; код расширения начинается только после принятия этих документов оператором.
+- Статус: инкремент `Result<T, E>` accepted и интегрирован; документы поднабора T1 приняты в CP1 на `2aa09af2a27cac31998d26ad8d05642c7e972fdc`. Поднабор реализован локально, к приёмке CP2; поставка ещё не принята.
+- Передача: CP1 принят оператором; реализация, проверки и guide/evidence проходят CP2, без разрешения публикации.
 - Концепция: [темпоральность и непрерывность](../../polyphony_concept.md#41-время--не-параметр-а-среда-существования), §§11/14.
 - Архитектура: [§3, граница и зависимости](../../architecture.md#3-модули-состояние-и-публичные-операции), [§4.1, общие правила](../../architecture.md#41-общие-правила), [M1](../../architecture.md#10-приёмочные-сценарии-и-evidence), [ADR-001](../../adr/ADR-001-module-boundaries.md).
 - Системный дизайн: [карта модулей](../../system-design.md#карта-всех-модулей), F1/F3/F4/F8 и [I1](../../system-design.md#5-поэтапная-сборка).
 - Рамочная Issue расширения: [#45](https://github.com/kostysh/yaagi/issues/45); [план](implementation-plan.md). История первого инкремента: [#23](https://github.com/kostysh/yaagi/issues/23), [#24](https://github.com/kostysh/yaagi/issues/24), [PR #25](https://github.com/kostysh/yaagi/pull/25).
-- Основание расширения: принятый оператором `core-types-45.plan.v1.2@dc312c0` и запрос [timeline.spec](../timeline/specification.md#общие-примитивы-и-владельцы), CP1 принят на `acef6a2b89dcefe5bc534537785422479f8d8393`. Точные declarations и правила ниже предлагаются владельцем `core-types` на принятие, а не объявляются уже принятыми или поставленными.
+- Основание расширения: принятый оператором `core-types-45.plan.v1.2@dc312c0` и запрос [timeline.spec](../timeline/specification.md#общие-примитивы-и-владельцы), CP1 принят на `acef6a2b89dcefe5bc534537785422479f8d8393`. Точные declarations и правила приняты в CP1 #45 на `2aa09af`; они не меняются в реализации CP2.
 
 ## Назначение и границы
 
@@ -22,7 +22,7 @@
 
 ## Публичный контракт
 
-Единственный entrypoint — `@polyphony/core-types`. Он предоставляет перечисленные ниже типы и ровно семь runtime exports parser-функций. Отдельного `./contracts` и deep exports нет. Все signatures ниже — целевой контракт расширения, не текущие exports.
+Единственный entrypoint — `@polyphony/core-types`. Он предоставляет перечисленные ниже типы и ровно семь runtime exports parser-функций. Отдельного `./contracts` и deep exports нет. Это принятый контракт, реализованный локально в CP2; его интеграция в `develop` ещё не подтверждена.
 
 ### Принятый `Result`
 
@@ -32,7 +32,7 @@ export type Result<T, E> =
   | { readonly ok: false; readonly error: E };
 ```
 
-Этот alias не меняется: `T`/`E` unconstrained, narrowing выполняется только по `ok`; `0`, `''`, `false` и `undefined` допустимы согласно параметру типа. Missing payload, неверный discriminant, доступ к чужой ветви после narrowing и readonly mutation отклоняются TypeScript. Structural typing не обещает exact-object гарантию для заранее созданного совместимого значения. `readonly` самого alias не замораживает произвольные объекты потребителя в runtime. Type alias не имеет runtime export; нынешний Result-only пакет не экспортирует исполняемых helpers.
+Этот alias не меняется: `T`/`E` unconstrained, narrowing выполняется только по `ok`; `0`, `''`, `false` и `undefined` допустимы согласно параметру типа. Missing payload, неверный discriminant, доступ к чужой ветви после narrowing и readonly mutation отклоняются TypeScript. Structural typing не обещает exact-object гарантию для заранее созданного совместимого значения. `readonly` самого alias не замораживает произвольные объекты потребителя в runtime. Type alias не имеет runtime export; до расширения T1 Result-only пакет не экспортировал исполняемых helpers.
 
 ### Общие значения поднабора T1
 
@@ -95,7 +95,7 @@ export declare function parseElapsedMs(input: unknown): Result<ElapsedMs, Primit
 
 `core-types` остаётся import-free пакетом уровня 0 без runtime/package dependencies, Node/native/platform-specific API и globals, deep exports или исходящих imports/reexports. Стандартные ECMAScript primitives допустимы. TypeScript 7.0.2 strict, ESM, declarations, Biome и ESLint сохраняются. Tooling использует отдельную Node-конфигурацию, direct `.ts` — только с `--experimental-strip-types`; source/consumer fixtures остаются без Node types. Код/тесты читают публичный package export, не private source paths.
 
-Текущий запрет runtime exports в `import-smoke` меняется **только в CP2** на точный allowlist семи parsers. Manifest/dependency/import boundary checks не ослабляются. Это additive API относительно старых consumers, но не совместимость со старым smoke-утверждением «namespace пуст»: его проверяемая граница теперь явно шире. Новых dependencies или общего валидатора не требуется.
+В CP2 прежний запрет runtime exports в `import-smoke` заменён точным allowlist семи parsers. Manifest/dependency/import boundary checks не ослабляются. Это additive API относительно старых consumers, но не совместимость со старым smoke-утверждением «namespace пуст»: его проверяемая граница теперь явно шире. Новых dependencies или общего валидатора не требуется.
 
 Канонический владелец новых symbols — только `core-types`; [timeline T1](../timeline/specification.md#общие-примитивы-и-владельцы) импортирует их через root export и сохраняет локальные DTO/CAS revision у себя. State/queue/constitution сохраняют прежний `Result`, без обязательной миграции на новые brands. Пропуск одного из семи symbols в exports/type fixtures или локальный shadow primitive T1 — отрицательный oracle границы. Это conditional package readback; полный high-risk backend matrix не применяется к чистой проверке значений без storage/auth/provider. Реальные сохранение/reopen и mapping проверяют #47/#49/#50.
 
@@ -114,4 +114,4 @@ export declare function parseElapsedMs(input: unknown): Result<ElapsedMs, Primit
 
 Concept Conformance — эта спецификация и изменённые accepted timeline contracts; Spec Conformance — план, roadmap/README и затронутые статусные документы; Security — новые validation/error/immutability/trust положения. Независимые verdict и exact SHA фиксируются в checkpoint report; отрицательные отчёты сохраняются по [политике](../../development-methodology/audits.md).
 
-Открытых архитектурных вопросов нет. CP1 требует принятия оператором точных документов; до этого код расширения не начинается. После CP1 ещё нет доступной реализации: #47 остаётся заблокированной до принятия и доступности проверенного поднабора #45. Реальные runtime/I1 и весь scope обеих рамочных Issues не считаются завершёнными.
+Открытых архитектурных вопросов нет. CP1 принят на `2aa09af`; локальная реализация предъявляется в CP2. #47 остаётся заблокированной до принятия и доступности проверенного поднабора #45. Реальные runtime/I1 и весь scope обеих рамочных Issues не считаются завершёнными. [Guide](../../../packages/core-types/docs/usage.md) и [локальное evidence](../../validation/core-types/gh-45.t1.implementation.md) описывают только этот поднабор.

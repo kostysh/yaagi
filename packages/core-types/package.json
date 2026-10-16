@@ -22,8 +22,10 @@
     "lint:boundary": "node --experimental-strip-types ./scripts/check-boundary.ts",
     "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.tools.json",
     "build": "tsc --project tsconfig.json",
-    "test": "pnpm run build && pnpm run test:types && pnpm run test:import",
+    "test": "pnpm run build && pnpm run test:types && pnpm run test:import && pnpm run test:runtime && pnpm run example",
     "test:types": "tsc --project tsconfig.test.json",
-    "test:import": "node --experimental-strip-types ./scripts/import-smoke.ts"
+    "test:import": "node --experimental-strip-types ./scripts/import-smoke.ts",
+    "test:runtime": "node --experimental-strip-types --test test/*.test.ts",
+    "example": "node --experimental-strip-types examples/usage.ts"
   }
 }

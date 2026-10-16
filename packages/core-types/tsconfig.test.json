@@ -6,5 +6,5 @@
     "types": [],
     "erasableSyntaxOnly": true
   },
-  "include": ["test/**/*.ts", "scripts/import-smoke.ts"]
+  "include": ["test/**/*.contract.ts"]
 }

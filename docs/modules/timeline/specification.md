@@ -24,14 +24,14 @@
 
 ### Общие примитивы и владельцы
 
-`Result` уже доступен из `core-types`. Следующий набор является **запросом потребителя в [#45](https://github.com/kostysh/yaagi/issues/45), а не объявлением существующих exports**: `AgentId`, `TickId`, `ActionId`, opaque `Revision`, `EvidenceRef`, различимые wall time и elapsed duration в миллисекундах. Канонические declarations/validators принимает владелец `core-types`; timeline не создаёт их локальные копии. Зависимый код не начинается до принятия и доступности этого поднабора. Закрытие всей #45 не требуется.
+`Result` уже доступен из `core-types`. Запрос потребителя в [#45](https://github.com/kostysh/yaagi/issues/45) — `AgentId`, `TickId`, `ActionId`, opaque `Revision`, `EvidenceRef`, различимые wall time и elapsed duration в миллисекундах — принят в [контракте владельца](../core-types/specification.md) на `2aa09af`. Поднабор реализован локально к приёмке CP2 #45, но его поставка ещё не принята. Timeline не создаёт локальные копии declarations/parsers; зависимый код не начинается до принятия и доступности поднабора. Закрытие всей #45 не требуется.
 
 - IDs различимы и непрозрачны; один `TickId` принадлежит одному `AgentId`.
 - `Revision` для policy/snapshot сохраняет точный строковый token без численного порядка, coercion или нормализации. Это совместимо с `BootAdmission.policyRevision` C1: root валидирует свою проекцию, не меняя контракт constitution.
 - Wall time — целые UTC milliseconds в safe integer range; движение wall clock назад допустимо. Elapsed — отдельно измеренная неотрицательная safe integer duration. Timeline не вычисляет её вычитанием wall times.
 - `EvidenceRef` сохраняет вид источника, stable id и revision/hash по архитектуре §4.1. `outcomeRef` использует эту форму; ссылка не доказывает истинность или существование исхода.
 
-В проекте [контракта #45](../core-types/specification.md#общие-значения-поднабора-t1) для двух time exports выбраны `WallTimeMs`/`ElapsedMs`; это те же symbols владельца, а не локальные aliases timeline. Контракт #45 пока к принятию CP1 и не реализован. Он сохраняет принятые здесь смысл и диапазоны; несовместимое изменение возвращается на согласование до кода. Новый `EpochService`, `SequenceId`, `OutcomeId` или общий `AgentState` не требуется.
+В принятом [контракте #45](../core-types/specification.md#общие-значения-поднабора-t1) два time exports — `WallTimeMs`/`ElapsedMs`; это те же symbols владельца, а не локальные aliases timeline. Контракт сохраняет принятые здесь смысл и диапазоны; несовместимое изменение возвращается на согласование до кода. Приёмка и доступность поставки #45 ещё требуются. Новый `EpochService`, `SequenceId`, `OutcomeId` или общий `AgentState` не требуется.
 
 ### DTO владельца
 

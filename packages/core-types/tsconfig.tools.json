@@ -5,5 +5,10 @@
     "types": ["node"],
     "erasableSyntaxOnly": true
   },
-  "include": ["scripts/check-boundary.ts", "../../eslint.config.ts"]
+  "include": [
+    "scripts/**/*.ts",
+    "test/**/*.test.ts",
+    "examples/**/*.ts",
+    "../../eslint.config.ts"
+  ]
 }

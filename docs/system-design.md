@@ -249,7 +249,7 @@ E1 проверяет заданный оператором профиль: Open
 
 ## 6. Решения, конфигурация и проверки
 
-После принятой поставки C1 `constitution` документы T1 — [спецификация `timeline`](modules/timeline/specification.md) и [компактный план](modules/timeline/implementation-plan.md) — приняты в CP1 на `acef6a2`. Ближайшая работа — необходимый этому потребителю поднабор [core-types.spec](modules/core-types/specification.md) и [core-types.plan](modules/core-types/implementation-plan.md), пока к принятию CP1 #45; зависимый код T1 ожидает его реализации. Остальные подробные спецификации готовятся перед соответствующим модулем. В них переходят точные схемы inputs/results, errors и revisions, а из этого дизайна — связанные потоки, поставщики/потребители и проверяемый вклад в сборку.
+После принятой поставки C1 `constitution` документы T1 — [спецификация `timeline`](modules/timeline/specification.md) и [компактный план](modules/timeline/implementation-plan.md) — приняты в CP1 на `acef6a2`. Контракт необходимого этому потребителю поднабора [core-types.spec](modules/core-types/specification.md) и [core-types.plan](modules/core-types/implementation-plan.md) принят на `2aa09af`; локальная реализация к приёмке CP2 #45. Ближайшая работа — принять и поставить поднабор, затем вернуться к зависимому коду T1. Остальные подробные спецификации готовятся перед соответствующим модулем. В них переходят точные схемы inputs/results, errors и revisions, а из этого дизайна — связанные потоки, поставщики/потребители и проверяемый вклад в сборку.
 
 | Владельцы / связанный поток | Что уточняет `spec-engineer` при подготовке модуля | Сохраняемая граница |
 | --- | --- | --- |
