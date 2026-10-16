@@ -20,7 +20,7 @@
     "lint:biome": "biome lint .",
     "lint:eslint": "node --experimental-strip-types ../../node_modules/eslint/bin/eslint.js --flag unstable_native_nodejs_ts_config . ../../eslint.config.ts",
     "lint:boundary": "node --experimental-strip-types ./scripts/check-boundary.ts",
-    "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.tools.json",
+    "typecheck": "pnpm run build && tsc --project tsconfig.tools.json",
     "build": "tsc --project tsconfig.json",
     "test": "pnpm run build && pnpm run test:types && pnpm run test:import && pnpm run test:runtime && pnpm run example",
     "test:types": "tsc --project tsconfig.test.json",
