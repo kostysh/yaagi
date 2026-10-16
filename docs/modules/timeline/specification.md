@@ -2,8 +2,8 @@
 
 - Document ID: `timeline.spec`
 - Module ID: `timeline`
-- Статус: T1 accepted в CP1 на `acef6a2b89dcefe5bc534537785422479f8d8393` решением оператора 2026-10-16; код ещё не реализован.
-- Передача: start реализации заблокирован принятием и доступностью нужного поднабора #45; текущая синхронизация не объявляет его готовым.
+- Статус: T1 accepted в CP1 на `acef6a2b89dcefe5bc534537785422479f8d8393`; реализован локально для приёмки CP2. Публикация и приёмка T1 ещё впереди.
+- Передача: нужный поднабор #45 принят и интегрирован PR #78, merge `2b90863eee706fb19b74ec5be1221cd08196a8a6`, полный CI PASS; CP3 принят оператором 2026-10-17, CP2 #47 разрешён.
 - Потребитель: доверенный composition root; сначала технический consumer T1, затем реальные участники I1.
 - Концепция: [§4.1](../../polyphony_concept.md#41-время--не-параметр-а-среда-существования), [§11](../../polyphony_concept.md#11-темпоральность-физиология-и-режимы-работы), §§12/14.
 - Архитектура: [§§3–4](../../architecture.md#3-модули-состояние-и-публичные-операции), [§5](../../architecture.md#5-единство-состояния-и-полный-тик), [M1](../../architecture.md#10-приёмочные-сценарии-и-evidence); [ADR-001](../../adr/ADR-001-module-boundaries.md), [ADR-002](../../adr/ADR-002-state-and-recovery.md), [ADR-003](../../adr/ADR-003-action-and-development-boundaries.md).
@@ -24,14 +24,14 @@
 
 ### Общие примитивы и владельцы
 
-`Result` уже доступен из `core-types`. Запрос потребителя в [#45](https://github.com/kostysh/yaagi/issues/45) — `AgentId`, `TickId`, `ActionId`, opaque `Revision`, `EvidenceRef`, различимые wall time и elapsed duration в миллисекундах — принят в [контракте владельца](../core-types/specification.md) на `2aa09af`. Поднабор реализован локально к приёмке CP2 #45, но его поставка ещё не принята. Timeline не создаёт локальные копии declarations/parsers; зависимый код не начинается до принятия и доступности поднабора. Закрытие всей #45 не требуется.
+`Result` уже доступен из `core-types`. Запрос потребителя в [#45](https://github.com/kostysh/yaagi/issues/45) — `AgentId`, `TickId`, `ActionId`, opaque `Revision`, `EvidenceRef`, различимые wall time и elapsed duration в миллисекундах — принят в [контракте владельца](../core-types/specification.md) на `2aa09af`. Поднабор принят и доступен в develop после PR #78; итоговая сдача CP3 #45 принята оператором. Timeline не создаёт локальные копии declarations/parsers; зависимый код не начинается до принятия и доступности поднабора. Закрытие всей #45 не требуется.
 
 - IDs различимы и непрозрачны; один `TickId` принадлежит одному `AgentId`.
 - `Revision` для policy/snapshot сохраняет точный строковый token без численного порядка, coercion или нормализации. Это совместимо с `BootAdmission.policyRevision` C1: root валидирует свою проекцию, не меняя контракт constitution.
 - Wall time — целые UTC milliseconds в safe integer range; движение wall clock назад допустимо. Elapsed — отдельно измеренная неотрицательная safe integer duration. Timeline не вычисляет её вычитанием wall times.
 - `EvidenceRef` сохраняет вид источника, stable id и revision/hash по архитектуре §4.1. `outcomeRef` использует эту форму; ссылка не доказывает истинность или существование исхода.
 
-В принятом [контракте #45](../core-types/specification.md#общие-значения-поднабора-t1) два time exports — `WallTimeMs`/`ElapsedMs`; это те же symbols владельца, а не локальные aliases timeline. Контракт сохраняет принятые здесь смысл и диапазоны; несовместимое изменение возвращается на согласование до кода. Приёмка и доступность поставки #45 ещё требуются. Новый `EpochService`, `SequenceId`, `OutcomeId` или общий `AgentState` не требуется.
+В принятом [контракте #45](../core-types/specification.md#общие-значения-поднабора-t1) два time exports — `WallTimeMs`/`ElapsedMs`; это те же symbols владельца, а не локальные aliases timeline. Контракт сохраняет принятые здесь смысл и диапазоны; несовместимое изменение возвращается на согласование до кода. Условие принятия и доступности поставки #45 выполнено. Новый `EpochService`, `SequenceId`, `OutcomeId` или общий `AgentState` не требуется.
 
 ### DTO владельца
 
@@ -140,6 +140,6 @@ M1: один неизменный consumer и одни contract scenarios с pro
 - До CP1: self-check, проверка ссылок/языка/синхронизации, `git diff --check`, local audit commit; Concept для spec и затронутых design/AGENTS, Spec для plan/roadmap/status docs, Security для trust/persisted границ. Точные SHA/verdict фиксируются в checkpoint report.
 - До принятия T1: R1–R14 через production порт и реальный state, M1, schema/recovery/immutability, package и consumer checks; `format:check`, `lint`, `typecheck`, `build`, `test`, `test:integration`, `git diff --check`; Spec/Security на стабильном итоговом commit. Evidence — `docs/validation/timeline/`.
 - Общая атомарность реальных timeline/memory/root и consistent context не доказаны этими документами или T1: это #49/#50. Реальные действия требуют E3 соответствующего состава.
-- CP1 этих документов принят на `acef6a2`; блокер старта кода — принятие и доступность минимальных общих primitives #45. #49 блокирует только зависимый совместный mapping; его отсутствие не выдаётся за готовую интеграцию и не требует реализации runtime внутри #47.
+- CP1 этих документов принят на `acef6a2`; зависимость от минимальных primitives #45 снята принятой поставкой PR #78. #49 блокирует только зависимый совместный mapping; его отсутствие не выдаётся за готовую интеграцию и не требует реализации runtime внутри #47.
 
 Принятие CP1 не является принятием кода, публикации или всей #47. По мере готовности следующих потребителей уточняются те же spec/plan; рамочная Issue остаётся открытой до принятия всего её scope.

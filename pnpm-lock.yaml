@@ -79,6 +79,21 @@ importers:
         specifier: 0.45.3
         version: 0.45.3
 
+  packages/timeline:
+    dependencies:
+      '@polyphony/core-types':
+        specifier: workspace:*
+        version: link:../core-types
+      '@polyphony/state':
+        specifier: workspace:*
+        version: link:../state
+      drizzle-orm:
+        specifier: 0.45.3
+        version: 0.45.3
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
+
 packages:
 
   '@biomejs/biome@2.5.14':
