@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { ESLint } from 'eslint';
 
 const manifestUrl = new URL('../package.json', import.meta.url);
 const manifest: { exports?: Record<string, Record<string, unknown>> } =
@@ -38,4 +39,24 @@ if (
   throw new Error(
     'the root export must expose only dist/index.js and dist/index.d.ts',
   );
+}
+
+const eslint = new ESLint({ flags: ['unstable_native_nodejs_ts_config'] });
+for (const code of [
+  "import 'node:fs';",
+  "import '../../state/src/index.js';",
+  "import './hidden.js';",
+  "export { hidden } from './hidden.js';",
+  "export const hidden = import('node:fs');",
+]) {
+  const [result] = await eslint.lintText(code, {
+    filePath: new URL('../src/boundary-probe.ts', import.meta.url).pathname,
+  });
+  if (
+    !result.messages.some(
+      (message) => message.ruleId === 'no-restricted-syntax',
+    )
+  ) {
+    throw new Error(`Source dependency prohibition did not reject: ${code}`);
+  }
 }

@@ -54,12 +54,18 @@ document list. Read the relevant rules before using their templates.
 YAAGI implements Polyphony: one long-lived agent with a continuous identity,
 configurable model ecology, and controlled reversible development. The concept,
 architecture, ADRs, roadmap, and minimal TypeScript workspace are present.
-`core-types` provides `Result`; `state` provides a database-neutral executable core
+`core-types` provides `Result`; its required T1 primitive subset is implemented
+locally for CP2 review, with scope and evidence in
+`docs/validation/core-types/gh-45.t1.implementation.md`. Its delivery and the
+timeline implementation remain pending. `state` provides a database-neutral executable core
 with an injected SQLite adapter and tested storage primitives.
 `queue` provides durable jobs through the public state port with an injected
 Agenda adapter; its local evidence and audit status are recorded in
 `docs/validation/queue/local-queue-agenda.implementation.md`.
-Agent runtime, domain modules, and product-level tests are not implemented. The `v0-archived` tag is
+`constitution` provides the accepted C1 boot checks for immutable host policy,
+one Linux operator binding, and actual manifest/schema composition; later
+authorization and approval increments remain planned.
+Agent runtime, the remaining domain modules, and product-level tests are not implemented. The `v0-archived` tag is
 historical material, not a source of requirements for the new implementation.
 
 ## Sources and documentation

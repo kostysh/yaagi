@@ -3,7 +3,7 @@
 - Document ID: `constitution.spec`
 - Module ID: `constitution`
 - Статус: accepted для C1 — принято оператором 2026-10-15 в снимке `626c7ff11dd2bbc3f19dd2931d7d390da5bd85a9`; Concept, Spec и Security — PASS.
-- Передача: ready for coding C1; C2/C3 уточняются перед своими инкрементами.
+- Передача: C1 реализован и принят оператором через [PR #77](https://github.com/kostysh/yaagi/pull/77); C2/C3 уточняются перед своими инкрементами. [Полный post-merge CI](https://github.com/kostysh/yaagi/actions/runs/38801906083) — PASS; это не приёмка всей I1.
 - Потребитель: доверенный composition root; первый реализационный инкремент C1 для I1.
 - Концепция: [§5.3](../../polyphony_concept.md#53-конституциональная-оболочка), [§6.2.1](../../polyphony_concept.md#621-канал-взаимодействия-с-оператором), [§16.9](../../polyphony_concept.md#169-практические-границы-безопасности).
 - Архитектура: [§§3–4](../../architecture.md#3-модули-состояние-и-публичные-операции), [§5.3](../../architecture.md#53-ошибки-единственный-исполнитель-и-восстановление), [§7](../../architecture.md#7-развитие-физиология-и-границы-доверия); [ADR-001](../../adr/ADR-001-module-boundaries.md), [ADR-003](../../adr/ADR-003-action-and-development-boundaries.md).
