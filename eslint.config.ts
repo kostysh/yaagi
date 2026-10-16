@@ -43,6 +43,67 @@ export default [
   },
   ...tseslint.configs.recommended,
   {
+    files: ['packages/timeline/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@polyphony/*/*',
+                '!@polyphony/state/contracts',
+                '!@polyphony/state/adapters',
+                '!@polyphony/state/adapters/sqlite',
+                '!@polyphony/timeline/contracts',
+                '!@polyphony/timeline/sqlite',
+                '**/state/src/**',
+                '**/state/dist/**',
+                '**/core-types/src/**',
+                '**/core-types/dist/**',
+              ],
+              message: 'Use only public package exports.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['packages/timeline/src/contracts.ts'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        'process',
+        'console',
+        'fetch',
+        'WebSocket',
+        'setTimeout',
+        'setInterval',
+        'setImmediate',
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'ImportDeclaration[source.value!="@polyphony/core-types"][source.value!="zod"]',
+          message: 'Portable timeline contracts only use core-types and Zod.',
+        },
+        ...[
+          'ImportExpression',
+          'TSImportType',
+          'TSImportEqualsDeclaration',
+          'ExportAllDeclaration',
+          'ExportNamedDeclaration[source]',
+          "CallExpression[callee.name='require']",
+        ].map((selector) => ({
+          selector,
+          message: 'No hidden runtime imports in timeline contracts.',
+        })),
+      ],
+    },
+  },
+  {
     files: ['packages/constitution/src/**/*.ts'],
     rules: {
       'no-restricted-globals': [

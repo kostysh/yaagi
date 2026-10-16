@@ -2,7 +2,7 @@
 
 - Document ID: `project.methodology.tooling`
 
-Минимальная среда использует baseline [архитектуры, §2.1](../architecture.md#21-проверенный-технологический-baseline). В `@polyphony/core-types` интегрирован compile-time `Result<T, E>`; необходимый timeline T1 поднабор примитивов и pure parsers реализован локально к CP2, но ещё не поставлен. [`state`](../../packages/state/README.md) и [`queue`](../../packages/queue/README.md) имеют собственные public integration checks; [локальные S1/S2](../../experiments/state/README.md) сохранены как отдельное evidence. Точные поставленные объёмы — в [roadmap](../roadmap.md); runtime Полифонии и продуктовых тестов пока нет.
+Минимальная среда использует baseline [архитектуры, §2.1](../architecture.md#21-проверенный-технологический-baseline). В `@polyphony/core-types` интегрирован compile-time `Result<T, E>`; необходимый timeline T1 поднабор примитивов и pure parsers принят и интегрирован PR #78 с полным post-merge CI PASS. Сам timeline T1 реализован локально к CP2; его приёмка и поставка ещё впереди. [`state`](../../packages/state/README.md) и [`queue`](../../packages/queue/README.md) имеют собственные public integration checks; [локальные S1/S2](../../experiments/state/README.md) сохранены как отдельное evidence. Точные поставленные объёмы — в [roadmap](../roadmap.md); runtime Полифонии и продуктовых тестов пока нет.
 
 ## Установка
 

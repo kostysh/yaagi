@@ -2,7 +2,7 @@
 
 - Document ID: `core-types.spec`
 - Module ID: `core-types`
-- Статус: инкремент `Result<T, E>` accepted и интегрирован; документы поднабора T1 приняты в CP1 на `2aa09af2a27cac31998d26ad8d05642c7e972fdc`. Поднабор реализован локально, к приёмке CP2; поставка ещё не принята.
+- Статус: инкремент `Result<T, E>` accepted и интегрирован; документы поднабора T1 приняты в CP1 на `2aa09af2a27cac31998d26ad8d05642c7e972fdc`. Поднабор принят в CP2 на `ebca941`, интегрирован PR #78 (merge `2b90863`, полный post-merge CI PASS); CP3 принят оператором 2026-10-17.
 - Передача: CP1 принят оператором; реализация, проверки и guide/evidence проходят CP2, без разрешения публикации.
 - Концепция: [темпоральность и непрерывность](../../polyphony_concept.md#41-время--не-параметр-а-среда-существования), §§11/14.
 - Архитектура: [§3, граница и зависимости](../../architecture.md#3-модули-состояние-и-публичные-операции), [§4.1, общие правила](../../architecture.md#41-общие-правила), [M1](../../architecture.md#10-приёмочные-сценарии-и-evidence), [ADR-001](../../adr/ADR-001-module-boundaries.md).
@@ -114,4 +114,4 @@ export declare function parseElapsedMs(input: unknown): Result<ElapsedMs, Primit
 
 Concept Conformance — эта спецификация и изменённые accepted timeline contracts; Spec Conformance — план, roadmap/README и затронутые статусные документы; Security — новые validation/error/immutability/trust положения. Независимые verdict и exact SHA фиксируются в checkpoint report; отрицательные отчёты сохраняются по [политике](../../development-methodology/audits.md).
 
-Открытых архитектурных вопросов нет. CP1 принят на `2aa09af`; локальная реализация предъявляется в CP2. #47 остаётся заблокированной до принятия и доступности проверенного поднабора #45. Реальные runtime/I1 и весь scope обеих рамочных Issues не считаются завершёнными. [Guide](../../../packages/core-types/docs/usage.md) и [локальное evidence](../../validation/core-types/gh-45.t1.implementation.md) описывают только этот поднабор.
+Открытых архитектурных вопросов нет. CP1 принят на `2aa09af`; поднабор поставлен [PR #78](https://github.com/kostysh/yaagi/pull/78), [полный post-merge CI](https://github.com/kostysh/yaagi/actions/runs/38976080688) — PASS, CP3 принят. Зависимость #47 от этого поднабора снята. Реальные runtime/I1 и весь scope обеих рамочных Issues не считаются завершёнными. [Guide](../../../packages/core-types/docs/usage.md) и [локальное evidence](../../validation/core-types/gh-45.t1.implementation.md) описывают только этот поднабор.
